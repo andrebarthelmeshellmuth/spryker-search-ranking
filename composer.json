@@ -35,7 +35,11 @@
     },
     "require-dev": {
         "codeception/codeception": "^5.0.0",
-        "phpunit/phpunit": "^10.0.0 || ^11.0.0"
+        "phpunit/phpunit": "^10.0.0 || ^11.0.0",
+        "spryker-community/search-debug": "*"
+    },
+    "suggest": {
+        "spryker-community/search-debug": "Adds a business-signal score breakdown section to the search-debug SRP overlay (SearchRankingProductDebugDataExpanderPlugin)."
     },
     "autoload": {
         "psr-4": {

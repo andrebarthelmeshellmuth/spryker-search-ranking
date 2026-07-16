@@ -55,6 +55,12 @@ and floor editable in Zed and synchronized to key-value storage. See [Roadmap](#
   one dictionary document (`kv:search_ranking_configuration`), published from Zed through a
   storage table with synchronization behavior. Metric CRUD, the settings form, and the cron all
   republish it. The **score floor** is Zed-editable at `/search-ranking-gui/settings`.
+- **search-debug overlay integration** (optional, needs
+  [spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debugger)):
+  `SearchRankingProductDebugDataExpanderPlugin` adds a "Business signals" section to the per-product
+  SRP overlay — one `signal × weight = contribution` line per metric, the floor, their total, and
+  the full combination formula, e.g. `(1 + √19.7407) × 0.9628 = 5.2405`, reconciling exactly with
+  the final score shown below the (unchanged) text-match token breakdown.
 
 ## Normalization formulas
 
@@ -253,7 +259,23 @@ new FacetQueryExpanderPlugin(),
 new SearchRankingFunctionScoreQueryExpanderPlugin(),
 ```
 
-### 11. Build
+### 11. Optional: register the search-debug overlay section
+
+With spryker-community/search-debug installed, extend its client dependency provider on project
+level (`Pyz\Client\SearchDebug\SearchDebugDependencyProvider`):
+
+```php
+use SprykerCommunity\Client\SearchRanking\Plugin\SearchDebug\SearchRankingProductDebugDataExpanderPlugin;
+
+protected function getProductDebugDataExpanderPlugins(): array
+{
+    return [
+        new SearchRankingProductDebugDataExpanderPlugin(),
+    ];
+}
+```
+
+### 12. Build
 
 ```bash
 vendor/bin/console transfer:generate
@@ -305,7 +327,7 @@ Example files ship in this package under `data/import/`.
 - [x] **Phase 1** — metric definitions, product values, Zed UI, data import, normalization cron
 - [x] **Phase 2** — export normalized signals into the Elasticsearch page index
 - [x] **Phase 3** — `function_score` query wrapping the catalog search with weighted business signals, weights + Zed-editable score floor synced to key-value storage
-- [ ] **Phase 4** — score breakdown integration with spryker-community/search-debug
+- [x] **Phase 4** — score breakdown integration with spryker-community/search-debug
 - [ ] **Phase 5** — live weight-tuning sliders on the SRP for privileged admins ("weltherrschaftformula")
 - [ ] **Phase 6** — learning-rate based weight adoption with audit log and rollback
 

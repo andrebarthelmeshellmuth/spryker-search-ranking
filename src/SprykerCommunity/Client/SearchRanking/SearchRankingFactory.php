@@ -10,6 +10,8 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking;
 
 use Spryker\Client\Kernel\AbstractFactory;
+use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilder;
+use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
@@ -22,6 +24,14 @@ class SearchRankingFactory extends AbstractFactory
     public function createFunctionScoreBuilder(): FunctionScoreBuilderInterface
     {
         return new FunctionScoreBuilder();
+    }
+
+    /**
+     * @return \SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilderInterface
+     */
+    public function createScoreSectionBuilder(): ScoreSectionBuilderInterface
+    {
+        return new ScoreSectionBuilder();
     }
 
     /**
