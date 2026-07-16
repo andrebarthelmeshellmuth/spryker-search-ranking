@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Business;
 
+use Generated\Shared\Transfer\ProductPageLoadTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
@@ -114,5 +115,31 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     public function normalizeProductMetricValues(): SearchRankingNormalizationResultTransfer
     {
         return $this->getFactory()->createProductMetricNormalizer()->normalize();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param \Generated\Shared\Transfer\ProductPageLoadTransfer $productPageLoadTransfer
+     *
+     * @return \Generated\Shared\Transfer\ProductPageLoadTransfer
+     */
+    public function expandProductPageLoadTransferWithScores(ProductPageLoadTransfer $productPageLoadTransfer): ProductPageLoadTransfer
+    {
+        return $this->getFactory()->createScoresPageDataLoader()->expandProductPageLoadTransfer($productPageLoadTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return int
+     */
+    public function publishScoredProductAbstracts(): int
+    {
+        return $this->getFactory()->createProductAbstractScorePublisher()->publishScoredProductAbstracts();
     }
 }

@@ -42,6 +42,19 @@ class SearchRankingConfig extends AbstractBundleConfig
 
     /**
      * Specification:
+     * - Number of product abstract publish events triggered per bulk when re-publishing scored products.
+     *
+     * @api
+     *
+     * @return int
+     */
+    public function getPublishEventChunkSize(): int
+    {
+        return 500;
+    }
+
+    /**
+     * Specification:
      * - Sample variables used to trial-evaluate a formula during validation.
      *
      * @api

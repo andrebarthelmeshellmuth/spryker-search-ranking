@@ -1,0 +1,12 @@
+{
+    "mappings": {
+        "page": {
+            "properties": {
+                "scores": {
+                    "type": "object",
+                    "dynamic": true
+                }
+            }
+        }
+    }
+}

@@ -17,6 +17,12 @@ use SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriter;
 use SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizer;
 use SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizerInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\PageData\ScoresPageDataLoader;
+use SprykerCommunity\Zed\SearchRanking\Business\PageData\ScoresPageDataLoaderInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisher;
+use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisherInterface;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
+use SprykerCommunity\Zed\SearchRanking\SearchRankingDependencyProvider;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
 
 /**
@@ -67,5 +73,33 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
             $this->getEntityManager(),
             $this->createFormulaEvaluator(),
         );
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Business\PageData\ScoresPageDataLoaderInterface
+     */
+    public function createScoresPageDataLoader(): ScoresPageDataLoaderInterface
+    {
+        return new ScoresPageDataLoader($this->getRepository());
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisherInterface
+     */
+    public function createProductAbstractScorePublisher(): ProductAbstractScorePublisherInterface
+    {
+        return new ProductAbstractScorePublisher(
+            $this->getRepository(),
+            $this->getEventFacade(),
+            $this->getConfig(),
+        );
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface
+     */
+    public function getEventFacade(): SearchRankingToEventFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_EVENT);
     }
 }

@@ -11,6 +11,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Communication\Console;
 
 use Spryker\Zed\Kernel\Communication\Console\Console;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -28,7 +29,12 @@ class SearchRankingNormalizeConsole extends Console
     /**
      * @var string
      */
-    public const COMMAND_DESCRIPTION = 'Recalculates the normalized ]0;1] ranking values of all active metrics from their raw product data using each metric\'s formula.';
+    public const COMMAND_DESCRIPTION = 'Recalculates the normalized ]0;1] ranking values of all active metrics from their raw product data using each metric\'s formula, then triggers publish events so the search documents pick up the fresh scores.';
+
+    /**
+     * @var string
+     */
+    public const OPTION_SKIP_PUBLISH = 'skip-publish';
 
     /**
      * @return void
@@ -37,6 +43,12 @@ class SearchRankingNormalizeConsole extends Console
     {
         $this->setName(static::COMMAND_NAME);
         $this->setDescription(static::COMMAND_DESCRIPTION);
+        $this->addOption(
+            static::OPTION_SKIP_PUBLISH,
+            null,
+            InputOption::VALUE_NONE,
+            'Only recalculate normalized values; do not trigger product abstract publish events.',
+        );
 
         parent::configure();
     }
@@ -47,7 +59,6 @@ class SearchRankingNormalizeConsole extends Console
      *
      * @return int
      */
-    // phpcs:ignore SlevomatCodingStandard.Functions.UnusedParameter -- $input is fixed by the Symfony Command signature.
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $resultTransfer = $this->getFacade()->normalizeProductMetricValues();
@@ -60,6 +71,12 @@ class SearchRankingNormalizeConsole extends Console
 
         foreach ($resultTransfer->getErrors() as $error) {
             $output->writeln(sprintf('<error>%s</error>', $error));
+        }
+
+        if (!$input->getOption(static::OPTION_SKIP_PUBLISH)) {
+            $publishedProductCount = $this->getFacade()->publishScoredProductAbstracts();
+
+            $output->writeln(sprintf('Triggered publish events for %d product abstract(s).', $publishedProductCount));
         }
 
         return $resultTransfer->getErrors() === [] ? static::CODE_SUCCESS : static::CODE_ERROR;

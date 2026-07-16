@@ -60,4 +60,23 @@ interface SearchRankingRepositoryInterface
         int $idLastSearchRankingProductMetric,
         int $limit,
     ): array;
+
+    /**
+     * Returns normalized values of ACTIVE metrics keyed by product abstract id, then metric name:
+     * [idProductAbstract => [metricName => normalizedValue]]. Rows without a normalized value
+     * (cron not run yet) are omitted.
+     *
+     * @param array<int> $productAbstractIds
+     *
+     * @return array<int, array<string, float>>
+     */
+    public function getNormalizedScoresGroupedByIdProductAbstract(array $productAbstractIds): array;
+
+    /**
+     * Returns the distinct product abstract ids that have at least one normalized value of an
+     * active metric — i.e. the products whose search documents carry scores.
+     *
+     * @return array<int>
+     */
+    public function getProductAbstractIdsWithActiveMetricValues(): array;
 }

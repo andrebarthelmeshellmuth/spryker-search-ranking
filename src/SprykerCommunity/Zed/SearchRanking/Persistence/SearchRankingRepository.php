@@ -13,6 +13,7 @@ use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingProductMetricTransfer;
+use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingMetricTableMap;
 use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingProductMetricTableMap;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Spryker\Zed\Kernel\Persistence\AbstractRepository;
@@ -163,5 +164,62 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
         }
 
         return $productMetricTransfers;
+    }
+
+    /**
+     * @param array<int> $productAbstractIds
+     *
+     * @return array<int, array<string, float>>
+     */
+    public function getNormalizedScoresGroupedByIdProductAbstract(array $productAbstractIds): array
+    {
+        if ($productAbstractIds === []) {
+            return [];
+        }
+
+        $scoreRows = $this->getFactory()
+            ->createSearchRankingProductMetricQuery()
+            ->filterByFkProductAbstract_In($productAbstractIds)
+            ->filterByNormalizedValue(null, Criteria::ISNOTNULL)
+            ->useSearchRankingMetricQuery()
+                ->filterByIsActive(true)
+            ->endUse()
+            ->withColumn(SpySearchRankingMetricTableMap::COL_NAME, 'metric_name')
+            ->select([
+                SpySearchRankingProductMetricTableMap::COL_FK_PRODUCT_ABSTRACT,
+                SpySearchRankingProductMetricTableMap::COL_NORMALIZED_VALUE,
+                'metric_name',
+            ])
+            ->find();
+
+        $scoresByIdProductAbstract = [];
+
+        foreach ($scoreRows as $scoreRow) {
+            $idProductAbstract = (int)$scoreRow[SpySearchRankingProductMetricTableMap::COL_FK_PRODUCT_ABSTRACT];
+            $metricName = (string)$scoreRow['metric_name'];
+            $scoresByIdProductAbstract[$idProductAbstract][$metricName] = (float)$scoreRow[SpySearchRankingProductMetricTableMap::COL_NORMALIZED_VALUE];
+        }
+
+        return $scoresByIdProductAbstract;
+    }
+
+    /**
+     * @return array<int>
+     */
+    public function getProductAbstractIdsWithActiveMetricValues(): array
+    {
+        /** @var array<int|string> $productAbstractIds */
+        $productAbstractIds = $this->getFactory()
+            ->createSearchRankingProductMetricQuery()
+            ->filterByNormalizedValue(null, Criteria::ISNOTNULL)
+            ->useSearchRankingMetricQuery()
+                ->filterByIsActive(true)
+            ->endUse()
+            ->select([SpySearchRankingProductMetricTableMap::COL_FK_PRODUCT_ABSTRACT])
+            ->distinct()
+            ->find()
+            ->getData();
+
+        return array_map('intval', $productAbstractIds);
     }
 }

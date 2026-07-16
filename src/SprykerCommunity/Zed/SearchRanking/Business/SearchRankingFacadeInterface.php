@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Business;
 
+use Generated\Shared\Transfer\ProductPageLoadTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
@@ -103,4 +104,32 @@ interface SearchRankingFacadeInterface
      * @return \Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer
      */
     public function normalizeProductMetricValues(): SearchRankingNormalizationResultTransfer;
+
+    /**
+     * Specification:
+     * - Bulk-loads the normalized ]0;1] values of all active metrics for the products referenced by
+     *   `ProductPageLoadTransfer.productAbstractIds`.
+     * - Sets them on each payload transfer as a [metricName => normalizedValue] map (empty map when
+     *   a product has no scores).
+     *
+     * @api
+     *
+     * @param \Generated\Shared\Transfer\ProductPageLoadTransfer $productPageLoadTransfer
+     *
+     * @return \Generated\Shared\Transfer\ProductPageLoadTransfer
+     */
+    public function expandProductPageLoadTransferWithScores(ProductPageLoadTransfer $productPageLoadTransfer): ProductPageLoadTransfer;
+
+    /**
+     * Specification:
+     * - Triggers `Product.product_abstract.publish` events (in chunks) for every product abstract
+     *   that has at least one normalized value of an active metric, so their search documents get
+     *   re-exported with fresh scores.
+     * - Returns the number of products for which events were triggered.
+     *
+     * @api
+     *
+     * @return int
+     */
+    public function publishScoredProductAbstracts(): int;
 }

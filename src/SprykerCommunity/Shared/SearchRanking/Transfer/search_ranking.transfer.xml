@@ -49,4 +49,21 @@
         <property name="errors" type="string[]" singular="error"/>
     </transfer>
 
+    <!-- Extensions of core ProductPageSearch transfers carrying the normalized signals through the
+         publish pipeline: bulk-loaded into the payload (data loader), copied onto the page-search
+         transfer (data expander), and finally set on the page map (map expander), from where the
+         core document mapper writes any modified PageMap property named after a page.json field
+         verbatim into the Elasticsearch document. -->
+    <transfer name="ProductPayload">
+        <property name="searchRankingScores" type="array" singular="searchRankingScores"/>
+    </transfer>
+
+    <transfer name="ProductPageSearch">
+        <property name="scores" type="array" singular="scores"/>
+    </transfer>
+
+    <transfer name="PageMap">
+        <property name="scores" type="array" singular="scores"/>
+    </transfer>
+
 </transfers>
