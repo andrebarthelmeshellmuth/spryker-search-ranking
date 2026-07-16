@@ -42,6 +42,19 @@ class SearchRankingConfig extends AbstractBundleConfig
 
     /**
      * Specification:
+     * - Default additive score floor when none was saved in Zed yet.
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getDefaultScoreFloor(): float
+    {
+        return 0.5;
+    }
+
+    /**
+     * Specification:
      * - Number of product abstract publish events triggered per bulk when re-publishing scored products.
      *
      * @api

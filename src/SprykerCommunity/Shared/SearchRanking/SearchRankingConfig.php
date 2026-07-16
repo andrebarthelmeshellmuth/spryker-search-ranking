@@ -32,4 +32,16 @@ class SearchRankingConfig
      * @var string
      */
     public const PAGE_INDEX_FIELD_SCORES = 'scores';
+
+    /**
+     * Specification:
+     * - Setting key of the additive score floor used in the function_score script. The floor keeps
+     *   products without (or with weak) business signals from having their text relevance multiplied
+     *   towards zero.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const SETTING_KEY_SCORE_FLOOR = 'score_floor';
 }

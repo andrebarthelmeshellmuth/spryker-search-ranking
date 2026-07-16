@@ -33,4 +33,12 @@ interface SearchRankingEntityManagerInterface
      * @return void
      */
     public function updateNormalizedValues(array $normalizedValuesByIdProductMetric): void;
+
+    /**
+     * @param string $settingKey
+     * @param string $settingValue
+     *
+     * @return void
+     */
+    public function saveSetting(string $settingKey, string $settingValue): void;
 }

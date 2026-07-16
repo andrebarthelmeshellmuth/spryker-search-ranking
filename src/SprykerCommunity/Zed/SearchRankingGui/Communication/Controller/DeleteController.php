@@ -44,6 +44,7 @@ class DeleteController extends AbstractController
         );
 
         $this->getFactory()->getSearchRankingFacade()->deleteMetric($idSearchRankingMetric);
+        $this->getFactory()->getSearchRankingStorageFacade()->publishRankingConfiguration();
         $this->addSuccessMessage('Metric was deleted.');
 
         return $this->redirectResponse(static::URL_METRIC_LIST);

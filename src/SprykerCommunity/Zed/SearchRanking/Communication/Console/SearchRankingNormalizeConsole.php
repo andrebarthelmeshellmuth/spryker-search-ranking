@@ -77,6 +77,10 @@ class SearchRankingNormalizeConsole extends Console
             $publishedProductCount = $this->getFacade()->publishScoredProductAbstracts();
 
             $output->writeln(sprintf('Triggered publish events for %d product abstract(s).', $publishedProductCount));
+
+            $this->getFactory()->getSearchRankingStorageFacade()->publishRankingConfiguration();
+
+            $output->writeln('Published ranking configuration to key-value storage.');
         }
 
         return $resultTransfer->getErrors() === [] ? static::CODE_SUCCESS : static::CODE_ERROR;

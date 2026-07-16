@@ -16,6 +16,19 @@
         </unique>
     </table>
 
+    <table name="spy_search_ranking_setting" idMethod="native" identifierQuoting="true">
+        <column name="id_search_ranking_setting" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="setting_key" type="VARCHAR" size="64" required="true" description="Machine name of the setting, e.g. score_floor."/>
+        <column name="setting_value" type="VARCHAR" size="255" required="true"/>
+
+        <behavior name="timestampable"/>
+        <id-method-parameter value="spy_search_ranking_setting_pk_seq"/>
+
+        <unique name="spy_search_ranking_setting-setting_key">
+            <unique-column name="setting_key"/>
+        </unique>
+    </table>
+
     <table name="spy_search_ranking_product_metric" idMethod="native" identifierQuoting="true">
         <column name="id_search_ranking_product_metric" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_search_ranking_metric" type="INTEGER" required="true"/>

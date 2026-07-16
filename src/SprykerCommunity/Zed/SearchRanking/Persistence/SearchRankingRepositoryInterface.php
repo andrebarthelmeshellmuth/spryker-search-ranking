@@ -79,4 +79,11 @@ interface SearchRankingRepositoryInterface
      * @return array<int>
      */
     public function getProductAbstractIdsWithActiveMetricValues(): array;
+
+    /**
+     * @param string $settingKey
+     *
+     * @return string|null
+     */
+    public function findSettingValue(string $settingKey): ?string;
 }

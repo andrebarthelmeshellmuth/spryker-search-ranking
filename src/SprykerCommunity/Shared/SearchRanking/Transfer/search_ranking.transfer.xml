@@ -54,6 +54,13 @@
          transfer (data expander), and finally set on the page map (map expander), from where the
          core document mapper writes any modified PageMap property named after a page.json field
          verbatim into the Elasticsearch document. -->
+    <!-- The single key-value storage document the storefront reads at query time: weights of the
+         active metrics plus the additive score floor for the function_score script. -->
+    <transfer name="SearchRankingConfigurationStorage" strict="true">
+        <property name="metricWeights" type="array" singular="metricWeight" associative="true"/>
+        <property name="scoreFloor" type="float"/>
+    </transfer>
+
     <transfer name="ProductPayload">
         <property name="searchRankingScores" type="array" singular="searchRankingScores"/>
     </transfer>

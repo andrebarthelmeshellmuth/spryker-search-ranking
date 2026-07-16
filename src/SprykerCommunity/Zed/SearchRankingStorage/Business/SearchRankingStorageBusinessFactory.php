@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * This file is part of the spryker-community/search-ranking package.
+ * For full license information, please view the LICENSE file that was distributed with this source code.
+ */
+
+declare(strict_types = 1);
+
+namespace SprykerCommunity\Zed\SearchRankingStorage\Business;
+
+use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
+use SprykerCommunity\Zed\SearchRankingStorage\Business\Writer\RankingConfigurationStorageWriter;
+use SprykerCommunity\Zed\SearchRankingStorage\Business\Writer\RankingConfigurationStorageWriterInterface;
+use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface;
+use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSynchronizationFacadeInterface;
+use SprykerCommunity\Zed\SearchRankingStorage\SearchRankingStorageDependencyProvider;
+
+/**
+ * @method \SprykerCommunity\Zed\SearchRankingStorage\SearchRankingStorageConfig getConfig()
+ * @method \SprykerCommunity\Zed\SearchRankingStorage\Persistence\SearchRankingStorageRepositoryInterface getRepository()
+ * @method \SprykerCommunity\Zed\SearchRankingStorage\Persistence\SearchRankingStorageEntityManagerInterface getEntityManager()
+ */
+class SearchRankingStorageBusinessFactory extends AbstractBusinessFactory
+{
+    /**
+     * @return \SprykerCommunity\Zed\SearchRankingStorage\Business\Writer\RankingConfigurationStorageWriterInterface
+     */
+    public function createRankingConfigurationStorageWriter(): RankingConfigurationStorageWriterInterface
+    {
+        return new RankingConfigurationStorageWriter(
+            $this->getSearchRankingFacade(),
+            $this->getEntityManager(),
+            $this->getSynchronizationFacade(),
+        );
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface
+     */
+    public function getSearchRankingFacade(): SearchRankingStorageToSearchRankingFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingStorageDependencyProvider::FACADE_SEARCH_RANKING);
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSynchronizationFacadeInterface
+     */
+    public function getSynchronizationFacade(): SearchRankingStorageToSynchronizationFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingStorageDependencyProvider::FACADE_SYNCHRONIZATION);
+    }
+}

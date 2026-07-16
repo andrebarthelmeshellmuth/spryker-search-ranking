@@ -10,6 +10,8 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Communication;
 
 use Spryker\Zed\Kernel\Communication\AbstractCommunicationFactory;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToSearchRankingStorageFacadeInterface;
+use SprykerCommunity\Zed\SearchRanking\SearchRankingDependencyProvider;
 
 /**
  * @method \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig getConfig()
@@ -18,4 +20,11 @@ use Spryker\Zed\Kernel\Communication\AbstractCommunicationFactory;
  */
 class SearchRankingCommunicationFactory extends AbstractCommunicationFactory
 {
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToSearchRankingStorageFacadeInterface
+     */
+    public function getSearchRankingStorageFacade(): SearchRankingToSearchRankingStorageFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_SEARCH_RANKING_STORAGE);
+    }
 }

@@ -48,4 +48,16 @@ interface SearchRankingGuiToSearchRankingFacadeInterface
      * @return \Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer
      */
     public function validateFormula(string $formula): SearchRankingFormulaValidationResponseTransfer;
+
+    /**
+     * @return float
+     */
+    public function getScoreFloor(): float;
+
+    /**
+     * @param float $scoreFloor
+     *
+     * @return void
+     */
+    public function saveScoreFloor(float $scoreFloor): void;
 }

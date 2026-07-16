@@ -11,10 +11,11 @@ the eventual `function_score` ranking is meant to stay fully inspectable in the 
 
 ## Status
 
-🚧 Early development — **phases 1–2 of 6** are functional: the metric/value data model, the Zed
-management UI, CSV data import, the normalization cron, and the export of normalized signals into
-the Elasticsearch page documents (`scores` field). The signals **do not yet influence ranking** —
-metric weights are stored but unused until the `function_score` phase lands. See [Roadmap](#roadmap).
+🚧 Early development — **phases 1–3 of 6** are functional: the metric/value data model, the Zed
+management UI, CSV data import, the normalization cron, the export of normalized signals into the
+Elasticsearch page documents (`scores` field), and the **`function_score` ranking itself**: catalog
+searches are re-scored by `(1 + sqrt(text relevance)) × (Σ weightᵢ × signalᵢ + floor)`, with weights
+and floor editable in Zed and synchronized to key-value storage. See [Roadmap](#roadmap).
 
 ## What it does today
 
@@ -42,6 +43,18 @@ metric weights are stored but unused until the `function_score` phase lands. See
   into its page document as `scores: {metricName: value}`. Products without values get no `scores`
   field. After normalizing, the cron triggers `Product.product_abstract.publish` events (chunked)
   for all scored products so the documents refresh; `--skip-publish` suppresses that.
+- **function_score ranking**: a `QueryExpanderPlugin` wraps the catalog search query in a
+  `function_score` with the painless script
+  `(1 + Math.sqrt(_score)) * (params.w0 * doc['scores.metric'] + … + params.floor)` —
+  `boost_mode: replace`, weights as script params, every doc-value access guarded against missing
+  fields, and metric names validated against a strict pattern before being embedded (import data
+  cannot inject script code). It only acts on queries **with a search string** (category/browse
+  pages keep their ordering) and silently steps aside when no configuration is synchronized or no
+  active metric has a non-zero weight.
+- **Ranking configuration in key-value storage**: active metric weights + the score floor live in
+  one dictionary document (`kv:search_ranking_configuration`), published from Zed through a
+  storage table with synchronization behavior. Metric CRUD, the settings form, and the cron all
+  republish it. The **score floor** is Zed-editable at `/search-ranking-gui/settings`.
 
 ## Normalization formulas
 
@@ -74,8 +87,11 @@ misbehaving formula cannot poison the data with zeros, negatives, `NaN` or `INF`
 
 | Module | Purpose |
 | --- | --- |
-| `SearchRanking` | Propel schema, facade (CRUD, formula validation, normalization, ES export/publish), expression evaluator, ProductPageSearch export plugins, `search-ranking:normalize` console command |
-| `SearchRankingGui` | Zed UI controllers, tables, forms, navigation entry |
+| `SearchRanking` (Zed) | Propel schema, facade (CRUD, settings, formula validation, normalization, ES export/publish), expression evaluator, ProductPageSearch export plugins, `search-ranking:normalize` console command |
+| `SearchRanking` (Client) | `SearchRankingFunctionScoreQueryExpanderPlugin` + painless script builder |
+| `SearchRankingGui` | Zed UI controllers, tables, forms (metrics + settings), navigation entry |
+| `SearchRankingStorage` (Zed) | Ranking-configuration storage table with synchronization behavior, publish writer, sync-data plugin |
+| `SearchRankingStorage` (Client) | Reads the configuration document from key-value storage |
 | `SearchRankingDataImport` | The two data importers; example CSVs in `data/import/` |
 
 ## Requirements
@@ -201,7 +217,43 @@ public function getJsonSchemaDefinitionDirectories(): array
 }
 ```
 
-### 9. Build
+### 9. Register the ranking-configuration sync queue
+
+The queue `sync.storage.search_ranking` needs the usual three registrations, plus a fourth if your
+shop routes queues through Symfony Messenger (current demoshops do):
+
+```php
+// Pyz\Client\RabbitMq\RabbitMqConfig::getSynchronizationQueueConfiguration():
+SearchRankingStorageConfig::SYNC_STORAGE_SEARCH_RANKING_QUEUE,
+
+// Pyz\Zed\Queue\QueueDependencyProvider::getProcessorMessagePlugins():
+SearchRankingStorageConfig::SYNC_STORAGE_SEARCH_RANKING_QUEUE => new SynchronizationStorageQueueMessageProcessorPlugin(),
+
+// Pyz\Zed\Synchronization\SynchronizationDependencyProvider::getSynchronizationDataPlugins():
+new SearchRankingConfigurationSynchronizationDataPlugin(),
+
+// Pyz\Client\SymfonyMessenger\SymfonyMessengerConfig::getSynchronizationQueueConfiguration():
+SearchRankingStorageConfig::SYNC_STORAGE_SEARCH_RANKING_QUEUE,
+```
+
+(`SearchRankingStorageConfig` = `SprykerCommunity\Shared\SearchRankingStorage\SearchRankingStorageConfig`.)
+Restart any long-running `symfonymessenger:consume` workers afterwards — they hold the old queue
+configuration until their time limit expires.
+
+### 10. Register the function_score query expander
+
+In `Pyz\Client\Catalog\CatalogDependencyProvider::createCatalogSearchQueryExpanderPlugins()`,
+**after `FacetQueryExpanderPlugin`** — earlier expanders require the root query to still be a
+`BoolQuery`:
+
+```php
+use SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin;
+
+new FacetQueryExpanderPlugin(),
+new SearchRankingFunctionScoreQueryExpanderPlugin(),
+```
+
+### 11. Build
 
 ```bash
 vendor/bin/console transfer:generate
@@ -238,17 +290,21 @@ Example files ship in this package under `data/import/`.
 
 ## Limitations (current phase)
 
-- Metric **weights are stored but not consumed** yet — they become meaningful with the
-  `function_score` query (phase 3) and the whf tuning UI (phase 5).
-- Re-publishing happens **only via the normalize cron** (or manually) — importing raw values alone
-  does not refresh the search documents until the next run.
-- Values are per abstract product and global — no per-store or per-locale signals.
+- The `function_score` applies to the **main catalog search query only** — suggest-as-you-type and
+  concrete-product search keep pure text relevance for now.
+- Re-publishing of product documents happens **only via the normalize cron** (or manually) —
+  importing raw values alone does not refresh the search documents until the next run.
+- Values are per abstract product and global — no per-store or per-locale signals; the ranking
+  configuration document is also global (one key for all stores).
+- With Spryker's **direct synchronization** enabled, core only flushes the sync buffer on console
+  termination; this package flushes explicitly after publishing so Zed web saves reach key-value
+  storage immediately.
 
 ## Roadmap
 
 - [x] **Phase 1** — metric definitions, product values, Zed UI, data import, normalization cron
 - [x] **Phase 2** — export normalized signals into the Elasticsearch page index
-- [ ] **Phase 3** — `function_score` query wrapping the catalog search with weighted business signals
+- [x] **Phase 3** — `function_score` query wrapping the catalog search with weighted business signals, weights + Zed-editable score floor synced to key-value storage
 - [ ] **Phase 4** — score breakdown integration with spryker-community/search-debug
 - [ ] **Phase 5** — live weight-tuning sliders on the SRP for privileged admins ("weltherrschaftformula")
 - [ ] **Phase 6** — learning-rate based weight adoption with audit log and rollback
@@ -264,8 +320,10 @@ vendor/bin/codecept run -c packages/spryker-community/search-ranking/tests/Spryk
 
 Covers the formula evaluator (functions, `random()` range, division-by-zero/unknown-function
 failures, validation messages), the normalizer (clamping, batch paging, per-metric error
-isolation), the page-data loader (per-payload score mapping) and the publish trigger (event
-chunking) as pure unit tests — no database needed.
+isolation), the page-data loader (per-payload score mapping), the publish trigger (event chunking)
+and the function_score builder (script shape, zero-weight skipping, script-injection guarding,
+null on empty configuration) as pure unit tests — no database needed. The Client suite lives at
+`tests/SprykerCommunityTest/Client/SearchRanking`.
 
 ## License
 

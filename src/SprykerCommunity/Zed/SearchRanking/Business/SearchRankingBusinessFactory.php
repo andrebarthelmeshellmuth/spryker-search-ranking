@@ -21,6 +21,8 @@ use SprykerCommunity\Zed\SearchRanking\Business\PageData\ScoresPageDataLoader;
 use SprykerCommunity\Zed\SearchRanking\Business\PageData\ScoresPageDataLoaderInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisher;
 use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisherInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManager;
+use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\SearchRankingDependencyProvider;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
@@ -91,6 +93,18 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         return new ProductAbstractScorePublisher(
             $this->getRepository(),
             $this->getEventFacade(),
+            $this->getConfig(),
+        );
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManagerInterface
+     */
+    public function createSettingManager(): SettingManagerInterface
+    {
+        return new SettingManager(
+            $this->getRepository(),
+            $this->getEntityManager(),
             $this->getConfig(),
         );
     }

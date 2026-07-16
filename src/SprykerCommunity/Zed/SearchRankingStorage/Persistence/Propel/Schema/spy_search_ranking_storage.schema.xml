@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<database xmlns="spryker:schema-01" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="zed" namespace="Orm\Zed\SearchRankingStorage\Persistence" package="src.Orm.Zed.SearchRankingStorage.Persistence" xsi:schemaLocation="spryker:schema-01 https://static.spryker.com/schema-01.xsd">
+
+    <table name="spy_search_ranking_configuration_storage" identifierQuoting="true">
+        <column name="id_search_ranking_configuration_storage" type="BIGINT" autoIncrement="true" primaryKey="true"/>
+        <id-method-parameter value="spy_search_ranking_configuration_storage_pk_seq"/>
+
+        <behavior name="synchronization">
+            <parameter name="resource" value="search_ranking_configuration"/>
+            <parameter name="queue_group" value="sync.storage.search_ranking"/>
+        </behavior>
+
+        <behavior name="timestampable"/>
+    </table>
+
+</database>

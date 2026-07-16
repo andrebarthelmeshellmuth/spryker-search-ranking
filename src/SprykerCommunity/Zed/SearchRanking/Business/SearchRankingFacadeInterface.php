@@ -29,6 +29,39 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
+     * - Returns all ACTIVE ranking metric definitions ordered by name.
+     *
+     * @api
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
+     */
+    public function getActiveMetricCollection(): SearchRankingMetricCollectionTransfer;
+
+    /**
+     * Specification:
+     * - Returns the additive score floor for the ranking formula; falls back to the module config
+     *   default when no value was saved yet.
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getScoreFloor(): float;
+
+    /**
+     * Specification:
+     * - Persists the additive score floor setting.
+     *
+     * @api
+     *
+     * @param float $scoreFloor
+     *
+     * @return void
+     */
+    public function saveScoreFloor(float $scoreFloor): void;
+
+    /**
+     * Specification:
      * - Returns the metric with the given id or null if it does not exist.
      *
      * @api

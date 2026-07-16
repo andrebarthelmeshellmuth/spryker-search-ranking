@@ -12,6 +12,7 @@ namespace SprykerCommunity\Zed\SearchRanking;
 use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
 use Spryker\Zed\Kernel\Container;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeBridge;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToSearchRankingStorageFacadeBridge;
 
 /**
  * @method \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig getConfig()
@@ -24,6 +25,11 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
     public const FACADE_EVENT = 'FACADE_EVENT';
 
     /**
+     * @var string
+     */
+    public const FACADE_SEARCH_RANKING_STORAGE = 'FACADE_SEARCH_RANKING_STORAGE';
+
+    /**
      * @param \Spryker\Zed\Kernel\Container $container
      *
      * @return \Spryker\Zed\Kernel\Container
@@ -32,6 +38,38 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
     {
         $container = parent::provideBusinessLayerDependencies($container);
         $container = $this->addEventFacade($container);
+
+        return $container;
+    }
+
+    /**
+     * The storage facade is a Communication-layer dependency only (console command); the Business
+     * layer must stay free of it to avoid a circular module dependency with SearchRankingStorage.
+     *
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    public function provideCommunicationLayerDependencies(Container $container): Container
+    {
+        $container = parent::provideCommunicationLayerDependencies($container);
+        $container = $this->addSearchRankingStorageFacade($container);
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addSearchRankingStorageFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_SEARCH_RANKING_STORAGE, function (Container $container) {
+            return new SearchRankingToSearchRankingStorageFacadeBridge(
+                $container->getLocator()->searchRankingStorage()->facade(),
+            );
+        });
 
         return $container;
     }

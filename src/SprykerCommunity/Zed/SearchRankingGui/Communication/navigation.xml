@@ -22,6 +22,13 @@
                 <controller>product-metric</controller>
                 <action>index</action>
             </search-ranking-product-metrics>
+            <search-ranking-settings>
+                <label>Settings</label>
+                <title>Settings</title>
+                <bundle>search-ranking-gui</bundle>
+                <controller>settings</controller>
+                <action>index</action>
+            </search-ranking-settings>
             <search-ranking-create-metric>
                 <label>Create Metric</label>
                 <title>Create Metric</title>

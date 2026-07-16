@@ -85,4 +85,21 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
             $productMetricEntity->save();
         }
     }
+
+    /**
+     * @param string $settingKey
+     * @param string $settingValue
+     *
+     * @return void
+     */
+    public function saveSetting(string $settingKey, string $settingValue): void
+    {
+        $settingEntity = $this->getFactory()
+            ->createSearchRankingSettingQuery()
+            ->filterBySettingKey($settingKey)
+            ->findOneOrCreate();
+
+        $settingEntity->setSettingValue($settingValue);
+        $settingEntity->save();
+    }
 }

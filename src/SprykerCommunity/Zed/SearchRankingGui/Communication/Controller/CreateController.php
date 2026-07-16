@@ -37,6 +37,7 @@ class CreateController extends AbstractController
         if ($metricForm->isSubmitted() && $metricForm->isValid()) {
             $metricTransfer = $metricForm->getData();
             $this->getFactory()->getSearchRankingFacade()->saveMetric($metricTransfer);
+            $this->getFactory()->getSearchRankingStorageFacade()->publishRankingConfiguration();
             $this->addSuccessMessage(sprintf('Metric "%s" was created.', $metricTransfer->getName()));
 
             return $this->redirectResponse(static::URL_METRIC_LIST);

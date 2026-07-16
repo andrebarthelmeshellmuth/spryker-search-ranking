@@ -49,6 +49,7 @@ class EditController extends AbstractController
 
         if ($metricForm->isSubmitted() && $metricForm->isValid()) {
             $this->getFactory()->getSearchRankingFacade()->saveMetric($metricForm->getData());
+            $this->getFactory()->getSearchRankingStorageFacade()->publishRankingConfiguration();
             $this->addSuccessMessage(sprintf('Metric "%s" was updated.', $metricTransfer->getName()));
 
             return $this->redirectResponse(static::URL_METRIC_LIST);

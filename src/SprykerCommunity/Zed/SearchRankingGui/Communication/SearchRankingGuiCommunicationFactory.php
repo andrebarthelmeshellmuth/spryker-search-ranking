@@ -16,9 +16,11 @@ use Spryker\Zed\Gui\Communication\Form\DeleteForm;
 use Spryker\Zed\Kernel\Communication\AbstractCommunicationFactory;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\DataProvider\MetricFormDataProvider;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\MetricForm;
+use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\SettingsForm;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricTable;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricTable;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeInterface;
+use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingStorageFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingGui\SearchRankingGuiDependencyProvider;
 use Symfony\Component\Form\FormInterface;
 
@@ -68,11 +70,29 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     }
 
     /**
+     * @param array<string, mixed> $settingsData
+     *
+     * @return \Symfony\Component\Form\FormInterface
+     */
+    public function getSettingsForm(array $settingsData): FormInterface
+    {
+        return $this->getFormFactory()->create(SettingsForm::class, $settingsData);
+    }
+
+    /**
      * @return \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeInterface
      */
     public function getSearchRankingFacade(): SearchRankingGuiToSearchRankingFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_SEARCH_RANKING);
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingStorageFacadeInterface
+     */
+    public function getSearchRankingStorageFacade(): SearchRankingGuiToSearchRankingStorageFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_SEARCH_RANKING_STORAGE);
     }
 
     /**

@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * This file is part of the spryker-community/search-ranking package.
+ * For full license information, please view the LICENSE file that was distributed with this source code.
+ */
+
+declare(strict_types = 1);
+
+namespace SprykerCommunity\Zed\SearchRankingStorage;
+
+use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
+use Spryker\Zed\Kernel\Container;
+use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeBridge;
+use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSynchronizationFacadeBridge;
+
+/**
+ * @method \SprykerCommunity\Zed\SearchRankingStorage\SearchRankingStorageConfig getConfig()
+ */
+class SearchRankingStorageDependencyProvider extends AbstractBundleDependencyProvider
+{
+    /**
+     * @var string
+     */
+    public const FACADE_SEARCH_RANKING = 'FACADE_SEARCH_RANKING';
+
+    /**
+     * @var string
+     */
+    public const FACADE_SYNCHRONIZATION = 'FACADE_SYNCHRONIZATION';
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    public function provideBusinessLayerDependencies(Container $container): Container
+    {
+        $container = parent::provideBusinessLayerDependencies($container);
+        $container = $this->addSearchRankingFacade($container);
+        $container = $this->addSynchronizationFacade($container);
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addSynchronizationFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_SYNCHRONIZATION, function (Container $container) {
+            return new SearchRankingStorageToSynchronizationFacadeBridge(
+                $container->getLocator()->synchronization()->facade(),
+            );
+        });
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addSearchRankingFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_SEARCH_RANKING, function (Container $container) {
+            return new SearchRankingStorageToSearchRankingFacadeBridge(
+                $container->getLocator()->searchRanking()->facade(),
+            );
+        });
+
+        return $container;
+    }
+}

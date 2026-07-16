@@ -14,6 +14,7 @@ use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery;
 use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
 use Spryker\Zed\Kernel\Container;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeBridge;
+use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingStorageFacadeBridge;
 
 class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvider
 {
@@ -21,6 +22,11 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
      * @var string
      */
     public const FACADE_SEARCH_RANKING = 'FACADE_SEARCH_RANKING';
+
+    /**
+     * @var string
+     */
+    public const FACADE_SEARCH_RANKING_STORAGE = 'FACADE_SEARCH_RANKING_STORAGE';
 
     /**
      * @var string
@@ -41,8 +47,25 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
     {
         $container = parent::provideCommunicationLayerDependencies($container);
         $container = $this->addSearchRankingFacade($container);
+        $container = $this->addSearchRankingStorageFacade($container);
         $container = $this->addSearchRankingMetricPropelQuery($container);
         $container = $this->addSearchRankingProductMetricPropelQuery($container);
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addSearchRankingStorageFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_SEARCH_RANKING_STORAGE, function (Container $container) {
+            return new SearchRankingGuiToSearchRankingStorageFacadeBridge(
+                $container->getLocator()->searchRankingStorage()->facade(),
+            );
+        });
 
         return $container;
     }

@@ -76,4 +76,22 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     {
         return $this->searchRankingFacade->validateFormula($formula);
     }
+
+    /**
+     * @return float
+     */
+    public function getScoreFloor(): float
+    {
+        return $this->searchRankingFacade->getScoreFloor();
+    }
+
+    /**
+     * @param float $scoreFloor
+     *
+     * @return void
+     */
+    public function saveScoreFloor(float $scoreFloor): void
+    {
+        $this->searchRankingFacade->saveScoreFloor($scoreFloor);
+    }
 }

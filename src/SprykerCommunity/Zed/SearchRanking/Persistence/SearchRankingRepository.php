@@ -222,4 +222,18 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
         return array_map('intval', $productAbstractIds);
     }
+
+    /**
+     * @param string $settingKey
+     *
+     * @return string|null
+     */
+    public function findSettingValue(string $settingKey): ?string
+    {
+        $settingEntity = $this->getFactory()
+            ->createSearchRankingSettingQuery()
+            ->findOneBySettingKey($settingKey);
+
+        return $settingEntity?->getSettingValue();
+    }
 }

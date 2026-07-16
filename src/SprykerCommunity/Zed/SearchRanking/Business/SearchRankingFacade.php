@@ -40,6 +40,44 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @api
      *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
+     */
+    public function getActiveMetricCollection(): SearchRankingMetricCollectionTransfer
+    {
+        return $this->getRepository()->getActiveMetricCollection();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getScoreFloor(): float
+    {
+        return $this->getFactory()->createSettingManager()->getScoreFloor();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param float $scoreFloor
+     *
+     * @return void
+     */
+    public function saveScoreFloor(float $scoreFloor): void
+    {
+        $this->getFactory()->createSettingManager()->saveScoreFloor($scoreFloor);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
      * @param int $idSearchRankingMetric
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
