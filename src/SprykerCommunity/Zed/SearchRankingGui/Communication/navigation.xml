@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <search-ranking-gui>
+        <label>Search Ranking</label>
+        <title>Search Ranking</title>
+        <icon>fa-sliders</icon>
+        <bundle>search-ranking-gui</bundle>
+        <controller>index</controller>
+        <action>index</action>
+        <pages>
+            <search-ranking-metrics>
+                <label>Metrics</label>
+                <title>Metrics</title>
+                <bundle>search-ranking-gui</bundle>
+                <controller>index</controller>
+                <action>index</action>
+            </search-ranking-metrics>
+            <search-ranking-product-metrics>
+                <label>Product Values</label>
+                <title>Product Values</title>
+                <bundle>search-ranking-gui</bundle>
+                <controller>product-metric</controller>
+                <action>index</action>
+            </search-ranking-product-metrics>
+            <search-ranking-create-metric>
+                <label>Create Metric</label>
+                <title>Create Metric</title>
+                <bundle>search-ranking-gui</bundle>
+                <controller>create</controller>
+                <action>index</action>
+                <visible>0</visible>
+            </search-ranking-create-metric>
+            <search-ranking-edit-metric>
+                <label>Edit Metric</label>
+                <title>Edit Metric</title>
+                <bundle>search-ranking-gui</bundle>
+                <controller>edit</controller>
+                <action>index</action>
+                <visible>0</visible>
+            </search-ranking-edit-metric>
+        </pages>
+    </search-ranking-gui>
+</config>

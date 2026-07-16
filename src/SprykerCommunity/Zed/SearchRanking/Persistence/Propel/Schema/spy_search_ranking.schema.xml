@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<database xmlns="spryker:schema-01" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="zed" namespace="Orm\Zed\SearchRanking\Persistence" package="src.Orm.Zed.SearchRanking.Persistence" xsi:schemaLocation="spryker:schema-01 https://static.spryker.com/schema-01.xsd">
+
+    <table name="spy_search_ranking_metric" idMethod="native" identifierQuoting="true">
+        <column name="id_search_ranking_metric" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="name" type="VARCHAR" size="128" required="true" description="Machine name of the business signal, e.g. pdp_impressions."/>
+        <column name="weight" type="FLOAT" required="true" defaultValue="0" description="Weight of this metric in the combined ranking score."/>
+        <column name="formula" type="VARCHAR" size="512" required="true" description="Normalization expression mapping raw values into ]0;1]; variables: x, min, max, avg, count."/>
+        <column name="is_active" type="BOOLEAN" required="true" defaultValue="true" description="Only active metrics are normalized and exported to the search index."/>
+
+        <behavior name="timestampable"/>
+        <id-method-parameter value="spy_search_ranking_metric_pk_seq"/>
+
+        <unique name="spy_search_ranking_metric-name">
+            <unique-column name="name"/>
+        </unique>
+    </table>
+
+    <table name="spy_search_ranking_product_metric" idMethod="native" identifierQuoting="true">
+        <column name="id_search_ranking_product_metric" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="fk_search_ranking_metric" type="INTEGER" required="true"/>
+        <column name="fk_product_abstract" type="INTEGER" required="true"/>
+        <column name="raw_value" type="DOUBLE" required="true" defaultValue="0" description="Real-world signal value, e.g. number of PDP impressions."/>
+        <column name="normalized_value" type="DOUBLE" required="false" description="Value in ]0;1] derived from raw_value by the metric formula; null until the normalization cron ran."/>
+
+        <behavior name="timestampable"/>
+        <id-method-parameter value="spy_search_ranking_product_metric_pk_seq"/>
+
+        <foreign-key name="spy_search_ranking_product_metric-fk_metric" foreignTable="spy_search_ranking_metric" phpName="SearchRankingMetric" refPhpName="SearchRankingProductMetric" onDelete="CASCADE">
+            <reference local="fk_search_ranking_metric" foreign="id_search_ranking_metric"/>
+        </foreign-key>
+
+        <foreign-key name="spy_search_ranking_product_metric-fk_product_abstract" foreignTable="spy_product_abstract" phpName="ProductAbstract" refPhpName="SearchRankingProductMetric" onDelete="CASCADE">
+            <reference local="fk_product_abstract" foreign="id_product_abstract"/>
+        </foreign-key>
+
+        <index name="index-spy_srpm-fk_search_ranking_metric">
+            <index-column name="fk_search_ranking_metric"/>
+        </index>
+
+        <index name="index-spy_srpm-fk_product_abstract">
+            <index-column name="fk_product_abstract"/>
+        </index>
+
+        <unique name="spy_srpm-unique-metric-product">
+            <unique-column name="fk_search_ranking_metric"/>
+            <unique-column name="fk_product_abstract"/>
+        </unique>
+    </table>
+
+</database>

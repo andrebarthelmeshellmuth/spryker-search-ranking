@@ -1,0 +1,16 @@
+{% extends '@Gui/Layout/layout.twig' %}
+
+{% set widget_title = 'Product Ranking Values' %}
+{% block section_title %}{{ widget_title }}{% endblock %}
+
+{% block action %}
+    {{ backActionButton('/search-ranking-gui', 'Back to Metrics' | trans) }}
+{% endblock %}
+
+{% block content %}
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Raw and Normalized Values per Product' } %}
+        {% block widget_content %}
+            {{ productMetricTable | raw }}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

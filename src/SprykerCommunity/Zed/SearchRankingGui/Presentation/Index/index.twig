@@ -1,0 +1,17 @@
+{% extends '@Gui/Layout/layout.twig' %}
+
+{% set widget_title = 'Search Ranking Metrics' %}
+{% block section_title %}{{ widget_title }}{% endblock %}
+
+{% block action %}
+    {{ createActionButton('/search-ranking-gui/create', 'Create Metric' | trans) }}
+    {{ viewActionButton('/search-ranking-gui/product-metric', 'View Product Values' | trans) }}
+{% endblock %}
+
+{% block content %}
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'List of Ranking Metrics' } %}
+        {% block widget_content %}
+            {{ metricTable | raw }}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

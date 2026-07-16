@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<transfers xmlns="spryker:transfer-01"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="spryker:transfer-01 http://static.spryker.com/transfer-01.xsd">
+
+    <!-- One ranking metric definition: a named business signal (e.g. pdp_impressions) with the weight
+         it contributes to the final score and the normalization formula that maps raw real-world
+         values into ]0;1]. The formula is a symfony/expression-language expression over the variables
+         x (raw value), min, max, avg, count (per-metric aggregates). -->
+    <transfer name="SearchRankingMetric" strict="true">
+        <property name="idSearchRankingMetric" type="int"/>
+        <property name="name" type="string"/>
+        <property name="weight" type="float"/>
+        <property name="formula" type="string"/>
+        <property name="isActive" type="bool"/>
+    </transfer>
+
+    <transfer name="SearchRankingMetricCollection" strict="true">
+        <property name="metrics" type="SearchRankingMetric[]" singular="metric"/>
+    </transfer>
+
+    <!-- One product-metric data point: the raw real-world value (e.g. 8250 PDP impressions) and the
+         normalized ]0;1] value derived from it by the metric's formula. normalizedValue is null until
+         the normalization cron has processed the row. -->
+    <transfer name="SearchRankingProductMetric" strict="true">
+        <property name="idSearchRankingProductMetric" type="int"/>
+        <property name="fkSearchRankingMetric" type="int"/>
+        <property name="fkProductAbstract" type="int"/>
+        <property name="rawValue" type="float"/>
+        <property name="normalizedValue" type="float"/>
+    </transfer>
+
+    <transfer name="SearchRankingFormulaValidationResponse" strict="true">
+        <property name="isSuccess" type="bool"/>
+        <property name="errorMessage" type="string"/>
+    </transfer>
+
+    <!-- Aggregates of one metric's raw values across all products; exposed to formulas as variables. -->
+    <transfer name="SearchRankingMetricStatistics" strict="true">
+        <property name="minValue" type="float"/>
+        <property name="maxValue" type="float"/>
+        <property name="avgValue" type="float"/>
+        <property name="count" type="int"/>
+    </transfer>
+
+    <transfer name="SearchRankingNormalizationResult" strict="true">
+        <property name="processedMetricCount" type="int"/>
+        <property name="updatedRowCount" type="int"/>
+        <property name="errors" type="string[]" singular="error"/>
+    </transfer>
+
+</transfers>

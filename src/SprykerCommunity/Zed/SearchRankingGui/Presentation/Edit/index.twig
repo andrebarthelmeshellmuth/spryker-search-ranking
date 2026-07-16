@@ -1,0 +1,21 @@
+{% extends '@Gui/Layout/layout.twig' %}
+
+{% set widget_title = 'Edit Ranking Metric: ' ~ metricName %}
+{% block section_title %}{{ widget_title }}{% endblock %}
+
+{% block action %}
+    {{ backActionButton('/search-ranking-gui', 'Back to Metrics' | trans) }}
+{% endblock %}
+
+{% block content %}
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Edit Ranking Metric' } %}
+        {% block widget_content %}
+            {{ form_start(metricForm) }}
+            {{ form_widget(metricForm) }}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">{{ 'Save' | trans }}</button>
+            </div>
+            {{ form_end(metricForm) }}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}
