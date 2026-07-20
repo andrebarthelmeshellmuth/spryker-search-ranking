@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade;
 
+use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 
@@ -25,6 +26,14 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     public function __construct($searchRankingFacade)
     {
         $this->searchRankingFacade = $searchRankingFacade;
+    }
+
+    /**
+     * @return bool
+     */
+    public function normalizeActiveMetricWeights(): bool
+    {
+        return $this->searchRankingFacade->normalizeActiveMetricWeights();
     }
 
     /**
@@ -80,18 +89,57 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     /**
      * @return float
      */
-    public function getScoreFloor(): float
+    public function getRelevanceWeight(): float
     {
-        return $this->searchRankingFacade->getScoreFloor();
+        return $this->searchRankingFacade->getRelevanceWeight();
     }
 
     /**
-     * @param float $scoreFloor
+     * @param float $relevanceWeight
      *
      * @return void
      */
-    public function saveScoreFloor(float $scoreFloor): void
+    public function saveRelevanceWeight(float $relevanceWeight): void
     {
-        $this->searchRankingFacade->saveScoreFloor($scoreFloor);
+        $this->searchRankingFacade->saveRelevanceWeight($relevanceWeight);
+    }
+
+    /**
+     * @return float
+     */
+    public function getRelevanceSaturationPoint(): float
+    {
+        return $this->searchRankingFacade->getRelevanceSaturationPoint();
+    }
+
+    /**
+     * @param float $relevanceSaturationPoint
+     *
+     * @return void
+     */
+    public function saveRelevanceSaturationPoint(float $relevanceSaturationPoint): void
+    {
+        $this->searchRankingFacade->saveRelevanceSaturationPoint($relevanceSaturationPoint);
+    }
+
+    /**
+     * @param int $relevantProductCount
+     * @param string $storeName
+     * @param string $localeName
+     * @param string $csvContent
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer
+     */
+    public function createCalibration(int $relevantProductCount, string $storeName, string $localeName, string $csvContent): SearchRankingCalibrationTransfer
+    {
+        return $this->searchRankingFacade->createCalibration($relevantProductCount, $storeName, $localeName, $csvContent);
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
+     */
+    public function findLatestCalculatedCalibration(): ?SearchRankingCalibrationTransfer
+    {
+        return $this->searchRankingFacade->findLatestCalculatedCalibration();
     }
 }

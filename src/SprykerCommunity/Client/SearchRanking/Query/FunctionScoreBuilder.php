@@ -15,13 +15,24 @@ use Elastica\Script\Script;
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 
 /**
- * Builds the business-signal function_score wrapper:
+ * Builds the business-signal function_score wrapper — a weighted blend of normalized text relevance
+ * and the weighted business signals, both scaled to `[0;1]` before combining:
  *
- *   (1 + sqrt(_score)) * (w_1 * scores.metric_1 + ... + w_n * scores.metric_n + floor)
+ *   relevanceWeight * (_score / (_score + relevanceSaturationPoint))
+ *     + (1 - relevanceWeight) * (w_1 * scores.metric_1 + ... + w_n * scores.metric_n)
  *
- * The sqrt dampens text-relevance differences so business signals can compete; the additive floor
- * keeps products without signals from being multiplied towards zero. Weights and floor are passed
- * as script params, metric names are embedded in the doc-value paths (guarded for missing fields).
+ * Elasticsearch's raw `_score` is unbounded and query-shape-dependent (more/rarer matched terms produce
+ * much higher scores), while business signals are normalized to `[0;1]` by design — combining them
+ * directly (as an older version of this class did, via `(1 + sqrt(_score)) * (signals + baseline)`)
+ * meant the RELATIVE influence of business signals over text relevance drifted unpredictably from query
+ * to query. `_score / (_score + relevanceSaturationPoint)` is the same saturating-curve shape BM25 itself
+ * uses for term-frequency saturation (also known from Michaelis-Menten kinetics): it maps the unbounded
+ * `_score` onto `[0;1)`, reaching exactly 0.5 at `_score == relevanceSaturationPoint`, so both terms of
+ * the blend are finally on the same scale. `relevanceWeight` is then one single, interpretable knob for
+ * how much of the final score comes from text relevance vs. business signals — see this package's
+ * README for the full rationale (and why this replaced an additive "signal baseline" constant). Weights
+ * and both blend constants are passed as script params; metric names are embedded in the doc-value
+ * paths (guarded for missing fields).
  */
 class FunctionScoreBuilder implements FunctionScoreBuilderInterface
 {
@@ -103,10 +114,11 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
             return null;
         }
 
-        $scriptParams['floor'] = (float)$configurationTransfer->getScoreFloor();
+        $scriptParams['relevanceWeight'] = (float)$configurationTransfer->getRelevanceWeight();
+        $scriptParams['relevanceSaturationPoint'] = (float)$configurationTransfer->getRelevanceSaturationPoint();
 
         $source = sprintf(
-            '(1 + Math.sqrt(_score)) * (%s + params.floor)',
+            'params.relevanceWeight * (_score / (_score + params.relevanceSaturationPoint)) + (1 - params.relevanceWeight) * (%s)',
             implode(' + ', $signalTerms),
         );
 

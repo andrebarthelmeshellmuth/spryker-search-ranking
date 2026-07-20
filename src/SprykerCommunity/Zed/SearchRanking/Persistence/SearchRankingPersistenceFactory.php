@@ -9,6 +9,8 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingCalibrationQuery;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingCalibrationSearchTermQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingQuery;
@@ -52,5 +54,21 @@ class SearchRankingPersistenceFactory extends AbstractPersistenceFactory
     public function createSearchRankingMapper(): SearchRankingMapper
     {
         return new SearchRankingMapper();
+    }
+
+    /**
+     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingCalibrationQuery
+     */
+    public function createSearchRankingCalibrationQuery(): SpySearchRankingCalibrationQuery
+    {
+        return SpySearchRankingCalibrationQuery::create();
+    }
+
+    /**
+     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingCalibrationSearchTermQuery
+     */
+    public function createSearchRankingCalibrationSearchTermQuery(): SpySearchRankingCalibrationSearchTermQuery
+    {
+        return SpySearchRankingCalibrationSearchTermQuery::create();
     }
 }

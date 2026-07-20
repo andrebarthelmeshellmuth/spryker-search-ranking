@@ -11,6 +11,7 @@ namespace SprykerCommunity\Zed\SearchRanking;
 
 use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
 use Spryker\Zed\Kernel\Container;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToSearchRankingStorageFacadeBridge;
 
@@ -30,6 +31,11 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
     public const FACADE_SEARCH_RANKING_STORAGE = 'FACADE_SEARCH_RANKING_STORAGE';
 
     /**
+     * @var string
+     */
+    public const CLIENT_SEARCH_RANKING = 'CLIENT_SEARCH_RANKING';
+
+    /**
      * @param \Spryker\Zed\Kernel\Container $container
      *
      * @return \Spryker\Zed\Kernel\Container
@@ -38,6 +44,7 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
     {
         $container = parent::provideBusinessLayerDependencies($container);
         $container = $this->addEventFacade($container);
+        $container = $this->addSearchRankingClient($container);
 
         return $container;
     }
@@ -84,6 +91,26 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
         $container->set(static::FACADE_EVENT, function (Container $container) {
             return new SearchRankingToEventFacadeBridge(
                 $container->getLocator()->event()->facade(),
+            );
+        });
+
+        return $container;
+    }
+
+    /**
+     * Used only by the calibration feature, to fire calibration search queries directly against
+     * Elasticsearch (see `SprykerCommunity\Client\SearchRanking\Search\CalibrationSearcher` for why
+     * `Client\Catalog`/`Client\Search` can't be used for this from Zed).
+     *
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addSearchRankingClient(Container $container): Container
+    {
+        $container->set(static::CLIENT_SEARCH_RANKING, function (Container $container) {
+            return new SearchRankingToSearchRankingClientBridge(
+                $container->getLocator()->searchRanking()->client(),
             );
         });
 

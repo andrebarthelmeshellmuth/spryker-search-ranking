@@ -9,9 +9,13 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 
+use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingCalibration;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingCalibrationSearchTerm;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Spryker\Zed\Kernel\Persistence\AbstractEntityManager;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig;
 
 /**
  * @method \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingPersistenceFactory getFactory()
@@ -87,6 +91,33 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
     }
 
     /**
+     * Updates only the `weight` column directly — deliberately bypasses `saveMetric()`'s mandatory
+     * formula re-validation (see `MetricWriter::saveMetric()`), which is unnecessary work and an
+     * unnecessary failure surface here since the formula itself never changes. Same "narrow, single-field
+     * write" shape as {@see updateNormalizedValues()} above.
+     *
+     * @param array<int, float> $weightsByIdSearchRankingMetric
+     *
+     * @return void
+     */
+    public function updateMetricWeights(array $weightsByIdSearchRankingMetric): void
+    {
+        if ($weightsByIdSearchRankingMetric === []) {
+            return;
+        }
+
+        $metricEntities = $this->getFactory()
+            ->createSearchRankingMetricQuery()
+            ->filterByIdSearchRankingMetric_In(array_keys($weightsByIdSearchRankingMetric))
+            ->find();
+
+        foreach ($metricEntities as $metricEntity) {
+            $metricEntity->setWeight($weightsByIdSearchRankingMetric[$metricEntity->getIdSearchRankingMetric()]);
+            $metricEntity->save();
+        }
+    }
+
+    /**
      * @param string $settingKey
      * @param string $settingValue
      *
@@ -101,5 +132,127 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
 
         $settingEntity->setSettingValue($settingValue);
         $settingEntity->save();
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\SearchRankingCalibrationTransfer $calibrationTransfer
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer
+     */
+    public function createCalibration(SearchRankingCalibrationTransfer $calibrationTransfer): SearchRankingCalibrationTransfer
+    {
+        $calibrationEntity = new SpySearchRankingCalibration();
+        $calibrationEntity->setRelevantProductCount($calibrationTransfer->getRelevantProductCountOrFail());
+        $calibrationEntity->setStoreName($calibrationTransfer->getStoreNameOrFail());
+        $calibrationEntity->setLocaleName($calibrationTransfer->getLocaleNameOrFail());
+        $calibrationEntity->setStatus($calibrationTransfer->getStatus() ?? SearchRankingConfig::CALIBRATION_STATUS_UPLOADED);
+        $calibrationEntity->save();
+
+        foreach ($calibrationTransfer->getSearchTerms() as $searchTermTransfer) {
+            $searchTermEntity = new SpySearchRankingCalibrationSearchTerm();
+            $searchTermEntity->setFkSearchRankingCalibration($calibrationEntity->getIdSearchRankingCalibration());
+            $searchTermEntity->setSearchTerm($searchTermTransfer->getSearchTermOrFail());
+            $searchTermEntity->save();
+
+            $searchTermTransfer
+                ->setIdSearchRankingCalibrationSearchTerm($searchTermEntity->getIdSearchRankingCalibrationSearchTerm())
+                ->setFkSearchRankingCalibration($calibrationEntity->getIdSearchRankingCalibration());
+        }
+
+        return $this->getFactory()
+            ->createSearchRankingMapper()
+            ->mapCalibrationEntityToTransfer($calibrationEntity, $calibrationTransfer);
+    }
+
+    /**
+     * @param int $idSearchRankingCalibration
+     * @param string $status
+     *
+     * @return void
+     */
+    public function updateCalibrationStatus(int $idSearchRankingCalibration, string $status): void
+    {
+        $calibrationEntity = $this->getFactory()
+            ->createSearchRankingCalibrationQuery()
+            ->findOneByIdSearchRankingCalibration($idSearchRankingCalibration);
+
+        if ($calibrationEntity === null) {
+            return;
+        }
+
+        $calibrationEntity->setStatus($status);
+        $calibrationEntity->save();
+    }
+
+    /**
+     * @param int $idSearchRankingCalibrationSearchTerm
+     * @param int $productsFound
+     * @param array<float> $scores
+     *
+     * @return void
+     */
+    public function saveCalibrationSearchTermResult(int $idSearchRankingCalibrationSearchTerm, int $productsFound, array $scores): void
+    {
+        $searchTermEntity = $this->getFactory()
+            ->createSearchRankingCalibrationSearchTermQuery()
+            ->findOneByIdSearchRankingCalibrationSearchTerm($idSearchRankingCalibrationSearchTerm);
+
+        if ($searchTermEntity === null) {
+            return;
+        }
+
+        $searchTermEntity->setProductsFound($productsFound);
+        $searchTermEntity->setScores($this->getFactory()->createSearchRankingMapper()->implodeScores($scores));
+        $searchTermEntity->save();
+    }
+
+    /**
+     * @param int $idSearchRankingCalibration
+     * @param \Generated\Shared\Transfer\SearchRankingCalibrationTransfer $statisticsTransfer
+     *
+     * @return void
+     */
+    public function saveCalibrationStatistics(int $idSearchRankingCalibration, SearchRankingCalibrationTransfer $statisticsTransfer): void
+    {
+        $calibrationEntity = $this->getFactory()
+            ->createSearchRankingCalibrationQuery()
+            ->findOneByIdSearchRankingCalibration($idSearchRankingCalibration);
+
+        if ($calibrationEntity === null) {
+            return;
+        }
+
+        $calibrationEntity->setComputedK($statisticsTransfer->getComputedK());
+        $calibrationEntity->setScoreMin($statisticsTransfer->getScoreMin());
+        $calibrationEntity->setScoreMax($statisticsTransfer->getScoreMax());
+        $calibrationEntity->setScoreMean($statisticsTransfer->getScoreMean());
+        $calibrationEntity->setScoreMedian($statisticsTransfer->getScoreMedian());
+        $calibrationEntity->setScoreP25($statisticsTransfer->getScoreP25());
+        $calibrationEntity->setScoreP75($statisticsTransfer->getScoreP75());
+        $calibrationEntity->setSampleCount($statisticsTransfer->getSampleCount());
+        $calibrationEntity->setCalculatedAt(date('c'));
+        $calibrationEntity->setStatus(SearchRankingConfig::CALIBRATION_STATUS_CALCULATED);
+        $calibrationEntity->save();
+    }
+
+    /**
+     * @param int $idSearchRankingCalibration
+     * @param string $errorMessage
+     *
+     * @return void
+     */
+    public function markCalibrationFailed(int $idSearchRankingCalibration, string $errorMessage): void
+    {
+        $calibrationEntity = $this->getFactory()
+            ->createSearchRankingCalibrationQuery()
+            ->findOneByIdSearchRankingCalibration($idSearchRankingCalibration);
+
+        if ($calibrationEntity === null) {
+            return;
+        }
+
+        $calibrationEntity->setStatus(SearchRankingConfig::CALIBRATION_STATUS_FAILED);
+        $calibrationEntity->setErrorMessage($errorMessage);
+        $calibrationEntity->save();
     }
 }

@@ -9,11 +9,17 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade;
 
+use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 
 interface SearchRankingGuiToSearchRankingFacadeInterface
 {
+    /**
+     * @return bool
+     */
+    public function normalizeActiveMetricWeights(): bool;
+
     /**
      * @param int $idSearchRankingMetric
      *
@@ -52,12 +58,39 @@ interface SearchRankingGuiToSearchRankingFacadeInterface
     /**
      * @return float
      */
-    public function getScoreFloor(): float;
+    public function getRelevanceWeight(): float;
 
     /**
-     * @param float $scoreFloor
+     * @param float $relevanceWeight
      *
      * @return void
      */
-    public function saveScoreFloor(float $scoreFloor): void;
+    public function saveRelevanceWeight(float $relevanceWeight): void;
+
+    /**
+     * @return float
+     */
+    public function getRelevanceSaturationPoint(): float;
+
+    /**
+     * @param float $relevanceSaturationPoint
+     *
+     * @return void
+     */
+    public function saveRelevanceSaturationPoint(float $relevanceSaturationPoint): void;
+
+    /**
+     * @param int $relevantProductCount
+     * @param string $storeName
+     * @param string $localeName
+     * @param string $csvContent
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer
+     */
+    public function createCalibration(int $relevantProductCount, string $storeName, string $localeName, string $csvContent): SearchRankingCalibrationTransfer;
+
+    /**
+     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
+     */
+    public function findLatestCalculatedCalibration(): ?SearchRankingCalibrationTransfer;
 }

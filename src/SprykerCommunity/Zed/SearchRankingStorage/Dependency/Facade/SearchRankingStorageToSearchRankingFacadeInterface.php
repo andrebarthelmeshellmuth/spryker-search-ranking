@@ -21,5 +21,10 @@ interface SearchRankingStorageToSearchRankingFacadeInterface
     /**
      * @return float
      */
-    public function getScoreFloor(): float;
+    public function getRelevanceWeight(): float;
+
+    /**
+     * @return float
+     */
+    public function getRelevanceSaturationPoint(): float;
 }

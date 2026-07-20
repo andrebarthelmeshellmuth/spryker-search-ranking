@@ -37,8 +37,16 @@ class SearchRankingStorageToSearchRankingFacadeBridge implements SearchRankingSt
     /**
      * @return float
      */
-    public function getScoreFloor(): float
+    public function getRelevanceWeight(): float
     {
-        return $this->searchRankingFacade->getScoreFloor();
+        return $this->searchRankingFacade->getRelevanceWeight();
+    }
+
+    /**
+     * @return float
+     */
+    public function getRelevanceSaturationPoint(): float
+    {
+        return $this->searchRankingFacade->getRelevanceSaturationPoint();
     }
 }

@@ -24,6 +24,7 @@ class IndexController extends AbstractController
     {
         return $this->viewResponse([
             'metricTable' => $this->getFactory()->createMetricTable()->render(),
+            'normalizeWeightsForm' => $this->getFactory()->createNormalizeWeightsForm()->createView(),
         ]);
     }
 

@@ -6,6 +6,15 @@
 {% block action %}
     {{ createActionButton('/search-ranking-gui/create', 'Create Metric' | trans) }}
     {{ viewActionButton('/search-ranking-gui/product-metric', 'View Product Values' | trans) }}
+    {# A real POST form (not a plain link, like the two buttons above) — this action WRITES (persists
+       normalized weights into every active metric's weight column), so it needs the same
+       CSRF-protected-POST treatment as the per-row Delete action, not a GET navigation. Materializes on
+       demand the SAME normalization already forced on every publish (see RankingConfigurationStorageWriter
+       in the search-ranking package) into the weight column itself, so what's shown here matches what's
+       actually used — a transparency action, not a correctness requirement. #}
+    {{ form_start(normalizeWeightsForm, {'action': '/search-ranking-gui/normalize-weights', 'attr': {'class': 'd-inline-block', 'style': 'margin-left: 5px;'}}) }}
+        <button type="submit" class="btn btn-default">{{ 'Normalize active weights' | trans }}</button>
+    {{ form_end(normalizeWeightsForm) }}
 {% endblock %}
 
 {% block content %}

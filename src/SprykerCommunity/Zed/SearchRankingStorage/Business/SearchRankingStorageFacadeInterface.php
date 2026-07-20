@@ -15,7 +15,7 @@ interface SearchRankingStorageFacadeInterface
 {
     /**
      * Specification:
-     * - Composes the ranking configuration document (weights of all active metrics + score floor)
+     * - Composes the ranking configuration document (weights of all active metrics + signal baseline)
      *   and writes it to the storage table; the synchronization behavior propagates it to
      *   key-value storage via the sync queue.
      *

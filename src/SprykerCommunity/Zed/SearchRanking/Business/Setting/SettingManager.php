@@ -49,27 +49,54 @@ class SettingManager implements SettingManagerInterface
     /**
      * @return float
      */
-    public function getScoreFloor(): float
+    public function getRelevanceWeight(): float
     {
-        $settingValue = $this->repository->findSettingValue(SharedSearchRankingConfig::SETTING_KEY_SCORE_FLOOR);
+        $settingValue = $this->repository->findSettingValue(SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT);
 
         if ($settingValue === null) {
-            return $this->config->getDefaultScoreFloor();
+            return $this->config->getDefaultRelevanceWeight();
         }
 
         return (float)$settingValue;
     }
 
     /**
-     * @param float $scoreFloor
+     * @param float $relevanceWeight
      *
      * @return void
      */
-    public function saveScoreFloor(float $scoreFloor): void
+    public function saveRelevanceWeight(float $relevanceWeight): void
     {
         $this->entityManager->saveSetting(
-            SharedSearchRankingConfig::SETTING_KEY_SCORE_FLOOR,
-            (string)$scoreFloor,
+            SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT,
+            (string)$relevanceWeight,
+        );
+    }
+
+    /**
+     * @return float
+     */
+    public function getRelevanceSaturationPoint(): float
+    {
+        $settingValue = $this->repository->findSettingValue(SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT);
+
+        if ($settingValue === null) {
+            return $this->config->getDefaultRelevanceSaturationPoint();
+        }
+
+        return (float)$settingValue;
+    }
+
+    /**
+     * @param float $relevanceSaturationPoint
+     *
+     * @return void
+     */
+    public function saveRelevanceSaturationPoint(float $relevanceSaturationPoint): void
+    {
+        $this->entityManager->saveSetting(
+            SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT,
+            (string)$relevanceSaturationPoint,
         );
     }
 }

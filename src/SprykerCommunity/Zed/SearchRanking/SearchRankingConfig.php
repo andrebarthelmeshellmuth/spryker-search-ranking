@@ -42,15 +42,34 @@ class SearchRankingConfig extends AbstractBundleConfig
 
     /**
      * Specification:
-     * - Default additive score floor when none was saved in Zed yet.
+     * - Default blend weight (share of the final score coming from normalized text relevance, vs.
+     *   `(1 - relevanceWeight)` going to business signals) when none was saved in Zed yet. 0.5 is a
+     *   neutral starting split with no prior favoring either side.
      *
      * @api
      *
      * @return float
      */
-    public function getDefaultScoreFloor(): float
+    public function getDefaultRelevanceWeight(): float
     {
         return 0.5;
+    }
+
+    /**
+     * Specification:
+     * - Default relevance saturation point (the raw Elasticsearch `_score` at which normalized text
+     *   relevance reaches 0.5) when none was saved in Zed yet. Chosen from real `_score` values observed
+     *   for this demoshop's own catalog/queries (single/double-term searches typically scored roughly
+     *   4-20) — a starting point to tune from, not a derived constant, since it depends entirely on this
+     *   shop's own field boosts and query patterns.
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getDefaultRelevanceSaturationPoint(): float
+    {
+        return 12.0;
     }
 
     /**

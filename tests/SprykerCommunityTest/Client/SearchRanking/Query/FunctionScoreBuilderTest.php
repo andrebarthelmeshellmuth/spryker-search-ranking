@@ -36,7 +36,8 @@ class FunctionScoreBuilderTest extends Unit
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
             ->setMetricWeights(['top_seller' => 0.5, 'pdp_impressions' => 0.3])
-            ->setScoreFloor(0.5);
+            ->setRelevanceWeight(0.6)
+            ->setRelevanceSaturationPoint(12.0);
 
         // Act
         $functionScore = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer);
@@ -48,11 +49,11 @@ class FunctionScoreBuilderTest extends Unit
         $this->assertSame('first', $functionScoreArray['score_mode']);
 
         $script = $functionScoreArray['functions'][0]['script_score']['script'];
-        $this->assertSame(['w0' => 0.5, 'w1' => 0.3, 'floor' => 0.5], $script['params']);
-        $this->assertStringContainsString('(1 + Math.sqrt(_score))', $script['source']);
+        $this->assertSame(['w0' => 0.5, 'w1' => 0.3, 'relevanceWeight' => 0.6, 'relevanceSaturationPoint' => 12.0], $script['params']);
+        $this->assertStringContainsString('params.relevanceWeight * (_score / (_score + params.relevanceSaturationPoint))', $script['source']);
         $this->assertStringContainsString("params.w0 * ((doc.containsKey('scores.top_seller') && doc['scores.top_seller'].size() > 0) ? doc['scores.top_seller'].value : 0)", $script['source']);
         $this->assertStringContainsString("params.w1 * ((doc.containsKey('scores.pdp_impressions')", $script['source']);
-        $this->assertStringContainsString('+ params.floor)', $script['source']);
+        $this->assertStringContainsString('(1 - params.relevanceWeight) * (', $script['source']);
     }
 
     /**
@@ -63,7 +64,8 @@ class FunctionScoreBuilderTest extends Unit
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
             ->setMetricWeights(['top_seller' => 0.5, 'muted_metric' => 0.0])
-            ->setScoreFloor(0.5);
+            ->setRelevanceWeight(0.6)
+            ->setRelevanceSaturationPoint(12.0);
 
         // Act
         $functionScore = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer);
@@ -71,7 +73,7 @@ class FunctionScoreBuilderTest extends Unit
         // Assert
         $script = $functionScore->toArray()['function_score']['functions'][0]['script_score']['script'];
         $this->assertStringNotContainsString('muted_metric', $script['source']);
-        $this->assertSame(['w0' => 0.5, 'floor' => 0.5], $script['params']);
+        $this->assertSame(['w0' => 0.5, 'relevanceWeight' => 0.6, 'relevanceSaturationPoint' => 12.0], $script['params']);
     }
 
     /**
@@ -85,8 +87,9 @@ class FunctionScoreBuilderTest extends Unit
     {
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
-            ->setMetricWeights(["evil'] + params.floor; //" => 1.0, 'valid_metric' => 0.4])
-            ->setScoreFloor(0.1);
+            ->setMetricWeights(["evil'] + params.relevanceWeight; //" => 1.0, 'valid_metric' => 0.4])
+            ->setRelevanceWeight(0.6)
+            ->setRelevanceSaturationPoint(12.0);
 
         // Act
         $functionScore = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer);
@@ -105,7 +108,8 @@ class FunctionScoreBuilderTest extends Unit
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
             ->setMetricWeights(['muted' => 0.0])
-            ->setScoreFloor(0.5);
+            ->setRelevanceWeight(0.6)
+            ->setRelevanceSaturationPoint(12.0);
 
         // Act
         $functionScore = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer);
@@ -123,7 +127,8 @@ class FunctionScoreBuilderTest extends Unit
         $wrappedQuery = new BoolQuery();
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
             ->setMetricWeights(['top_seller' => 0.5])
-            ->setScoreFloor(0.5);
+            ->setRelevanceWeight(0.6)
+            ->setRelevanceSaturationPoint(12.0);
 
         // Act
         $functionScore = (new FunctionScoreBuilder())->build($wrappedQuery, $configurationTransfer);

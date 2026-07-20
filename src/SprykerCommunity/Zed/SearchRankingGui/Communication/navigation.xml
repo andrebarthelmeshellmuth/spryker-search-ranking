@@ -29,6 +29,21 @@
                 <controller>settings</controller>
                 <action>index</action>
             </search-ranking-settings>
+            <search-ranking-calibration>
+                <label>Calibration</label>
+                <title>Calibration</title>
+                <bundle>search-ranking-gui</bundle>
+                <controller>calibration</controller>
+                <action>index</action>
+            </search-ranking-calibration>
+            <search-ranking-calibration-apply>
+                <label>Apply Calibration</label>
+                <title>Apply Calibration</title>
+                <bundle>search-ranking-gui</bundle>
+                <controller>calibration-apply</controller>
+                <action>index</action>
+                <visible>0</visible>
+            </search-ranking-calibration-apply>
             <search-ranking-create-metric>
                 <label>Create Metric</label>
                 <title>Create Metric</title>

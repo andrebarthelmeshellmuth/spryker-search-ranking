@@ -25,7 +25,12 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     /**
      * @var string
      */
-    protected const KEY_SCORE_FLOOR = 'score_floor';
+    protected const KEY_RELEVANCE_WEIGHT = 'relevance_weight';
+
+    /**
+     * @var string
+     */
+    protected const KEY_RELEVANCE_SATURATION_POINT = 'relevance_saturation_point';
 
     /**
      * @var \SprykerCommunity\Client\SearchRankingStorage\Dependency\Client\SearchRankingStorageToStorageClientInterface
@@ -38,7 +43,11 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     protected SearchRankingStorageToSynchronizationServiceInterface $synchronizationService;
 
     /**
-     * Memoized per request; false = not read yet (null is a valid "no document" result).
+     * Memoized per request; false = not read yet (null is a valid "no document" result). `static`, not
+     * instance-level, matching Spryker core's own client-reader caching convention — safe under the
+     * traditional process-per-request PHP-FPM model this project runs on, but would leak stale
+     * configuration across requests under a persistent-worker runtime (RoadRunner/Swoole), since nothing
+     * ever resets it mid-process.
      *
      * @var \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer|false|null
      */
@@ -87,6 +96,7 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
 
         return (new SearchRankingConfigurationStorageTransfer())
             ->setMetricWeights($configurationData[static::KEY_METRIC_WEIGHTS] ?? [])
-            ->setScoreFloor((float)($configurationData[static::KEY_SCORE_FLOOR] ?? 0.0));
+            ->setRelevanceWeight((float)($configurationData[static::KEY_RELEVANCE_WEIGHT] ?? 0.0))
+            ->setRelevanceSaturationPoint((float)($configurationData[static::KEY_RELEVANCE_SATURATION_POINT] ?? 0.0));
     }
 }

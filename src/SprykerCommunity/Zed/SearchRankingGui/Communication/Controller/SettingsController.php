@@ -34,13 +34,15 @@ class SettingsController extends AbstractController
 
         $settingsForm = $this->getFactory()
             ->getSettingsForm([
-                SettingsForm::FIELD_SCORE_FLOOR => $searchRankingFacade->getScoreFloor(),
+                SettingsForm::FIELD_RELEVANCE_WEIGHT => $searchRankingFacade->getRelevanceWeight(),
+                SettingsForm::FIELD_RELEVANCE_SATURATION_POINT => $searchRankingFacade->getRelevanceSaturationPoint(),
             ])
             ->handleRequest($request);
 
         if ($settingsForm->isSubmitted() && $settingsForm->isValid()) {
             $settingsData = $settingsForm->getData();
-            $searchRankingFacade->saveScoreFloor((float)$settingsData[SettingsForm::FIELD_SCORE_FLOOR]);
+            $searchRankingFacade->saveRelevanceWeight((float)$settingsData[SettingsForm::FIELD_RELEVANCE_WEIGHT]);
+            $searchRankingFacade->saveRelevanceSaturationPoint((float)$settingsData[SettingsForm::FIELD_RELEVANCE_SATURATION_POINT]);
             $this->getFactory()->getSearchRankingStorageFacade()->publishRankingConfiguration();
             $this->addSuccessMessage('Ranking settings were saved.');
 

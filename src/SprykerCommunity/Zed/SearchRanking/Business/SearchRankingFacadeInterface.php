@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business;
 
 use Generated\Shared\Transfer\ProductPageLoadTransfer;
+use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
@@ -39,26 +40,67 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
-     * - Returns the additive score floor for the ranking formula; falls back to the module config
-     *   default when no value was saved yet.
+     * - Returns the blend weight for the ranking formula — the share of the final score coming from
+     *   normalized text relevance, with `(1 - relevanceWeight)` going to business signals; falls back to
+     *   the module config default when no value was saved yet.
      *
      * @api
      *
      * @return float
      */
-    public function getScoreFloor(): float;
+    public function getRelevanceWeight(): float;
 
     /**
      * Specification:
-     * - Persists the additive score floor setting.
+     * - Persists the relevance blend-weight setting.
      *
      * @api
      *
-     * @param float $scoreFloor
+     * @param float $relevanceWeight
      *
      * @return void
      */
-    public function saveScoreFloor(float $scoreFloor): void;
+    public function saveRelevanceWeight(float $relevanceWeight): void;
+
+    /**
+     * Specification:
+     * - Returns the relevance saturation point for the ranking formula — the raw Elasticsearch `_score`
+     *   at which normalized text relevance reaches 0.5; falls back to the module config default when no
+     *   value was saved yet.
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getRelevanceSaturationPoint(): float;
+
+    /**
+     * Specification:
+     * - Persists the relevance saturation-point setting.
+     *
+     * @api
+     *
+     * @param float $relevanceSaturationPoint
+     *
+     * @return void
+     */
+    public function saveRelevanceSaturationPoint(float $relevanceSaturationPoint): void;
+
+    /**
+     * Specification:
+     * - Divides every ACTIVE metric's weight by the sum of all active weights, and persists the result
+     *   into `spy_search_ranking_metric.weight` — the same normalization already forced on every publish
+     *   (see `RankingConfigurationStorageWriter`), made visible in the Zed metric list on demand.
+     * - Not a correctness requirement — the published/ranking-time weights are already normalized
+     *   regardless of whether this was ever called. Purely a transparency action.
+     * - Does nothing (no write) when there are no active metrics, all active weights are 0, or the
+     *   active weights already sum to 1 — safe to call repeatedly.
+     *
+     * @api
+     *
+     * @return bool True when weights actually changed and were persisted; false when nothing needed to change.
+     */
+    public function normalizeActiveMetricWeights(): bool;
 
     /**
      * Specification:
@@ -165,4 +207,47 @@ interface SearchRankingFacadeInterface
      * @return int
      */
     public function publishScoredProductAbstracts(): int;
+
+    /**
+     * Specification:
+     * - Parses $csvContent (one search term per line) and creates a new calibration run in
+     *   status=uploaded, with one child row per parsed, deduplicated search term.
+     * - Fires no search queries — {@see runNextCalibration()} does that, on its own schedule.
+     *
+     * @api
+     *
+     * @param int $relevantProductCount
+     * @param string $storeName
+     * @param string $localeName
+     * @param string $csvContent
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer
+     */
+    public function createCalibration(int $relevantProductCount, string $storeName, string $localeName, string $csvContent): SearchRankingCalibrationTransfer;
+
+    /**
+     * Specification:
+     * - Picks the newest calibration run in status=uploaded (if any), marks every OTHER uploaded run as
+     *   status=skipped, then fires the real, fully-wired catalog search-string query for each of its
+     *   search terms and pools the resulting raw text-relevance scores into the run's statistics.
+     * - Sets status=calculated on success, status=failed (with errorMessage) when not a single score
+     *   could be collected.
+     * - Returns null when there was no uploaded run to process.
+     *
+     * @api
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
+     */
+    public function runNextCalibration(): ?SearchRankingCalibrationTransfer;
+
+    /**
+     * Specification:
+     * - Returns the most recently finished (status=calculated) calibration run, or null when none has
+     *   ever finished.
+     *
+     * @api
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
+     */
+    public function findLatestCalculatedCalibration(): ?SearchRankingCalibrationTransfer;
 }

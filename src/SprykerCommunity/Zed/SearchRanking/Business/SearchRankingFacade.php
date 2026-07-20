@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business;
 
 use Generated\Shared\Transfer\ProductPageLoadTransfer;
+use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
@@ -54,9 +55,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return float
      */
-    public function getScoreFloor(): float
+    public function getRelevanceWeight(): float
     {
-        return $this->getFactory()->createSettingManager()->getScoreFloor();
+        return $this->getFactory()->createSettingManager()->getRelevanceWeight();
     }
 
     /**
@@ -64,13 +65,51 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @api
      *
-     * @param float $scoreFloor
+     * @param float $relevanceWeight
      *
      * @return void
      */
-    public function saveScoreFloor(float $scoreFloor): void
+    public function saveRelevanceWeight(float $relevanceWeight): void
     {
-        $this->getFactory()->createSettingManager()->saveScoreFloor($scoreFloor);
+        $this->getFactory()->createSettingManager()->saveRelevanceWeight($relevanceWeight);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getRelevanceSaturationPoint(): float
+    {
+        return $this->getFactory()->createSettingManager()->getRelevanceSaturationPoint();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param float $relevanceSaturationPoint
+     *
+     * @return void
+     */
+    public function saveRelevanceSaturationPoint(float $relevanceSaturationPoint): void
+    {
+        $this->getFactory()->createSettingManager()->saveRelevanceSaturationPoint($relevanceSaturationPoint);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return bool
+     */
+    public function normalizeActiveMetricWeights(): bool
+    {
+        return $this->getFactory()->createWeightNormalizer()->normalizeActiveWeights();
     }
 
     /**
@@ -179,5 +218,46 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     public function publishScoredProductAbstracts(): int
     {
         return $this->getFactory()->createProductAbstractScorePublisher()->publishScoredProductAbstracts();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param int $relevantProductCount
+     * @param string $storeName
+     * @param string $localeName
+     * @param string $csvContent
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer
+     */
+    public function createCalibration(int $relevantProductCount, string $storeName, string $localeName, string $csvContent): SearchRankingCalibrationTransfer
+    {
+        return $this->getFactory()->createCalibrationUploadHandler()->createCalibration($relevantProductCount, $storeName, $localeName, $csvContent);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
+     */
+    public function runNextCalibration(): ?SearchRankingCalibrationTransfer
+    {
+        return $this->getFactory()->createScoreCalibrator()->runNextCalibration();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
+     */
+    public function findLatestCalculatedCalibration(): ?SearchRankingCalibrationTransfer
+    {
+        return $this->getRepository()->findLatestCalculatedCalibration();
     }
 }

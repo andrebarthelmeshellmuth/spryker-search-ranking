@@ -10,25 +10,53 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking\Debug;
 
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
+use SprykerCommunity\Shared\SearchDebug\SearchDebugConfig;
 
 /**
  * Builds the business-signal breakdown section for the search-debug SRP overlay: one line per
- * weighted metric (normalized signal × weight = contribution), the score floor, their sum, and —
- * when the wrapped query's own relevance score is known — the full combination formula, so the
- * final `_score` is reproducible by eye:
+ * weighted metric (normalized signal × weight = contribution), their sum, and — when the wrapped
+ * query's own relevance score is known — the saturation-point/normalization/weight lines plus the full
+ * blend formula, so the final `_score` is reproducible by eye:
  *
- *   top_seller: 0.5099 × 0.50 = 0.2550
- *   pdp_impressions: 0.2033 × 0.30 = 0.0610
- *   score floor: 0.5000
- *   Business signal total: 0.8160
- *   (1 + √6.9244) × 0.8160 = 2.9634
+ *   top_seller: 0.51 × 0.50 = 0.26
+ *   pdp_impressions: 0.20 × 0.30 = 0.06
+ *   Business signal total: 0.32
+ *   Saturation point (k): 12.00
+ *   |--> Normalized (score/(score+k)): 0.37
+ *   Relevance weight (α): 0.50
+ *   0.50 × 0.37 + (1 - 0.50) × 0.32 =
+ *
+ * The formula deliberately stops at "=" without repeating the result — the search-debug overlay
+ * already shows that same number right below, as the final score. Spelling it out twice would just be
+ * redundant. It plugs in the ALREADY-shown `Normalized (score/(score+k))` value directly rather than
+ * repeating the `queryScore / (queryScore + relevanceSaturationPoint)` sub-expression inline — that
+ * expression has its own line right above for exactly this reason. The `(1 - relevanceWeight)` half is
+ * spelled out literally (not pre-subtracted into a single number) so it stays visibly tied to the
+ * `relevanceWeight` value shown just above the formula, rather than reading as some other, unexplained
+ * constant.
+ *
+ * `relevanceWeight` and `relevanceSaturationPoint` (see {@see \SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder}
+ * for the full rationale) get their own labeled lines (using the same α/k shorthand the README's
+ * formula uses) rather than only ever appearing as literal numbers plugged into the formula — unlike a
+ * metric's own weight, which stays inline in "signal × weight = contribution" only.
+ *
+ * Every number here is rounded to {@see SearchDebugConfig::SCORE_DECIMAL_PLACES} — the SAME constant
+ * the search-debug overlay itself uses for every other number it shows (`_score`, matched-token
+ * weights, other contributions), so the whole overlay reads at one consistent precision. This class
+ * only exists to feed that overlay (registered via the optional `ProductDebugDataExpanderPluginInterface`
+ * integration — see spryker-community/search-debug), so depending on its Shared config here is an
+ * intentional, feature-level coupling, not an accident.
  */
 class ScoreSectionBuilder implements ScoreSectionBuilderInterface
 {
     /**
+     * "random" is a deliberately non-business-driven metric (a noise baseline for comparison, see
+     * fixtures) — kept last in the display order so the metrics that actually explain *why* a product
+     * ranked where it did read first, with the noise metric trailing rather than interleaved among them.
+     *
      * @var string
      */
-    protected const KEY_SCORE_FLOOR_LABEL = 'score floor';
+    protected const METRIC_NAME_RANDOM = 'random';
 
     /**
      * @var string
@@ -39,6 +67,21 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
      * @var string
      */
     protected const SUMMARY_LABEL = 'Business signal total';
+
+    /**
+     * @var string
+     */
+    protected const RELEVANCE_SATURATION_POINT_LABEL = 'Saturation point (k)';
+
+    /**
+     * @var string
+     */
+    protected const NORMALIZED_RELEVANCE_LABEL = '|--> Normalized (score/(score+k))';
+
+    /**
+     * @var string
+     */
+    protected const RELEVANCE_WEIGHT_LABEL = 'Relevance weight (α)';
 
     /**
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
@@ -54,6 +97,7 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
     ): ?array {
         $lines = [];
         $signalTotal = 0.0;
+        $decimalFormat = '%.' . SearchDebugConfig::SCORE_DECIMAL_PLACES . 'f';
 
         foreach ($configurationTransfer->getMetricWeights() as $metricName => $weight) {
             $weight = (float)$weight;
@@ -63,7 +107,7 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
 
             $lines[] = [
                 'label' => (string)$metricName,
-                'calculation' => sprintf('%.4f × %.2f', $signal, $weight),
+                'calculation' => sprintf($decimalFormat . ' × ' . $decimalFormat, $signal, $weight),
                 'value' => $contribution,
             ];
         }
@@ -72,14 +116,7 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
             return null;
         }
 
-        $scoreFloor = (float)$configurationTransfer->getScoreFloor();
-        $signalTotal += $scoreFloor;
-
-        $lines[] = [
-            'label' => static::KEY_SCORE_FLOOR_LABEL,
-            'calculation' => '',
-            'value' => $scoreFloor,
-        ];
+        $lines = $this->withRandomMetricLast($lines);
 
         $section = [
             'title' => static::SECTION_TITLE,
@@ -89,14 +126,58 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
         ];
 
         if ($queryScore !== null && $queryScore >= 0) {
-            $section['formula'] = sprintf(
-                '(1 + √%.4f) × %.4f = %.4f',
-                $queryScore,
+            $relevanceWeight = (float)$configurationTransfer->getRelevanceWeight();
+            $relevanceSaturationPoint = (float)$configurationTransfer->getRelevanceSaturationPoint();
+            // $relevanceSaturationPoint is always > 0 (Zed form enforces GreaterThan(0)), so this never
+            // divides by zero even when $queryScore is 0.
+            $normalizedRelevance = $queryScore / ($queryScore + $relevanceSaturationPoint);
+
+            $section['relevanceSaturationPointLabel'] = static::RELEVANCE_SATURATION_POINT_LABEL;
+            $section['relevanceSaturationPointValue'] = $relevanceSaturationPoint;
+            $section['normalizedRelevanceLabel'] = static::NORMALIZED_RELEVANCE_LABEL;
+            $section['normalizedRelevanceValue'] = $normalizedRelevance;
+            $section['relevanceWeightLabel'] = static::RELEVANCE_WEIGHT_LABEL;
+            $section['relevanceWeightValue'] = $relevanceWeight;
+
+            // Plugs in $normalizedRelevance directly (already shown on its own line above) instead of
+            // repeating "queryScore / (queryScore + relevanceSaturationPoint)" inline, and spells out
+            // "(1 - relevanceWeight)" literally rather than pre-subtracting it into a single number — so
+            // the second term stays visibly tied to the relevanceWeight value shown just above. Stops at
+            // "=" rather than also computing/showing the result — the search-debug overlay already shows
+            // that same number right below, as the final score; repeating it here would just be
+            // redundant.
+            $section['formulaCalculation'] = sprintf(
+                $decimalFormat . ' × ' . $decimalFormat . ' + (1 - ' . $decimalFormat . ') × ' . $decimalFormat,
+                $relevanceWeight,
+                $normalizedRelevance,
+                $relevanceWeight,
                 $signalTotal,
-                (1 + sqrt($queryScore)) * $signalTotal,
             );
         }
 
         return $section;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $lines
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function withRandomMetricLast(array $lines): array
+    {
+        $orderedLines = [];
+        $randomLines = [];
+
+        foreach ($lines as $line) {
+            if ($line['label'] === static::METRIC_NAME_RANDOM) {
+                $randomLines[] = $line;
+
+                continue;
+            }
+
+            $orderedLines[] = $line;
+        }
+
+        return array_merge($orderedLines, $randomLines);
     }
 }

@@ -14,12 +14,24 @@ interface SettingManagerInterface
     /**
      * @return float
      */
-    public function getScoreFloor(): float;
+    public function getRelevanceWeight(): float;
 
     /**
-     * @param float $scoreFloor
+     * @param float $relevanceWeight
      *
      * @return void
      */
-    public function saveScoreFloor(float $scoreFloor): void;
+    public function saveRelevanceWeight(float $relevanceWeight): void;
+
+    /**
+     * @return float
+     */
+    public function getRelevanceSaturationPoint(): float;
+
+    /**
+     * @param float $relevanceSaturationPoint
+     *
+     * @return void
+     */
+    public function saveRelevanceSaturationPoint(float $relevanceSaturationPoint): void;
 }
