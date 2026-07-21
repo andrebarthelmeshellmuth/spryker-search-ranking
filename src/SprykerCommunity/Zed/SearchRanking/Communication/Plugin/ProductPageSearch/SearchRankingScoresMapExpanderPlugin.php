@@ -43,7 +43,7 @@ class SearchRankingScoresMapExpanderPlugin extends AbstractPlugin implements Pro
         PageMapBuilderInterface $pageMapBuilder,
         array $productData,
         LocaleTransfer $localeTransfer,
-    ) {
+    ): PageMapTransfer {
         // phpcs:enable SlevomatCodingStandard.Functions.UnusedParameter
         $scores = $productData[SharedSearchRankingConfig::PAGE_INDEX_FIELD_SCORES] ?? [];
 

@@ -34,7 +34,7 @@ class SearchRankingScoresDataExpanderPlugin extends AbstractPlugin implements Pr
      *
      * @return void
      */
-    public function expandProductPageData(array $productData, ProductPageSearchTransfer $productAbstractPageSearchTransfer)
+    public function expandProductPageData(array $productData, ProductPageSearchTransfer $productAbstractPageSearchTransfer): void
     {
         $productAbstractPageSearchTransfer->setScores(
             $this->getProductPayloadTransfer($productData)->getSearchRankingScores(),

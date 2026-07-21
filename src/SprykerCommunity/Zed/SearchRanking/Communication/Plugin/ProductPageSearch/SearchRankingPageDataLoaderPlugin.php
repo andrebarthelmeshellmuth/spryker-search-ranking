@@ -32,7 +32,7 @@ class SearchRankingPageDataLoaderPlugin extends AbstractPlugin implements Produc
      *
      * @return \Generated\Shared\Transfer\ProductPageLoadTransfer
      */
-    public function expandProductPageDataTransfer(ProductPageLoadTransfer $productPageLoadTransfer)
+    public function expandProductPageDataTransfer(ProductPageLoadTransfer $productPageLoadTransfer): ProductPageLoadTransfer
     {
         return $this->getFacade()->expandProductPageLoadTransferWithScores($productPageLoadTransfer);
     }

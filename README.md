@@ -94,7 +94,7 @@ closed-form curve-fit suggestions. See [Roadmap](#roadmap).
   directly rather than repeating `score / (score + k)` inline, and spells out `(1 - α)` literally
   instead of pre-subtracting it into a single number, so it stays visibly tied to the `α` line just
   above it. Every number in that section is rounded to
-  `SprykerCommunity\Shared\SearchDebug\SearchDebugConfig::SCORE_DECIMAL_PLACES` (default **2**) — the
+  `SprykerCommunity\Shared\SearchDebug\SearchDebugConfig::SCORE_DECIMAL_PLACES` (default **3**) — the
   same constant search-debug's own overlay numbers use, so the whole page shows one consistent
   precision; see that package's README for details. Rounding happens only at this display step — the
   underlying floats used for the actual ranking calculation stay full-precision throughout.
@@ -206,8 +206,14 @@ misbehaving formula cannot poison the data with zeros, negatives, `NaN` or `INF`
 ## Requirements
 
 - Spryker B2B/B2C/Marketplace shop
-- PHP >= 8.2
+- PHP >= 8.3
 - `symfony/expression-language` ^6 or ^7 (usually already present transitively)
+
+Dependency floors are verified, not guessed: `composer check-floors` resolves the declared constraints to
+their oldest allowed versions, and every vendor symbol the package references is checked to exist in that
+tree. PHP 8.2 is *not* supported — every `spryker/propel-orm` release that resolves under
+`minimum-stability: stable` (the ones with a real, non-beta `propel/propel` dependency) requires PHP
+>= 8.3.
 
 ## Installation
 
@@ -439,7 +445,45 @@ Example files ship in this package under `data/import/`.
 - [ ] **Phase 5** — live weight-tuning sliders on the SRP for privileged admins ("weltherrschaftformula")
 - [ ] **Phase 6** — learning-rate based weight adoption with audit log and rollback
 
-## Testing
+## Testing and CI
+
+### Automated checks
+
+`.github/workflows/ci.yml` runs on every push and pull request:
+
+| check | what it protects |
+|---|---|
+| `composer validate` | the manifest stays well-formed |
+| `phpcs` (PHP 8.3, 8.4) | coding standard, via this package's own `phpcs.xml` |
+| `composer check-floors` (PHP 8.3, 8.4) | the declared dependency floors are real |
+
+`check-floors` is the one worth understanding. This package's `require` constraints are a promise about
+which Spryker versions an adopter may install — and that promise is exactly what a development shop
+cannot verify, because a full demo shop has every Spryker module present regardless of what this package
+declares. A missing declaration only surfaces on a leaner shop, as a fatal, after installation.
+
+So the check resolves every constraint to its **oldest** allowed version (`composer update
+--prefer-lowest --prefer-stable --no-dev`) and then asserts that every vendor symbol used in `src/`
+actually exists in that tree. It exits non-zero if not. Run it locally the same way:
+
+```bash
+composer check-floors
+```
+
+It reports three categories: resolved, host-generated (`Generated\*` transfer classes from
+`transfer:generate`, and `Orm\*` Propel classes from `propel:install` — both build artifacts of the host
+project, correctly absent from any vendor tree), and optional-absent (symbols from the `suggest`ed
+`spryker-community/search-debug`, whose every use — `ScoreSectionBuilder`,
+`SearchRankingProductDebugDataExpanderPlugin` — is guarded by that package never being autoloaded/wired
+unless a project deliberately installs and registers both).
+
+This audit is what caught two real, otherwise-invisible problems: an undeclared dependency on
+`spryker/catalog` (needed a floor of `^5.7.0` specifically — versions below that still construct Elastica's
+`Match` query class by its pre-PHP-8 name, a hard parse error under PHP 8.3+), and a `php >= 8.2` claim
+that was actually false — every `spryker/propel-orm` release resolvable under `minimum-stability: stable`
+(the ones depending on a real, non-beta `propel/propel`) requires PHP >= 8.3.
+
+### Test suite
 
 From a shop that has the package installed:
 
@@ -457,6 +501,13 @@ order-independence) and the curve fitter (a linearly-spread digest recovers a ne
 fit, a saturating digest fits clearly better than linear, `isHigherBetter=false` swaps in the decay
 candidate) as pure unit tests — no database needed. The Client suite lives at
 `tests/SprykerCommunityTest/Client/SearchRanking`.
+
+For that reason the suites are **not** part of CI: a clean runner has neither a Spryker shop nor a search
+cluster, and standing both up per build would cost far more than it returns. CI therefore covers the
+static guarantees; the test suite is run against a real shop before a release.
+
+Static analysis (`phpstan`) is likewise run from a host shop rather than in CI: it needs the generated
+`Generated\Shared\Transfer\*` classes, which only exist once a project has run `transfer:generate`.
 
 ## License
 

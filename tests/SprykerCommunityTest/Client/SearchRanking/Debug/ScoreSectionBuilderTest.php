@@ -49,7 +49,7 @@ class ScoreSectionBuilderTest extends Unit
         $this->assertCount(2, $section['lines']);
 
         $this->assertSame('top_seller', $section['lines'][0]['label']);
-        $this->assertSame('0.51 × 0.50', $section['lines'][0]['calculation']);
+        $this->assertSame('0.510 × 0.500', $section['lines'][0]['calculation']);
         $this->assertEqualsWithDelta(0.25495, $section['lines'][0]['value'], 1.0E-9);
 
         // The total sums the weighted metric contributions only — relevanceWeight/relevanceSaturationPoint
@@ -78,7 +78,7 @@ class ScoreSectionBuilderTest extends Unit
         $section = (new ScoreSectionBuilder())->build($configurationTransfer, [], null);
 
         // Assert
-        $this->assertSame('0.00 × 0.50', $section['lines'][0]['calculation']);
+        $this->assertSame('0.000 × 0.500', $section['lines'][0]['calculation']);
         $this->assertSame(0.0, $section['lines'][0]['value']);
         $this->assertSame(0.0, $section['summaryValue']);
     }
@@ -107,10 +107,10 @@ class ScoreSectionBuilderTest extends Unit
         $this->assertSame(0.6, $section['relevanceWeightValue']);
 
         // Plugs in the already-shown normalizedRelevance value directly (rounded to SCORE_DECIMAL_PLACES,
-        // 2) and spells out "(1 - relevanceWeight)" literally instead of pre-subtracting it into a single
+        // 3) and spells out "(1 - relevanceWeight)" literally instead of pre-subtracting it into a single
         // number. Stops at the calculation, no result — the overlay's "Final score" line shows that same
         // number, so repeating it here would be redundant.
-        $this->assertSame('0.60 × 0.37 + (1 - 0.60) × 0.25', $section['formulaCalculation']);
+        $this->assertSame('0.600 × 0.366 + (1 - 0.600) × 0.250', $section['formulaCalculation']);
     }
 
     /**
@@ -134,7 +134,7 @@ class ScoreSectionBuilderTest extends Unit
 
         // Assert: the per-metric breakdown and total are still built, only the relevance/formula fields
         // (which would need a valid, non-negative queryScore) are left out.
-        $this->assertSame('0.50 × 0.50', $section['lines'][0]['calculation']);
+        $this->assertSame('0.500 × 0.500', $section['lines'][0]['calculation']);
         $this->assertArrayNotHasKey('relevanceSaturationPointLabel', $section);
         $this->assertArrayNotHasKey('normalizedRelevanceValue', $section);
         $this->assertArrayNotHasKey('formulaCalculation', $section);

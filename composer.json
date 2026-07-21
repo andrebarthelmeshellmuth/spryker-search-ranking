@@ -12,7 +12,8 @@
         "business-signals"
     ],
     "require": {
-        "php": ">=8.2",
+        "php": ">=8.3",
+        "spryker/catalog": "^5.7.0",
         "spryker/data-import": "^1.18.0",
         "spryker/event": "^2.2.0",
         "spryker/gui": "^3.30.0 || ^5.0.0",
@@ -20,7 +21,7 @@
         "spryker/product": "^6.0.0",
         "spryker/product-page-search": "^3.0.0",
         "spryker/product-page-search-extension": "^1.3.0",
-        "spryker/propel-orm": "^1.16.0",
+        "spryker/propel-orm": "^1.24.0",
         "spryker/search-elasticsearch": "^1.10.0",
         "spryker/search-extension": "^1.2.0",
         "spryker/storage": "^3.4.0",
@@ -35,11 +36,28 @@
     },
     "require-dev": {
         "codeception/codeception": "^5.0.0",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0.0",
         "phpunit/phpunit": "^10.0.0 || ^11.0.0",
-        "spryker-community/search-debug": "*"
+        "spryker-community/search-debug": "dev-main",
+        "spryker/code-sniffer": "^0.17.30"
     },
     "suggest": {
         "spryker-community/search-debug": "Adds a business-signal score breakdown section to the search-debug SRP overlay (SearchRankingProductDebugDataExpanderPlugin)."
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/andrebarthelmeshellmuth/spryker-search-debugger"
+        }
+    ],
+    "scripts": {
+        "check-floors": [
+            "@composer update --prefer-lowest --prefer-stable --no-dev --no-interaction",
+            "php tools/floor-check.php"
+        ]
+    },
+    "scripts-descriptions": {
+        "check-floors": "Verifies the declared dependency floors are real: resolves every constraint to its oldest allowed version (production deps only) and asserts each vendor symbol used in src/ actually exists there."
     },
     "autoload": {
         "psr-4": {
@@ -52,7 +70,10 @@
         }
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     },
     "minimum-stability": "stable",
     "homepage": "https://github.com/andrebarthelmeshellmuth/spryker-search-ranking",
