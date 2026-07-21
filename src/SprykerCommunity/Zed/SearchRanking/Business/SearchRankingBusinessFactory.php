@@ -37,6 +37,8 @@ use SprykerCommunity\Zed\SearchRanking\Business\Preview\FormulaPreviewBuilder;
 use SprykerCommunity\Zed\SearchRanking\Business\Preview\FormulaPreviewBuilderInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisher;
 use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisherInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Randomizer\MetricRandomizer;
+use SprykerCommunity\Zed\SearchRanking\Business\Randomizer\MetricRandomizerInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManager;
 use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientInterface;
@@ -221,6 +223,19 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
             $this->getRepository(),
             $this->createFormulaEvaluator(),
             $this->createNormalizationCurveFitter(),
+        );
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Business\Randomizer\MetricRandomizerInterface
+     */
+    public function createMetricRandomizer(): MetricRandomizerInterface
+    {
+        return new MetricRandomizer(
+            $this->getRepository(),
+            $this->createProductMetricNormalizer(),
+            $this->createProductAbstractScorePublisher(),
+            $this->getConfig()->getRandomMetricName(),
         );
     }
 }

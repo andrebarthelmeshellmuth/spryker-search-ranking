@@ -114,6 +114,41 @@ class ProductMetricNormalizerTest extends Unit
     }
 
     /**
+     * The random tie-breaker metric (named per {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getRandomMetricName()})
+     * is refreshed on its own nightly cadence by `MetricRandomizer` instead — this hourly loop must never
+     * touch it, active or not.
+     *
+     * @return void
+     */
+    public function testSkipsTheRandomTieBreakerMetricEntirely(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())
+            ->setIdSearchRankingMetric(3)
+            ->setName('random')
+            ->setWeight(0.2)
+            ->setFormula('random()')
+            ->setIsActive(true);
+
+        $repositoryMock = $this->createRepositoryMock($metricTransfer, [
+            $this->createProductMetricTransfer(31, 0.0, 3),
+        ], $this->createStatistics(0.0, 0.0, 0.0, 1));
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->expects($this->never())->method('updateNormalizedValues');
+
+        $normalizer = $this->createNormalizer($repositoryMock, $entityManagerMock);
+
+        // Act
+        $resultTransfer = $normalizer->normalize();
+
+        // Assert
+        $this->assertSame(0, $resultTransfer->getProcessedMetricCount());
+        $this->assertSame(0, $resultTransfer->getUpdatedRowCount());
+        $this->assertSame([], $resultTransfer->getErrors());
+    }
+
+    /**
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param array<\Generated\Shared\Transfer\SearchRankingProductMetricTransfer> $productMetricTransfers
      * @param \Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer $statisticsTransfer

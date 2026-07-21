@@ -295,4 +295,21 @@ interface SearchRankingFacadeInterface
      * @return \Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer
      */
     public function previewFormula(int $idSearchRankingMetric, string $formula, bool $isHigherBetter): SearchRankingFormulaPreviewTransfer;
+
+    /**
+     * Specification:
+     * - Does nothing and returns false when the configured random-tie-breaker metric
+     *   ({@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getRandomMetricName()}) does not
+     *   exist or is not active.
+     * - Otherwise re-normalizes every one of its product-metric rows (producing fresh values, since its
+     *   formula is expected to ignore the raw value it's given) and republishes every scored product so
+     *   the new values reach Elasticsearch, then returns true.
+     * - Intended for a nightly cron, separate from and independent of {@see normalizeProductMetricValues()}'s
+     *   hourly cadence, which deliberately skips this same metric.
+     *
+     * @api
+     *
+     * @return bool
+     */
+    public function randomizeRandomMetricIfActive(): bool;
 }

@@ -103,4 +103,25 @@ class SearchRankingConfig extends AbstractBundleConfig
             'count' => 10,
         ];
     }
+
+    /**
+     * Specification:
+     * - Name of the metric treated as the random tie-breaker signal.
+     * - `ProductMetricNormalizer::normalize()` (the hourly cron) deliberately skips this metric — it is
+     *   refreshed on its own nightly cadence instead, by `search-ranking:randomize`
+     *   (`MetricRandomizer::randomizeIfActive()`). Reshuffling a tie-breaker every hour would make search
+     *   result order visibly churn for a shopper who searches again shortly after; nightly is frequent
+     *   enough to keep ties from calcifying into a permanent order without looking unstable.
+     * - The metric itself is not otherwise special-cased: its formula is expected to be `random()`, but
+     *   nothing here enforces that — a project could name a different metric here, with a different
+     *   formula, and get the same "own nightly cadence, skipped by the hourly loop" treatment.
+     *
+     * @api
+     *
+     * @return string
+     */
+    public function getRandomMetricName(): string
+    {
+        return 'random';
+    }
 }

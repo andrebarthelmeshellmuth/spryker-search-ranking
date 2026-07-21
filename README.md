@@ -54,13 +54,23 @@ closed-form curve-fit suggestions. See [Roadmap](#roadmap).
   `search-ranking-product-metric` (resolves metric name + abstract SKU to foreign keys, writes raw
   values only — normalized values are never imported).
 - **Normalization cron**: `vendor/bin/console search-ranking:normalize` recalculates every
-  normalized value of every active metric in batches. A metric whose formula fails to evaluate is
-  skipped and reported (non-zero exit code) without aborting the run for the other metrics. As a
-  byproduct, it also rebuilds each active metric's **distribution digest**
-  (`spy_search_ranking_metric_digest`): min/max/mean/median plus a 101-point empirical-CDF backbone
-  (percentiles 0, 1, 2, ..., 100), computed by sorting that metric's raw values once — this is the data
-  the normalization-authoring preview above reads, so it never has to touch the raw per-product rows
-  directly, however many there are.
+  normalized value of every active metric **except the random tie-breaker metric** (see below) in
+  batches. A metric whose formula fails to evaluate is skipped and reported (non-zero exit code)
+  without aborting the run for the other metrics. As a byproduct, it also rebuilds each active metric's
+  **distribution digest** (`spy_search_ranking_metric_digest`): min/max/mean/median plus a 101-point
+  empirical-CDF backbone (percentiles 0, 1, 2, ..., 100), computed by sorting that metric's raw values
+  once — this is the data the normalization-authoring preview above reads, so it never has to touch the
+  raw per-product rows directly, however many there are.
+- **Random tie-breaker cron**: `vendor/bin/console search-ranking:randomize` is a separate, nightly
+  command that reshuffles ONE metric — the one configured as the random tie-breaker
+  (`SearchRankingConfig::getRandomMetricName()`, `random` by default) — and republishes affected
+  products, on its own cadence, independent of the hourly normalize run above. It is a deliberate no-op
+  (exit 0, no work done) whenever that metric does not exist or is not active, so it is always safe to
+  keep scheduled regardless of whether the metric happens to be turned on. Kept separate from the hourly
+  cron because reshuffling a tie-breaker every hour would make search result order visibly churn for a
+  shopper who searches again shortly after — nightly is frequent enough to keep ties from calcifying into
+  a permanent order without looking unstable. Reuses the same full-republish path as every other score
+  update; see [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update).
 - **Elasticsearch export**: the package ships a `page.json` fragment defining a dynamic `scores`
   object field (per Spryker's data-driven-ranking best practice) and a ProductPageSearch plugin trio
   — bulk data loader, data expander, map expander — that writes each product's normalized values
@@ -219,8 +229,12 @@ product row these variables are available:
 
 Registered functions: `atan`, `tanh`, `log`, `log10`, `sqrt`, `exp`, `abs`, `pi`, `pow`, `round`,
 `min`, `max` (all delegating to the PHP natives) and `random()` — uniform in ]0;1], ignores `x`.
-The demo `random` metric is therefore not a special case anywhere in the code: its formula is
-literally `random()`.
+The demo `random` metric is therefore not a special case anywhere in the *formula* code: its formula is
+literally `random()`. It IS special-cased one level up, in scheduling: `search-ranking:normalize` (the
+hourly cron above) skips whichever metric is configured as the random tie-breaker, and a separate
+`search-ranking:randomize` cron refreshes only that one, nightly — see
+[What it does today](#what-it-does-today) and
+[Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update).
 
 Examples:
 
@@ -237,7 +251,7 @@ misbehaving formula cannot poison the data with zeros, negatives, `NaN` or `INF`
 
 | Module | Purpose |
 | --- | --- |
-| `SearchRanking` (Zed) | Propel schema, facade (CRUD, settings, formula validation, normalization, ES export/publish), expression evaluator, distribution-digest builder, curve-fit suggester, formula-preview builder, ProductPageSearch export plugins, `search-ranking:normalize` console command |
+| `SearchRanking` (Zed) | Propel schema, facade (CRUD, settings, formula validation, normalization, ES export/publish), expression evaluator, distribution-digest builder, curve-fit suggester, formula-preview builder, ProductPageSearch export plugins, `search-ranking:normalize` / `search-ranking:randomize` console commands |
 | `SearchRanking` (Client) | `SearchRankingFunctionScoreQueryExpanderPlugin` + painless script builder |
 | `SearchRankingGui` | Zed UI controllers, tables, forms (metrics + settings), navigation entry |
 | `SearchRankingStorage` (Zed) | Ranking-configuration storage table with synchronization behavior, publish writer, sync-data plugin |
@@ -293,9 +307,11 @@ In `Pyz\Zed\Console\ConsoleDependencyProvider::getConsoleCommands()`:
 
 ```php
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingNormalizeConsole;
+use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingRandomizeConsole;
 use SprykerCommunity\Zed\SearchRankingDataImport\SearchRankingDataImportConfig;
 
 new SearchRankingNormalizeConsole(),
+new SearchRankingRandomizeConsole(),
 // optional per-entity import commands:
 new DataImportConsole(DataImportConsole::DEFAULT_NAME . static::COMMAND_SEPARATOR . SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_METRIC),
 new DataImportConsole(DataImportConsole::DEFAULT_NAME . static::COMMAND_SEPARATOR . SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_PRODUCT_METRIC),
@@ -333,10 +349,16 @@ E.g. hourly, in `Pyz\Zed\SymfonyScheduler\SymfonySchedulerConfig::getCronJobs()`
     'command' => '$PHP_BIN vendor/bin/console search-ranking:normalize',
     'schedule' => '0 * * * *',
 ],
+'search-ranking-randomize' => [
+    'command' => '$PHP_BIN vendor/bin/console search-ranking:randomize',
+    'schedule' => '0 3 * * *',
+],
 ```
 
 Besides normalizing, each run triggers publish events so the search documents pick up the fresh
-scores (suppress with `--skip-publish`).
+scores (suppress with `--skip-publish`). `search-ranking:randomize` is intentionally on its own,
+less-frequent schedule — see [What it does today](#what-it-does-today) for why — and is a safe no-op
+to leave scheduled even if the random tie-breaker metric is inactive or does not exist.
 
 ### 7. Register the Elasticsearch export plugins
 
@@ -534,14 +556,15 @@ vendor/bin/codecept run -c packages/spryker-community/search-ranking/tests/Spryk
 ```
 
 Covers the formula evaluator (functions, `random()` range, division-by-zero/unknown-function
-failures, validation messages), the normalizer (clamping, batch paging, per-metric error
-isolation), the page-data loader (per-payload score mapping), the publish trigger (event chunking),
-the function_score builder (script shape, zero-weight skipping, script-injection guarding,
-null on empty configuration), the distribution-digest builder (percentile-backbone correctness,
-order-independence) and the curve fitter (a linearly-spread digest recovers a near-perfect linear
-fit, a saturating digest fits clearly better than linear, `isHigherBetter=false` swaps in the decay
-candidate) as pure unit tests — no database needed. The Client suite lives at
-`tests/SprykerCommunityTest/Client/SearchRanking`.
+failures, validation messages), the normalizer (clamping, batch paging, per-metric error isolation, and
+that the random tie-breaker metric is skipped entirely regardless of its active flag), the page-data
+loader (per-payload score mapping), the publish trigger (event chunking), the function_score builder
+(script shape, zero-weight skipping, script-injection guarding, null on empty configuration), the
+distribution-digest builder (percentile-backbone correctness, order-independence), the curve fitter (a
+linearly-spread digest recovers a near-perfect linear fit, a saturating digest fits clearly better than
+linear, `isHigherBetter=false` swaps in the decay candidate), and the metric randomizer (no-op when the
+metric is missing or inactive, re-normalizes and republishes only when it is active) as pure unit
+tests — no database needed. The Client suite lives at `tests/SprykerCommunityTest/Client/SearchRanking`.
 
 For that reason the suites are **not** part of CI: a clean runner has neither a Spryker shop nor a search
 cluster, and standing both up per build would cost far more than it returns. CI therefore covers the

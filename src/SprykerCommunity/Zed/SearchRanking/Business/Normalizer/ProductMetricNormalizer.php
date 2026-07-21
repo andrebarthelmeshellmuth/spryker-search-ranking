@@ -67,6 +67,10 @@ class ProductMetricNormalizer implements ProductMetricNormalizerInterface
             ->setUpdatedRowCount(0);
 
         foreach ($this->repository->getActiveMetricCollection()->getMetrics() as $metricTransfer) {
+            if ($metricTransfer->getName() === $this->config->getRandomMetricName()) {
+                continue;
+            }
+
             try {
                 $updatedRowCount = $this->normalizeMetric($metricTransfer);
             } catch (Throwable $throwable) {
@@ -85,11 +89,16 @@ class ProductMetricNormalizer implements ProductMetricNormalizerInterface
     }
 
     /**
+     * Exposed publicly (not just used internally by {@see normalize()}'s loop) so
+     * {@see \SprykerCommunity\Zed\SearchRanking\Business\Randomizer\MetricRandomizer} can re-normalize
+     * ONE metric — the random tie-breaker — on its own nightly cadence, independent of this hourly
+     * per-active-metric loop, which deliberately skips it (see {@see SearchRankingConfig::getRandomMetricName()}).
+     *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      *
      * @return int
      */
-    protected function normalizeMetric(SearchRankingMetricTransfer $metricTransfer): int
+    public function normalizeMetric(SearchRankingMetricTransfer $metricTransfer): int
     {
         $idMetric = $metricTransfer->getIdSearchRankingMetricOrFail();
         $statisticsTransfer = $this->repository->getMetricStatistics($idMetric);

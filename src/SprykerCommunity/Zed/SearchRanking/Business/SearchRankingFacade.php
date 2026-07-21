@@ -304,4 +304,16 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     {
         return $this->getFactory()->createFormulaPreviewBuilder()->buildPreview($idSearchRankingMetric, $formula, $isHigherBetter);
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return bool
+     */
+    public function randomizeRandomMetricIfActive(): bool
+    {
+        return $this->getFactory()->createMetricRandomizer()->randomizeIfActive();
+    }
 }
