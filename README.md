@@ -11,18 +11,25 @@ the eventual `function_score` ranking is meant to stay fully inspectable in the 
 
 ## Status
 
-🚧 Early development — **phases 1–3 of 6** are functional: the metric/value data model, the Zed
+🚧 Early development — **phases 1–4.5 of 6** are functional: the metric/value data model, the Zed
 management UI, CSV data import, the normalization cron, the export of normalized signals into the
-Elasticsearch page documents (`scores` field), and the **`function_score` ranking itself**: catalog
+Elasticsearch page documents (`scores` field), the **`function_score` ranking itself**: catalog
 searches are re-scored by `relevanceWeight × normalizedRelevance + (1 - relevanceWeight) × Σ weightᵢ × signalᵢ`,
 with the metric weights and the two blend constants editable in Zed and synchronized to key-value
-storage — see [Ranking formula](#ranking-formula) for the full rationale. See [Roadmap](#roadmap).
+storage — see [Ranking formula](#ranking-formula) for the full rationale — and a **data-driven
+normalization-authoring GUI**: a live preview of the typed formula against the metric's own real
+distribution, plotted alongside the theoretical max-discrimination reference curve, with ranked
+closed-form curve-fit suggestions. See [Roadmap](#roadmap).
 
 ## What it does today
 
 - **Ranking metrics** (`spy_search_ranking_metric`): named business signals (e.g. `pdp_impressions`,
   `top_seller`, `random`) with a **weight** for their future contribution to the combined score, an
-  **active** flag, and a **normalization formula** stored as an expression string.
+  **active** flag, a **normalization formula** stored as an expression string, and a **direction** flag
+  (`isHigherBetter`) — whether a higher raw value is the better outcome (sales, impressions) or a lower
+  one (days-since-restock, return rate). Direction is business knowledge that cannot be inferred from the
+  data; it only steers which curve-fit suggestions the normalization GUI offers below, never the formula
+  itself.
 - **Product values** (`spy_search_ranking_product_metric`): one row per (metric, abstract product)
   pair holding the **raw real-world value** (e.g. "8,250 impressions") and the **normalized value
   in ]0;1]** derived from it. Unique per pair, removed by cascade with either parent.
@@ -32,12 +39,28 @@ storage — see [Ranking formula](#ranking-formula) for the full rationale. See 
     uniqueness. Deletion is a CSRF-protected POST.
   - `/search-ranking-gui/product-metric` — read-only, searchable table of all product values
     (abstract SKU, metric, raw value, normalized value, last update).
+  - **Normalization-authoring preview** (on the metric edit page): as you type a formula, a debounced
+    request asks the server to evaluate it at ~100 sample points spanning the metric's own real
+    distribution (never a JS reimplementation of the expression-language math) and draws the resulting
+    curve as an inline SVG, alongside the **empirical CDF** — the theoretical max-discrimination
+    normalizer (map each raw value to the fraction of products below it) — as a reference line. Below the
+    plot, ranked **curve-fit suggestions** (`atan(x/k)`, `x/(x+k)`, `log(1+x/k)/log(1+max/k)`, `pow(x/max,
+    p)`, a sigmoid, linear, and — for `isHigherBetter=false` metrics — an `exp(-x/tau)` decay) show how
+    closely each closed-form shape tracks that empirical CDF (R²), with a one-click "use this formula"
+    action. The best fit is a data-driven *default*, never imposed — a metric can have a legitimate
+    business reason (e.g. a rating signal where only 4.5★+ should approach 1) to deviate from the
+    statistically "ideal" spread.
 - **Data import**: importer types `search-ranking-metric` (upsert by name) and
   `search-ranking-product-metric` (resolves metric name + abstract SKU to foreign keys, writes raw
   values only — normalized values are never imported).
 - **Normalization cron**: `vendor/bin/console search-ranking:normalize` recalculates every
   normalized value of every active metric in batches. A metric whose formula fails to evaluate is
-  skipped and reported (non-zero exit code) without aborting the run for the other metrics.
+  skipped and reported (non-zero exit code) without aborting the run for the other metrics. As a
+  byproduct, it also rebuilds each active metric's **distribution digest**
+  (`spy_search_ranking_metric_digest`): min/max/mean/median plus a 101-point empirical-CDF backbone
+  (percentiles 0, 1, 2, ..., 100), computed by sorting that metric's raw values once — this is the data
+  the normalization-authoring preview above reads, so it never has to touch the raw per-product rows
+  directly, however many there are.
 - **Elasticsearch export**: the package ships a `page.json` fragment defining a dynamic `scores`
   object field (per Spryker's data-driven-ranking best practice) and a ProductPageSearch plugin trio
   — bulk data loader, data expander, map expander — that writes each product's normalized values
@@ -173,7 +196,7 @@ misbehaving formula cannot poison the data with zeros, negatives, `NaN` or `INF`
 
 | Module | Purpose |
 | --- | --- |
-| `SearchRanking` (Zed) | Propel schema, facade (CRUD, settings, formula validation, normalization, ES export/publish), expression evaluator, ProductPageSearch export plugins, `search-ranking:normalize` console command |
+| `SearchRanking` (Zed) | Propel schema, facade (CRUD, settings, formula validation, normalization, ES export/publish), expression evaluator, distribution-digest builder, curve-fit suggester, formula-preview builder, ProductPageSearch export plugins, `search-ranking:normalize` console command |
 | `SearchRanking` (Client) | `SearchRankingFunctionScoreQueryExpanderPlugin` + painless script builder |
 | `SearchRankingGui` | Zed UI controllers, tables, forms (metrics + settings), navigation entry |
 | `SearchRankingStorage` (Zed) | Ranking-configuration storage table with synchronization behavior, publish writer, sync-data plugin |
@@ -408,6 +431,11 @@ Example files ship in this package under `data/import/`.
 - [x] **Phase 2** — export normalized signals into the Elasticsearch page index
 - [x] **Phase 3** — `function_score` query wrapping the catalog search with weighted business signals, weights + Zed-editable blend constants (`relevanceWeight`, `relevanceSaturationPoint`) synced to key-value storage
 - [x] **Phase 4** — score breakdown integration with spryker-community/search-debug
+- [x] **Phase 4.5** — normalization-authoring GUI: distribution digest, live formula preview against the
+      metric's own real distribution, ranked closed-form curve-fit suggestions, and the `isHigherBetter`
+      direction flag. Numbered 4.5 (a phase-1 signal-axis enhancement) rather than 5, since it is logically
+      upstream of the weighting-axis work below — better normalization improves the inputs phases 5/6
+      operate on.
 - [ ] **Phase 5** — live weight-tuning sliders on the SRP for privileged admins ("weltherrschaftformula")
 - [ ] **Phase 6** — learning-rate based weight adoption with audit log and rollback
 
@@ -422,9 +450,12 @@ vendor/bin/codecept run -c packages/spryker-community/search-ranking/tests/Spryk
 
 Covers the formula evaluator (functions, `random()` range, division-by-zero/unknown-function
 failures, validation messages), the normalizer (clamping, batch paging, per-metric error
-isolation), the page-data loader (per-payload score mapping), the publish trigger (event chunking)
-and the function_score builder (script shape, zero-weight skipping, script-injection guarding,
-null on empty configuration) as pure unit tests — no database needed. The Client suite lives at
+isolation), the page-data loader (per-payload score mapping), the publish trigger (event chunking),
+the function_score builder (script shape, zero-weight skipping, script-injection guarding,
+null on empty configuration), the distribution-digest builder (percentile-backbone correctness,
+order-independence) and the curve fitter (a linearly-spread digest recovers a near-perfect linear
+fit, a saturating digest fits clearly better than linear, `isHigherBetter=false` swaps in the decay
+candidate) as pure unit tests — no database needed. The Client suite lives at
 `tests/SprykerCommunityTest/Client/SearchRanking`.
 
 ## License

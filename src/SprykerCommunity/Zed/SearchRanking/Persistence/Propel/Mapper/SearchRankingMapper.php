@@ -11,11 +11,13 @@ namespace SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper;
 
 use Generated\Shared\Transfer\SearchRankingCalibrationSearchTermTransfer;
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingProductMetricTransfer;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingCalibration;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingCalibrationSearchTerm;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigest;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric;
 
 class SearchRankingMapper
@@ -35,7 +37,8 @@ class SearchRankingMapper
             ->setName($metricEntity->getName())
             ->setWeight($metricEntity->getWeight())
             ->setFormula($metricEntity->getFormula())
-            ->setIsActive($metricEntity->getIsActive());
+            ->setIsActive($metricEntity->getIsActive())
+            ->setIsHigherBetter($metricEntity->getIsHigherBetter());
     }
 
     /**
@@ -52,6 +55,7 @@ class SearchRankingMapper
         $metricEntity->setWeight($metricTransfer->getWeightOrFail());
         $metricEntity->setFormula($metricTransfer->getFormulaOrFail());
         $metricEntity->setIsActive($metricTransfer->getIsActive() ?? true);
+        $metricEntity->setIsHigherBetter($metricTransfer->getIsHigherBetter() ?? true);
 
         return $metricEntity;
     }
@@ -119,6 +123,72 @@ class SearchRankingMapper
             ->setSearchTerm($searchTermEntity->getSearchTerm())
             ->setProductsFound($searchTermEntity->getProductsFound())
             ->setScores($this->explodeScores($searchTermEntity->getScores()));
+    }
+
+    /**
+     * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigest $digestEntity
+     * @param \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer $digestTransfer
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer
+     */
+    public function mapMetricDigestEntityToTransfer(
+        SpySearchRankingMetricDigest $digestEntity,
+        SearchRankingMetricDigestTransfer $digestTransfer,
+    ): SearchRankingMetricDigestTransfer {
+        return $digestTransfer
+            ->setIdSearchRankingMetricDigest($digestEntity->getIdSearchRankingMetricDigest())
+            ->setFkSearchRankingMetric($digestEntity->getFkSearchRankingMetric())
+            ->setMinValue($digestEntity->getMinValue())
+            ->setMaxValue($digestEntity->getMaxValue())
+            ->setMeanValue($digestEntity->getMeanValue())
+            ->setMedianValue($digestEntity->getMedianValue())
+            ->setSampleCount($digestEntity->getSampleCount())
+            ->setPercentiles($this->explodePercentiles($digestEntity->getPercentiles()));
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer $digestTransfer
+     * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigest $digestEntity
+     *
+     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigest
+     */
+    public function mapMetricDigestTransferToEntity(
+        SearchRankingMetricDigestTransfer $digestTransfer,
+        SpySearchRankingMetricDigest $digestEntity,
+    ): SpySearchRankingMetricDigest {
+        $digestEntity->setFkSearchRankingMetric($digestTransfer->getFkSearchRankingMetricOrFail());
+        $digestEntity->setMinValue($digestTransfer->getMinValueOrFail());
+        $digestEntity->setMaxValue($digestTransfer->getMaxValueOrFail());
+        $digestEntity->setMeanValue($digestTransfer->getMeanValueOrFail());
+        $digestEntity->setMedianValue($digestTransfer->getMedianValueOrFail());
+        $digestEntity->setSampleCount($digestTransfer->getSampleCountOrFail());
+        $digestEntity->setPercentiles($this->implodePercentiles($digestTransfer->getPercentiles()));
+
+        return $digestEntity;
+    }
+
+    /**
+     * @param string|null $percentiles
+     *
+     * @return array<float>
+     */
+    protected function explodePercentiles(?string $percentiles): array
+    {
+        if ($percentiles === null || $percentiles === '') {
+            return [];
+        }
+
+        return array_map('floatval', explode(',', $percentiles));
+    }
+
+    /**
+     * @param array<float> $percentiles
+     *
+     * @return string
+     */
+    protected function implodePercentiles(array $percentiles): string
+    {
+        return implode(',', $percentiles);
     }
 
     /**

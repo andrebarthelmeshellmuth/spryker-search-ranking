@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 
 interface SearchRankingEntityManagerInterface
@@ -96,4 +97,14 @@ interface SearchRankingEntityManagerInterface
      * @return void
      */
     public function markCalibrationFailed(int $idSearchRankingCalibration, string $errorMessage): void;
+
+    /**
+     * Upserts by `fkSearchRankingMetric` — one digest row per metric, overwritten wholesale on every
+     * rebuild rather than versioned, since only the CURRENT distribution is ever meaningful.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer $digestTransfer
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer
+     */
+    public function saveMetricDigest(SearchRankingMetricDigestTransfer $digestTransfer): SearchRankingMetricDigestTransfer;
 }

@@ -18,6 +18,10 @@ use SprykerCommunity\Zed\SearchRanking\Business\Calibration\ScoreCalibrator;
 use SprykerCommunity\Zed\SearchRanking\Business\Calibration\ScoreCalibratorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Calibration\StatisticsCalculator;
 use SprykerCommunity\Zed\SearchRanking\Business\Calibration\StatisticsCalculatorInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilder;
+use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilderInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitter;
+use SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluator;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\MathFunctionProvider;
@@ -29,6 +33,8 @@ use SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormaliz
 use SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizerInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\PageData\ScoresPageDataLoader;
 use SprykerCommunity\Zed\SearchRanking\Business\PageData\ScoresPageDataLoaderInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Preview\FormulaPreviewBuilder;
+use SprykerCommunity\Zed\SearchRanking\Business\Preview\FormulaPreviewBuilderInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisher;
 use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisherInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManager;
@@ -185,5 +191,36 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
     public function getSearchRankingClient(): SearchRankingToSearchRankingClientInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::CLIENT_SEARCH_RANKING);
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilderInterface
+     */
+    public function createMetricDigestBuilder(): MetricDigestBuilderInterface
+    {
+        return new MetricDigestBuilder(
+            $this->getRepository(),
+            $this->getEntityManager(),
+        );
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface
+     */
+    public function createNormalizationCurveFitter(): NormalizationCurveFitterInterface
+    {
+        return new NormalizationCurveFitter();
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Business\Preview\FormulaPreviewBuilderInterface
+     */
+    public function createFormulaPreviewBuilder(): FormulaPreviewBuilderInterface
+    {
+        return new FormulaPreviewBuilder(
+            $this->getRepository(),
+            $this->createFormulaEvaluator(),
+            $this->createNormalizationCurveFitter(),
+        );
     }
 }

@@ -12,6 +12,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 use Generated\Shared\Transfer\SearchRankingCalibrationSearchTermTransfer;
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingProductMetricTransfer;
@@ -312,5 +313,43 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
         return $this->getFactory()
             ->createSearchRankingMapper()
             ->mapCalibrationEntityToTransfer($calibrationEntity, new SearchRankingCalibrationTransfer());
+    }
+
+    /**
+     * @param int $idSearchRankingMetric
+     *
+     * @return array<float>
+     */
+    public function getRawValues(int $idSearchRankingMetric): array
+    {
+        /** @var array<int|string|float> $rawValues */
+        $rawValues = $this->getFactory()
+            ->createSearchRankingProductMetricQuery()
+            ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->select([SpySearchRankingProductMetricTableMap::COL_RAW_VALUE])
+            ->find()
+            ->getData();
+
+        return array_map('floatval', $rawValues);
+    }
+
+    /**
+     * @param int $idSearchRankingMetric
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer|null
+     */
+    public function findMetricDigest(int $idSearchRankingMetric): ?SearchRankingMetricDigestTransfer
+    {
+        $digestEntity = $this->getFactory()
+            ->createSearchRankingMetricDigestQuery()
+            ->findOneByFkSearchRankingMetric($idSearchRankingMetric);
+
+        if ($digestEntity === null) {
+            return null;
+        }
+
+        return $this->getFactory()
+            ->createSearchRankingMapper()
+            ->mapMetricDigestEntityToTransfer($digestEntity, new SearchRankingMetricDigestTransfer());
     }
 }

@@ -7,12 +7,35 @@
         <column name="weight" type="FLOAT" required="true" defaultValue="0" description="Weight of this metric in the combined ranking score."/>
         <column name="formula" type="VARCHAR" size="512" required="true" description="Normalization expression mapping raw values into ]0;1]; variables: x, min, max, avg, count."/>
         <column name="is_active" type="BOOLEAN" required="true" defaultValue="true" description="Only active metrics are normalized and exported to the search index."/>
+        <column name="is_higher_better" type="BOOLEAN" required="true" defaultValue="true" description="Whether a HIGHER raw value is the better outcome for this signal (e.g. sales) as opposed to a lower one (e.g. days since restock, return rate). Not inferrable from the data — direction is business knowledge. Used by the normalization-curve fit suggestion to pick increasing vs. decreasing candidate shapes; does not affect the formula itself."/>
 
         <behavior name="timestampable"/>
         <id-method-parameter value="spy_search_ranking_metric_pk_seq"/>
 
         <unique name="spy_search_ranking_metric-name">
             <unique-column name="name"/>
+        </unique>
+    </table>
+
+    <table name="spy_search_ranking_metric_digest" idMethod="native" identifierQuoting="true">
+        <column name="id_search_ranking_metric_digest" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="fk_search_ranking_metric" type="INTEGER" required="true"/>
+        <column name="min_value" type="DOUBLE" required="true" description="Smallest raw_value across the metric's product rows, at the time this digest was computed."/>
+        <column name="max_value" type="DOUBLE" required="true" description="Largest raw_value across the metric's product rows, at the time this digest was computed."/>
+        <column name="mean_value" type="DOUBLE" required="true"/>
+        <column name="median_value" type="DOUBLE" required="true" description="The p50 percentile point — also the default fit parameter (k) for the x/(x+k) saturating candidate, the same 0.5-crossover principle relevanceSaturationPoint already uses."/>
+        <column name="sample_count" type="INTEGER" required="true" description="Number of raw_value rows the digest was computed from."/>
+        <column name="percentiles" type="LONGVARCHAR" required="true" description="The empirical CDF as a fixed-size backbone: 101 comma-separated raw_value points at percentiles 0,1,2,...,100 (ascending), i.e. percentiles[p] is the raw_value below which p% of products fall."/>
+
+        <behavior name="timestampable"/>
+        <id-method-parameter value="spy_search_ranking_metric_digest_pk_seq"/>
+
+        <foreign-key name="spy_srmd-fk_metric" foreignTable="spy_search_ranking_metric" phpName="SearchRankingMetric" refPhpName="SearchRankingMetricDigest" onDelete="CASCADE">
+            <reference local="fk_search_ranking_metric" foreign="id_search_ranking_metric"/>
+        </foreign-key>
+
+        <unique name="spy_srmd-unique-metric">
+            <unique-column name="fk_search_ranking_metric"/>
         </unique>
     </table>
 

@@ -73,6 +73,9 @@ class SearchRankingNormalizeConsole extends Console
             $output->writeln(sprintf('<error>%s</error>', $error));
         }
 
+        $digestCount = $this->getFacade()->rebuildMetricDigests();
+        $output->writeln(sprintf('Rebuilt distribution digest for %d metric(s).', $digestCount));
+
         if (!$input->getOption(static::OPTION_SKIP_PUBLISH)) {
             $publishedProductCount = $this->getFacade()->publishScoredProductAbstracts();
 

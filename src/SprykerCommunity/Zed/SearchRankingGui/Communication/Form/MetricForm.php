@@ -54,6 +54,11 @@ class MetricForm extends AbstractType
     protected const FIELD_IS_ACTIVE = 'isActive';
 
     /**
+     * @var string
+     */
+    protected const FIELD_IS_HIGHER_BETTER = 'isHigherBetter';
+
+    /**
      * @param \Symfony\Component\OptionsResolver\OptionsResolver $resolver
      *
      * @return void
@@ -78,6 +83,7 @@ class MetricForm extends AbstractType
         $this
             ->addNameField($builder, $options)
             ->addWeightField($builder)
+            ->addIsHigherBetterField($builder)
             ->addFormulaField($builder, $options)
             ->addIsActiveField($builder);
     }
@@ -145,6 +151,22 @@ class MetricForm extends AbstractType
                 new NotBlank(),
                 new GreaterThanOrEqual(0),
             ],
+        ]);
+
+        return $this;
+    }
+
+    /**
+     * @param \Symfony\Component\Form\FormBuilderInterface $builder
+     *
+     * @return $this
+     */
+    protected function addIsHigherBetterField(FormBuilderInterface $builder)
+    {
+        $builder->add(static::FIELD_IS_HIGHER_BETTER, CheckboxType::class, [
+            'label' => 'Higher raw value is better',
+            'help' => 'Checked for signals like sales or impressions (more is better). Unchecked for signals like days-since-restock or return rate (less is better) — this only affects the curve-fit suggestions below, never the formula itself.',
+            'required' => false,
         ]);
 
         return $this;

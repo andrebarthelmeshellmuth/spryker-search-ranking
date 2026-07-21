@@ -11,6 +11,7 @@ namespace SprykerCommunity\Zed\SearchRankingGui\Communication\Controller;
 
 use Spryker\Zed\Kernel\Communication\Controller\AbstractController;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricTable;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -22,6 +23,21 @@ class EditController extends AbstractController
      * @var string
      */
     protected const URL_METRIC_LIST = '/search-ranking-gui';
+
+    /**
+     * @var string
+     */
+    protected const PARAM_ID_SEARCH_RANKING_METRIC = 'idSearchRankingMetric';
+
+    /**
+     * @var string
+     */
+    protected const PARAM_FORMULA = 'formula';
+
+    /**
+     * @var string
+     */
+    protected const PARAM_IS_HIGHER_BETTER = 'isHigherBetter';
 
     /**
      * @param \Symfony\Component\HttpFoundation\Request $request
@@ -58,6 +74,28 @@ class EditController extends AbstractController
         return $this->viewResponse([
             'metricForm' => $metricForm->createView(),
             'metricName' => $metricTransfer->getName(),
+            'idSearchRankingMetric' => $metricTransfer->getIdSearchRankingMetric(),
         ]);
+    }
+
+    /**
+     * Read-only preview endpoint backing the live formula/curve-fit plot on the edit page — side-effect
+     * free, so a GET is correct even though the browser-typed formula may not be saved (or even valid).
+     *
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     *
+     * @return \Symfony\Component\HttpFoundation\JsonResponse
+     */
+    public function previewAction(Request $request): JsonResponse
+    {
+        $idSearchRankingMetric = $this->castId($request->query->get(static::PARAM_ID_SEARCH_RANKING_METRIC));
+        $formula = (string)$request->query->get(static::PARAM_FORMULA, '');
+        $isHigherBetter = (bool)$request->query->get(static::PARAM_IS_HIGHER_BETTER, true);
+
+        $previewTransfer = $this->getFactory()
+            ->getSearchRankingFacade()
+            ->previewFormula($idSearchRankingMetric, $formula, $isHigherBetter);
+
+        return $this->jsonResponse($previewTransfer->toArray(true, true));
     }
 }

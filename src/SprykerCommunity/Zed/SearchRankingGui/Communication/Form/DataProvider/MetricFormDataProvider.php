@@ -36,7 +36,7 @@ class MetricFormDataProvider
     public function getData(?int $idSearchRankingMetric = null): ?SearchRankingMetricTransfer
     {
         if ($idSearchRankingMetric === null) {
-            return (new SearchRankingMetricTransfer())->setIsActive(true);
+            return (new SearchRankingMetricTransfer())->setIsActive(true)->setIsHigherBetter(true);
         }
 
         return $this->searchRankingFacade->findMetricById($idSearchRankingMetric);

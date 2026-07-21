@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingCalibration;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingCalibrationSearchTerm;
@@ -254,5 +255,24 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
         $calibrationEntity->setStatus(SearchRankingConfig::CALIBRATION_STATUS_FAILED);
         $calibrationEntity->setErrorMessage($errorMessage);
         $calibrationEntity->save();
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer $digestTransfer
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer
+     */
+    public function saveMetricDigest(SearchRankingMetricDigestTransfer $digestTransfer): SearchRankingMetricDigestTransfer
+    {
+        $digestEntity = $this->getFactory()
+            ->createSearchRankingMetricDigestQuery()
+            ->filterByFkSearchRankingMetric($digestTransfer->getFkSearchRankingMetricOrFail())
+            ->findOneOrCreate();
+
+        $mapper = $this->getFactory()->createSearchRankingMapper();
+        $digestEntity = $mapper->mapMetricDigestTransferToEntity($digestTransfer, $digestEntity);
+        $digestEntity->save();
+
+        return $mapper->mapMetricDigestEntityToTransfer($digestEntity, $digestTransfer);
     }
 }

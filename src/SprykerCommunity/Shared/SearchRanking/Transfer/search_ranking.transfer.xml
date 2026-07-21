@@ -13,6 +13,7 @@
         <property name="weight" type="float"/>
         <property name="formula" type="string"/>
         <property name="isActive" type="bool"/>
+        <property name="isHigherBetter" type="bool"/>
     </transfer>
 
     <transfer name="SearchRankingMetricCollection" strict="true">
@@ -47,6 +48,54 @@
         <property name="processedMetricCount" type="int"/>
         <property name="updatedRowCount" type="int"/>
         <property name="errors" type="string[]" singular="error"/>
+    </transfer>
+
+    <!-- A fixed-size distribution digest of one metric's raw_value column, computed as a byproduct of
+         the normalize cron (MetricDigestBuilder) so the normalization-authoring GUI (phase 4.5) never
+         has to touch the raw per-product rows: percentiles is the empirical CDF backbone (101 points,
+         at percentiles 0,1,2,...,100), medianValue doubles as the default fit parameter for the
+         x/(x+k) saturating candidate. -->
+    <transfer name="SearchRankingMetricDigest" strict="true">
+        <property name="idSearchRankingMetricDigest" type="int"/>
+        <property name="fkSearchRankingMetric" type="int"/>
+        <property name="minValue" type="float"/>
+        <property name="maxValue" type="float"/>
+        <property name="meanValue" type="float"/>
+        <property name="medianValue" type="float"/>
+        <property name="sampleCount" type="int"/>
+        <property name="percentiles" type="float[]" singular="percentile"/>
+    </transfer>
+
+    <!-- One (x, y) point of a formula preview curve or the empirical-CDF reference line. xValue is the
+         real raw value at that digest percentile; yValue is the normalized result at that point (either
+         the typed formula's output, or the percentile fraction itself for the CDF reference line). -->
+    <transfer name="SearchRankingFormulaPreviewPoint" strict="true">
+        <property name="xValue" type="float"/>
+        <property name="yValue" type="float"/>
+    </transfer>
+
+    <!-- One candidate normalization curve NormalizationCurveFitter fit against a metric's digest: name
+         is the human-readable shape ("x / (x + k)"), formula is that shape with its fitted parameter
+         substituted in (ready to paste into the metric's own formula field), rSquared measures fit
+         quality against the empirical CDF (1.0 = perfect), isWinner flags the best-fitting candidate. -->
+    <transfer name="SearchRankingCurveFitCandidate" strict="true">
+        <property name="name" type="string"/>
+        <property name="formula" type="string"/>
+        <property name="parameterValue" type="float"/>
+        <property name="rSquared" type="float"/>
+        <property name="isWinner" type="bool"/>
+    </transfer>
+
+    <!-- Response shape of the formula-preview AJAX endpoint: points is the typed formula evaluated at
+         the metric's digest percentile x-values; cdfPoints is the empirical CDF reference line (the
+         theoretical max-discrimination normalizer, drawn on every plot for comparison); candidates is
+         NormalizationCurveFitter's ranked suggestions. errorMessage is set instead of points when the
+         typed formula fails to evaluate (mirrors SearchRankingFormulaValidationResponse). -->
+    <transfer name="SearchRankingFormulaPreview" strict="true">
+        <property name="points" type="SearchRankingFormulaPreviewPoint[]" singular="point"/>
+        <property name="cdfPoints" type="SearchRankingFormulaPreviewPoint[]" singular="cdfPoint"/>
+        <property name="candidates" type="SearchRankingCurveFitCandidate[]" singular="candidate"/>
+        <property name="errorMessage" type="string"/>
     </transfer>
 
     <!-- Extensions of core ProductPageSearch transfers carrying the normalized signals through the

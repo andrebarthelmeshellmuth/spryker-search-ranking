@@ -11,11 +11,184 @@
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Edit Ranking Metric' } %}
         {% block widget_content %}
             {{ form_start(metricForm) }}
-            {{ form_widget(metricForm) }}
+            {{ form_row(metricForm.name) }}
+            {{ form_row(metricForm.weight) }}
+            {{ form_row(metricForm.isHigherBetter) }}
+            {{ form_row(metricForm.formula) }}
+
+            {# Live preview: the typed formula evaluated at the metric's own real distribution (server-side,
+               via the same FormulaEvaluator the normalization cron uses — never a JS reimplementation of
+               the expression-language math), plotted against the empirical-CDF reference line, plus
+               data-driven curve-fit suggestions. Absent (with an explanatory message) until the metric has
+               a distribution digest, i.e. until search-ranking:normalize has run at least once after it
+               has product-metric rows. #}
+            <div class="search-ranking-normalization-preview" data-id-search-ranking-metric="{{ idSearchRankingMetric }}">
+                <p class="search-ranking-normalization-preview__message" data-role="message"></p>
+                <svg class="search-ranking-normalization-preview__plot" data-role="plot" viewBox="0 0 640 320" preserveAspectRatio="xMidYMid meet"></svg>
+                <table class="table" data-role="candidates">
+                    <thead>
+                        <tr>
+                            <th>Suggested formula</th>
+                            <th>Fit (R&sup2;)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody data-role="candidates-body"></tbody>
+                </table>
+            </div>
+
+            {{ form_row(metricForm.isActive) }}
+            {{ form_rest(metricForm) }}
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">{{ 'Save' | trans }}</button>
             </div>
             {{ form_end(metricForm) }}
         {% endblock %}
     {% endembed %}
+{% endblock %}
+
+{% block footer_js %}
+    {{ parent() }}
+    <script>
+        (function () {
+            'use strict';
+
+            var container = document.querySelector('.search-ranking-normalization-preview');
+
+            if (!container) {
+                return;
+            }
+
+            var idSearchRankingMetric = container.getAttribute('data-id-search-ranking-metric');
+            var formulaField = document.getElementById('search_ranking_metric_formula');
+            var isHigherBetterField = document.getElementById('search_ranking_metric_isHigherBetter');
+            var messageElement = container.querySelector('[data-role="message"]');
+            var plotElement = container.querySelector('[data-role="plot"]');
+            var candidatesBody = container.querySelector('[data-role="candidates-body"]');
+            var debounceTimeoutId = null;
+
+            function debounceRefresh() {
+                if (debounceTimeoutId !== null) {
+                    window.clearTimeout(debounceTimeoutId);
+                }
+
+                debounceTimeoutId = window.setTimeout(refresh, 400);
+            }
+
+            function refresh() {
+                if (!idSearchRankingMetric || !formulaField.value) {
+                    return;
+                }
+
+                var url = '/search-ranking-gui/edit/preview'
+                    + '?idSearchRankingMetric=' + encodeURIComponent(idSearchRankingMetric)
+                    + '&formula=' + encodeURIComponent(formulaField.value)
+                    + '&isHigherBetter=' + (isHigherBetterField.checked ? '1' : '0');
+
+                fetch(url, { headers: { Accept: 'application/json' } })
+                    .then(function (response) {
+                        return response.json();
+                    })
+                    .then(render)
+                    .catch(function (error) {
+                        showMessage('Preview request failed: ' + error);
+                    });
+            }
+
+            function showMessage(text) {
+                messageElement.textContent = text;
+                messageElement.style.display = text ? 'block' : 'none';
+                plotElement.style.display = text ? 'none' : 'block';
+                candidatesBody.innerHTML = '';
+            }
+
+            function render(preview) {
+                if (preview.errorMessage) {
+                    showMessage(preview.errorMessage);
+
+                    return;
+                }
+
+                showMessage('');
+                drawPlot(preview.points || [], preview.cdfPoints || []);
+                renderCandidates(preview.candidates || []);
+            }
+
+            function drawPlot(points, cdfPoints) {
+                var width = 640;
+                var height = 320;
+                var padding = 32;
+
+                var xValues = points.map(function (point) { return point.xValue; });
+                var xMin = Math.min.apply(null, xValues);
+                var xMax = Math.max.apply(null, xValues);
+
+                function toPixelX(x) {
+                    return xMax > xMin ? padding + (x - xMin) / (xMax - xMin) * (width - 2 * padding) : width / 2;
+                }
+
+                function toPixelY(y) {
+                    var clampedY = Math.max(0, Math.min(1, y));
+
+                    return height - padding - clampedY * (height - 2 * padding);
+                }
+
+                function toPolylinePoints(seriesPoints) {
+                    return seriesPoints.map(function (point) {
+                        return toPixelX(point.xValue) + ',' + toPixelY(point.yValue);
+                    }).join(' ');
+                }
+
+                var markup = '';
+                markup += '<polyline points="' + toPolylinePoints(cdfPoints) + '" fill="none" stroke="var(--search-ranking-cdf-line-color, #bbb)" stroke-dasharray="4 3" stroke-width="1.5" />';
+                markup += '<polyline points="' + toPolylinePoints(points) + '" fill="none" stroke="var(--search-ranking-curve-color, #2a6ebb)" stroke-width="2" />';
+
+                points.forEach(function (point) {
+                    markup += '<circle cx="' + toPixelX(point.xValue) + '" cy="' + toPixelY(point.yValue) + '" r="2" fill="var(--search-ranking-curve-color, #2a6ebb)" />';
+                });
+
+                plotElement.innerHTML = markup;
+            }
+
+            function renderCandidates(candidates) {
+                candidatesBody.innerHTML = '';
+
+                candidates.forEach(function (candidate) {
+                    var row = document.createElement('tr');
+
+                    if (candidate.isWinner) {
+                        row.classList.add('search-ranking-normalization-preview__candidate--winner');
+                    }
+
+                    var formulaCell = document.createElement('td');
+                    formulaCell.textContent = (candidate.isWinner ? '★ ' : '') + candidate.formula;
+                    row.appendChild(formulaCell);
+
+                    var rSquaredCell = document.createElement('td');
+                    rSquaredCell.textContent = candidate.rSquared.toFixed(3);
+                    row.appendChild(rSquaredCell);
+
+                    var actionCell = document.createElement('td');
+                    var useButton = document.createElement('button');
+                    useButton.type = 'button';
+                    useButton.className = 'btn btn-sm btn-default';
+                    useButton.textContent = 'Use this formula';
+                    useButton.addEventListener('click', function () {
+                        formulaField.value = candidate.formula;
+                        refresh();
+                    });
+                    actionCell.appendChild(useButton);
+                    row.appendChild(actionCell);
+
+                    candidatesBody.appendChild(row);
+                });
+            }
+
+            if (formulaField && isHigherBetterField) {
+                formulaField.addEventListener('input', debounceRefresh);
+                isHigherBetterField.addEventListener('change', refresh);
+                refresh();
+            }
+        }());
+    </script>
 {% endblock %}

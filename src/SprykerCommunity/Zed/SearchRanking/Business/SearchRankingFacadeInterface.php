@@ -11,8 +11,10 @@ namespace SprykerCommunity\Zed\SearchRanking\Business;
 
 use Generated\Shared\Transfer\ProductPageLoadTransfer;
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
+use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer;
 
@@ -250,4 +252,47 @@ interface SearchRankingFacadeInterface
      * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
      */
     public function findLatestCalculatedCalibration(): ?SearchRankingCalibrationTransfer;
+
+    /**
+     * Specification:
+     * - Recomputes the distribution digest (min/max/mean/median + a 101-point percentile backbone) of
+     *   every ACTIVE metric from its current raw_value rows.
+     * - A metric with no product-metric rows yet is skipped, not counted.
+     *
+     * @api
+     *
+     * @return int The number of metrics a digest was (re)computed for.
+     */
+    public function rebuildMetricDigests(): int;
+
+    /**
+     * Specification:
+     * - Returns the given metric's distribution digest, or null when it has never been computed
+     *   (no product-metric rows yet, or {@see rebuildMetricDigests()} has never run).
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer|null
+     */
+    public function findMetricDigest(int $idSearchRankingMetric): ?SearchRankingMetricDigestTransfer;
+
+    /**
+     * Specification:
+     * - Evaluates $formula at every one of the metric's digest percentile x-values and returns the
+     *   resulting points, the empirical-CDF reference line, and ranked closed-form curve-fit suggestions
+     *   for the given direction ($isHigherBetter).
+     * - Sets errorMessage instead of points when the metric has no digest yet, or when $formula fails to
+     *   evaluate at any sampled point.
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $formula
+     * @param bool $isHigherBetter
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer
+     */
+    public function previewFormula(int $idSearchRankingMetric, string $formula, bool $isHigherBetter): SearchRankingFormulaPreviewTransfer;
 }

@@ -11,8 +11,10 @@ namespace SprykerCommunity\Zed\SearchRanking\Business;
 
 use Generated\Shared\Transfer\ProductPageLoadTransfer;
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
+use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer;
 use Spryker\Zed\Kernel\Business\AbstractFacade;
@@ -259,5 +261,47 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     public function findLatestCalculatedCalibration(): ?SearchRankingCalibrationTransfer
     {
         return $this->getRepository()->findLatestCalculatedCalibration();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return int
+     */
+    public function rebuildMetricDigests(): int
+    {
+        return $this->getFactory()->createMetricDigestBuilder()->rebuildDigests();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer|null
+     */
+    public function findMetricDigest(int $idSearchRankingMetric): ?SearchRankingMetricDigestTransfer
+    {
+        return $this->getRepository()->findMetricDigest($idSearchRankingMetric);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $formula
+     * @param bool $isHigherBetter
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer
+     */
+    public function previewFormula(int $idSearchRankingMetric, string $formula, bool $isHigherBetter): SearchRankingFormulaPreviewTransfer
+    {
+        return $this->getFactory()->createFormulaPreviewBuilder()->buildPreview($idSearchRankingMetric, $formula, $isHigherBetter);
     }
 }

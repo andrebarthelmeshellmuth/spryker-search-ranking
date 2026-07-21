@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade;
 
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
+use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 
@@ -141,5 +142,17 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     public function findLatestCalculatedCalibration(): ?SearchRankingCalibrationTransfer
     {
         return $this->searchRankingFacade->findLatestCalculatedCalibration();
+    }
+
+    /**
+     * @param int $idSearchRankingMetric
+     * @param string $formula
+     * @param bool $isHigherBetter
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer
+     */
+    public function previewFormula(int $idSearchRankingMetric, string $formula, bool $isHigherBetter): SearchRankingFormulaPreviewTransfer
+    {
+        return $this->searchRankingFacade->previewFormula($idSearchRankingMetric, $formula, $isHigherBetter);
     }
 }

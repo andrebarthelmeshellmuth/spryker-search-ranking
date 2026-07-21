@@ -11,6 +11,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 
@@ -109,4 +110,23 @@ interface SearchRankingRepositoryInterface
      * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
      */
     public function findLatestCalculatedCalibration(): ?SearchRankingCalibrationTransfer;
+
+    /**
+     * Every raw_value of the metric's product-metric rows, as a lean single-column projection (not
+     * hydrated into full transfers) — {@see \SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilder}
+     * sorts and walks this in PHP rather than relying on DB-engine percentile functions, since this
+     * package supports both MySQL and PostgreSQL and MySQL has no portable PERCENTILE_CONT.
+     *
+     * @param int $idSearchRankingMetric
+     *
+     * @return array<float>
+     */
+    public function getRawValues(int $idSearchRankingMetric): array;
+
+    /**
+     * @param int $idSearchRankingMetric
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer|null
+     */
+    public function findMetricDigest(int $idSearchRankingMetric): ?SearchRankingMetricDigestTransfer;
 }
