@@ -179,6 +179,29 @@
         <property name="searchTerms" type="SearchRankingCalibrationSearchTerm[]" singular="searchTerm"/>
     </transfer>
 
+    <!-- One capability probe result: a named search-engine construct this package uses today or could use
+         in future (e.g. "function_score + script_score (painless)", "rank_feature query"), and whether the
+         live engine actually accepts it. Probed live (see EngineCompatibilityChecker) via `_validate/query`
+         (or, for the `_rank_eval` endpoint, a real minimal request) rather than trusted from a version
+         string — OpenSearch and Elasticsearch report incompatible version numbers under the same API
+         surface, so a version-string check is not a reliable oracle here. detail carries the engine's own
+         parser message, populated either way (useful context even when isSupported is true). -->
+    <transfer name="SearchRankingEngineCapability" strict="true">
+        <property name="name" type="string"/>
+        <property name="isSupported" type="bool"/>
+        <property name="detail" type="string"/>
+    </transfer>
+
+    <!-- Result of search-ranking:check-compatibility. distribution/version are the engine's own
+         self-reported identification (informational only, e.g. "opensearch"/"1.3.4" vs a bare ES version
+         number with no distribution field) — never used to gate a capability, only shown for context
+         alongside the real per-construct probes in capabilities. -->
+    <transfer name="SearchRankingEngineCompatibility" strict="true">
+        <property name="distribution" type="string"/>
+        <property name="version" type="string"/>
+        <property name="capabilities" type="SearchRankingEngineCapability[]" singular="capability"/>
+    </transfer>
+
     <!-- One uploaded search term of a calibration run. scores is populated by the calibration cron: the
          raw text-relevance scores of the top-ranked products found for this term, up to the run's
          relevantProductCount — fewer when the term matched fewer products. Null until calculated. -->

@@ -22,6 +22,8 @@ use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Search\CalibrationSearcher;
 use SprykerCommunity\Client\SearchRanking\Search\CalibrationSearcherInterface;
+use SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityChecker;
+use SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityCheckerInterface;
 use SprykerCommunity\Client\SearchRanking\Search\NeverInvokedStoreClient;
 use SprykerCommunity\Client\SearchRanking\Search\RawRelevanceScoreExtractor;
 use SprykerCommunity\Client\SearchRanking\Search\RawRelevanceScoreExtractorInterface;
@@ -70,6 +72,14 @@ class SearchRankingFactory extends AbstractFactory
     public function createRawRelevanceScoreExtractor(): RawRelevanceScoreExtractorInterface
     {
         return new RawRelevanceScoreExtractor();
+    }
+
+    /**
+     * @return \SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityCheckerInterface
+     */
+    public function createEngineCompatibilityChecker(): EngineCompatibilityCheckerInterface
+    {
+        return new EngineCompatibilityChecker($this->getElasticaClient());
     }
 
     /**

@@ -11,6 +11,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Business;
 
 use Generated\Shared\Transfer\ProductPageLoadTransfer;
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
+use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
@@ -315,5 +316,17 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     public function randomizeRandomMetricIfActive(): bool
     {
         return $this->getFactory()->createMetricRandomizer()->randomizeIfActive();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
+     */
+    public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer
+    {
+        return $this->getFactory()->createCompatibilityChecker()->checkCompatibility();
     }
 }

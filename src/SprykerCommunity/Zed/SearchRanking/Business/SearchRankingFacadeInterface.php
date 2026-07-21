@@ -11,6 +11,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Business;
 
 use Generated\Shared\Transfer\ProductPageLoadTransfer;
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
+use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
@@ -312,4 +313,17 @@ interface SearchRankingFacadeInterface
      * @return bool
      */
     public function randomizeRandomMetricIfActive(): bool;
+
+    /**
+     * Specification:
+     * - Probes the live search engine's ACTUAL capabilities directly — never a version-string comparison,
+     *   since OpenSearch and Elasticsearch report incompatible version identifiers under the same API
+     *   surface — for a fixed set of constructs this package uses today or could use in a future phase.
+     * - Read-only: fires `_validate/query` and a deliberately empty `_rank_eval` request, never writes.
+     *
+     * @api
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
+     */
+    public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer;
 }

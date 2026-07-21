@@ -9,6 +9,8 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Dependency\Client;
 
+use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
+
 class SearchRankingToSearchRankingClientBridge implements SearchRankingToSearchRankingClientInterface
 {
     /**
@@ -35,5 +37,13 @@ class SearchRankingToSearchRankingClientBridge implements SearchRankingToSearchR
     public function getCalibrationScores(string $searchTerm, string $storeName, string $localeName, int $limit): array
     {
         return $this->searchRankingClient->getCalibrationScores($searchTerm, $storeName, $localeName, $limit);
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
+     */
+    public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer
+    {
+        return $this->searchRankingClient->checkEngineCompatibility();
     }
 }

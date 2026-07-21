@@ -18,6 +18,8 @@ use SprykerCommunity\Zed\SearchRanking\Business\Calibration\ScoreCalibrator;
 use SprykerCommunity\Zed\SearchRanking\Business\Calibration\ScoreCalibratorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Calibration\StatisticsCalculator;
 use SprykerCommunity\Zed\SearchRanking\Business\Calibration\StatisticsCalculatorInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityChecker;
+use SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityCheckerInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilder;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilderInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluator;
@@ -198,6 +200,14 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
     public function getSearchRankingClient(): SearchRankingToSearchRankingClientInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::CLIENT_SEARCH_RANKING);
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityCheckerInterface
+     */
+    public function createCompatibilityChecker(): CompatibilityCheckerInterface
+    {
+        return new CompatibilityChecker($this->getSearchRankingClient());
     }
 
     /**

@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Client\SearchRanking;
 
+use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Spryker\Client\Kernel\AbstractClient;
 
 /**
@@ -33,5 +34,19 @@ class SearchRankingClient extends AbstractClient implements SearchRankingClientI
         return $this->getFactory()
             ->createCalibrationSearcher()
             ->searchScores($searchTerm, $storeName, $localeName, $limit);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
+     */
+    public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer
+    {
+        return $this->getFactory()
+            ->createEngineCompatibilityChecker()
+            ->checkCompatibility();
     }
 }

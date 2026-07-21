@@ -99,6 +99,18 @@ closed-form curve-fit suggestions. See [Roadmap](#roadmap).
   shopper who searches again shortly after — nightly is frequent enough to keep ties from calcifying into
   a permanent order without looking unstable. Reuses the same full-republish path as every other score
   update; see [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update).
+- **`search-ranking:check-compatibility`**: probes the live search engine's ACTUAL capabilities —
+  never a version-string comparison, since OpenSearch and Elasticsearch report incompatible version
+  identifiers under the same API surface (this stack self-reports `distribution: opensearch, 1.3.4`; a
+  bare Elasticsearch cluster reports a version number with no `distribution` field at all). Fires
+  `_validate/query` cluster-wide for each construct the package uses today or could use in a future
+  phase (`function_score` + `script_score`, `rank_feature`, `distance_feature`, `pinned`) and a
+  deliberately incomplete `_rank_eval` request to check whether that endpoint is recognized at all,
+  reading back the engine's own parser response either way rather than trusting a claimed version.
+  Read-only — every probe only asks "would the engine accept this?", it never touches real documents or
+  indices. Exits non-zero only if `function_score` + `script_score` is unsupported (the construct the
+  live phase-3 ranking actually depends on today); every other probed capability is purely
+  forward-looking and never affects the exit code, only the printed report.
 - **Elasticsearch export**: the package ships a `page.json` fragment defining a dynamic `scores`
   object field (per Spryker's data-driven-ranking best practice) and a ProductPageSearch plugin trio
   — bulk data loader, data expander, map expander — that writes each product's normalized values
@@ -540,13 +552,13 @@ Example files ship in this package under `data/import/`.
       direction flag. Numbered 4.5 (a phase-1 signal-axis enhancement) rather than 5, since it is logically
       upstream of the weighting-axis work below — better normalization improves the inputs phases 5/6
       operate on.
+- [x] **`search-ranking:check-compatibility`** — probes the search engine's actual capabilities
+      (`_validate/query` + a `_rank_eval` recognition check) rather than trusting a version string
 - [ ] **Phase 5** — live weight-tuning sliders on the SRP for privileged admins ("weltherrschaftformula")
 - [ ] **Phase 6** — learning-rate based weight adoption with audit log and rollback
 - [ ] **Monthly auto-tune cron/GUI** — periodic fit-quality check per metric against
       `spy_search_ranking_metric_history`'s `isChange`-anchored baseline (see above), with configurable
       auto-update-vs-notify behavior and a before/after summary
-- [ ] `search-ranking:check-compatibility` console command — probes the search engine's actual query-DSL
-      capabilities (OpenSearch vs. Elasticsearch diverge) rather than trusting a version string
 
 ## Testing and CI
 
