@@ -12,6 +12,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 
@@ -129,4 +130,26 @@ interface SearchRankingRepositoryInterface
      * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer|null
      */
     public function findMetricDigest(int $idSearchRankingMetric): ?SearchRankingMetricDigestTransfer;
+
+    /**
+     * Every history snapshot of the given metric, newest first.
+     *
+     * @param int $idSearchRankingMetric
+     *
+     * @return array<\Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer>
+     */
+    public function getMetricHistory(int $idSearchRankingMetric): array;
+
+    /**
+     * The most recent history row that represents an actual change (`isChange` true) — the anchor a
+     * drift-detection read should compare the metric's CURRENT state against, rather than always the most
+     * recent snapshot taken. This is what makes the comparison window grow (30 days, then 60, then 90, ...)
+     * for as long as a metric's formula is left untouched, instead of resetting to "vs. last month" on
+     * every periodic check regardless of whether anything actually changed.
+     *
+     * @param int $idSearchRankingMetric
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer|null
+     */
+    public function findLastMetricChangeHistoryEntry(int $idSearchRankingMetric): ?SearchRankingMetricHistoryTransfer;
 }

@@ -10,9 +10,11 @@ declare(strict_types = 1);
 namespace SprykerCommunityTest\Zed\SearchRanking\Persistence\Propel\Mapper;
 
 use Codeception\Test\Unit;
+use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingProductMetricTransfer;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric;
 use SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper\SearchRankingMapper;
 
@@ -124,5 +126,101 @@ class SearchRankingMapperTest extends Unit
         $this->assertSame(101, $productMetricTransfer->getFkProductAbstract());
         $this->assertSame(250.0, $productMetricTransfer->getRawValue());
         $this->assertSame(0.25, $productMetricTransfer->getNormalizedValue());
+    }
+
+    /**
+     * @return void
+     */
+    public function testMapsMetricHistoryEntityFieldsOntoTheTransferIncludingTheDigestSnapshot(): void
+    {
+        // Arrange
+        $historyEntity = new SpySearchRankingMetricHistory();
+        $historyEntity->setIdSearchRankingMetricHistory(3);
+        $historyEntity->setFkSearchRankingMetric(7);
+        $historyEntity->setMetricName('top_seller');
+        $historyEntity->setWeight(0.5);
+        $historyEntity->setFormula('atan(x / 100) / (pi() / 2)');
+        $historyEntity->setIsActive(true);
+        $historyEntity->setIsHigherBetter(true);
+        $historyEntity->setMinValue(0.0);
+        $historyEntity->setMaxValue(100.0);
+        $historyEntity->setMeanValue(50.0);
+        $historyEntity->setMedianValue(50.0);
+        $historyEntity->setSampleCount(3);
+        $historyEntity->setPercentiles('0,50,100');
+        $historyEntity->setFitRSquared(0.75);
+        $historyEntity->setIsChange(true);
+
+        // Act
+        $historyTransfer = (new SearchRankingMapper())->mapMetricHistoryEntityToTransfer($historyEntity, new SearchRankingMetricHistoryTransfer());
+
+        // Assert
+        $this->assertSame(3, $historyTransfer->getIdSearchRankingMetricHistory());
+        $this->assertSame(7, $historyTransfer->getFkSearchRankingMetric());
+        $this->assertSame('top_seller', $historyTransfer->getMetricName());
+        $this->assertSame('atan(x / 100) / (pi() / 2)', $historyTransfer->getFormula());
+        $this->assertSame([0.0, 50.0, 100.0], $historyTransfer->getPercentiles());
+        $this->assertSame(0.75, $historyTransfer->getFitRSquared());
+        $this->assertTrue($historyTransfer->getIsChange());
+    }
+
+    /**
+     * @return void
+     */
+    public function testMapsMetricHistoryTransferFieldsOntoTheEntity(): void
+    {
+        // Arrange
+        $historyTransfer = (new SearchRankingMetricHistoryTransfer())
+            ->setFkSearchRankingMetric(7)
+            ->setMetricName('top_seller')
+            ->setWeight(0.5)
+            ->setFormula('x / max')
+            ->setIsActive(true)
+            ->setIsHigherBetter(true)
+            ->setMinValue(0.0)
+            ->setMaxValue(100.0)
+            ->setMeanValue(50.0)
+            ->setMedianValue(50.0)
+            ->setSampleCount(3)
+            ->setPercentiles([0.0, 50.0, 100.0])
+            ->setFitRSquared(0.9)
+            ->setIsChange(true);
+
+        // Act
+        $historyEntity = (new SearchRankingMapper())->mapMetricHistoryTransferToEntity($historyTransfer, new SpySearchRankingMetricHistory());
+
+        // Assert
+        $this->assertSame(7, $historyEntity->getFkSearchRankingMetric());
+        $this->assertSame('top_seller', $historyEntity->getMetricName());
+        $this->assertSame('x / max', $historyEntity->getFormula());
+        $this->assertSame('0,50,100', $historyEntity->getPercentiles());
+        $this->assertSame(0.9, $historyEntity->getFitRSquared());
+        $this->assertTrue($historyEntity->getIsChange());
+    }
+
+    /**
+     * No digest existed yet at snapshot time (e.g. a brand-new metric) — the transfer's empty percentiles
+     * array must map to a genuinely NULL column, not an empty string, so "no digest" stays distinguishable
+     * from "a digest that happened to be empty".
+     *
+     * @return void
+     */
+    public function testMapsAnEmptyPercentilesArrayToANullColumnRatherThanAnEmptyString(): void
+    {
+        // Arrange
+        $historyTransfer = (new SearchRankingMetricHistoryTransfer())
+            ->setFkSearchRankingMetric(7)
+            ->setMetricName('brand_new_metric')
+            ->setWeight(0.1)
+            ->setFormula('x')
+            ->setIsActive(true)
+            ->setIsHigherBetter(true)
+            ->setIsChange(true);
+
+        // Act
+        $historyEntity = (new SearchRankingMapper())->mapMetricHistoryTransferToEntity($historyTransfer, new SpySearchRankingMetricHistory());
+
+        // Assert
+        $this->assertNull($historyEntity->getPercentiles());
     }
 }

@@ -20,8 +20,11 @@ use SprykerCommunity\Zed\SearchRanking\Business\Calibration\StatisticsCalculator
 use SprykerCommunity\Zed\SearchRanking\Business\Calibration\StatisticsCalculatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilder;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilderInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluator;
+use SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitter;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Fitting\RSquaredCalculator;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluator;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\MathFunctionProvider;
@@ -91,8 +94,10 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
     public function createMetricWriter(): MetricWriterInterface
     {
         return new MetricWriter(
+            $this->getRepository(),
             $this->getEntityManager(),
             $this->createFormulaEvaluator(),
+            $this->createMetricFormulaFitEvaluator(),
         );
     }
 
@@ -211,7 +216,26 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
      */
     public function createNormalizationCurveFitter(): NormalizationCurveFitterInterface
     {
-        return new NormalizationCurveFitter();
+        return new NormalizationCurveFitter($this->createRSquaredCalculator());
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Business\Fitting\RSquaredCalculator
+     */
+    public function createRSquaredCalculator(): RSquaredCalculator
+    {
+        return new RSquaredCalculator();
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface
+     */
+    public function createMetricFormulaFitEvaluator(): MetricFormulaFitEvaluatorInterface
+    {
+        return new MetricFormulaFitEvaluator(
+            $this->createFormulaEvaluator(),
+            $this->createRSquaredCalculator(),
+        );
     }
 
     /**

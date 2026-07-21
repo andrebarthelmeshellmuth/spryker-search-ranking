@@ -37,6 +37,19 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
     protected const REFINEMENT_PASS_COUNT = 6;
 
     /**
+     * @var \SprykerCommunity\Zed\SearchRanking\Business\Fitting\RSquaredCalculator
+     */
+    protected RSquaredCalculator $rSquaredCalculator;
+
+    /**
+     * @param \SprykerCommunity\Zed\SearchRanking\Business\Fitting\RSquaredCalculator $rSquaredCalculator
+     */
+    public function __construct(RSquaredCalculator $rSquaredCalculator)
+    {
+        $this->rSquaredCalculator = $rSquaredCalculator;
+    }
+
+    /**
      * {@inheritDoc}
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer $digestTransfer
@@ -453,9 +466,10 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
     }
 
     /**
-     * Standard R² = 1 - SS_res / SS_tot. Returns null (rather than NAN/INF) when the curve produces a
-     * non-finite value anywhere — an out-of-domain parameter is simply excluded from the search/ranking,
-     * never allowed to poison it.
+     * Delegates the actual R² math to {@see RSquaredCalculator}, shared with the metric-history
+     * fit-quality snapshot so both compute it identically. Returns null (rather than NAN/INF) when the
+     * curve produces a non-finite value anywhere — an out-of-domain parameter is simply excluded from
+     * the search/ranking, never allowed to poison it.
      *
      * @param array<int, array{x: float, y: float}> $points
      * @param callable $curveFunction fn(float $x, float $param): float
@@ -465,26 +479,14 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
      */
     protected function rSquared(array $points, callable $curveFunction, float $param): ?float
     {
-        $meanY = array_sum(array_column($points, 'y')) / count($points);
-        $sumSquaredResiduals = 0.0;
-        $sumSquaredTotal = 0.0;
+        $actualValues = array_column($points, 'y');
+        $predictedValues = [];
 
         foreach ($points as $point) {
-            $predicted = $curveFunction($point['x'], $param);
-
-            if (!is_finite($predicted)) {
-                return null;
-            }
-
-            $sumSquaredResiduals += ($point['y'] - $predicted) ** 2;
-            $sumSquaredTotal += ($point['y'] - $meanY) ** 2;
+            $predictedValues[] = $curveFunction($point['x'], $param);
         }
 
-        if ($sumSquaredTotal === 0.0) {
-            return $sumSquaredResiduals === 0.0 ? 1.0 : 0.0;
-        }
-
-        return 1 - $sumSquaredResiduals / $sumSquaredTotal;
+        return $this->rSquaredCalculator->calculate($actualValues, $predictedValues);
     }
 
     /**

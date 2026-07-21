@@ -33,6 +33,25 @@ closed-form curve-fit suggestions. See [Roadmap](#roadmap).
 - **Product values** (`spy_search_ranking_product_metric`): one row per (metric, abstract product)
   pair holding the **raw real-world value** (e.g. "8,250 impressions") and the **normalized value
   in ]0;1]** derived from it. Unique per pair, removed by cascade with either parent.
+- **Metric history** (`spy_search_ranking_metric_history`): every time a metric's formula, weight,
+  active flag or direction actually changes — via the Zed edit form today, or a future automated
+  parameter-tuning job — a snapshot is appended: the new config, the metric's digest at that moment
+  (min/max/mean/median/percentiles, null if none existed yet), and the new formula's R² against that
+  digest. Append-only, never updated; deliberately **not** a hard foreign key to the live metric row, so
+  history outlives a later rename or deletion. A save that changes nothing (a re-submitted, unmodified
+  form) writes no row — this is a change log, not an access log. `metricName` is denormalized for the
+  same outlive-the-live-row reason.
+
+  The `isChange` flag on every row (always `true` for today's writer) exists for a specific future need:
+  a periodic drift-detection job should compare a metric's CURRENT digest against the digest **as of its
+  last real change**, not merely against last month's snapshot — otherwise the comparison window silently
+  resets every period regardless of whether anything happened, and gradual multi-month drift can stay
+  invisible because each individual month-over-month delta looks small. Concretely: if a monthly check
+  finds the fit still adequate at 30 days and changes nothing, the *next* check should compare against the
+  30-day-old baseline grown to 60 days, not reset to "vs. 30 days ago" again — `isChange` is what lets that
+  job find the right anchor point (the newest row where `isChange = true`) instead of just the newest row.
+  A future check-only run (fit still fine, nothing changed) would append its own row with `isChange =
+  false`, extending the timeline without moving the anchor.
 - **Zed UI**:
   - `/search-ranking-gui` — metric list with create/edit/delete. Formulas are validated on save by
     trial evaluation; the exact parser error is shown on the form. Metric names are checked for
@@ -251,7 +270,7 @@ misbehaving formula cannot poison the data with zeros, negatives, `NaN` or `INF`
 
 | Module | Purpose |
 | --- | --- |
-| `SearchRanking` (Zed) | Propel schema, facade (CRUD, settings, formula validation, normalization, ES export/publish), expression evaluator, distribution-digest builder, curve-fit suggester, formula-preview builder, ProductPageSearch export plugins, `search-ranking:normalize` / `search-ranking:randomize` console commands |
+| `SearchRanking` (Zed) | Propel schema, facade (CRUD, settings, formula validation, normalization, ES export/publish, metric-history recording), expression evaluator, distribution-digest builder, curve-fit suggester, formula-preview builder, per-formula fit evaluator, ProductPageSearch export plugins, `search-ranking:normalize` / `search-ranking:randomize` console commands |
 | `SearchRanking` (Client) | `SearchRankingFunctionScoreQueryExpanderPlugin` + painless script builder |
 | `SearchRankingGui` | Zed UI controllers, tables, forms (metrics + settings), navigation entry |
 | `SearchRankingStorage` (Zed) | Ranking-configuration storage table with synchronization behavior, publish writer, sync-data plugin |
@@ -569,9 +588,13 @@ loader (per-payload score mapping), the publish trigger (event chunking), the fu
 (script shape, zero-weight skipping, script-injection guarding, null on empty configuration), the
 distribution-digest builder (percentile-backbone correctness, order-independence), the curve fitter (a
 linearly-spread digest recovers a near-perfect linear fit, a saturating digest fits clearly better than
-linear, `isHigherBetter=false` swaps in the decay candidate), and the metric randomizer (no-op when the
-metric is missing or inactive, re-normalizes and republishes only when it is active) as pure unit
-tests — no database needed. The Client suite lives at `tests/SprykerCommunityTest/Client/SearchRanking`.
+linear, `isHigherBetter=false` swaps in the decay candidate), the metric randomizer (no-op when the
+metric is missing or inactive, re-normalizes and republishes only when it is active), the shared R²
+calculator and per-formula fit evaluator (both feeding the metric-history snapshot), and the metric
+writer's history recording (an initial row for a brand-new metric, no row when nothing tracked actually
+changed, the digest snapshot and fit quality captured correctly when a formula change has an existing
+digest to compare against) as pure unit tests — no database needed. The Client suite lives at
+`tests/SprykerCommunityTest/Client/SearchRanking`.
 
 For that reason the suites are **not** part of CI: a clean runner has neither a Spryker shop nor a search
 cluster, and standing both up per build would cost far more than it returns. CI therefore covers the

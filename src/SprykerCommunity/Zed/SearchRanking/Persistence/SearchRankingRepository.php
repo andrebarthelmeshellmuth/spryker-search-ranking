@@ -13,6 +13,7 @@ use Generated\Shared\Transfer\SearchRankingCalibrationSearchTermTransfer;
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingProductMetricTransfer;
@@ -351,5 +352,51 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
         return $this->getFactory()
             ->createSearchRankingMapper()
             ->mapMetricDigestEntityToTransfer($digestEntity, new SearchRankingMetricDigestTransfer());
+    }
+
+    /**
+     * @param int $idSearchRankingMetric
+     *
+     * @return array<\Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer>
+     */
+    public function getMetricHistory(int $idSearchRankingMetric): array
+    {
+        $historyEntities = $this->getFactory()
+            ->createSearchRankingMetricHistoryQuery()
+            ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->orderByIdSearchRankingMetricHistory(Criteria::DESC)
+            ->find();
+
+        $mapper = $this->getFactory()->createSearchRankingMapper();
+        $historyTransfers = [];
+
+        foreach ($historyEntities as $historyEntity) {
+            $historyTransfers[] = $mapper->mapMetricHistoryEntityToTransfer($historyEntity, new SearchRankingMetricHistoryTransfer());
+        }
+
+        return $historyTransfers;
+    }
+
+    /**
+     * @param int $idSearchRankingMetric
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer|null
+     */
+    public function findLastMetricChangeHistoryEntry(int $idSearchRankingMetric): ?SearchRankingMetricHistoryTransfer
+    {
+        $historyEntity = $this->getFactory()
+            ->createSearchRankingMetricHistoryQuery()
+            ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->filterByIsChange(true)
+            ->orderByIdSearchRankingMetricHistory(Criteria::DESC)
+            ->findOne();
+
+        if ($historyEntity === null) {
+            return null;
+        }
+
+        return $this->getFactory()
+            ->createSearchRankingMapper()
+            ->mapMetricHistoryEntityToTransfer($historyEntity, new SearchRankingMetricHistoryTransfer());
     }
 }

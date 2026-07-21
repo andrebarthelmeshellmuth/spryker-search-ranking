@@ -11,6 +11,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 
 use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 
 interface SearchRankingEntityManagerInterface
@@ -107,4 +108,13 @@ interface SearchRankingEntityManagerInterface
      * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer
      */
     public function saveMetricDigest(SearchRankingMetricDigestTransfer $digestTransfer): SearchRankingMetricDigestTransfer;
+
+    /**
+     * Always inserts a new row — history is append-only, never updated or upserted.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer $historyTransfer
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer
+     */
+    public function recordMetricHistory(SearchRankingMetricHistoryTransfer $historyTransfer): SearchRankingMetricHistoryTransfer;
 }

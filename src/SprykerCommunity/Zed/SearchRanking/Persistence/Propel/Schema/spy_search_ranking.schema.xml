@@ -128,4 +128,34 @@
         </index>
     </table>
 
+    <table name="spy_search_ranking_metric_history" idMethod="native" identifierQuoting="true">
+        <column name="id_search_ranking_metric_history" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="fk_search_ranking_metric" type="INTEGER" required="true" description="Deliberately NOT a Propel foreign key (see below) — plain indexed column only."/>
+        <column name="metric_name" type="VARCHAR" size="128" required="true" description="Denormalized: history must stay readable even if the live metric is later renamed or deleted."/>
+        <column name="weight" type="FLOAT" required="true" description="spy_search_ranking_metric.weight at the time of this snapshot."/>
+        <column name="formula" type="VARCHAR" size="512" required="true" description="spy_search_ranking_metric.formula at the time of this snapshot."/>
+        <column name="is_active" type="BOOLEAN" required="true"/>
+        <column name="is_higher_better" type="BOOLEAN" required="true"/>
+        <column name="min_value" type="DOUBLE" required="false" description="The metric's digest at the time of this snapshot, null if no digest existed yet (e.g. a brand-new metric with no product-metric rows)."/>
+        <column name="max_value" type="DOUBLE" required="false"/>
+        <column name="mean_value" type="DOUBLE" required="false"/>
+        <column name="median_value" type="DOUBLE" required="false"/>
+        <column name="sample_count" type="INTEGER" required="false"/>
+        <column name="percentiles" type="LONGVARCHAR" required="false" description="Comma-separated 101-point percentile backbone at the time of this snapshot, same shape as spy_search_ranking_metric_digest.percentiles."/>
+        <column name="fit_r_squared" type="DOUBLE" required="false" description="R² of `formula` (this row's) against `percentiles` (this row's) at the time of this snapshot; null if no digest existed yet to fit against."/>
+        <column name="is_change" type="BOOLEAN" required="true" defaultValue="true" description="True: this row records an actual formula/weight/isActive/isHigherBetter change (what search-ranking:randomize-style writers and manual saves both produce today). False: reserved for a future periodic check-only snapshot (no change made) — lets a drift-detection query anchor on the last REAL change rather than the last snapshot taken, so an unchanged formula's comparison baseline correctly grows (30 days, then 60, then 90, ...) instead of resetting to the most recent check every time."/>
+
+        <behavior name="timestampable"/>
+        <id-method-parameter value="spy_search_ranking_metric_history_pk_seq"/>
+
+        <index name="index-spy_srmh-fk_search_ranking_metric">
+            <index-column name="fk_search_ranking_metric"/>
+        </index>
+
+        <index name="index-spy_srmh-fk_metric_is_change">
+            <index-column name="fk_search_ranking_metric"/>
+            <index-column name="is_change"/>
+        </index>
+    </table>
+
 </database>

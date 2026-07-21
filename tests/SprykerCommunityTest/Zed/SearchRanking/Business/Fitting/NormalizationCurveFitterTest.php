@@ -13,6 +13,7 @@ use Codeception\Test\Unit;
 use Generated\Shared\Transfer\SearchRankingCurveFitCandidateTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitter;
+use SprykerCommunity\Zed\SearchRanking\Business\Fitting\RSquaredCalculator;
 
 /**
  * The core value proposition of the fitter is being distribution-agnostic: a linearly-spread metric should
@@ -42,7 +43,7 @@ class NormalizationCurveFitterTest extends Unit
     public function testALinearlySpreadDigestGetsAnAlmostPerfectWinningFit(): void
     {
         // Arrange
-        $fitter = new NormalizationCurveFitter();
+        $fitter = new NormalizationCurveFitter(new RSquaredCalculator());
         $percentiles = [];
 
         for ($i = 0; $i <= 100; $i++) {
@@ -69,7 +70,7 @@ class NormalizationCurveFitterTest extends Unit
     public function testASaturatingDigestFitsClearlyBetterThanLinear(): void
     {
         // Arrange
-        $fitter = new NormalizationCurveFitter();
+        $fitter = new NormalizationCurveFitter(new RSquaredCalculator());
         $k = 100.0;
         $percentiles = [];
 
@@ -104,7 +105,7 @@ class NormalizationCurveFitterTest extends Unit
     public function testDirectionFalseOffersDecayInsteadOfTheSaturatingRatioFamily(): void
     {
         // Arrange
-        $fitter = new NormalizationCurveFitter();
+        $fitter = new NormalizationCurveFitter(new RSquaredCalculator());
         $percentiles = [];
 
         for ($i = 0; $i <= 100; $i++) {
