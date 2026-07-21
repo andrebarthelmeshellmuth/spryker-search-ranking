@@ -542,6 +542,11 @@ Example files ship in this package under `data/import/`.
       operate on.
 - [ ] **Phase 5** — live weight-tuning sliders on the SRP for privileged admins ("weltherrschaftformula")
 - [ ] **Phase 6** — learning-rate based weight adoption with audit log and rollback
+- [ ] **Monthly auto-tune cron/GUI** — periodic fit-quality check per metric against
+      `spy_search_ranking_metric_history`'s `isChange`-anchored baseline (see above), with configurable
+      auto-update-vs-notify behavior and a before/after summary
+- [ ] `search-ranking:check-compatibility` console command — probes the search engine's actual query-DSL
+      capabilities (OpenSearch vs. Elasticsearch diverge) rather than trusting a version string
 
 ## Testing and CI
 
