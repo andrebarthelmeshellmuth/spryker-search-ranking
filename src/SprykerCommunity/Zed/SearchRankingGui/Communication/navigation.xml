@@ -36,6 +36,13 @@
                 <controller>calibration</controller>
                 <action>index</action>
             </search-ranking-calibration>
+            <search-ranking-metric-history>
+                <label>History</label>
+                <title>Metric History</title>
+                <bundle>search-ranking-gui</bundle>
+                <controller>metric-history</controller>
+                <action>index</action>
+            </search-ranking-metric-history>
             <search-ranking-calibration-apply>
                 <label>Apply Calibration</label>
                 <title>Apply Calibration</title>

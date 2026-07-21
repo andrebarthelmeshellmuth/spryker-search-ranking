@@ -1,0 +1,16 @@
+{% extends '@Gui/Layout/layout.twig' %}
+
+{% set widget_title = 'Metric History' %}
+{% block section_title %}{{ widget_title }}{% endblock %}
+
+{% block action %}
+    {{ backActionButton('/search-ranking-gui', 'Back to Metrics' | trans) }}
+{% endblock %}
+
+{% block content %}
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Every recorded metric config change, newest first' } %}
+        {% block widget_content %}
+            {{ metricHistoryTable | raw }}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

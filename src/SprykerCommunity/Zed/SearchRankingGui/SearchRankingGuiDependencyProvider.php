@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRankingGui;
 
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistoryQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery;
 use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
@@ -51,6 +52,11 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
     public const PROPEL_QUERY_SEARCH_RANKING_PRODUCT_METRIC = 'PROPEL_QUERY_SEARCH_RANKING_PRODUCT_METRIC';
 
     /**
+     * @var string
+     */
+    public const PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY = 'PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY';
+
+    /**
      * @param \Spryker\Zed\Kernel\Container $container
      *
      * @return \Spryker\Zed\Kernel\Container
@@ -64,6 +70,7 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
         $container = $this->addLocaleFacade($container);
         $container = $this->addSearchRankingMetricPropelQuery($container);
         $container = $this->addSearchRankingProductMetricPropelQuery($container);
+        $container = $this->addSearchRankingMetricHistoryPropelQuery($container);
 
         return $container;
     }
@@ -155,6 +162,20 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
     {
         $container->set(static::PROPEL_QUERY_SEARCH_RANKING_PRODUCT_METRIC, $container->factory(function () {
             return SpySearchRankingProductMetricQuery::create();
+        }));
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addSearchRankingMetricHistoryPropelQuery(Container $container): Container
+    {
+        $container->set(static::PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY, $container->factory(function () {
+            return SpySearchRankingMetricHistoryQuery::create();
         }));
 
         return $container;

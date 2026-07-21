@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRankingGui\Communication;
 
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistoryQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery;
 use Spryker\Zed\Gui\Communication\Form\DeleteForm;
@@ -20,6 +21,7 @@ use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\DataProvider\Metric
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\MetricForm;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\NormalizeWeightsForm;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\SettingsForm;
+use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricHistoryTable;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricTable;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricTable;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToLocaleFacadeInterface;
@@ -45,6 +47,14 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     public function createProductMetricTable(): ProductMetricTable
     {
         return new ProductMetricTable($this->getSearchRankingProductMetricPropelQuery());
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricHistoryTable
+     */
+    public function createMetricHistoryTable(): MetricHistoryTable
+    {
+        return new MetricHistoryTable($this->getSearchRankingMetricHistoryPropelQuery());
     }
 
     /**
@@ -171,5 +181,13 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     public function getSearchRankingProductMetricPropelQuery(): SpySearchRankingProductMetricQuery
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::PROPEL_QUERY_SEARCH_RANKING_PRODUCT_METRIC);
+    }
+
+    /**
+     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistoryQuery
+     */
+    public function getSearchRankingMetricHistoryPropelQuery(): SpySearchRankingMetricHistoryQuery
+    {
+        return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY);
     }
 }

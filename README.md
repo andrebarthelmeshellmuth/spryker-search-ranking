@@ -58,6 +58,15 @@ closed-form curve-fit suggestions. See [Roadmap](#roadmap).
     uniqueness. Deletion is a CSRF-protected POST.
   - `/search-ranking-gui/product-metric` — read-only, searchable table of all product values
     (abstract SKU, metric, raw value, normalized value, last update).
+  - `/search-ranking-gui/metric-history` — read-only, searchable, newest-first table of every row in
+    `spy_search_ranking_metric_history`: the metric name and formula at that point in time, weight,
+    active flag, direction, the formula's R² fit against the digest at that moment (a dash when no
+    digest existed yet), and whether the row is a real change or a check-only snapshot (see `isChange`
+    above). Each row links back to the live metric's edit page via its `fkSearchRankingMetric` (the
+    metric itself may since have been renamed or deleted — the link simply 404s in that case, since the
+    history row intentionally keeps no hard foreign key). No filtering by metric or date range yet; add
+    a `?id-search-ranking-metric=` query-string constraint here if that becomes necessary once the table
+    grows.
   - **Normalization-authoring preview** (on the metric edit page): as you type a formula, a debounced
     request asks the server to evaluate it at ~100 sample points spanning the metric's own real
     distribution (never a JS reimplementation of the expression-language math) and draws the resulting
