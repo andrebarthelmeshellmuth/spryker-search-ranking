@@ -66,7 +66,9 @@ closed-form curve-fit suggestions. See [Roadmap](#roadmap).
   — bulk data loader, data expander, map expander — that writes each product's normalized values
   into its page document as `scores: {metricName: value}`. Products without values get no `scores`
   field. After normalizing, the cron triggers `Product.product_abstract.publish` events (chunked)
-  for all scored products so the documents refresh; `--skip-publish` suppresses that.
+  for all scored products so the documents refresh; `--skip-publish` suppresses that — a full
+  product-page republish rather than a partial score-only write, deliberately; see
+  [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update).
 - **function_score ranking**: a `QueryExpanderPlugin` wraps the catalog search query in a
   `function_score` with the painless script
   `params.relevanceWeight * (_score / (_score + params.relevanceSaturationPoint)) + (1 - params.relevanceWeight) * (params.w0 * doc['scores.metric'] + …)` —
@@ -164,6 +166,45 @@ overlay's `signal × weight = contribution` lines show the real, effective weigh
 whatever raw number was typed into the Zed form. All-zero (or zero active metrics) is left as-is rather
 than dividing by zero — `FunctionScoreBuilder` already treats that as "no usable business signal" and
 steps aside to pure text relevance.
+
+## Why full republish, not a partial score-only ES update
+
+After normalizing, the cron re-triggers the standard `Product.product_abstract.publish` event for every
+scored product — the same full product-page export every other product change (price, stock, category)
+already goes through — rather than writing just the changed `scores.*` values directly into Elasticsearch.
+**We do full updates always for business score updates because:**
+
+- **A partial ES update isn't actually cheap at the storage layer.** Lucene segments are immutable, so
+  there is no such thing as patching one field of an existing document in place — Elasticsearch's own
+  `_update` API internally does a read-modify-write: fetch the current `_source`, merge the given fields
+  in, delete the old Lucene document, index a new one. The write cost on the Elasticsearch side is
+  essentially the same as a full document replace either way. Whatever is saved by "only touching scores"
+  is saved entirely on the **Zed side** (skipping the Propel queries and the other `ProductPageSearch`
+  plugins for price/images/categories/stock), not on the Elasticsearch side.
+- **The publish/queue pipeline's resilience would otherwise be lost.** `Product.product_abstract.publish`
+  goes through Spryker's normal event → queue → consumer path — retryable, store-aware, already the
+  well-tested mechanism every other republish need in this shop relies on. A direct Zed-side ES write
+  (raw Elastica, same landmine as firing search queries from Zed) would be a synchronous call with no
+  retry: one failure mid-batch leaves the run partially stale with no recovery path.
+- **The full republish quietly self-heals other drift for scored products.** Re-collecting the whole
+  product document from Propel on every normalize run also picks up anything else that changed since the
+  last export (price, stock, category) for that product. A scores-only write would not — it would become
+  a second, silently-diverging write path for the same document.
+- **A partial update racing a concurrent full republish is a real lost-update risk.** `_update`'s
+  read-then-merge reads whatever `_source` happens to be current at that moment; without optimistic
+  concurrency control (`_seq_no`/`_primary_term`), a scores-only write that read a stale document could
+  overwrite a concurrent price/stock change's fields back to what it saw, even though neither write was
+  "wrong" on its own. Always re-collecting a fresh document from Propel sidesteps this entirely.
+
+**You should change this if** the update cadence stops being "hourly cron over the scored subset" and
+becomes near-real-time (every few minutes) at a high scored-product count, to the point where the Zed-side
+data-collection cost (not the Elasticsearch write cost, which will not improve) is the actual bottleneck.
+Even then, the right design is not a raw synchronous Zed → Elasticsearch call: it is a dedicated, lightweight
+synchronization resource + queue consumer carrying just `{idProductAbstract: scores}`, reusing the exact
+pattern this package already uses for its own ranking-configuration document
+(`spy_search_ranking_configuration_storage` / `SearchRankingConfigurationSynchronizationDataPlugin`) —
+same queue-based resilience and store-awareness, just a narrower payload than the full product page. That
+is real new infrastructure, not a quick tweak, and is not worth building ahead of an actual need for it.
 
 ## Normalization formulas
 
