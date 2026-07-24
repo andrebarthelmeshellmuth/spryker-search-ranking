@@ -129,6 +129,44 @@ class FormulaEvaluatorTest extends Unit
     }
 
     /**
+     * A syntactically valid expression that evaluates cleanly (no Throwable) to a non-numeric PHP value
+     * must still be rejected — a metric weight downstream expects a float, not a string.
+     *
+     * @return void
+     */
+    public function testThrowsWhenFormulaEvaluatesToANonNumericResult(): void
+    {
+        // Arrange
+        $formulaEvaluator = $this->createFormulaEvaluator();
+
+        // Assert
+        $this->expectException(FormulaEvaluationException::class);
+        $this->expectExceptionMessage('evaluated to a non-numeric result');
+
+        // Act
+        $formulaEvaluator->evaluate('"just a string"', []);
+    }
+
+    /**
+     * Float overflow (unlike division by zero) raises no PHP warning at all — it silently produces INF —
+     * so this exercises the dedicated `is_finite()` guard rather than the try/catch around evaluation.
+     *
+     * @return void
+     */
+    public function testThrowsWhenFormulaEvaluatesToANonFiniteResult(): void
+    {
+        // Arrange
+        $formulaEvaluator = $this->createFormulaEvaluator();
+
+        // Assert
+        $this->expectException(FormulaEvaluationException::class);
+        $this->expectExceptionMessage('evaluated to a non-finite number');
+
+        // Act
+        $formulaEvaluator->evaluate('1.0e308 * 10', []);
+    }
+
+    /**
      * @return void
      */
     public function testValidateAcceptsWellFormedFormula(): void

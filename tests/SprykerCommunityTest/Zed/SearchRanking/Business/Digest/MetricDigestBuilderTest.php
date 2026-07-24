@@ -10,14 +10,19 @@ declare(strict_types = 1);
 namespace SprykerCommunityTest\Zed\SearchRanking\Business\Digest;
 
 use Codeception\Test\Unit;
+use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilder;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
 /**
- * `rebuildDigest()`/`rebuildDigests()` need a real repository/entity manager and are left to integration
- * coverage — but `buildDigest()` takes a plain array and returns a transfer with no persistence access at
- * all, so it is exercised directly here, the same shape as `StatisticsCalculatorTest`.
+ * `buildDigest()` takes a plain array and returns a transfer with no persistence access at all, so it is
+ * exercised directly, the same shape as `StatisticsCalculatorTest`. `rebuildDigest()`/`rebuildDigests()`
+ * only orchestrate calls against `SearchRankingRepositoryInterface`/`SearchRankingEntityManagerInterface`
+ * — both plain interfaces — so they are exercised with mocks below rather than left to integration
+ * coverage.
  *
  * Auto-generated group annotations
  *
@@ -133,6 +138,91 @@ class MetricDigestBuilderTest extends Unit
         $this->assertSame($sortedResult->getMaxValue(), $scrambledResult->getMaxValue());
         $this->assertSame($sortedResult->getMedianValue(), $scrambledResult->getMedianValue());
         $this->assertSame($sortedResult->getPercentiles(), $scrambledResult->getPercentiles());
+    }
+
+    /**
+     * A metric with no raw values yet (e.g. freshly created, cron hasn't collected anything) must be
+     * skipped rather than persisted as an empty/bogus digest.
+     *
+     * @return void
+     */
+    public function testRebuildDigestReturnsFalseAndSavesNothingWhenNoRawValuesExist(): void
+    {
+        // Arrange
+        $repository = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repository->method('getRawValues')->with(7)->willReturn([]);
+
+        $entityManager = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManager->expects($this->never())->method('saveMetricDigest');
+
+        $builder = new MetricDigestBuilder($repository, $entityManager);
+
+        // Act
+        $result = $builder->rebuildDigest(7);
+
+        // Assert
+        $this->assertFalse($result);
+    }
+
+    /**
+     * @return void
+     */
+    public function testRebuildDigestBuildsAndSavesADigestAttributedToTheGivenMetric(): void
+    {
+        // Arrange
+        $repository = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repository->method('getRawValues')->with(7)->willReturn([10.0, 20.0, 30.0]);
+
+        $savedDigestTransfer = null;
+
+        $entityManager = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManager->expects($this->once())
+            ->method('saveMetricDigest')
+            ->willReturnCallback(function (SearchRankingMetricDigestTransfer $digestTransfer) use (&$savedDigestTransfer) {
+                $savedDigestTransfer = $digestTransfer;
+
+                return $digestTransfer;
+            });
+
+        $builder = new MetricDigestBuilder($repository, $entityManager);
+
+        // Act
+        $result = $builder->rebuildDigest(7);
+
+        // Assert
+        $this->assertTrue($result);
+        $this->assertSame(7, $savedDigestTransfer->getFkSearchRankingMetric());
+        $this->assertSame(20.0, $savedDigestTransfer->getMeanValue());
+    }
+
+    /**
+     * @return void
+     */
+    public function testRebuildDigestsProcessesOnlyMetricsWithRawValuesAndCountsThem(): void
+    {
+        // Arrange
+        $metricWithData = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(1);
+        $metricWithoutData = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(2);
+
+        $repository = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repository->method('getActiveMetricCollection')->willReturn(
+            (new SearchRankingMetricCollectionTransfer())->addMetric($metricWithData)->addMetric($metricWithoutData),
+        );
+        $repository->method('getRawValues')->willReturnMap([
+            [1, [5.0, 15.0]],
+            [2, []],
+        ]);
+
+        $entityManager = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManager->expects($this->once())->method('saveMetricDigest');
+
+        $builder = new MetricDigestBuilder($repository, $entityManager);
+
+        // Act
+        $processedCount = $builder->rebuildDigests();
+
+        // Assert
+        $this->assertSame(1, $processedCount);
     }
 
     /**
