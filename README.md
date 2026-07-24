@@ -380,7 +380,52 @@ Anywhere **after** the abstract products are imported:
   source: data/import/common/common/search_ranking_product_metric.csv
 ```
 
-### 6. Schedule the normalization cron
+### 6. Translations for the Zed GUI
+
+Zed's `trans` filter does **not** read from the Glossary module (that's a Yves/Client-facing,
+Redis-backed mechanism) — it uses `spryker/translator`'s own CSV-catalog loader, which only scans
+`vendor/spryker/*`, `vendor/spryker-shop/*` and `vendor/spryker-feature/*` by convention. Since this
+package lives under `vendor/spryker-community/*`, extend your project's
+`Pyz\Zed\Translator\TranslatorConfig::getCoreTranslationFilePathPatterns()` **once** to also scan that
+namespace:
+
+```php
+$coreTranslationFilePathPatterns[] = APPLICATION_VENDOR_DIR . '/spryker-community/*/data/translation/Zed/[a-z][a-z]_[A-Z][A-Z].csv';
+```
+
+That one addition auto-discovers this package's [`data/translation/Zed/en_US.csv`](data/translation/Zed/en_US.csv)
+and [`de_DE.csv`](data/translation/Zed/de_DE.csv) — no per-project copy step, unlike the Yves-side
+glossary convention. Add further locale CSVs here (or override the translated text) as your project
+needs, then refresh the cache:
+
+```bash
+vendor/bin/console translator:clean-cache
+vendor/bin/console translator:generate-cache
+```
+
+### 7. Register the Zed navigation entry
+
+Unlike the translations above, Zed's navigation menu has no glob-based auto-discovery for
+`vendor/spryker-community/*` — this is standard Spryker behavior, not something specific to this
+package (core `spryker/cms-gui`'s own README documents the identical step for itself). Copy the
+`<search-ranking-gui>` block from this package's
+[`src/SprykerCommunity/Zed/SearchRankingGui/Communication/navigation.xml`](src/SprykerCommunity/Zed/SearchRankingGui/Communication/navigation.xml)
+into your project's own `config/Zed/navigation.xml`, then rebuild the navigation cache — delete the
+generated cache files first, since `navigation:build-cache` alone re-serializes whatever is already
+cached rather than recomputing it:
+
+```bash
+rm -f src/Generated/Zed/Navigation/codeBucket/navigation*.cache
+vendor/bin/console navigation:build-cache
+```
+
+That gives the full "Search Ranking" sidebar group with all 5 visible pages (Metrics, Product Values,
+Settings, Calibration, History). If you'd rather not duplicate the whole page list, copying just the
+top-level `<search-ranking-gui>` entry (drop the `<pages>` block) still gives one working sidebar link
+into `/search-ranking-gui` — the individual pages stay reachable via their own in-page action buttons
+(Back to Metrics, View Product Values, Calibrate k, etc.) instead of a dropdown.
+
+### 8. Schedule the normalization cron
 
 E.g. hourly, in `Pyz\Zed\SymfonyScheduler\SymfonySchedulerConfig::getCronJobs()`:
 
@@ -407,7 +452,7 @@ either. Confirm both `new SearchRankingRandomizeConsole()` (step 3) and the
 `search-ranking-randomize` cron entry above are actually present in your project's own
 `ConsoleDependencyProvider` and `SymfonySchedulerConfig`, not just documented here.
 
-### 7. Register the Elasticsearch export plugins
+### 9. Register the Elasticsearch export plugins
 
 In `Pyz\Zed\ProductPageSearch\ProductPageSearchDependencyProvider`:
 
@@ -427,7 +472,7 @@ $dataExpanderPlugins[SearchRankingConfig::PLUGIN_SEARCH_RANKING_SCORES_DATA] = n
 new SearchRankingScoresMapExpanderPlugin(),
 ```
 
-### 8. Register the package's search schema directory
+### 10. Register the package's search schema directory
 
 The core schema loader only scans `vendor/spryker/*`, so extend
 `Pyz\Zed\SearchElasticsearch\SearchElasticsearchConfig`:
@@ -442,7 +487,7 @@ public function getJsonSchemaDefinitionDirectories(): array
 }
 ```
 
-### 9. Register the ranking-configuration sync queue
+### 11. Register the ranking-configuration sync queue
 
 The queue `sync.storage.search_ranking` needs the usual three registrations, plus a fourth if your
 shop routes queues through Symfony Messenger (current demoshops do):
@@ -465,7 +510,7 @@ SearchRankingStorageConfig::SYNC_STORAGE_SEARCH_RANKING_QUEUE,
 Restart any long-running `symfonymessenger:consume` workers afterwards — they hold the old queue
 configuration until their time limit expires.
 
-### 10. Register the function_score query expander
+### 12. Register the function_score query expander
 
 In `Pyz\Client\Catalog\CatalogDependencyProvider::createCatalogSearchQueryExpanderPlugins()`,
 **after `FacetQueryExpanderPlugin`** — earlier expanders require the root query to still be a
@@ -478,7 +523,7 @@ new FacetQueryExpanderPlugin(),
 new SearchRankingFunctionScoreQueryExpanderPlugin(),
 ```
 
-### 11. Optional: register the search-debug overlay section
+### 13. Optional: register the search-debug overlay section
 
 With spryker-community/search-debug installed, extend its client dependency provider on project
 level (`Pyz\Client\SearchDebug\SearchDebugDependencyProvider`):
@@ -494,7 +539,7 @@ protected function getProductDebugDataExpanderPlugins(): array
 }
 ```
 
-### 12. Build
+### 14. Build
 
 ```bash
 vendor/bin/console transfer:generate
@@ -554,11 +599,55 @@ Example files ship in this package under `data/import/`.
       operate on.
 - [x] **`search-ranking:check-compatibility`** — probes the search engine's actual capabilities
       (`_validate/query` + a `_rank_eval` recognition check) rather than trusting a version string
+### v1.0 (next — scoped 2026-07-21)
+
 - [ ] **Phase 5** — live weight-tuning sliders on the SRP for privileged admins ("weltherrschaftformula")
-- [ ] **Phase 6** — learning-rate based weight adoption with audit log and rollback
+- [ ] **Phase 6** — tier-2 submit / tier-3 batch-apply + named checkpoints, learning-rate based weight
+      adoption with audit log and rollback, **including frequency-weighted consensus**: proposals are
+      blended weighted by their `search_term`'s query-importance rather than a plain unweighted mean, so
+      a proposal tuned against a high-volume query pulls the blend harder than one tuned against a rare
+      one-off term. This is a scoped resolution of the tension below (`search_term` as a weighting
+      signal on one global config), not the full query-dependent weighting gap.
+- [ ] **Objective-function evaluation (standalone)** — score ranking changes against `_rank_eval`
+      (nDCG/MRR/precision@k) instead of eyeballing the SRP; the existing Calibration feature already does
+      ~80% of the plumbing (search terms → live query → sampled top-N), the missing piece is a per-result
+      relevance judgment plus a per-query importance weight (so the aggregate score isn't a plain
+      unweighted mean across queries either — same weighting concept as the Phase 6 item above). Query
+      sourcing note: `spryker/google-analytics`'s "Search Statistics" page (Top Search Terms / Top
+      Zero-Result Searches) would be a strictly better source than manually curated terms once a real GA4
+      property is connected — real search frequency plus zero-result queries as a natural prioritization
+      signal — but it needs an actual `integrations:google_analytics:connection:service_account_credentials_json`
+      and real traffic, neither of which a demo shop has; the judgment (rating) half is unaffected either way.
+      Ships **standalone** in v1.0 — not yet wired into Phase 6's apply flow, see deferred below.
 - [ ] **Monthly auto-tune cron/GUI** — periodic fit-quality check per metric against
       `spy_search_ranking_metric_history`'s `isChange`-anchored baseline (see above), with configurable
-      auto-update-vs-notify behavior and a before/after summary
+      auto-update-vs-notify behavior and a before/after summary. Most of the groundwork (the `isChange`
+      flag, the anchor-lookup query) already shipped alongside the metric-history table itself; only the
+      cron command and its settings page remain.
+
+### Deferred (v1.1+)
+
+- **Objective-function ↔ Phase 6 wiring** — surface the weighted `_rank_eval` score inside tier-3's
+  live preview ("weighted objective score: 0.71 → 0.74 if applied") so Apply is gated by an actual
+  measurement, not just averaged admin opinion. Depends on both v1.0 items above existing and being
+  stable first, so it's deliberately a follow-up integration rather than part of the same release.
+- **GAP 1 — `rank_features` field type** — needs prototyping/benchmarking and a reindex; must ship
+  together with a search-debug `ExplanationParser` update since it changes the explain-tree shape.
+  Realistically a v2-scale item, not v1.1.
+- **GAP 3 — recency/time decay** (`gauss`/`exp`/`linear` decay, `distance_feature`) — cheap, no reindex
+  needed, arguably the #2 commerce signal after text relevance. Not required for v1.0's coherence, but
+  a natural v1.1 candidate given the low cost.
+- **GAP 5 — demotion + curation** — soft-expressible today via inverted formulas; first-class support
+  and merchandiser pinning (hand-rolled, since OpenSearch has no `pinned` query) can wait.
+
+### Cut (not planned)
+
+- **GAP 4 — query-dependent/contextual weighting** (different weight profile per query intent —
+  exact-SKU vs. browsy vs. category). Deliberately excluded rather than merely deferred: it would change
+  the shape of nearly everything already built (weight sets keyed by profile instead of flat, runtime
+  query classification on the hot path, Phase 5/6 UI becoming profile-aware, the judgment set needing
+  per-profile partitioning) for a benefit that's speculative without a concrete driving need. Revisit
+  only if one shows up.
 
 ## Testing and CI
 
@@ -632,3 +721,22 @@ Static analysis (`phpstan`) is likewise run from a host shop rather than in CI: 
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Acknowledgements
+
+Search Ranking is an original project, but it reflects more than a decade of building search solutions
+for e-commerce. Along the way, I had the privilege of working with engineers whose ideas and experience
+shaped my approach to search engineering.
+
+I'd particularly like to thank:
+
+- **Martin Loetsch** — for the architectural ideas behind Contorion's early search platform.
+- **Krešimir Slugan** — who handed over Contorion's search implementation to me and demonstrated an
+  uncompromising focus on performance.
+- **Alberto Reyer** (formerly Assmann) — for sharing the history and rationale behind Spryker Search's
+  original design decisions and the engineering trade-offs behind them.
+
+I'd also like to acknowledge the Spryker engineering team for creating an extensible platform that made
+community packages like Search Ranking possible.
+
+Any mistakes, questionable design decisions or bugs in this project are, of course, entirely my own.

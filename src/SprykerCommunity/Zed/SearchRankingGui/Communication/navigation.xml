@@ -3,7 +3,7 @@
     <search-ranking-gui>
         <label>Search Ranking</label>
         <title>Search Ranking</title>
-        <icon>fa-sliders</icon>
+        <icon>tune</icon>
         <bundle>search-ranking-gui</bundle>
         <controller>index</controller>
         <action>index</action>
