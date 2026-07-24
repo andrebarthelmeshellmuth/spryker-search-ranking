@@ -28,4 +28,17 @@ interface MetricWriterInterface
      * @return void
      */
     public function deleteMetric(int $idSearchRankingMetric): void;
+
+    /**
+     * Appends an `isChange=false` history row for $metricTransfer's CURRENT (unmodified) config and digest
+     * — used by the auto-tune job when a metric's fit was checked but no update was applied (either
+     * because the fit is still adequate, or because auto-update is switched off), so the history/audit
+     * timeline stays complete even on runs that change nothing. Never call this after an actual
+     * config change — {@see saveMetric()} already records an `isChange=true` row for that itself.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     *
+     * @return void
+     */
+    public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer): void;
 }

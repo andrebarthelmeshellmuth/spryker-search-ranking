@@ -130,6 +130,29 @@ class MetricWriter implements MetricWriterInterface
      */
     protected function recordHistory(SearchRankingMetricTransfer $metricTransfer): void
     {
+        $this->entityManager->recordMetricHistory($this->buildHistoryTransfer($metricTransfer, true));
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     *
+     * @return void
+     */
+    public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer): void
+    {
+        $this->entityManager->recordMetricHistory($this->buildHistoryTransfer($metricTransfer, false));
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param bool $isChange
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer
+     */
+    protected function buildHistoryTransfer(SearchRankingMetricTransfer $metricTransfer, bool $isChange): SearchRankingMetricHistoryTransfer
+    {
         $historyTransfer = (new SearchRankingMetricHistoryTransfer())
             ->setFkSearchRankingMetric($metricTransfer->getIdSearchRankingMetricOrFail())
             ->setMetricName($metricTransfer->getNameOrFail())
@@ -137,7 +160,7 @@ class MetricWriter implements MetricWriterInterface
             ->setFormula($metricTransfer->getFormulaOrFail())
             ->setIsActive($metricTransfer->getIsActive() ?? true)
             ->setIsHigherBetter($metricTransfer->getIsHigherBetter() ?? true)
-            ->setIsChange(true);
+            ->setIsChange($isChange);
 
         $digestTransfer = $this->repository->findMetricDigest($metricTransfer->getIdSearchRankingMetricOrFail());
 
@@ -152,6 +175,6 @@ class MetricWriter implements MetricWriterInterface
                 ->setFitRSquared($this->fitEvaluator->evaluateFit($metricTransfer->getFormulaOrFail(), $digestTransfer));
         }
 
-        $this->entityManager->recordMetricHistory($historyTransfer);
+        return $historyTransfer;
     }
 }
