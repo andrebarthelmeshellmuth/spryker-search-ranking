@@ -157,6 +157,11 @@ class SearchRankingCheckInstallationConsole extends Console
      */
     protected function checkSiblingCommandsRegistered(OutputInterface $output): void
     {
+        // Spryker's own Console base class declares `@method Application getApplication()` (non-nullable),
+        // but the real Symfony\Component\Console\Command::getApplication() it inherits from returns
+        // `?Application` — this override reflects the real, narrower-than-inherited-docblock type so the
+        // null check below isn't flagged as dead code.
+        /** @var \Symfony\Component\Console\Application|null $application */
         $application = $this->getApplication();
 
         if ($application === null) {
