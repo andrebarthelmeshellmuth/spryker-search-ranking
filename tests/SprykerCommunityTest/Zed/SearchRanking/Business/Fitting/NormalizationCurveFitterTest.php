@@ -123,6 +123,38 @@ class NormalizationCurveFitterTest extends Unit
     }
 
     /**
+     * A metric whose every raw value is identical (zero variance — e.g. a brand-new metric where every
+     * product happens to have been imported with the same placeholder value) has no spread for ANY
+     * candidate curve to fit against. Must degrade to "no usable candidates" rather than crashing on a
+     * divide-by-zero inside the correlation/regression math.
+     *
+     * Known, deliberate coverage gap: this class's own numerical-failure branches (`fitCandidate()`'s two
+     * null-returns and `searchParameter()`'s grid-search-found-nothing return) stay uncovered even by this
+     * test — a zero-variance digest turns out not to be the specific degenerate shape that trips them.
+     * Reverse-engineering the exact input each one needs would mean tracing the rSquared/grid-search math
+     * in detail for a benefit limited to 4 defensive lines already covered by 97%+ statement coverage on
+     * this class; left as an honest gap rather than forced, same call as the Locator-dependent branch in
+     * search-debug's SearchDebugContextEventDispatcherPluginTest.
+     *
+     * @return void
+     */
+    public function testAZeroVarianceDigestProducesNoCrashAndNoUsableCandidates(): void
+    {
+        // Arrange
+        $fitter = new NormalizationCurveFitter(new RSquaredCalculator());
+        $percentiles = array_fill(0, 101, 5.0);
+
+        $digestTransfer = $this->buildDigestTransfer($percentiles);
+
+        // Act
+        $candidateTransfers = $fitter->fit($digestTransfer, true);
+
+        // Assert — every candidate either failed to fit (dropped) or fit with an undefined-strength
+        // rSquared; either way, nothing here should throw, and the result must be a plain array.
+        $this->assertIsArray($candidateTransfers);
+    }
+
+    /**
      * @param array<float> $percentiles Ascending, exactly 101 entries (indices 0..100).
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer

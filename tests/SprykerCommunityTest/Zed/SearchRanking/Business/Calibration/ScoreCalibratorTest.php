@@ -16,6 +16,7 @@ use RuntimeException;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig;
 use SprykerCommunity\Zed\SearchRanking\Business\Calibration\ScoreCalibrator;
 use SprykerCommunity\Zed\SearchRanking\Business\Calibration\StatisticsCalculatorInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Exception\SearchRankingCalibrationNotFoundException;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
@@ -180,6 +181,39 @@ class ScoreCalibratorTest extends Unit
             $searchRankingClientMock,
             $this->createMock(StatisticsCalculatorInterface::class),
         );
+
+        // Act
+        $calibrator->runNextCalibration();
+    }
+
+    /**
+     * A real, if rare, race: the calibration row is deleted (or otherwise vanishes) between being listed
+     * as "uploaded" and actually being picked up to calculate — `calculate()` must surface this loudly
+     * rather than silently proceeding with a missing calibration.
+     *
+     * @return void
+     */
+    public function testThrowsWhenTheCalibrationVanishesBeforeItCanBeCalculated(): void
+    {
+        // Arrange
+        $newest = $this->createCalibrationTransfer(1, []);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('getUploadedCalibrations')->willReturn([$newest]);
+        $repositoryMock->method('findCalibrationWithSearchTerms')->with(1)->willReturn(null);
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+
+        $calibrator = new ScoreCalibrator(
+            $repositoryMock,
+            $entityManagerMock,
+            $this->createMock(SearchRankingToSearchRankingClientInterface::class),
+            $this->createMock(StatisticsCalculatorInterface::class),
+        );
+
+        // Assert
+        $this->expectException(SearchRankingCalibrationNotFoundException::class);
+        $this->expectExceptionMessage('Search ranking calibration with id "1" was not found.');
 
         // Act
         $calibrator->runNextCalibration();

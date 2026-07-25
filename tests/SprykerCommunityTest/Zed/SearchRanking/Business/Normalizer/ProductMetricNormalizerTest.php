@@ -149,6 +149,39 @@ class ProductMetricNormalizerTest extends Unit
     }
 
     /**
+     * A metric with zero rows to normalize (e.g. brand new, no product-metric data imported yet) must be
+     * skipped cleanly rather than evaluating its formula against an empty/meaningless statistics base.
+     *
+     * @return void
+     */
+    public function testSkipsAMetricWithNoProductMetricRowsAtAll(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())
+            ->setIdSearchRankingMetric(15)
+            ->setName('brand_new_metric')
+            ->setWeight(0.2)
+            ->setFormula('x / max')
+            ->setIsActive(true);
+
+        $repositoryMock = $this->createRepositoryMock($metricTransfer, [], $this->createStatistics(0.0, 0.0, 0.0, 0));
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->expects($this->never())->method('updateNormalizedValues');
+
+        $normalizer = $this->createNormalizer($repositoryMock, $entityManagerMock);
+
+        // Act
+        $resultTransfer = $normalizer->normalize();
+
+        // Assert — counted as PROCESSED (no exception was thrown, unlike the failing-formula case above),
+        // just with zero rows updated.
+        $this->assertSame(1, $resultTransfer->getProcessedMetricCount());
+        $this->assertSame(0, $resultTransfer->getUpdatedRowCount());
+        $this->assertSame([], $resultTransfer->getErrors());
+    }
+
+    /**
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param array<\Generated\Shared\Transfer\SearchRankingProductMetricTransfer> $productMetricTransfers
      * @param \Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer $statisticsTransfer

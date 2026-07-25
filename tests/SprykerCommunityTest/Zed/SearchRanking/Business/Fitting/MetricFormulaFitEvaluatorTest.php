@@ -106,6 +106,32 @@ class MetricFormulaFitEvaluatorTest extends Unit
     }
 
     /**
+     * A digest with at most one percentile point (a brand-new or single-sample metric) has no spread to
+     * fit a curve against at all — must report "can't evaluate" rather than a divide-by-zero or a
+     * meaningless single-point "perfect" fit.
+     *
+     * @return void
+     */
+    public function testReturnsNullWhenTheDigestHasAtMostOnePercentilePoint(): void
+    {
+        // Arrange
+        $evaluator = $this->createEvaluator();
+        $digestTransfer = (new SearchRankingMetricDigestTransfer())
+            ->setMinValue(5.0)
+            ->setMaxValue(5.0)
+            ->setMeanValue(5.0)
+            ->setMedianValue(5.0)
+            ->setSampleCount(1)
+            ->setPercentiles([5.0]);
+
+        // Act
+        $rSquared = $evaluator->evaluateFit('x / max', $digestTransfer);
+
+        // Assert
+        $this->assertNull($rSquared);
+    }
+
+    /**
      * @return \SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluator
      */
     protected function createEvaluator(): MetricFormulaFitEvaluator
