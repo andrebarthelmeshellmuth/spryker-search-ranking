@@ -261,4 +261,42 @@ class MetricWriterTest extends Unit
         (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock))
             ->saveMetric($updatedMetricTransfer);
     }
+
+    /**
+     * Used by the auto-tune job (search-ranking-optimizer) when a metric's fit was checked but no update
+     * was applied — must append an isChange=false row, unlike every other history-recording path here,
+     * which always records isChange=true.
+     *
+     * @return void
+     */
+    public function testRecordCheckOnlyAppendsAnIsChangeFalseHistoryRow(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())
+            ->setIdSearchRankingMetric(7)
+            ->setName('top_seller')
+            ->setWeight(0.5)
+            ->setFormula('x / max')
+            ->setIsActive(true)
+            ->setIsHigherBetter(true);
+
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricDigest')->willReturn(null);
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->expects($this->once())
+            ->method('recordMetricHistory')
+            ->with($this->callback(function (SearchRankingMetricHistoryTransfer $historyTransfer): bool {
+                return $historyTransfer->getFkSearchRankingMetric() === 7
+                    && $historyTransfer->getMetricName() === 'top_seller'
+                    && $historyTransfer->getIsChange() === false;
+            }));
+
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+
+        // Act
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock))
+            ->recordCheckOnly($metricTransfer);
+    }
 }

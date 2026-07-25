@@ -171,6 +171,32 @@ class SearchRankingMapperTest extends Unit
     }
 
     /**
+     * A brand-new metric with no digest yet at snapshot time has a NULL percentiles column (the history
+     * table's percentiles is nullable, unlike the live digest table's) — must decode to an empty array,
+     * not a one-element `[0.0]` array a naive `explode(',', '')` would produce.
+     *
+     * @return void
+     */
+    public function testMapsAHistoryEntityWithNoDigestYetToEmptyPercentiles(): void
+    {
+        // Arrange
+        $historyEntity = new SpySearchRankingMetricHistory();
+        $historyEntity->setFkSearchRankingMetric(11);
+        $historyEntity->setMetricName('brand_new_metric');
+        $historyEntity->setWeight(0.1);
+        $historyEntity->setFormula('x');
+        $historyEntity->setIsActive(true);
+        $historyEntity->setIsHigherBetter(true);
+        $historyEntity->setIsChange(true);
+
+        // Act
+        $historyTransfer = (new SearchRankingMapper())->mapMetricHistoryEntityToTransfer($historyEntity, new SearchRankingMetricHistoryTransfer());
+
+        // Assert
+        $this->assertSame([], $historyTransfer->getPercentiles());
+    }
+
+    /**
      * @return void
      */
     public function testMapsMetricHistoryTransferFieldsOntoTheEntity(): void
