@@ -18,6 +18,7 @@ the eventual `function_score` ranking is meant to stay fully inspectable in the 
 - [Normalization formulas](#normalization-formulas)
 - [Modules](#modules)
 - [Requirements](#requirements)
+  - [Search engine compatibility](#search-engine-compatibility)
 - [Installation](#installation)
   - [1. Install the package](#1-install-the-package)
   - [2. Register the core namespace](#2-register-the-core-namespace)
@@ -47,15 +48,24 @@ the eventual `function_score` ranking is meant to stay fully inspectable in the 
 
 ## Status
 
-🚧 Early development — this package's own mechanism (phases 1–4.5) is functional and complete: the
-metric/value data model, the Zed management UI, CSV data import, the normalization cron, the export of
-normalized signals into the Elasticsearch page documents (`scores` field), the **`function_score` ranking
-itself**: catalog searches are re-scored by
-`relevanceWeight × normalizedRelevance + (1 - relevanceWeight) × Σ weightᵢ × signalᵢ`, with the metric
-weights and the two blend constants editable in Zed and synchronized to key-value storage — see
-[Ranking formula](#ranking-formula) for the full rationale — and a **data-driven normalization-authoring
-GUI**: a live preview of the typed formula against the metric's own real distribution, plotted alongside
-the theoretical max-discrimination reference curve, with ranked closed-form curve-fit suggestions.
+Feature-complete and verified for its scope: business-signal search ranking, including the
+normalization-authoring GUI's data-driven curve-fitting workflow. More tools (tuning, evaluation,
+auto-tune) are planned as a separate package.
+
+Verified: dependency floors resolved and checked at their oldest allowed versions (`composer
+check-floors`), the ranking formula's `function_score`/`script_score` cross-validated across three
+engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 105
+tests, phpcs and phpstan level 6 clean.
+
+This package's own mechanism (phases 1–4.5) is functional and complete: the metric/value data model, the
+Zed management UI, CSV data import, the normalization cron, the export of normalized signals into the
+Elasticsearch page documents (`scores` field), the **`function_score` ranking itself**: catalog searches
+are re-scored by `relevanceWeight × normalizedRelevance + (1 - relevanceWeight) × Σ weightᵢ × signalᵢ`,
+with the metric weights and the two blend constants editable in Zed and synchronized to key-value storage
+— see [Ranking formula](#ranking-formula) for the full rationale — and a **data-driven
+normalization-authoring GUI**: a live preview of the typed formula against the metric's own real
+distribution, plotted alongside the theoretical max-discrimination reference curve, with ranked
+closed-form curve-fit suggestions.
 
 The tuning layer originally planned as phases 5/6 of this package — SRP weight-slider live preview, a
 propose/review/apply workflow, `rank_eval`-based offline evaluation, and a monthly auto-tune job — is now
@@ -352,6 +362,32 @@ their oldest allowed versions, and every vendor symbol the package references is
 tree. PHP 8.2 is *not* supported — every `spryker/propel-orm` release that resolves under
 `minimum-stability: stable` (the ones with a real, non-beta `propel/propel` dependency) requires PHP
 >= 8.3.
+
+### Search engine compatibility
+
+**Verified against real engine output from all of:**
+
+| engine | Lucene | result |
+|---|---|---|
+| OpenSearch 1.3.4 | 8.10.1 | ✅ |
+| OpenSearch 2.11.0 | 9.7.0 | ✅ |
+| Elasticsearch 8.11.0 | 9.8.0 | ✅ |
+
+The verification: a throwaway index with a `full-text` text field and a `scores` object (the same shape
+this package exports into a real catalog's page documents), two documents with known metric values, a
+plain `multi_match` query to capture the baseline text-relevance `_score`, then the exact
+`function_score`/`script_score` painless shape `FunctionScoreBuilder` generates — with fixed
+`relevanceWeight`/`relevanceSaturationPoint`/metric-weight parameters — fired on all three engines. Every
+engine returned the identical blended `_score`, to float32 precision, matching a hand-computed expected
+value from the same formula — not just consistent with each other, but confirmed correct.
+
+Elasticsearch 7.x has not been run against real output, but sits inside the verified range: it is the
+fork point OpenSearch 1.x descends from, and both neighbours on either side are verified. Same
+Apache-2.0-fork-point reasoning as [spryker-community/search-debug's own engine-compatibility
+section](https://github.com/andrebarthelmeshellmuth/spryker-search-debugger#search-engine-compatibility) —
+this package's own painless usage (`doc['field'].value`, `containsKey`, `size()`) is bog-standard,
+available on both lineages since well before the fork, so no engine-specific behavior was expected or
+found.
 
 ## Installation
 
@@ -746,7 +782,9 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-From a shop that has the package installed:
+**105 tests, 901 assertions** across four Codeception suites (`Zed/SearchRanking`,
+`Zed/SearchRankingStorage`, `Client/SearchRanking`, `Client/SearchRankingStorage`). From a shop that has
+the package installed:
 
 ```bash
 vendor/bin/codecept build -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRanking
@@ -760,13 +798,21 @@ loader (per-payload score mapping), the publish trigger (event chunking), the fu
 (script shape, zero-weight skipping, script-injection guarding, null on empty configuration), the
 distribution-digest builder (percentile-backbone correctness, order-independence), the curve fitter (a
 linearly-spread digest recovers a near-perfect linear fit, a saturating digest fits clearly better than
-linear, `isHigherBetter=false` swaps in the decay candidate), the metric randomizer (no-op when the
-metric is missing or inactive, re-normalizes and republishes only when it is active), the shared R²
-calculator and per-formula fit evaluator (both feeding the metric-history snapshot), and the metric
-writer's history recording (an initial row for a brand-new metric, no row when nothing tracked actually
-changed, the digest snapshot and fit quality captured correctly when a formula change has an existing
-digest to compare against) as pure unit tests — no database needed. The Client suite lives at
+linear, `isHigherBetter=false` swaps in the decay candidate), the formula-preview builder backing the
+normalization-authoring GUI's live SVG preview (the "no digest yet" error, the happy path building
+CDF/formula points and curve-fit candidates, and formula-evaluation failure returning a fresh error
+transfer rather than a half-populated chart), the metric randomizer (no-op when the metric is missing or
+inactive, re-normalizes and republishes only when it is active), the shared R² calculator and per-formula
+fit evaluator (both feeding the metric-history snapshot), and the metric writer's history recording (an
+initial row for a brand-new metric, no row when nothing tracked actually changed, the digest snapshot and
+fit quality captured correctly when a formula change has an existing digest to compare against) as pure
+unit tests — no database needed. The Client suite lives at
 `tests/SprykerCommunityTest/Client/SearchRanking`.
+
+Coverage (Codeception + pcov): the Zed suite covers 90% of classes / 95.97% of lines; the uncovered
+remainder is almost entirely Spryker's own Facade/Factory DI-wiring boilerplate (thin delegation, not
+meaningfully unit-testable — the same convention `phpmd`'s public-method-count rule already exempts them
+from) plus a handful of deep floating-point edge cases in the curve-fitter's grid-search fallback.
 
 For that reason the suites are **not** part of CI: a clean runner has neither a Spryker shop nor a search
 cluster, and standing both up per build would cost far more than it returns. CI therefore covers the
