@@ -9,17 +9,60 @@ Designed as the companion package to
 [spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debugger) —
 the eventual `function_score` ranking is meant to stay fully inspectable in the search-debug overlay.
 
+## Contents
+
+- [Status](#status)
+- [What it does today](#what-it-does-today)
+- [Ranking formula](#ranking-formula)
+- [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update)
+- [Normalization formulas](#normalization-formulas)
+- [Modules](#modules)
+- [Requirements](#requirements)
+- [Installation](#installation)
+  - [1. Install the package](#1-install-the-package)
+  - [2. Register the core namespace](#2-register-the-core-namespace)
+  - [3. Register the console commands](#3-register-the-console-commands)
+  - [4. Register the data import plugins](#4-register-the-data-import-plugins)
+  - [5. Add the import entities to your data-import YAML](#5-add-the-import-entities-to-your-data-import-yaml)
+  - [6. Translations for the Zed GUI](#6-translations-for-the-zed-gui)
+  - [7. Register the Zed navigation entry](#7-register-the-zed-navigation-entry)
+  - [8. Schedule the normalization cron](#8-schedule-the-normalization-cron)
+  - [9. Register the Elasticsearch export plugins](#9-register-the-elasticsearch-export-plugins)
+  - [10. Register the package's search schema directory](#10-register-the-packages-search-schema-directory)
+  - [11. Register the ranking-configuration sync queue](#11-register-the-ranking-configuration-sync-queue)
+  - [12. Register the function_score query expander](#12-register-the-function_score-query-expander)
+  - [13. Optional: register the search-debug overlay section](#13-optional-register-the-search-debug-overlay-section)
+  - [14. Build](#14-build)
+  - [15. Verify the installation](#15-verify-the-installation)
+- [Import file formats](#import-file-formats)
+- [Limitations (current phase)](#limitations-current-phase)
+- [Roadmap](#roadmap)
+  - [Tuning layer moved to a separate package](#tuning-layer-moved-to-a-separate-package)
+  - [Deferred (v1.1+)](#deferred-v11)
+- [Testing and CI](#testing-and-ci)
+  - [Automated checks](#automated-checks)
+  - [Test suite](#test-suite)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+
 ## Status
 
-🚧 Early development — **phases 1–4.5 of 6** are functional: the metric/value data model, the Zed
-management UI, CSV data import, the normalization cron, the export of normalized signals into the
-Elasticsearch page documents (`scores` field), the **`function_score` ranking itself**: catalog
-searches are re-scored by `relevanceWeight × normalizedRelevance + (1 - relevanceWeight) × Σ weightᵢ × signalᵢ`,
-with the metric weights and the two blend constants editable in Zed and synchronized to key-value
-storage — see [Ranking formula](#ranking-formula) for the full rationale — and a **data-driven
-normalization-authoring GUI**: a live preview of the typed formula against the metric's own real
-distribution, plotted alongside the theoretical max-discrimination reference curve, with ranked
-closed-form curve-fit suggestions. See [Roadmap](#roadmap).
+🚧 Early development — this package's own mechanism (phases 1–4.5) is functional and complete: the
+metric/value data model, the Zed management UI, CSV data import, the normalization cron, the export of
+normalized signals into the Elasticsearch page documents (`scores` field), the **`function_score` ranking
+itself**: catalog searches are re-scored by
+`relevanceWeight × normalizedRelevance + (1 - relevanceWeight) × Σ weightᵢ × signalᵢ`, with the metric
+weights and the two blend constants editable in Zed and synchronized to key-value storage — see
+[Ranking formula](#ranking-formula) for the full rationale — and a **data-driven normalization-authoring
+GUI**: a live preview of the typed formula against the metric's own real distribution, plotted alongside
+the theoretical max-discrimination reference curve, with ranked closed-form curve-fit suggestions.
+
+The tuning layer originally planned as phases 5/6 of this package — SRP weight-slider live preview, a
+propose/review/apply workflow, `rank_eval`-based offline evaluation, and a monthly auto-tune job — is now
+being built as a separate, dependent package,
+[spryker-community/search-ranking-optimizer](https://github.com/andrebarthelmeshellmuth/spryker-search-ranking-optimizer),
+so this package's own scope stays "use business signals to rank," not also "decide what the weights should
+be." See [Roadmap](#roadmap).
 
 ## What it does today
 
@@ -346,12 +389,18 @@ $config[KernelConstants::CORE_NAMESPACES] = [
 In `Pyz\Zed\Console\ConsoleDependencyProvider::getConsoleCommands()`:
 
 ```php
+use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCalibrateConsole;
+use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckCompatibilityConsole;
+use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckInstallationConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingNormalizeConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingRandomizeConsole;
 use SprykerCommunity\Zed\SearchRankingDataImport\SearchRankingDataImportConfig;
 
 new SearchRankingNormalizeConsole(),
 new SearchRankingRandomizeConsole(),
+new SearchRankingCalibrateConsole(),
+new SearchRankingCheckCompatibilityConsole(),
+new SearchRankingCheckInstallationConsole(),
 // optional per-entity import commands:
 new DataImportConsole(DataImportConsole::DEFAULT_NAME . static::COMMAND_SEPARATOR . SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_METRIC),
 new DataImportConsole(DataImportConsole::DEFAULT_NAME . static::COMMAND_SEPARATOR . SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_PRODUCT_METRIC),
@@ -552,6 +601,25 @@ vendor/bin/console search:setup:sources      # merges the scores field into the 
 The "Search Ranking" section then appears in the Back Office navigation, and after the next
 normalize run + queue processing the page documents carry `scores`.
 
+### 15. Verify the installation
+
+```bash
+vendor/bin/console search-ranking:check-installation
+```
+
+Most of the steps above fail *silently* when missed — a forgotten DependencyProvider wire-up or an
+un-run cron produces no error, just a ranking that quietly stays pure text relevance. This command checks
+the core namespace registration, that every console command from step 3 actually registered, that the
+search engine is reachable, that a page index exists and carries the `scores` field this package's export
+plugins add, and that at least one active metric is configured. It exits non-zero and names the remedy for
+whatever is wrong.
+
+It is explicit about its own blind spots: running in Zed, it cannot confirm the Yves-side `function_score`
+query expander (step 12) is registered, or that a live search result order actually reflects the
+configured weights — those need a real storefront search request, not a CLI probe. Distinct from
+`search-ranking:check-compatibility`: that command asks "does this engine support what the package
+needs", this one asks "is this installation wired up correctly."
+
 ## Import file formats
 
 `search_ranking_metric.csv`:
@@ -595,42 +663,27 @@ Example files ship in this package under `data/import/`.
 - [x] **Phase 4.5** — normalization-authoring GUI: distribution digest, live formula preview against the
       metric's own real distribution, ranked closed-form curve-fit suggestions, and the `isHigherBetter`
       direction flag. Numbered 4.5 (a phase-1 signal-axis enhancement) rather than 5, since it is logically
-      upstream of the weighting-axis work below — better normalization improves the inputs phases 5/6
-      operate on.
+      upstream of the tuning-layer work now built in spryker-community/search-ranking-optimizer (see
+      below) — better normalization improves the inputs that layer operates on.
 - [x] **`search-ranking:check-compatibility`** — probes the search engine's actual capabilities
       (`_validate/query` + a `_rank_eval` recognition check) rather than trusting a version string
-### v1.0 (next — scoped 2026-07-21)
+- [x] **`search-ranking:check-installation`** — diagnoses an installation of this package itself (core
+      namespace, sibling console command registration, search engine reachability, the `scores` field in
+      the live page index mapping, at least one active metric configured) — see
+      [15. Verify the installation](#15-verify-the-installation)
 
-- [ ] **Phase 5** — live weight-tuning sliders on the SRP for privileged admins ("weltherrschaftformula")
-- [ ] **Phase 6** — tier-2 submit / tier-3 batch-apply + named checkpoints, learning-rate based weight
-      adoption with audit log and rollback, **including frequency-weighted consensus**: proposals are
-      blended weighted by their `search_term`'s query-importance rather than a plain unweighted mean, so
-      a proposal tuned against a high-volume query pulls the blend harder than one tuned against a rare
-      one-off term. This is a scoped resolution of the tension below (`search_term` as a weighting
-      signal on one global config), not the full query-dependent weighting gap.
-- [ ] **Objective-function evaluation (standalone)** — score ranking changes against `_rank_eval`
-      (nDCG/MRR/precision@k) instead of eyeballing the SRP; the existing Calibration feature already does
-      ~80% of the plumbing (search terms → live query → sampled top-N), the missing piece is a per-result
-      relevance judgment plus a per-query importance weight (so the aggregate score isn't a plain
-      unweighted mean across queries either — same weighting concept as the Phase 6 item above). Query
-      sourcing note: `spryker/google-analytics`'s "Search Statistics" page (Top Search Terms / Top
-      Zero-Result Searches) would be a strictly better source than manually curated terms once a real GA4
-      property is connected — real search frequency plus zero-result queries as a natural prioritization
-      signal — but it needs an actual `integrations:google_analytics:connection:service_account_credentials_json`
-      and real traffic, neither of which a demo shop has; the judgment (rating) half is unaffected either way.
-      Ships **standalone** in v1.0 — not yet wired into Phase 6's apply flow, see deferred below.
-- [ ] **Monthly auto-tune cron/GUI** — periodic fit-quality check per metric against
-      `spy_search_ranking_metric_history`'s `isChange`-anchored baseline (see above), with configurable
-      auto-update-vs-notify behavior and a before/after summary. Most of the groundwork (the `isChange`
-      flag, the anchor-lookup query) already shipped alongside the metric-history table itself; only the
-      cron command and its settings page remain.
+### Tuning layer moved to a separate package
+
+What was originally planned as this package's phases 5/6 — SRP weight-tuning sliders, a tier-2/tier-3
+propose/review/apply workflow with named checkpoints, `rank_eval`-based offline evaluation, and a monthly
+auto-tune job — is being built in
+[spryker-community/search-ranking-optimizer](https://github.com/andrebarthelmeshellmuth/spryker-search-ranking-optimizer)
+instead: a real, one-directional dependent of this package, not a part of it. That keeps this package's
+own scope to "use business signals to rank," not also "decide what the weights should be." See that
+package's own README for its roadmap.
 
 ### Deferred (v1.1+)
 
-- **Objective-function ↔ Phase 6 wiring** — surface the weighted `_rank_eval` score inside tier-3's
-  live preview ("weighted objective score: 0.71 → 0.74 if applied") so Apply is gated by an actual
-  measurement, not just averaged admin opinion. Depends on both v1.0 items above existing and being
-  stable first, so it's deliberately a follow-up integration rather than part of the same release.
 - **GAP 1 — `rank_features` field type** — needs prototyping/benchmarking and a reindex; must ship
   together with a search-debug `ExplanationParser` update since it changes the explain-tree shape.
   Realistically a v2-scale item, not v1.1.
@@ -639,15 +692,6 @@ Example files ship in this package under `data/import/`.
   a natural v1.1 candidate given the low cost.
 - **GAP 5 — demotion + curation** — soft-expressible today via inverted formulas; first-class support
   and merchandiser pinning (hand-rolled, since OpenSearch has no `pinned` query) can wait.
-
-### Cut (not planned)
-
-- **GAP 4 — query-dependent/contextual weighting** (different weight profile per query intent —
-  exact-SKU vs. browsy vs. category). Deliberately excluded rather than merely deferred: it would change
-  the shape of nearly everything already built (weight sets keyed by profile instead of flat, runtime
-  query classification on the hot path, Phase 5/6 UI becoming profile-aware, the judgment set needing
-  per-profile partitioning) for a benefit that's speculative without a concrete driving need. Revisit
-  only if one shows up.
 
 ## Testing and CI
 
