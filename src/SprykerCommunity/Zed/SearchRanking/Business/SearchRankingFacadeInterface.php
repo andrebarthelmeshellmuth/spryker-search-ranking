@@ -10,7 +10,6 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business;
 
 use Generated\Shared\Transfer\ProductPageLoadTransfer;
-use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
@@ -210,49 +209,6 @@ interface SearchRankingFacadeInterface
      * @return int
      */
     public function publishScoredProductAbstracts(): int;
-
-    /**
-     * Specification:
-     * - Parses $csvContent (one search term per line) and creates a new calibration run in
-     *   status=uploaded, with one child row per parsed, deduplicated search term.
-     * - Fires no search queries — {@see runNextCalibration()} does that, on its own schedule.
-     *
-     * @api
-     *
-     * @param int $relevantProductCount
-     * @param string $storeName
-     * @param string $localeName
-     * @param string $csvContent
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer
-     */
-    public function createCalibration(int $relevantProductCount, string $storeName, string $localeName, string $csvContent): SearchRankingCalibrationTransfer;
-
-    /**
-     * Specification:
-     * - Picks the newest calibration run in status=uploaded (if any), marks every OTHER uploaded run as
-     *   status=skipped, then fires the real, fully-wired catalog search-string query for each of its
-     *   search terms and pools the resulting raw text-relevance scores into the run's statistics.
-     * - Sets status=calculated on success, status=failed (with errorMessage) when not a single score
-     *   could be collected.
-     * - Returns null when there was no uploaded run to process.
-     *
-     * @api
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
-     */
-    public function runNextCalibration(): ?SearchRankingCalibrationTransfer;
-
-    /**
-     * Specification:
-     * - Returns the most recently finished (status=calculated) calibration run, or null when none has
-     *   ever finished.
-     *
-     * @api
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
-     */
-    public function findLatestCalculatedCalibration(): ?SearchRankingCalibrationTransfer;
 
     /**
      * Specification:

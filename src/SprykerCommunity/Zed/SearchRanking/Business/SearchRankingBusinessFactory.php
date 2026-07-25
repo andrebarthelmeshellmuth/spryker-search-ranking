@@ -10,14 +10,6 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business;
 
 use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
-use SprykerCommunity\Zed\SearchRanking\Business\Calibration\CalibrationUploadHandler;
-use SprykerCommunity\Zed\SearchRanking\Business\Calibration\CalibrationUploadHandlerInterface;
-use SprykerCommunity\Zed\SearchRanking\Business\Calibration\CsvSearchTermParser;
-use SprykerCommunity\Zed\SearchRanking\Business\Calibration\CsvSearchTermParserInterface;
-use SprykerCommunity\Zed\SearchRanking\Business\Calibration\ScoreCalibrator;
-use SprykerCommunity\Zed\SearchRanking\Business\Calibration\ScoreCalibratorInterface;
-use SprykerCommunity\Zed\SearchRanking\Business\Calibration\StatisticsCalculator;
-use SprykerCommunity\Zed\SearchRanking\Business\Calibration\StatisticsCalculatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityChecker;
 use SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityCheckerInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilder;
@@ -152,46 +144,6 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
     public function getEventFacade(): SearchRankingToEventFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_EVENT);
-    }
-
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Calibration\CsvSearchTermParserInterface
-     */
-    public function createCsvSearchTermParser(): CsvSearchTermParserInterface
-    {
-        return new CsvSearchTermParser();
-    }
-
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Calibration\StatisticsCalculatorInterface
-     */
-    public function createStatisticsCalculator(): StatisticsCalculatorInterface
-    {
-        return new StatisticsCalculator();
-    }
-
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Calibration\CalibrationUploadHandlerInterface
-     */
-    public function createCalibrationUploadHandler(): CalibrationUploadHandlerInterface
-    {
-        return new CalibrationUploadHandler(
-            $this->createCsvSearchTermParser(),
-            $this->getEntityManager(),
-        );
-    }
-
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Calibration\ScoreCalibratorInterface
-     */
-    public function createScoreCalibrator(): ScoreCalibratorInterface
-    {
-        return new ScoreCalibrator(
-            $this->getRepository(),
-            $this->getEntityManager(),
-            $this->getSearchRankingClient(),
-            $this->createStatisticsCalculator(),
-        );
     }
 
     /**

@@ -15,8 +15,6 @@ use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery;
 use Spryker\Zed\Gui\Communication\Form\DeleteForm;
 use Spryker\Zed\Kernel\Communication\AbstractCommunicationFactory;
-use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\CalibrationApplyForm;
-use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\CalibrationUploadForm;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\DataProvider\MetricFormDataProvider;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\MetricForm;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\NormalizeWeightsForm;
@@ -24,10 +22,8 @@ use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\SettingsForm;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricHistoryTable;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricTable;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricTable;
-use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToLocaleFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingStorageFacadeInterface;
-use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingGui\SearchRankingGuiDependencyProvider;
 use Symfony\Component\Form\FormInterface;
 
@@ -103,39 +99,6 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     }
 
     /**
-     * @return \Symfony\Component\Form\FormInterface
-     */
-    public function createCalibrationUploadForm(): FormInterface
-    {
-        $storeChoices = [];
-        foreach ($this->getStoreFacade()->getAllStores() as $storeTransfer) {
-            $storeChoices[$storeTransfer->getNameOrFail()] = $storeTransfer->getNameOrFail();
-        }
-
-        $localeChoices = [];
-        foreach ($this->getLocaleFacade()->getAvailableLocales() as $localeName) {
-            $localeChoices[$localeName] = $localeName;
-        }
-
-        return $this->getFormFactory()->create(CalibrationUploadForm::class, null, [
-            CalibrationUploadForm::OPTION_STORE_CHOICES => $storeChoices,
-            CalibrationUploadForm::OPTION_LOCALE_CHOICES => $localeChoices,
-        ]);
-    }
-
-    /**
-     * @param float $relevanceSaturationPoint
-     *
-     * @return \Symfony\Component\Form\FormInterface
-     */
-    public function createCalibrationApplyForm(float $relevanceSaturationPoint): FormInterface
-    {
-        return $this->getFormFactory()->create(CalibrationApplyForm::class, [
-            CalibrationApplyForm::FIELD_RELEVANCE_SATURATION_POINT => $relevanceSaturationPoint,
-        ]);
-    }
-
-    /**
      * @return \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeInterface
      */
     public function getSearchRankingFacade(): SearchRankingGuiToSearchRankingFacadeInterface
@@ -149,22 +112,6 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     public function getSearchRankingStorageFacade(): SearchRankingGuiToSearchRankingStorageFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_SEARCH_RANKING_STORAGE);
-    }
-
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToStoreFacadeInterface
-     */
-    public function getStoreFacade(): SearchRankingGuiToStoreFacadeInterface
-    {
-        return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_STORE);
-    }
-
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToLocaleFacadeInterface
-     */
-    public function getLocaleFacade(): SearchRankingGuiToLocaleFacadeInterface
-    {
-        return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_LOCALE);
     }
 
     /**

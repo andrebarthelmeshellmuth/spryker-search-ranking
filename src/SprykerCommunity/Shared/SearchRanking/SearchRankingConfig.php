@@ -59,65 +59,9 @@ class SearchRankingConfig
 
     /**
      * Specification:
-     * - A calibration run just uploaded, queued for the next `search-ranking:calibrate` cron tick.
-     *   At most one uploaded row is ever picked up per tick — the newest — the rest move straight to
-     *   {@see CALIBRATION_STATUS_SKIPPED}.
-     *
-     * @api
-     *
-     * @var string
-     */
-    public const CALIBRATION_STATUS_UPLOADED = 'uploaded';
-
-    /**
-     * Specification:
-     * - A superseded upload: a newer one existed by the time the cron ran, so this one was never
-     *   calculated.
-     *
-     * @api
-     *
-     * @var string
-     */
-    public const CALIBRATION_STATUS_SKIPPED = 'skipped';
-
-    /**
-     * Specification:
-     * - The cron has picked this run up and is currently firing search queries for it.
-     *
-     * @api
-     *
-     * @var string
-     */
-    public const CALIBRATION_STATUS_CALCULATING = 'calculating';
-
-    /**
-     * Specification:
-     * - The run finished: every search term was queried (or skipped on individual failure) and the
-     *   pooled score statistics, including {@see CALIBRATION_STATUS_CALCULATED}'s `computedK` suggestion,
-     *   are populated.
-     *
-     * @api
-     *
-     * @var string
-     */
-    public const CALIBRATION_STATUS_CALCULATED = 'calculated';
-
-    /**
-     * Specification:
-     * - The run could not produce any pooled scores at all (e.g. every search term failed or matched
-     *   zero products) — `errorMessage` explains why.
-     *
-     * @api
-     *
-     * @var string
-     */
-    public const CALIBRATION_STATUS_FAILED = 'failed';
-
-    /**
-     * Specification:
-     * - Elasticsearch page-index source identifier passed to `IndexNameResolver::resolve()` when
-     *   calibration resolves an index name directly (bypassing Client\Catalog/Client\Search — see
-     *   {@see \SprykerCommunity\Client\SearchRanking\Search\CalibrationSearcher}).
+     * - Elasticsearch page-index source identifier passed to `IndexNameResolver::resolve()` when this
+     *   package resolves the page index name directly (e.g. from the `search-ranking:check-installation`
+     *   console, which runs in Zed where there is no request-scoped "current store").
      *
      * @api
      *

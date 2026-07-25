@@ -13,10 +13,10 @@ use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientInterface;
 
 /**
- * Thin delegate to the client-layer probe (bypasses `Client\Catalog`/`Client\Search` entirely, same
- * reasoning as calibration — see `SprykerCommunity\Client\SearchRanking\Search\CalibrationSearcher`); kept
- * as its own business class, despite doing no transformation of its own, purely for unit-test isolation
- * from the full facade/business-factory wiring, mirroring {@see \SprykerCommunity\Zed\SearchRanking\Business\Randomizer\MetricRandomizer}.
+ * Thin delegate to the client-layer probe (bypasses `Client\Catalog`/`Client\Search` entirely, since
+ * both are unusable from Zed in this shop); kept as its own business class, despite doing no
+ * transformation of its own, purely for unit-test isolation from the full facade/business-factory
+ * wiring, mirroring {@see \SprykerCommunity\Zed\SearchRanking\Business\Randomizer\MetricRandomizer}.
  */
 class CompatibilityChecker implements CompatibilityCheckerInterface
 {

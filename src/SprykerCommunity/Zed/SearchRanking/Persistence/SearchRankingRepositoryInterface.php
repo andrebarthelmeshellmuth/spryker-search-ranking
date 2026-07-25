@@ -9,7 +9,6 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 
-use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
@@ -89,28 +88,6 @@ interface SearchRankingRepositoryInterface
      * @return string|null
      */
     public function findSettingValue(string $settingKey): ?string;
-
-    /**
-     * Returns every calibration run with status=uploaded, newest first (by id) — search terms are NOT
-     * loaded, since every row but the newest is about to be marked skipped without ever being read.
-     *
-     * @return array<\Generated\Shared\Transfer\SearchRankingCalibrationTransfer>
-     */
-    public function getUploadedCalibrations(): array;
-
-    /**
-     * @param int $idSearchRankingCalibration
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
-     */
-    public function findCalibrationWithSearchTerms(int $idSearchRankingCalibration): ?SearchRankingCalibrationTransfer;
-
-    /**
-     * The most recent calibration run with status=calculated, or null when none has ever finished.
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
-     */
-    public function findLatestCalculatedCalibration(): ?SearchRankingCalibrationTransfer;
 
     /**
      * Every raw_value of the metric's product-metric rows, as a lean single-column projection (not

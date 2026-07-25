@@ -66,7 +66,6 @@ class SearchRankingCheckInstallationConsole extends Console
     protected const SIBLING_COMMANDS = [
         'search-ranking:normalize',
         'search-ranking:randomize',
-        'search-ranking:calibrate',
         'search-ranking:check-compatibility',
     ];
 
