@@ -13,7 +13,6 @@
     ],
     "require": {
         "php": ">=8.3",
-        "spryker/acl": "^3.27.0",
         "spryker/catalog": "^5.7.0",
         "spryker/data-import": "^1.18.0",
         "spryker/event": "^2.2.0",
@@ -27,7 +26,6 @@
         "spryker/search-extension": "^1.2.0",
         "spryker/storage": "^3.4.0",
         "spryker/synchronization": "^1.5.0",
-        "spryker/symfony-mailer": "^1.5.0",
         "spryker/synchronization-extension": "^1.1.0",
         "spryker/transfer": "^3.25.0",
         "symfony/console": "^6.0.0 || ^7.0.0",

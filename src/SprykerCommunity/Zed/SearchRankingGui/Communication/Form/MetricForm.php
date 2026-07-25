@@ -20,7 +20,6 @@ use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
-use Symfony\Component\Validator\Constraints\Range;
 use Symfony\Component\Validator\Constraints\Regex;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
@@ -60,21 +59,6 @@ class MetricForm extends AbstractType
     protected const FIELD_IS_HIGHER_BETTER = 'isHigherBetter';
 
     /**
-     * @var string
-     */
-    protected const FIELD_AUTO_TUNE_THRESHOLD = 'autoTuneThreshold';
-
-    /**
-     * @var string
-     */
-    protected const FIELD_IS_AUTO_UPDATE_ENABLED = 'isAutoUpdateEnabled';
-
-    /**
-     * @var string
-     */
-    protected const FIELD_IS_AUTO_TUNE_NOTIFY_ENABLED = 'isAutoTuneNotifyEnabled';
-
-    /**
      * @param \Symfony\Component\OptionsResolver\OptionsResolver $resolver
      *
      * @return void
@@ -101,10 +85,7 @@ class MetricForm extends AbstractType
             ->addWeightField($builder)
             ->addIsHigherBetterField($builder)
             ->addFormulaField($builder, $options)
-            ->addIsActiveField($builder)
-            ->addAutoTuneThresholdField($builder)
-            ->addIsAutoUpdateEnabledField($builder)
-            ->addIsAutoTuneNotifyEnabledField($builder);
+            ->addIsActiveField($builder);
     }
 
     /**
@@ -240,57 +221,6 @@ class MetricForm extends AbstractType
     {
         $builder->add(static::FIELD_IS_ACTIVE, CheckboxType::class, [
             'label' => 'Active',
-            'required' => false,
-        ]);
-
-        return $this;
-    }
-
-    /**
-     * @param \Symfony\Component\Form\FormBuilderInterface $builder
-     *
-     * @return $this
-     */
-    protected function addAutoTuneThresholdField(FormBuilderInterface $builder)
-    {
-        $builder->add(static::FIELD_AUTO_TUNE_THRESHOLD, NumberType::class, [
-            'label' => 'Auto-tune fit threshold (R²)',
-            'help' => 'Leave empty to keep this metric out of search-ranking:auto-tune entirely. When set, the monthly job flags this metric whenever its live formula\'s fit against the current data drops below this R² value (0 to 1).',
-            'required' => false,
-            'constraints' => [
-                new Range(['min' => 0, 'max' => 1]),
-            ],
-        ]);
-
-        return $this;
-    }
-
-    /**
-     * @param \Symfony\Component\Form\FormBuilderInterface $builder
-     *
-     * @return $this
-     */
-    protected function addIsAutoUpdateEnabledField(FormBuilderInterface $builder)
-    {
-        $builder->add(static::FIELD_IS_AUTO_UPDATE_ENABLED, CheckboxType::class, [
-            'label' => 'Auto-update on drift',
-            'help' => 'When the fit drops below the threshold above, automatically apply the best-fitting refit (same validation and history logging as a manual edit) and republish. Ignored while no threshold is set.',
-            'required' => false,
-        ]);
-
-        return $this;
-    }
-
-    /**
-     * @param \Symfony\Component\Form\FormBuilderInterface $builder
-     *
-     * @return $this
-     */
-    protected function addIsAutoTuneNotifyEnabledField(FormBuilderInterface $builder)
-    {
-        $builder->add(static::FIELD_IS_AUTO_TUNE_NOTIFY_ENABLED, CheckboxType::class, [
-            'label' => 'Notify on drift',
-            'help' => 'When the fit drops below the threshold above, email every admin holding the auto-tune notification ACL role a before/after summary — independently of the auto-update setting above (a proposed-changes notice if auto-update is off, an applied-changes summary if it is on). Ignored while no threshold is set.',
             'required' => false,
         ]);
 
