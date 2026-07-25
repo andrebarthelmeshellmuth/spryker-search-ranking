@@ -98,9 +98,9 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
     }
 
     /**
-     * Used only by the calibration feature, to fire calibration search queries directly against
-     * Elasticsearch (see `SprykerCommunity\Client\SearchRanking\Search\CalibrationSearcher` for why
-     * `Client\Catalog`/`Client\Search` can't be used for this from Zed).
+     * Used by the engine-compatibility check (`search-ranking:check-compatibility`) to probe the live
+     * search engine's capabilities directly, bypassing `Client\Catalog`/`Client\Search` (which are
+     * unusable from Zed in this shop).
      *
      * @param \Spryker\Zed\Kernel\Container $container
      *

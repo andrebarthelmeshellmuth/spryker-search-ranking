@@ -389,7 +389,6 @@ $config[KernelConstants::CORE_NAMESPACES] = [
 In `Pyz\Zed\Console\ConsoleDependencyProvider::getConsoleCommands()`:
 
 ```php
-use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCalibrateConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckCompatibilityConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckInstallationConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingNormalizeConsole;
@@ -398,7 +397,6 @@ use SprykerCommunity\Zed\SearchRankingDataImport\SearchRankingDataImportConfig;
 
 new SearchRankingNormalizeConsole(),
 new SearchRankingRandomizeConsole(),
-new SearchRankingCalibrateConsole(),
 new SearchRankingCheckCompatibilityConsole(),
 new SearchRankingCheckInstallationConsole(),
 // optional per-entity import commands:
@@ -468,11 +466,17 @@ rm -f src/Generated/Zed/Navigation/codeBucket/navigation*.cache
 vendor/bin/console navigation:build-cache
 ```
 
-That gives the full "Search Ranking" sidebar group with all 5 visible pages (Metrics, Product Values,
-Settings, Calibration, History). If you'd rather not duplicate the whole page list, copying just the
+That gives the full "Search Ranking" sidebar group with all 4 visible pages (Metrics, Product Values,
+Settings, History). If you'd rather not duplicate the whole page list, copying just the
 top-level `<search-ranking-gui>` entry (drop the `<pages>` block) still gives one working sidebar link
 into `/search-ranking-gui` — the individual pages stay reachable via their own in-page action buttons
-(Back to Metrics, View Product Values, Calibrate k, etc.) instead of a dropdown.
+(Back to Metrics, View Product Values, etc.) instead of a dropdown.
+
+> Calibration (empirically sampling `relevanceSaturationPoint` k from real query scores) used to live
+> here as a sub-page of this menu. It has moved to the separate
+> [spryker-community/search-ranking-optimizer](https://github.com/andrebarthelmeshellmuth/spryker-search-ranking-optimizer)
+> package — see [Roadmap](#roadmap). This package no longer ships a `search-ranking:calibrate` command or a
+> Calibration page.
 
 ### 8. Schedule the normalization cron
 
@@ -681,6 +685,14 @@ auto-tune job — is being built in
 instead: a real, one-directional dependent of this package, not a part of it. That keeps this package's
 own scope to "use business signals to rank," not also "decide what the weights should be." See that
 package's own README for its roadmap.
+
+The **Calibration** feature (upload a list of search terms → fire the live catalog query for each →
+pool the raw text-relevance scores into a suggested `relevanceSaturationPoint` k) has already been built
+and now ships in that package too — it was previously a page of this one's Zed menu and a
+`search-ranking:calibrate` console command, both since removed here. Calibration is a "decide what k
+should be" activity, so it belongs with the tuning layer; the optimizer applies its result back into this
+package's `relevanceSaturationPoint` setting through this package's own facade (a `suggest`-level
+dependency, so this package still installs and runs without it).
 
 ### Deferred (v1.1+)
 

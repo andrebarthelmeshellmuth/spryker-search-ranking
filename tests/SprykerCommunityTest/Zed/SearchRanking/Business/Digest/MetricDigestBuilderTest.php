@@ -19,7 +19,7 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
 
 /**
  * `buildDigest()` takes a plain array and returns a transfer with no persistence access at all, so it is
- * exercised directly, the same shape as `StatisticsCalculatorTest`. `rebuildDigest()`/`rebuildDigests()`
+ * exercised directly. `rebuildDigest()`/`rebuildDigests()`
  * only orchestrate calls against `SearchRankingRepositoryInterface`/`SearchRankingEntityManagerInterface`
  * — both plain interfaces — so they are exercised with mocks below rather than left to integration
  * coverage.
@@ -96,7 +96,7 @@ class MetricDigestBuilderTest extends Unit
 
     /**
      * A single-element sample has no interpolation range — every statistic collapses onto that one value,
-     * same as StatisticsCalculator's equivalent edge case.
+     * a single-value edge case.
      *
      * @return void
      */

@@ -27,19 +27,6 @@ class SearchRankingToSearchRankingClientBridge implements SearchRankingToSearchR
     }
 
     /**
-     * @param string $searchTerm
-     * @param string $storeName
-     * @param string $localeName
-     * @param int $limit
-     *
-     * @return array<float>
-     */
-    public function getCalibrationScores(string $searchTerm, string $storeName, string $localeName, int $limit): array
-    {
-        return $this->searchRankingClient->getCalibrationScores($searchTerm, $storeName, $localeName, $limit);
-    }
-
-    /**
      * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
      */
     public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer

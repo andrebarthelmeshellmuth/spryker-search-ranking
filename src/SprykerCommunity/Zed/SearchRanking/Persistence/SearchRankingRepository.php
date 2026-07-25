@@ -9,8 +9,6 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 
-use Generated\Shared\Transfer\SearchRankingCalibrationSearchTermTransfer;
-use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
@@ -21,7 +19,6 @@ use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingMetricTableMap;
 use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingProductMetricTableMap;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Spryker\Zed\Kernel\Persistence\AbstractRepository;
-use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig;
 
 /**
  * @method \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingPersistenceFactory getFactory()
@@ -240,80 +237,6 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
             ->findOneBySettingKey($settingKey);
 
         return $settingEntity?->getSettingValue();
-    }
-
-    /**
-     * @return array<\Generated\Shared\Transfer\SearchRankingCalibrationTransfer>
-     */
-    public function getUploadedCalibrations(): array
-    {
-        $calibrationEntities = $this->getFactory()
-            ->createSearchRankingCalibrationQuery()
-            ->filterByStatus(SearchRankingConfig::CALIBRATION_STATUS_UPLOADED)
-            ->orderByIdSearchRankingCalibration(Criteria::DESC)
-            ->find();
-
-        $mapper = $this->getFactory()->createSearchRankingMapper();
-        $calibrationTransfers = [];
-
-        foreach ($calibrationEntities as $calibrationEntity) {
-            $calibrationTransfers[] = $mapper->mapCalibrationEntityToTransfer($calibrationEntity, new SearchRankingCalibrationTransfer());
-        }
-
-        return $calibrationTransfers;
-    }
-
-    /**
-     * @param int $idSearchRankingCalibration
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
-     */
-    public function findCalibrationWithSearchTerms(int $idSearchRankingCalibration): ?SearchRankingCalibrationTransfer
-    {
-        $calibrationEntity = $this->getFactory()
-            ->createSearchRankingCalibrationQuery()
-            ->findOneByIdSearchRankingCalibration($idSearchRankingCalibration);
-
-        if ($calibrationEntity === null) {
-            return null;
-        }
-
-        $mapper = $this->getFactory()->createSearchRankingMapper();
-        $calibrationTransfer = $mapper->mapCalibrationEntityToTransfer($calibrationEntity, new SearchRankingCalibrationTransfer());
-
-        $searchTermEntities = $this->getFactory()
-            ->createSearchRankingCalibrationSearchTermQuery()
-            ->filterByFkSearchRankingCalibration($idSearchRankingCalibration)
-            ->orderByIdSearchRankingCalibrationSearchTerm()
-            ->find();
-
-        foreach ($searchTermEntities as $searchTermEntity) {
-            $calibrationTransfer->addSearchTerm(
-                $mapper->mapCalibrationSearchTermEntityToTransfer($searchTermEntity, new SearchRankingCalibrationSearchTermTransfer()),
-            );
-        }
-
-        return $calibrationTransfer;
-    }
-
-    /**
-     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
-     */
-    public function findLatestCalculatedCalibration(): ?SearchRankingCalibrationTransfer
-    {
-        $calibrationEntity = $this->getFactory()
-            ->createSearchRankingCalibrationQuery()
-            ->filterByStatus(SearchRankingConfig::CALIBRATION_STATUS_CALCULATED)
-            ->orderByCalculatedAt(Criteria::DESC)
-            ->findOne();
-
-        if ($calibrationEntity === null) {
-            return null;
-        }
-
-        return $this->getFactory()
-            ->createSearchRankingMapper()
-            ->mapCalibrationEntityToTransfer($calibrationEntity, new SearchRankingCalibrationTransfer());
     }
 
     /**

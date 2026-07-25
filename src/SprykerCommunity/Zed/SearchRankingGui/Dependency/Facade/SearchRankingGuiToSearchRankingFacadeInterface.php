@@ -9,7 +9,6 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade;
 
-use Generated\Shared\Transfer\SearchRankingCalibrationTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
@@ -79,21 +78,6 @@ interface SearchRankingGuiToSearchRankingFacadeInterface
      * @return void
      */
     public function saveRelevanceSaturationPoint(float $relevanceSaturationPoint): void;
-
-    /**
-     * @param int $relevantProductCount
-     * @param string $storeName
-     * @param string $localeName
-     * @param string $csvContent
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer
-     */
-    public function createCalibration(int $relevantProductCount, string $storeName, string $localeName, string $csvContent): SearchRankingCalibrationTransfer;
-
-    /**
-     * @return \Generated\Shared\Transfer\SearchRankingCalibrationTransfer|null
-     */
-    public function findLatestCalculatedCalibration(): ?SearchRankingCalibrationTransfer;
 
     /**
      * @param int $idSearchRankingMetric

@@ -153,32 +153,6 @@
         <property name="scores" type="array" singular="scores"/>
     </transfer>
 
-    <!-- One calibration run: an admin-uploaded list of "relevant" search terms, sampled against the
-         live raw text-relevance score (BEFORE any function_score wrapper) to suggest a
-         relevanceSaturationPoint (k) value — the pooled mean of the top relevantProductCount (X) hits'
-         scores across every search term. status is one of the SearchRankingConfig::CALIBRATION_STATUS_*
-         constants; the score*/sampleCount/computedK/calculatedAt fields are null until status=calculated,
-         errorMessage is set only on status=failed. -->
-    <transfer name="SearchRankingCalibration" strict="true">
-        <property name="idSearchRankingCalibration" type="int"/>
-        <property name="relevantProductCount" type="int"/>
-        <property name="storeName" type="string"/>
-        <property name="localeName" type="string"/>
-        <property name="status" type="string"/>
-        <property name="computedK" type="float"/>
-        <property name="scoreMin" type="float"/>
-        <property name="scoreMax" type="float"/>
-        <property name="scoreMean" type="float"/>
-        <property name="scoreMedian" type="float"/>
-        <property name="scoreP25" type="float"/>
-        <property name="scoreP75" type="float"/>
-        <property name="sampleCount" type="int"/>
-        <property name="calculatedAt" type="string"/>
-        <property name="errorMessage" type="string"/>
-        <property name="createdAt" type="string"/>
-        <property name="searchTerms" type="SearchRankingCalibrationSearchTerm[]" singular="searchTerm"/>
-    </transfer>
-
     <!-- One capability probe result: a named search-engine construct this package uses today or could use
          in future (e.g. "function_score + script_score (painless)", "rank_feature query"), and whether the
          live engine actually accepts it. Probed live (see EngineCompatibilityChecker) via `_validate/query`
@@ -202,15 +176,5 @@
         <property name="capabilities" type="SearchRankingEngineCapability[]" singular="capability"/>
     </transfer>
 
-    <!-- One uploaded search term of a calibration run. scores is populated by the calibration cron: the
-         raw text-relevance scores of the top-ranked products found for this term, up to the run's
-         relevantProductCount — fewer when the term matched fewer products. Null until calculated. -->
-    <transfer name="SearchRankingCalibrationSearchTerm" strict="true">
-        <property name="idSearchRankingCalibrationSearchTerm" type="int"/>
-        <property name="fkSearchRankingCalibration" type="int"/>
-        <property name="searchTerm" type="string"/>
-        <property name="productsFound" type="int"/>
-        <property name="scores" type="float[]" singular="score"/>
-    </transfer>
 
 </transfers>

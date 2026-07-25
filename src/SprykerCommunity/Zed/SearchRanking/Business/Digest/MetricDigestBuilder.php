@@ -92,12 +92,10 @@ class MetricDigestBuilder implements MetricDigestBuilderInterface
 
     /**
      * Pure computation, deliberately public: no repository/entity-manager access, so it is unit-testable
-     * directly with a plain array — same shape as {@see \SprykerCommunity\Zed\SearchRanking\Business\Calibration\StatisticsCalculator::calculate()}.
+     * directly with a plain array.
      *
      * Sorts the given raw values once, then computes min/max/mean/median plus the percentile backbone via
-     * linear interpolation between closest ranks — the same method `numpy.percentile()` defaults to, and
-     * the same algorithm `StatisticsCalculator::percentile()` uses (kept as an independent copy here
-     * rather than a shared extraction, so this class has no dependency on the Calibration namespace).
+     * linear interpolation between closest ranks — the same method `numpy.percentile()` defaults to.
      *
      * @param array<float> $rawValues
      *
