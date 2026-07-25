@@ -38,14 +38,6 @@
             </div>
 
             {{ form_row(metricForm.isActive) }}
-
-            <hr>
-            <h4>Auto-tune (monthly)</h4>
-            <p class="text-muted">Runs via <code>search-ranking:auto-tune</code>. See the README's "Monthly auto-tune" section.</p>
-            {{ form_row(metricForm.autoTuneThreshold) }}
-            {{ form_row(metricForm.isAutoUpdateEnabled) }}
-            {{ form_row(metricForm.isAutoTuneNotifyEnabled) }}
-
             {{ form_rest(metricForm) }}
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">{{ 'Save' | trans }}</button>

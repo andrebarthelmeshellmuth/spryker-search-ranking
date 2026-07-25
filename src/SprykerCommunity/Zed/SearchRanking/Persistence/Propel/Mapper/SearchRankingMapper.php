@@ -40,10 +40,7 @@ class SearchRankingMapper
             ->setWeight($metricEntity->getWeight())
             ->setFormula($metricEntity->getFormula())
             ->setIsActive($metricEntity->getIsActive())
-            ->setIsHigherBetter($metricEntity->getIsHigherBetter())
-            ->setAutoTuneThreshold($metricEntity->getAutoTuneThreshold())
-            ->setIsAutoUpdateEnabled($metricEntity->getIsAutoUpdateEnabled())
-            ->setIsAutoTuneNotifyEnabled($metricEntity->getIsAutoTuneNotifyEnabled());
+            ->setIsHigherBetter($metricEntity->getIsHigherBetter());
     }
 
     /**
@@ -61,9 +58,6 @@ class SearchRankingMapper
         $metricEntity->setFormula($metricTransfer->getFormulaOrFail());
         $metricEntity->setIsActive($metricTransfer->getIsActive() ?? true);
         $metricEntity->setIsHigherBetter($metricTransfer->getIsHigherBetter() ?? true);
-        $metricEntity->setAutoTuneThreshold($metricTransfer->getAutoTuneThreshold());
-        $metricEntity->setIsAutoUpdateEnabled($metricTransfer->getIsAutoUpdateEnabled() ?? false);
-        $metricEntity->setIsAutoTuneNotifyEnabled($metricTransfer->getIsAutoTuneNotifyEnabled() ?? false);
 
         return $metricEntity;
     }

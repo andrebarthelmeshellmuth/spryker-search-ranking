@@ -14,9 +14,6 @@
         <property name="formula" type="string"/>
         <property name="isActive" type="bool"/>
         <property name="isHigherBetter" type="bool"/>
-        <property name="autoTuneThreshold" type="float"/>
-        <property name="isAutoUpdateEnabled" type="bool"/>
-        <property name="isAutoTuneNotifyEnabled" type="bool"/>
     </transfer>
 
     <transfer name="SearchRankingMetricCollection" strict="true">
@@ -180,31 +177,6 @@
         <property name="errorMessage" type="string"/>
         <property name="createdAt" type="string"/>
         <property name="searchTerms" type="SearchRankingCalibrationSearchTerm[]" singular="searchTerm"/>
-    </transfer>
-
-    <!-- One metric processed by search-ranking:auto-tune. wasThresholdMet=true means the live formula's
-         fit was already at or above autoTuneThreshold - nothing else on this transfer is meaningful (no
-         refit was computed). wasThresholdMet=false means a refit WAS computed (afterFormula/afterFitRSquared
-         always set in that case, regardless of whether it was actually applied); wasApplied reflects
-         whether isAutoUpdateEnabled caused it to be persisted, or it was only proposed. -->
-    <transfer name="SearchRankingAutoTuneMetricResult" strict="true">
-        <property name="metricName" type="string"/>
-        <property name="wasThresholdMet" type="bool"/>
-        <property name="beforeFormula" type="string"/>
-        <property name="beforeFitRSquared" type="float"/>
-        <property name="afterFormula" type="string"/>
-        <property name="afterFitRSquared" type="float"/>
-        <property name="wasApplied" type="bool"/>
-    </transfer>
-
-    <!-- Full result of one search-ranking:auto-tune run, across every metric that had autoTuneThreshold
-         set (metrics that opted out are simply absent from metricResults). notifiedEmailCount is the
-         number of admin addresses the summary email (if any metric needed one) was actually sent to - 0
-         when no metric crossed its threshold with notify enabled, OR when notify was needed but no admin
-         holds SearchRankingConfig::getAutoTuneNotificationRoleName() yet. -->
-    <transfer name="SearchRankingAutoTuneResult" strict="true">
-        <property name="metricResults" type="SearchRankingAutoTuneMetricResult[]" singular="metricResult"/>
-        <property name="notifiedEmailCount" type="int"/>
     </transfer>
 
     <!-- One capability probe result: a named search-engine construct this package uses today or could use
