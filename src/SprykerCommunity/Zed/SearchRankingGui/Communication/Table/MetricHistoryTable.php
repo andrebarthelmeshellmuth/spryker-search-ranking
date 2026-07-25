@@ -131,7 +131,7 @@ class MetricHistoryTable extends AbstractTable
                     $historyEntity->getIsChange() ? 'Change' : 'Check only',
                     $historyEntity->getIsChange() ? 'label-success' : 'label-default',
                 ),
-                SpySearchRankingMetricHistoryTableMap::COL_CREATED_AT => $historyEntity->getCreatedAt(),
+                SpySearchRankingMetricHistoryTableMap::COL_CREATED_AT => $historyEntity->getCreatedAt('Y-m-d H:i:s'),
                 static::COL_ACTIONS => implode(' ', $this->createActionButtons($historyEntity)),
             ];
         }
