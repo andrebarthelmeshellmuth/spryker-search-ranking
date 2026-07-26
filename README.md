@@ -626,13 +626,6 @@ scores (suppress with `--skip-publish`). `search-ranking:randomize` is intention
 less-frequent schedule — see [What it does](#what-it-does) for why — and is a safe no-op
 to leave scheduled even if the random tie-breaker metric is inactive or does not exist.
 
-**Should do, if you already had search-ranking installed before `search-ranking:randomize`
-existed:** registering a console command and scheduling a cron job are both project-level files this
-package cannot reach into and update for you — `composer update`-ing the package alone does not add
-either. Confirm both `new SearchRankingRandomizeConsole()` (step 3) and the
-`search-ranking-randomize` cron entry above are actually present in your project's own
-`ConsoleDependencyProvider` and `SymfonySchedulerConfig`, not just documented here.
-
 ### 9. Register the Elasticsearch export plugins
 
 In `Pyz\Zed\ProductPageSearch\ProductPageSearchDependencyProvider`:
