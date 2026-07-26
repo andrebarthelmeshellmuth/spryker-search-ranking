@@ -101,7 +101,7 @@ data-driven curve-fitting workflow.
 
 Verified: dependency floors resolved and checked at their oldest allowed versions (`composer
 check-floors`), the ranking formula's `function_score`/`script_score` cross-validated across three
-engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 107
+engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 126
 tests, phpcs and phpstan level 6 clean.
 
 This package's own mechanism is complete: the metric/value data model, the Zed management UI, CSV data
@@ -354,25 +354,53 @@ relevant and business signals are what should actually decide the order). This f
 **The mechanism:** with the flag enabled,
 `SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculator` fires ONE ADDITIONAL, lightweight
 Elasticsearch query per catalog search — the same base query, before this package's own `function_score`
-wrapper, requesting only the top `getEntropyProbeResultSize()` (default 10) candidates' raw `_score`
-values, no document bodies. From those scores it computes the normalized Shannon entropy of the
-score distribution (`Hₙₒᵣₘ = H / log(X)`, treating each score as a share of the total "relevance mass" —
-a plain ratio, not softmax, so real score gaps aren't artificially sharpened): a single dominant score
-gives `Hₙₒᵣₘ ≈ 0` (text relevance already discriminates well — stay close to the configured
-`relevanceWeight`'s text-relevance-heavy end), a flat distribution gives `Hₙₒᵣₘ ≈ 1` (text relevance can't
-tell candidates apart — pull weight toward business signals). An optional exponent
-(`getEntropyWeightExponent()`, default `1.0`) lets a project tune how aggressively the effect kicks in
-without touching the entropy math itself.
+wrapper, requesting only the top *N* candidates' raw `_score` values, no document bodies. From those
+scores it computes the normalized Shannon entropy of the score distribution (`Hₙₒᵣₘ = H / log(X)`,
+treating each score as a share of the total "relevance mass" — a plain ratio, not softmax, so real score
+gaps aren't artificially sharpened): a single dominant score gives `Hₙₒᵣₘ ≈ 0` (text relevance already
+discriminates well), a flat distribution gives `Hₙₒᵣₘ ≈ 1` (text relevance can't tell candidates apart).
 
-**Why it's an opt-in flag, not the default:** it doubles the number of Elasticsearch round trips per
-catalog search. That's a real, permanent cost — worth it once you have a mixed catalog with both
-exact-match and browsy query patterns, not worth paying on every search by default. Enable it in your
-project's `Pyz\Client\SearchRanking\SearchRankingConfig` by overriding
-`isEntropyWeightingEnabled(): bool` to return `true`.
+**The configured `relevanceWeight` is a baseline the entropy result shifts, never fully replaces.** A
+flat distribution shifts it down toward business signals, a dominant-score distribution shifts it up
+toward text relevance, by up to a configured maximum in either direction; a perfectly ambiguous
+distribution (`Hₙₒᵣₘ` exactly `0.5`) leaves the baseline untouched:
+
+```
+signedDeviation = 1 − 2 × Hₙₒᵣₘ                              // +1 at Hₙₒᵣₘ=0, 0 at Hₙₒᵣₘ=0.5, −1 at Hₙₒᵣₘ=1
+shapedDeviation = sign(signedDeviation) × |signedDeviation|^exponent
+relevanceWeight = clamp(configuredRelevanceWeight + shiftMagnitude × shapedDeviation, 0, 1)
+```
+
+The exponent is applied to the deviation's magnitude, not to `Hₙₒᵣₘ` directly — that keeps `Hₙₒᵣₘ = 0.5`
+an exact neutral point regardless of the exponent's value, rather than moving it.
+
+**Three Zed-editable settings, at `/search-ranking-gui/settings`** (alongside `relevanceWeight` and
+`relevanceSaturationPoint` — see [Ranking formula](#ranking-formula)) — all only take effect once the
+code-level flag below is on:
+- **Entropy probe result size** (default `10`) — *N* above.
+- **Entropy weight exponent** (default `1.0`) — how sharply the shift ramps up away from the neutral
+  point.
+- **Entropy weight shift magnitude** (default `0.5`) — the maximum shift in either direction. A
+  `relevanceWeight` baseline of exactly `0.5` reaches the full `[0;1]` range at the default `0.5`
+  magnitude; a baseline nearer either edge reaches correspondingly less on the side nearer that edge —
+  `relevanceWeight` itself cannot leave `[0;1]`, so this isn't a formula flaw, just where a bounded knob
+  sitting near its own edge runs out of room.
+
+**Why the ON/OFF switch is code-level, not one of the three settings above:** it's the one control that
+decides whether a second live Elasticsearch query fires on every catalog search at all — flipping it
+should take a project deploy, not just a Zed form save. Enable it in your project's
+`Pyz\Client\SearchRanking\SearchRankingConfig` by overriding `isEntropyWeightingEnabled(): bool` to
+return `true`; the three tuning settings become meaningful once that's done.
+
+**Why it's opt-in at all:** it doubles the number of Elasticsearch round trips per catalog search. That's
+a real, permanent cost — worth it once you have a mixed catalog with both exact-match and browsy query
+patterns, not worth paying on every search by default.
 
 **Safety:** a failing or empty probe (zero hits, a transient engine hiccup) is caught and falls back to
 the configured static `relevanceWeight` unchanged — this feature can degrade to "as if it were off" but
-never breaks or blocks the real search it's attached to.
+never breaks or blocks the real search it's attached to. The same fallback covers a KV-storage payload
+published before this feature existed: a project that enables the flag before its first post-upgrade
+Zed save still gets sane defaults, not an exception.
 
 ## Why full republish, not a partial score-only ES update
 
@@ -879,7 +907,7 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-**118 tests, 925 assertions** across four Codeception suites (`Zed/SearchRanking`,
+**126 tests, 953 assertions** across four Codeception suites (`Zed/SearchRanking`,
 `Zed/SearchRankingStorage`, `Client/SearchRanking`, `Client/SearchRankingStorage`). From a shop that has
 the package installed:
 

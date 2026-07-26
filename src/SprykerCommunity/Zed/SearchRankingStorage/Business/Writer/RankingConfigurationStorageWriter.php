@@ -40,6 +40,21 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
     protected const KEY_RELEVANCE_SATURATION_POINT = 'relevance_saturation_point';
 
     /**
+     * @var string
+     */
+    protected const KEY_ENTROPY_PROBE_RESULT_SIZE = 'entropy_probe_result_size';
+
+    /**
+     * @var string
+     */
+    protected const KEY_ENTROPY_WEIGHT_EXPONENT = 'entropy_weight_exponent';
+
+    /**
+     * @var string
+     */
+    protected const KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 'entropy_weight_shift_magnitude';
+
+    /**
      * @var \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface
      */
     protected SearchRankingStorageToSearchRankingFacadeInterface $searchRankingFacade;
@@ -84,6 +99,9 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
             static::KEY_METRIC_WEIGHTS => $this->normalizeMetricWeights($metricWeights),
             static::KEY_RELEVANCE_WEIGHT => $this->searchRankingFacade->getRelevanceWeight(),
             static::KEY_RELEVANCE_SATURATION_POINT => $this->searchRankingFacade->getRelevanceSaturationPoint(),
+            static::KEY_ENTROPY_PROBE_RESULT_SIZE => $this->searchRankingFacade->getEntropyProbeResultSize(),
+            static::KEY_ENTROPY_WEIGHT_EXPONENT => $this->searchRankingFacade->getEntropyWeightExponent(),
+            static::KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE => $this->searchRankingFacade->getEntropyWeightShiftMagnitude(),
         ]);
 
         // With direct synchronization the behavior only BUFFERS the write; core flushes the buffer

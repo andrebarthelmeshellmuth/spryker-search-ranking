@@ -11,26 +11,26 @@ namespace SprykerCommunityTest\Client\SearchRanking\Search;
 
 use Codeception\Test\Unit;
 use Elastica\Query\MatchQuery;
+use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 use Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig;
 use Spryker\Shared\SearchElasticsearch\ElasticaClient\ElasticaClientFactory;
 use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculator;
 use SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculator;
-use SprykerCommunity\Client\SearchRanking\SearchRankingConfig;
 use SprykerCommunityTest\Client\SearchRanking\Fixture\TestRelevanceIndexTrait;
 
 /**
  * INTEGRATION TEST — talks to a real Elasticsearch, against a TEST-OWNED index
  * (`TestRelevanceIndexTrait`), never the shop's real page index. Uses a test-only subclass overriding the
- * protected `resolveIndexName()` (see `EntropyProbeCalculatorForTesting` below) instead of touching
- * `EntropyWeightCalculator`'s production index resolution — that resolution deliberately always targets
- * the CURRENT store's real page index at runtime, and must stay that way; the override exists only so
- * this test can point the exact same round-trip logic at a disposable index instead.
+ * protected `resolveIndexName()` instead of touching `EntropyWeightCalculator`'s production index
+ * resolution — that resolution deliberately always targets the CURRENT store's real page index at
+ * runtime, and must stay that way; the override exists only so this test can point the exact same
+ * round-trip logic at a disposable index instead.
  *
  * Proves the real end-to-end wiring (index round-trip, `size`/`_source:false` params, score extraction,
- * the entropy calculator actually being invoked, the configured fallback path) — NOT the entropy formula
- * itself, which `ShannonEntropyCalculatorTest` already covers exactly with plain arrays. Assertions here
- * are deliberately RELATIVE (skewed vs. uniform), not tied to precise BM25 internals this test doesn't
- * control.
+ * the entropy calculator actually being invoked, the shift-around-baseline arithmetic, the configured
+ * fallback path) — NOT the entropy formula itself, which `ShannonEntropyCalculatorTest` already covers
+ * exactly with plain arrays. Assertions here are deliberately RELATIVE to the configured baseline, not
+ * tied to precise BM25 internals this test doesn't control.
  *
  * @group SprykerCommunityTest
  * @group Client
@@ -46,6 +46,11 @@ class EntropyWeightCalculatorTest extends Unit
      * @var float
      */
     protected const CONFIGURED_RELEVANCE_WEIGHT = 0.5;
+
+    /**
+     * @var float
+     */
+    protected const SHIFT_MAGNITUDE = 0.5;
 
     /**
      * @return void
@@ -66,7 +71,7 @@ class EntropyWeightCalculatorTest extends Unit
     /**
      * @return void
      */
-    public function testUniformScoreDistributionPullsWeightTowardBusinessSignals(): void
+    public function testUniformScoreDistributionShiftsWeightBelowTheConfiguredBaseline(): void
     {
         $this->indexTestRelevanceDocuments([
             $this->createTestRelevanceDocument('doc-1', 'gadget for the home'),
@@ -78,54 +83,43 @@ class EntropyWeightCalculatorTest extends Unit
 
         $weight = $this->createCalculator()->calculateRelevanceWeight(
             new MatchQuery('full-text', 'gadget'),
-            static::CONFIGURED_RELEVANCE_WEIGHT,
+            $this->createConfigurationTransfer(),
         );
 
         $this->assertLessThan(
             static::CONFIGURED_RELEVANCE_WEIGHT,
             $weight,
-            'A near-flat score distribution (every doc matches "gadget" once) should pull weight toward business signals, below the configured baseline.',
+            'A near-flat score distribution (every doc matches "gadget" once) should shift weight below the configured baseline, toward business signals.',
         );
     }
 
     /**
+     * A single-match query — the real "exact SKU" case entropy weighting is meant to detect — is a
+     * deterministic, BM25-internals-independent way to reach `normalizedEntropy = 0` exactly (via
+     * `ShannonEntropyCalculator`'s own "fewer than 2 scores" guard): only one document in the corpus
+     * contains the queried term at all, so exactly one result comes back.
+     *
      * @return void
      */
-    public function testSkewedScoreDistributionPullsWeightTowardTextRelevanceComparedToUniform(): void
+    public function testASingleMatchingCandidateShiftsWeightAboveTheConfiguredBaseline(): void
     {
         $this->indexTestRelevanceDocuments([
-            $this->createTestRelevanceDocument('doc-dominant', 'gadget gadget gadget gadget gadget gadget'),
-            $this->createTestRelevanceDocument('doc-2', 'gadget for the office'),
-            $this->createTestRelevanceDocument('doc-3', 'gadget for the garden'),
-            $this->createTestRelevanceDocument('doc-4', 'gadget for the kitchen'),
-            $this->createTestRelevanceDocument('doc-5', 'gadget for the workshop'),
+            $this->createTestRelevanceDocument('doc-dominant', 'gadget for the home'),
+            $this->createTestRelevanceDocument('doc-2', 'widget for the office'),
+            $this->createTestRelevanceDocument('doc-3', 'widget for the garden'),
+            $this->createTestRelevanceDocument('doc-4', 'widget for the kitchen'),
+            $this->createTestRelevanceDocument('doc-5', 'widget for the workshop'),
         ]);
 
-        $skewedWeight = $this->createCalculator()->calculateRelevanceWeight(
+        $weight = $this->createCalculator()->calculateRelevanceWeight(
             new MatchQuery('full-text', 'gadget'),
-            static::CONFIGURED_RELEVANCE_WEIGHT,
-        );
-
-        $this->deleteTestRelevanceIndex();
-        $this->createTestRelevanceIndex();
-
-        $this->indexTestRelevanceDocuments([
-            $this->createTestRelevanceDocument('doc-1', 'gadget for the home'),
-            $this->createTestRelevanceDocument('doc-2', 'gadget for the office'),
-            $this->createTestRelevanceDocument('doc-3', 'gadget for the garden'),
-            $this->createTestRelevanceDocument('doc-4', 'gadget for the kitchen'),
-            $this->createTestRelevanceDocument('doc-5', 'gadget for the workshop'),
-        ]);
-
-        $uniformWeight = $this->createCalculator()->calculateRelevanceWeight(
-            new MatchQuery('full-text', 'gadget'),
-            static::CONFIGURED_RELEVANCE_WEIGHT,
+            $this->createConfigurationTransfer(),
         );
 
         $this->assertGreaterThan(
-            $uniformWeight,
-            $skewedWeight,
-            'A single dominant score (one doc repeating "gadget") should discriminate better than a flat distribution, so its derived weight should sit closer to text relevance than the uniform case.',
+            static::CONFIGURED_RELEVANCE_WEIGHT,
+            $weight,
+            'A single matching candidate carries no distribution to measure (normalizedEntropy = 0 by definition) — weight should shift above the configured baseline, toward text relevance.',
         );
     }
 
@@ -140,7 +134,7 @@ class EntropyWeightCalculatorTest extends Unit
 
         $weight = $this->createCalculator()->calculateRelevanceWeight(
             new MatchQuery('full-text', 'no-such-term-anywhere'),
-            static::CONFIGURED_RELEVANCE_WEIGHT,
+            $this->createConfigurationTransfer(),
         );
 
         $this->assertSame(
@@ -148,6 +142,18 @@ class EntropyWeightCalculatorTest extends Unit
             $weight,
             'Zero hits means no usable signal — must fall back to the configured weight exactly, not error out.',
         );
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer
+     */
+    protected function createConfigurationTransfer(): SearchRankingConfigurationStorageTransfer
+    {
+        return (new SearchRankingConfigurationStorageTransfer())
+            ->setRelevanceWeight(static::CONFIGURED_RELEVANCE_WEIGHT)
+            ->setEntropyProbeResultSize(10)
+            ->setEntropyWeightExponent(1.0)
+            ->setEntropyWeightShiftMagnitude(static::SHIFT_MAGNITUDE);
     }
 
     /**
@@ -161,7 +167,6 @@ class EntropyWeightCalculatorTest extends Unit
         return new class (
             $elasticaClient,
             $searchElasticsearchConfig,
-            new SearchRankingConfig(),
             new ShannonEntropyCalculator(),
         ) extends EntropyWeightCalculator {
             /**

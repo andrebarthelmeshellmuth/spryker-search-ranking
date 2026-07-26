@@ -33,6 +33,41 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     protected const KEY_RELEVANCE_SATURATION_POINT = 'relevance_saturation_point';
 
     /**
+     * @var string
+     */
+    protected const KEY_ENTROPY_PROBE_RESULT_SIZE = 'entropy_probe_result_size';
+
+    /**
+     * @var string
+     */
+    protected const KEY_ENTROPY_WEIGHT_EXPONENT = 'entropy_weight_exponent';
+
+    /**
+     * @var string
+     */
+    protected const KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 'entropy_weight_shift_magnitude';
+
+    /**
+     * Defaults for a KV payload published before this feature existed — matches
+     * `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig`'s own defaults, so a shop that enables
+     * entropy weighting before its first post-upgrade republish still gets the same values it would
+     * have gotten from a fresh Zed save, not an arbitrary fallback.
+     *
+     * @var int
+     */
+    protected const DEFAULT_ENTROPY_PROBE_RESULT_SIZE = 10;
+
+    /**
+     * @var float
+     */
+    protected const DEFAULT_ENTROPY_WEIGHT_EXPONENT = 1.0;
+
+    /**
+     * @var float
+     */
+    protected const DEFAULT_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 0.5;
+
+    /**
      * @var \SprykerCommunity\Client\SearchRankingStorage\Dependency\Client\SearchRankingStorageToStorageClientInterface
      */
     protected SearchRankingStorageToStorageClientInterface $storageClient;
@@ -97,6 +132,9 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
         return (new SearchRankingConfigurationStorageTransfer())
             ->setMetricWeights($configurationData[static::KEY_METRIC_WEIGHTS] ?? [])
             ->setRelevanceWeight((float)($configurationData[static::KEY_RELEVANCE_WEIGHT] ?? 0.0))
-            ->setRelevanceSaturationPoint((float)($configurationData[static::KEY_RELEVANCE_SATURATION_POINT] ?? 0.0));
+            ->setRelevanceSaturationPoint((float)($configurationData[static::KEY_RELEVANCE_SATURATION_POINT] ?? 0.0))
+            ->setEntropyProbeResultSize((int)($configurationData[static::KEY_ENTROPY_PROBE_RESULT_SIZE] ?? static::DEFAULT_ENTROPY_PROBE_RESULT_SIZE))
+            ->setEntropyWeightExponent((float)($configurationData[static::KEY_ENTROPY_WEIGHT_EXPONENT] ?? static::DEFAULT_ENTROPY_WEIGHT_EXPONENT))
+            ->setEntropyWeightShiftMagnitude((float)($configurationData[static::KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE] ?? static::DEFAULT_ENTROPY_WEIGHT_SHIFT_MAGNITUDE));
     }
 }

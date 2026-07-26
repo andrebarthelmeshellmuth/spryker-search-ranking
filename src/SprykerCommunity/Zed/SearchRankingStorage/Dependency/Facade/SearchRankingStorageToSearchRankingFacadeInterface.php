@@ -27,4 +27,19 @@ interface SearchRankingStorageToSearchRankingFacadeInterface
      * @return float
      */
     public function getRelevanceSaturationPoint(): float;
+
+    /**
+     * @return int
+     */
+    public function getEntropyProbeResultSize(): int;
+
+    /**
+     * @return float
+     */
+    public function getEntropyWeightExponent(): float;
+
+    /**
+     * @return float
+     */
+    public function getEntropyWeightShiftMagnitude(): float;
 }

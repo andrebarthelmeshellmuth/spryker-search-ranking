@@ -70,7 +70,6 @@ class SearchRankingFactory extends AbstractFactory
         return new EntropyWeightCalculator(
             $this->getElasticaClient(),
             $this->createSearchElasticsearchConfig(),
-            $this->getConfig(),
             $this->createShannonEntropyCalculator(),
         );
     }

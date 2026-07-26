@@ -12,9 +12,9 @@ namespace SprykerCommunity\Client\SearchRanking\Search;
 use Elastica\Client;
 use Elastica\Query;
 use Elastica\Query\AbstractQuery;
+use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 use Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig;
 use Spryker\Shared\Kernel\Store;
-use SprykerCommunity\Client\SearchRanking\SearchRankingConfig;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use Throwable;
 
@@ -38,11 +38,6 @@ class EntropyWeightCalculator implements EntropyWeightCalculatorInterface
     protected SearchElasticsearchConfig $searchElasticsearchConfig;
 
     /**
-     * @var \SprykerCommunity\Client\SearchRanking\SearchRankingConfig
-     */
-    protected SearchRankingConfig $config;
-
-    /**
      * @var \SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculatorInterface
      */
     protected ShannonEntropyCalculatorInterface $entropyCalculator;
@@ -50,18 +45,15 @@ class EntropyWeightCalculator implements EntropyWeightCalculatorInterface
     /**
      * @param \Elastica\Client $elasticaClient
      * @param \Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig $searchElasticsearchConfig
-     * @param \SprykerCommunity\Client\SearchRanking\SearchRankingConfig $config
      * @param \SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculatorInterface $entropyCalculator
      */
     public function __construct(
         Client $elasticaClient,
         SearchElasticsearchConfig $searchElasticsearchConfig,
-        SearchRankingConfig $config,
         ShannonEntropyCalculatorInterface $entropyCalculator,
     ) {
         $this->elasticaClient = $elasticaClient;
         $this->searchElasticsearchConfig = $searchElasticsearchConfig;
-        $this->config = $config;
         $this->entropyCalculator = $entropyCalculator;
     }
 
@@ -69,22 +61,51 @@ class EntropyWeightCalculator implements EntropyWeightCalculatorInterface
      * {@inheritDoc}
      *
      * @param \Elastica\Query\AbstractQuery $baseQuery
-     * @param float $configuredRelevanceWeight
+     * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
      *
      * @return float
      */
-    public function calculateRelevanceWeight(AbstractQuery $baseQuery, float $configuredRelevanceWeight): float
-    {
-        $scores = $this->fetchProbeScores($baseQuery);
+    public function calculateRelevanceWeight(
+        AbstractQuery $baseQuery,
+        SearchRankingConfigurationStorageTransfer $configurationTransfer,
+    ): float {
+        $configuredRelevanceWeight = (float)$configurationTransfer->getRelevanceWeight();
+        $scores = $this->fetchProbeScores($baseQuery, (int)$configurationTransfer->getEntropyProbeResultSize());
 
         if ($scores === []) {
             return $configuredRelevanceWeight;
         }
 
         $normalizedEntropy = $this->entropyCalculator->calculateNormalizedEntropy($scores);
-        $businessWeight = $normalizedEntropy ** $this->config->getEntropyWeightExponent();
+        $shift = $this->calculateShift(
+            $normalizedEntropy,
+            (float)$configurationTransfer->getEntropyWeightExponent(),
+            (float)$configurationTransfer->getEntropyWeightShiftMagnitude(),
+        );
 
-        return max(0.0, min(1.0, 1 - $businessWeight));
+        return max(0.0, min(1.0, $configuredRelevanceWeight + $shift));
+    }
+
+    /**
+     * `1 - 2 * normalizedEntropy` maps entropy's `[0;1]` range onto a signed `[-1;1]` deviation from the
+     * neutral point (entropy exactly 0.5 → deviation 0): positive when one score dominates (shift toward
+     * text relevance), negative when the distribution is flat (shift toward business signals). The
+     * exponent is applied to the deviation's MAGNITUDE only, sign preserved separately — applying it to
+     * `normalizedEntropy` directly (before centering) would move the neutral point away from 0.5 whenever
+     * the exponent isn't exactly 1.0, which is not what the exponent is meant to control.
+     *
+     * @param float $normalizedEntropy
+     * @param float $exponent
+     * @param float $shiftMagnitude
+     *
+     * @return float
+     */
+    protected function calculateShift(float $normalizedEntropy, float $exponent, float $shiftMagnitude): float
+    {
+        $signedDeviation = 1 - (2 * $normalizedEntropy);
+        $shapedDeviation = ($signedDeviation <=> 0) * (abs($signedDeviation) ** $exponent);
+
+        return $shiftMagnitude * $shapedDeviation;
     }
 
     /**
@@ -92,14 +113,15 @@ class EntropyWeightCalculator implements EntropyWeightCalculatorInterface
      * treated as "no usable signal", letting the caller fall back to the configured static weight.
      *
      * @param \Elastica\Query\AbstractQuery $baseQuery
+     * @param int $probeResultSize
      *
      * @return array<float>
      */
-    protected function fetchProbeScores(AbstractQuery $baseQuery): array
+    protected function fetchProbeScores(AbstractQuery $baseQuery, int $probeResultSize): array
     {
         try {
             $probeQuery = Query::create($baseQuery);
-            $probeQuery->setSize($this->config->getEntropyProbeResultSize());
+            $probeQuery->setSize($probeResultSize);
             $probeQuery->setSource(false);
 
             $resultSet = $this->elasticaClient->getIndex($this->resolveIndexName())->search($probeQuery);

@@ -36,6 +36,9 @@ class SettingsController extends AbstractController
             ->getSettingsForm([
                 SettingsForm::FIELD_RELEVANCE_WEIGHT => $searchRankingFacade->getRelevanceWeight(),
                 SettingsForm::FIELD_RELEVANCE_SATURATION_POINT => $searchRankingFacade->getRelevanceSaturationPoint(),
+                SettingsForm::FIELD_ENTROPY_PROBE_RESULT_SIZE => $searchRankingFacade->getEntropyProbeResultSize(),
+                SettingsForm::FIELD_ENTROPY_WEIGHT_EXPONENT => $searchRankingFacade->getEntropyWeightExponent(),
+                SettingsForm::FIELD_ENTROPY_WEIGHT_SHIFT_MAGNITUDE => $searchRankingFacade->getEntropyWeightShiftMagnitude(),
             ])
             ->handleRequest($request);
 
@@ -43,6 +46,9 @@ class SettingsController extends AbstractController
             $settingsData = $settingsForm->getData();
             $searchRankingFacade->saveRelevanceWeight((float)$settingsData[SettingsForm::FIELD_RELEVANCE_WEIGHT]);
             $searchRankingFacade->saveRelevanceSaturationPoint((float)$settingsData[SettingsForm::FIELD_RELEVANCE_SATURATION_POINT]);
+            $searchRankingFacade->saveEntropyProbeResultSize((int)$settingsData[SettingsForm::FIELD_ENTROPY_PROBE_RESULT_SIZE]);
+            $searchRankingFacade->saveEntropyWeightExponent((float)$settingsData[SettingsForm::FIELD_ENTROPY_WEIGHT_EXPONENT]);
+            $searchRankingFacade->saveEntropyWeightShiftMagnitude((float)$settingsData[SettingsForm::FIELD_ENTROPY_WEIGHT_SHIFT_MAGNITUDE]);
             $this->getFactory()->getSearchRankingStorageFacade()->publishRankingConfiguration();
             $this->addSuccessMessage('Ranking settings were saved.');
 

@@ -74,6 +74,51 @@ class SearchRankingConfig extends AbstractBundleConfig
 
     /**
      * Specification:
+     * - Default number of top-ranked candidates the entropy probe samples when none was saved in Zed
+     *   yet. Only meaningful once entropy-aware relevance weighting is enabled at the code level.
+     *
+     * @api
+     *
+     * @return int
+     */
+    public function getDefaultEntropyProbeResultSize(): int
+    {
+        return 10;
+    }
+
+    /**
+     * Specification:
+     * - Default exponent reshaping how sharply the entropy-derived shift ramps up, when none was saved
+     *   in Zed yet. `1.0` applies the shift linearly with no reshaping.
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getDefaultEntropyWeightExponent(): float
+    {
+        return 1.0;
+    }
+
+    /**
+     * Specification:
+     * - Default maximum amount the entropy-derived value may shift `relevanceWeight` away from its
+     *   configured baseline, in either direction, when none was saved in Zed yet. `0.5` lets a baseline
+     *   of exactly 0.5 reach the full `[0;1]` range; baselines closer to either edge reach
+     *   correspondingly less on the side nearer that edge — an unavoidable consequence of `relevanceWeight`
+     *   itself being bounded to `[0;1]`, not a flaw in the shift formula.
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getDefaultEntropyWeightShiftMagnitude(): float
+    {
+        return 0.5;
+    }
+
+    /**
+     * Specification:
      * - Number of product abstract publish events triggered per bulk when re-publishing scored products.
      *
      * @api

@@ -123,6 +123,60 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     }
 
     /**
+     * @return int
+     */
+    public function getEntropyProbeResultSize(): int
+    {
+        return $this->searchRankingFacade->getEntropyProbeResultSize();
+    }
+
+    /**
+     * @param int $entropyProbeResultSize
+     *
+     * @return void
+     */
+    public function saveEntropyProbeResultSize(int $entropyProbeResultSize): void
+    {
+        $this->searchRankingFacade->saveEntropyProbeResultSize($entropyProbeResultSize);
+    }
+
+    /**
+     * @return float
+     */
+    public function getEntropyWeightExponent(): float
+    {
+        return $this->searchRankingFacade->getEntropyWeightExponent();
+    }
+
+    /**
+     * @param float $entropyWeightExponent
+     *
+     * @return void
+     */
+    public function saveEntropyWeightExponent(float $entropyWeightExponent): void
+    {
+        $this->searchRankingFacade->saveEntropyWeightExponent($entropyWeightExponent);
+    }
+
+    /**
+     * @return float
+     */
+    public function getEntropyWeightShiftMagnitude(): float
+    {
+        return $this->searchRankingFacade->getEntropyWeightShiftMagnitude();
+    }
+
+    /**
+     * @param float $entropyWeightShiftMagnitude
+     *
+     * @return void
+     */
+    public function saveEntropyWeightShiftMagnitude(float $entropyWeightShiftMagnitude): void
+    {
+        $this->searchRankingFacade->saveEntropyWeightShiftMagnitude($entropyWeightShiftMagnitude);
+    }
+
+    /**
      * @param int $idSearchRankingMetric
      * @param string $formula
      * @param bool $isHigherBetter
