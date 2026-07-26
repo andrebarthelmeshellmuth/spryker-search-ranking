@@ -13,7 +13,7 @@ The standout piece: a data-driven normalization-authoring GUI. As you type a for
 evaluates it against the metric's own real distribution and draws the curve live, alongside ranked
 closed-form curve-fit suggestions — no guessing what shape a business signal should take:
 
-![The metric edit page: a live SVG preview of the typed normalization formula plotted against the metric's own real distribution, with ranked closed-form curve-fit suggestions (atan, saturating-ratio, log, sigmoid, power, linear) each showing their R² fit and a one-click "use this formula" action](docs/screenshots/normalization-authoring.png)
+![The metric edit page: a live, labeled-axis SVG preview of the typed normalization formula (with a legend distinguishing it from the metric's own empirical-CDF reference line) plotted against the metric's own real distribution, with ranked closed-form curve-fit suggestions (atan, saturating-ratio, log, sigmoid, power, linear) each showing their R² fit and a one-click "use this formula" action](docs/screenshots/normalization-authoring.png)
 
 ## Contents
 
