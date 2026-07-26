@@ -599,6 +599,20 @@ public function getJsonSchemaDefinitionDirectories(): array
 }
 ```
 
+**Why ship `Schema/page.json` inside the package instead of asking you to paste the `scores` mapping
+into your own project's `src/Pyz/Shared/*/Schema/page.json`?** The latter would technically work with
+zero PHP changes — core's own default already globs `APPLICATION_SOURCE_DIR/*/Shared/*/Schema/` — but it
+would mean hand-copying a JSON snippet into project-owned files, with no automatic way to pick up future
+changes to that mapping; every schema tweak in a future release would need a manual re-copy, shop by
+shop. Shipping the fragment in the package instead means it just flows through `composer update` like
+any other change, the same way every core module (`search-elasticsearch`, `product-list-search`,
+`merchant-product-search`, ...) ships its own `Schema/page.json` and relies on core's `vendor/spryker/*`
+glob rather than asking integrators to copy anything. The one downside is that core's glob only covers
+`vendor/spryker/*`, not `vendor/spryker-community/*` — hence this one-time override. It only needs to
+happen once per project, though, not once per package: it also covers `search-debug` and
+`search-ranking-optimizer`'s own schema fragments, and any other `spryker-community/*` package installed
+later, for free.
+
 ### 11. Register the ranking-configuration sync queue
 
 The queue `sync.storage.search_ranking` needs the usual three registrations, plus a fourth if your
