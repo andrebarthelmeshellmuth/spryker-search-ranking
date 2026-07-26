@@ -35,10 +35,13 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
 
     /**
      * {@inheritDoc}
-     * - Wraps the search query in a function_score combining text relevance with the weighted,
-     *   normalized business signals from the product documents' `scores` field:
-     *   (1 + sqrt(_score)) * (sum of weight * signal + signal baseline).
-     * - Weights and the signal baseline come from the ranking configuration in key-value storage (synced from Zed).
+     * - Wraps the search query in a function_score combining text relevance with the weighted, normalized
+     *   business signals from the product documents' `scores` field, via a saturating blend:
+     *   relevanceWeight * (_score / (_score + relevanceSaturationPoint))
+     *     + (1 - relevanceWeight) * (sum of weight * signal) — see `FunctionScoreBuilder` for the full
+     *   rationale (including why an older, unbounded `(1 + sqrt(_score)) * (...)` formula was replaced).
+     * - Metric weights, relevanceWeight, and relevanceSaturationPoint all come from the ranking
+     *   configuration in key-value storage (synced from Zed).
      * - Also adds the `scores` field to the query's source whitelist (when one is set), so consumers —
      *   the search-debug overlay's business-signal breakdown, client-side re-ranking — can read each
      *   hit's normalized signals without another round trip.
