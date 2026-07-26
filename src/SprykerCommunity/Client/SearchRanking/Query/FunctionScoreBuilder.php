@@ -29,10 +29,12 @@ use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
  * (slowly) as `_score` grows, so on long/specific queries where many rare terms match and `_score` gets
  * large, weight naturally drifted back toward text relevance instead of staying pinned to the business
  * signals — a property this saturating curve deliberately gives up, since `_score`'s contribution here is
- * capped to `[0;1)` no matter how large `_score` gets. Recovering that upside on purpose, instead of as a
- * side effect of an otherwise unpredictable formula, is deferred to search-ranking-optimizer: an "entropy
- * knob" plus a second query. `_score / (_score + relevanceSaturationPoint)` is the same saturating-curve
- * shape BM25 itself uses for term-frequency saturation (also known from Michaelis-Menten kinetics): it
+ * capped to `[0;1)` no matter how large `_score` gets. Recovering that upside on purpose, rather than as
+ * a side effect of an otherwise unpredictable formula, would need real additional machinery (some way to
+ * read the distribution of scores across the result set, not just one document at a time) — outside what
+ * this package builds, but not incompatible with it. `_score / (_score + relevanceSaturationPoint)` is
+ * the same saturating-curve shape BM25 itself uses for term-frequency saturation (also known from
+ * Michaelis-Menten kinetics): it
  * maps the unbounded `_score` onto `[0;1)`, reaching exactly 0.5 at `_score == relevanceSaturationPoint`,
  * so both terms of the blend are finally on the same scale. `relevanceWeight` is then one single,
  * interpretable knob for how much of the final score comes from text relevance vs. business signals — see
