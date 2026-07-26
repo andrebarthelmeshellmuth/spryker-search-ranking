@@ -70,9 +70,13 @@ class EngineCompatibilityCheckerTest extends Unit
         $functionScoreCapability = null;
 
         foreach ($compatibilityTransfer->getCapabilities() as $capabilityTransfer) {
-            if ($capabilityTransfer->getName() === static::CAPABILITY_FUNCTION_SCORE) {
-                $functionScoreCapability = $capabilityTransfer;
+            if ($capabilityTransfer->getName() !== static::CAPABILITY_FUNCTION_SCORE) {
+                continue;
             }
+
+            $functionScoreCapability = $capabilityTransfer;
+
+            break;
         }
 
         $this->assertNotNull($functionScoreCapability, 'checkCompatibility() should always probe function_score + script_score.');
