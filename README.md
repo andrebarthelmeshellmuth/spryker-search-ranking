@@ -103,7 +103,7 @@ auto-tune) are planned as a separate package.
 
 Verified: dependency floors resolved and checked at their oldest allowed versions (`composer
 check-floors`), the ranking formula's `function_score`/`script_score` cross-validated across three
-engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 105
+engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 107
 tests, phpcs and phpstan level 6 clean.
 
 This package's own mechanism (phases 1–4.5) is functional and complete: the metric/value data model, the
@@ -878,7 +878,7 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-**105 tests, 901 assertions** across four Codeception suites (`Zed/SearchRanking`,
+**107 tests, 910 assertions** across four Codeception suites (`Zed/SearchRanking`,
 `Zed/SearchRankingStorage`, `Client/SearchRanking`, `Client/SearchRankingStorage`). From a shop that has
 the package installed:
 
@@ -904,6 +904,11 @@ initial row for a brand-new metric, no row when nothing tracked actually changed
 fit quality captured correctly when a formula change has an existing digest to compare against) as pure
 unit tests — no database needed. The Client suite lives at
 `tests/SprykerCommunityTest/Client/SearchRanking`.
+
+Two tests in that Client suite are real integration tests, not unit tests: `FunctionScoreExecutionTest`
+builds a real `function_score` and executes it against real documents in a test-owned index, and
+`EngineCompatibilityCheckerTest` runs `EngineCompatibilityChecker`'s real `_validate/query` probes against
+the actual cluster — both need a reachable search engine, though still no database.
 
 Coverage (Codeception + pcov): the Zed suite covers 90% of classes / 95.97% of lines; the uncovered
 remainder is almost entirely Spryker's own Facade/Factory DI-wiring boilerplate (thin delegation, not
