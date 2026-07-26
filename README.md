@@ -22,6 +22,7 @@ closed-form curve-fit suggestions — no guessing what shape a business signal s
 - [What it does today](#what-it-does-today)
 - [Ranking formula](#ranking-formula)
 - [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update)
+- [Why hourly batch normalization, not an immediate per-value hook](#why-hourly-batch-normalization-not-an-immediate-per-value-hook)
 - [Normalization formulas](#normalization-formulas)
 - [Modules](#modules)
 - [Requirements](#requirements)
@@ -382,6 +383,36 @@ pattern this package already uses for its own ranking-configuration document
 (`spy_search_ranking_configuration_storage` / `SearchRankingConfigurationSynchronizationDataPlugin`) —
 same queue-based resilience and store-awareness, just a narrower payload than the full product page. That
 is real new infrastructure, not a quick tweak, and is not worth building ahead of an actual need for it.
+
+## Why hourly batch normalization, not an immediate per-value hook
+
+Raw values only ever get normalized and published once an hour, via `search-ranking:normalize` — never
+the instant a raw value is written. This is a deliberate choice, not an oversight:
+
+- **`normalizedValue` is a function of the metric's aggregate stats** (`min`/`max`/`avg`/`count`, from
+  `getMetricStatistics()`), which by definition need every row for that metric, not just the one that
+  changed. A single raw value cannot be correctly normalized in isolation — at best it could be evaluated
+  against the *last known* (already slightly stale) aggregate stats, not freshly correct ones.
+- **There is no single-value write path to hook onto today.** The only writer of raw values is CSV import
+  (`SearchRankingMetricWriterStep`/`SearchRankingProductMetricWriterStep` — see
+  [Data import](#what-it-does-today)), which is inherently bulk: one import run can touch thousands of
+  rows. Firing an immediate normalize-and-publish per row would mean thousands of individual publish
+  events instead of the current few chunked ones — plausibly worse than the hourly batch — and every one
+  of those rows would be published *again* an hour later once real stats catch up. The "Product Values"
+  Zed page is read-only today specifically because there is no single-row edit action this would attach to
+  yet.
+- **The underlying signals are ETL-style, refreshed once a day upstream by design** — Spryker's own
+  data-driven-ranking best practice this package is based on assumes these get recomputed nightly from a
+  data warehouse. If raw values only change once a day via import, "picked up within the hour" is already
+  same-day freshness; shaving that hour down further has little practical payoff without a genuinely
+  real-time upstream data source.
+
+**A real hybrid is buildable if this ever changes**: on a raw-value write, evaluate that one row against
+the metric's *currently cached* stats and publish just that one product abstract, while the hourly cron
+keeps doing the full stats refresh + full re-normalization + reconciliation publish for everything the fast
+path only approximated. Worth building the moment there is an actual single-value write path (e.g. a
+future Zed editor for individual product-metric values) to hang it on — not before, since bulk CSV import
+is a poor fit for a per-row hook regardless of how cheap the hook itself is.
 
 ## Normalization formulas
 
