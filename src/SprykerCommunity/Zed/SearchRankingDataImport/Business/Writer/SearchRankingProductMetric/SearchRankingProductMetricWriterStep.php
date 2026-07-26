@@ -14,6 +14,13 @@ use Spryker\Zed\DataImport\Business\Model\DataImportStep\DataImportStepInterface
 use Spryker\Zed\DataImport\Business\Model\DataSet\DataSetInterface;
 use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingProductMetric\DataSet\SearchRankingProductMetricDataSetInterface;
 
+/**
+ * Writes directly to Propel, same DataImport convention as SearchRankingMetricWriterStep — but unlike
+ * that step, there's no facade-level "save one product metric" method being bypassed here: this direct
+ * upsert is the only path this data ever takes, from any source. Only rawValue is set, deliberately;
+ * normalizedValue is left untouched because normalization always happens downstream, in
+ * ProductMetricNormalizer via the search-ranking:normalize cron — never at import time.
+ */
 class SearchRankingProductMetricWriterStep implements DataImportStepInterface
 {
     /**

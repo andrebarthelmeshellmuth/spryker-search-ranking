@@ -146,7 +146,15 @@ be." See [Roadmap](#roadmap).
     statistically "ideal" spread.
 - **Data import**: importer types `search-ranking-metric` (upsert by name) and
   `search-ranking-product-metric` (resolves metric name + abstract SKU to foreign keys, writes raw
-  values only — normalized values are never imported).
+  values only — normalized values are never imported). Both writer steps go straight to Propel rather
+  than through `SearchRankingFacade` — the standard Spryker DataImport convention, needed since a
+  per-row facade call would add mapping/validation/transaction overhead on top of what the
+  batch/transaction machinery around each step already does. The one real consequence: importing a
+  metric this way skips the formula validation and history recording `saveMetric()` normally does, so a
+  malformed formula in a CSV row surfaces later — as a per-metric skip reported by the next
+  `search-ranking:normalize` run — rather than failing the import immediately. The product-metric
+  importer has no such gap: there's no facade-level "save one product metric" method it bypasses, this
+  direct upsert is the only path that data ever takes.
 - **Normalization cron**: `vendor/bin/console search-ranking:normalize` recalculates every
   normalized value of every active metric **except the random tie-breaker metric** (see below) in
   batches. A metric whose formula fails to evaluate is skipped and reported (non-zero exit code)
