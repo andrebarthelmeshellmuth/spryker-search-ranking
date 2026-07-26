@@ -25,12 +25,19 @@ use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
  * much higher scores), while business signals are normalized to `[0;1]` by design — combining them
  * directly (as an older version of this class did, via `(1 + sqrt(_score)) * (signals + baseline)`)
  * meant the RELATIVE influence of business signals over text relevance drifted unpredictably from query
- * to query. `_score / (_score + relevanceSaturationPoint)` is the same saturating-curve shape BM25 itself
- * uses for term-frequency saturation (also known from Michaelis-Menten kinetics): it maps the unbounded
- * `_score` onto `[0;1)`, reaching exactly 0.5 at `_score == relevanceSaturationPoint`, so both terms of
- * the blend are finally on the same scale. `relevanceWeight` is then one single, interpretable knob for
- * how much of the final score comes from text relevance vs. business signals — see this package's
- * README for the full rationale (and why this replaced an additive "signal baseline" constant). Weights
+ * to query. That formula wasn't all bad, though: `sqrt(_score)` never saturates, it keeps growing
+ * (slowly) as `_score` grows, so on long/specific queries where many rare terms match and `_score` gets
+ * large, weight naturally drifted back toward text relevance instead of staying pinned to the business
+ * signals — a property this saturating curve deliberately gives up, since `_score`'s contribution here is
+ * capped to `[0;1)` no matter how large `_score` gets. Recovering that upside on purpose, instead of as a
+ * side effect of an otherwise unpredictable formula, is deferred to search-ranking-optimizer: an "entropy
+ * knob" plus a second query. `_score / (_score + relevanceSaturationPoint)` is the same saturating-curve
+ * shape BM25 itself uses for term-frequency saturation (also known from Michaelis-Menten kinetics): it
+ * maps the unbounded `_score` onto `[0;1)`, reaching exactly 0.5 at `_score == relevanceSaturationPoint`,
+ * so both terms of the blend are finally on the same scale. `relevanceWeight` is then one single,
+ * interpretable knob for how much of the final score comes from text relevance vs. business signals — see
+ * this package's README for the full rationale (and why this replaced an additive "signal baseline"
+ * constant). Weights
  * and both blend constants are passed as script params; metric names are embedded in the doc-value
  * paths (guarded for missing fields).
  */

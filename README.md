@@ -240,6 +240,14 @@ directly means the *relative* influence of business signals over text relevance 
 from query to query, and the additive baseline has no principled value — it's tuned by eye until
 results look right.
 
+That said, the old formula wasn't all bad: `sqrt(_score)` never saturates, it keeps growing (slowly) as
+`_score` grows, so on long, specific queries where many rare terms match and `_score` gets large, weight
+naturally drifted back toward text relevance instead of staying pinned to the business signals — a
+property the saturating curve below deliberately gives up, since it caps `_score`'s contribution at
+`[0;1)` no matter how large `_score` gets. Recovering that upside on purpose, instead of as a side effect
+of an otherwise unpredictable formula, is deferred to `spryker-community/search-ranking-optimizer`: an
+"entropy knob" plus a second query.
+
 **`relevanceWeight` and `relevanceSaturationPoint` fix that by normalizing first.**
 `_score / (_score + relevanceSaturationPoint)` is the same saturating-curve shape BM25 itself uses for
 term-frequency saturation (also known from Michaelis-Menten kinetics): it maps the unbounded `_score`
