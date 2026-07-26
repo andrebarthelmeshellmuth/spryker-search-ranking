@@ -17,6 +17,7 @@ closed-form curve-fit suggestions — no guessing what shape a business signal s
 
 ## Contents
 
+- [Terminology](#terminology)
 - [Status](#status)
 - [What it does today](#what-it-does-today)
 - [Ranking formula](#ranking-formula)
@@ -51,6 +52,48 @@ closed-form curve-fit suggestions — no guessing what shape a business signal s
   - [Test suite](#test-suite)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
+
+## Terminology
+
+A quick reference for terms this README reuses across many sections. Each is explained in full where
+it's first introduced in context — this is a lookup index, not a replacement for those explanations.
+
+### metric
+
+A named business signal (e.g. `pdp_impressions`, `top_seller`) with its own weight, normalization
+formula, active flag, and direction. See [What it does today](#what-it-does-today).
+
+### weight
+
+How much one metric's signal contributes to the combined business-signal score, relative to the other
+active metrics. See [Ranking formula](#ranking-formula).
+
+### raw value / normalized value
+
+The real-world number for one metric on one product (e.g. "8,250 impressions"), and the `]0;1]` value
+its formula maps that number to. See [What it does today](#what-it-does-today).
+
+### signal
+
+A metric's own normalized value — used interchangeably with "metric" once normalization, not the raw
+real-world number behind it, is the topic.
+
+### digest
+
+A metric's precomputed distribution snapshot — min/max/mean/median plus a 101-point percentile/empirical-CDF
+backbone — rebuilt by the normalization cron and read by the normalization-authoring GUI's live preview
+and curve-fit suggestions, so neither ever touches the raw per-product rows directly. See [What it does
+today](#what-it-does-today).
+
+### relevanceWeight
+
+Shorthand `α`. The single knob for how much of the final score comes from normalized text relevance vs.
+the combined business-signal score. See [Ranking formula](#ranking-formula).
+
+### relevanceSaturationPoint
+
+Shorthand `k`. The raw Elasticsearch `_score` at which normalized relevance reaches exactly 0.5 — a
+search-infra tuning constant, not a business knob. See [Ranking formula](#ranking-formula).
 
 ## Status
 
@@ -94,7 +137,7 @@ be." See [Roadmap](#roadmap).
   in ]0;1]** derived from it. Unique per pair, removed by cascade with either parent.
 - **Metric history** (`spy_search_ranking_metric_history`): every time a metric's formula, weight,
   active flag or direction actually changes — via the Zed edit form today, or a future automated
-  parameter-tuning job — a snapshot is appended: the new config, the metric's digest at that moment
+  parameter-tuning job — a snapshot is appended: the new config, the metric's [digest](#digest) at that moment
   (min/max/mean/median/percentiles, null if none existed yet), and the new formula's R² against that
   digest. Append-only, never updated; deliberately **not** a hard foreign key to the live metric row, so
   history outlives a later rename or deletion. A save that changes nothing (a re-submitted, unmodified
@@ -203,7 +246,7 @@ be." See [Roadmap](#roadmap).
   their ordering) and silently steps aside when no configuration is synchronized or no active metric
   has a non-zero weight.
 - **Ranking configuration in key-value storage**: active metric weights + the two blend constants
-  (`relevanceWeight`, `relevanceSaturationPoint`) live in one dictionary document
+  ([`relevanceWeight`](#relevanceweight), [`relevanceSaturationPoint`](#relevancesaturationpoint)) live in one dictionary document
   (`kv:search_ranking_configuration`), published from Zed through a storage table with
   synchronization behavior. Metric CRUD, the settings form, and the cron all republish it. Both blend
   constants are Zed-editable at `/search-ranking-gui/settings`. Metric weights are **normalized to sum
