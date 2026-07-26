@@ -19,7 +19,7 @@ closed-form curve-fit suggestions — no guessing what shape a business signal s
 
 - [Terminology](#terminology)
 - [Status](#status)
-- [What it does today](#what-it-does-today)
+- [What it does](#what-it-does)
 - [Ranking formula](#ranking-formula)
 - [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update)
 - [Why hourly batch normalization, not an immediate per-value hook](#why-hourly-batch-normalization-not-an-immediate-per-value-hook)
@@ -44,10 +44,7 @@ closed-form curve-fit suggestions — no guessing what shape a business signal s
   - [14. Build](#14-build)
   - [15. Verify the installation](#15-verify-the-installation)
 - [Import file formats](#import-file-formats)
-- [Limitations (current phase)](#limitations-current-phase)
-- [Roadmap](#roadmap)
-  - [Tuning layer moved to a separate package](#tuning-layer-moved-to-a-separate-package)
-  - [Deferred (v1.1+)](#deferred-v11)
+- [Limitations](#limitations)
 - [Testing and CI](#testing-and-ci)
   - [Automated checks](#automated-checks)
   - [Test suite](#test-suite)
@@ -62,7 +59,7 @@ it's first introduced in context — this is a lookup index, not a replacement f
 ### metric
 
 A named business signal (e.g. `pdp_impressions`, `top_seller`) with its own weight, normalization
-formula, active flag, and direction. See [What it does today](#what-it-does-today).
+formula, active flag, and direction. See [What it does](#what-it-does).
 
 ### weight
 
@@ -72,7 +69,7 @@ active metrics. See [Ranking formula](#ranking-formula).
 ### raw value / normalized value
 
 The real-world number for one metric on one product (e.g. "8,250 impressions"), and the `]0;1]` value
-its formula maps that number to. See [What it does today](#what-it-does-today).
+its formula maps that number to. See [What it does](#what-it-does).
 
 ### signal
 
@@ -83,8 +80,8 @@ real-world number behind it, is the topic.
 
 A metric's precomputed distribution snapshot — min/max/mean/median plus a 101-point percentile/empirical-CDF
 backbone — rebuilt by the normalization cron and read by the normalization-authoring GUI's live preview
-and curve-fit suggestions, so neither ever touches the raw per-product rows directly. See [What it does
-today](#what-it-does-today).
+and curve-fit suggestions, so neither ever touches the raw per-product rows directly. See
+[What it does](#what-it-does).
 
 ### relevanceWeight
 
@@ -98,36 +95,32 @@ search-infra tuning constant, not a business knob. See [Ranking formula](#rankin
 
 ## Status
 
-Feature-complete and verified for its scope: business-signal search ranking, including the
-normalization-authoring GUI's data-driven curve-fitting workflow. More tools (tuning, evaluation,
-auto-tune) are planned as a separate package.
+Feature-complete: business-signal search ranking, including the normalization-authoring GUI's
+data-driven curve-fitting workflow.
 
 Verified: dependency floors resolved and checked at their oldest allowed versions (`composer
 check-floors`), the ranking formula's `function_score`/`script_score` cross-validated across three
 engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 107
 tests, phpcs and phpstan level 6 clean.
 
-This package's own mechanism (phases 1–4.5) is functional and complete: the metric/value data model, the
-Zed management UI, CSV data import, the normalization cron, the export of normalized signals into the
-Elasticsearch page documents (`scores` field), the **`function_score` ranking itself**: catalog searches
-are re-scored by `relevanceWeight × normalizedRelevance + (1 - relevanceWeight) × Σ weightᵢ × signalᵢ`,
-with the metric weights and the two blend constants editable in Zed and synchronized to key-value storage
-— see [Ranking formula](#ranking-formula) for the full rationale — and a **data-driven
-normalization-authoring GUI**: a live preview of the typed formula against the metric's own real
-distribution, plotted alongside the theoretical max-discrimination reference curve, with ranked
-closed-form curve-fit suggestions.
+This package's own mechanism is complete: the metric/value data model, the Zed management UI, CSV data
+import, the normalization cron, the export of normalized signals into the Elasticsearch page documents
+(`scores` field), the **`function_score` ranking itself**: catalog searches are re-scored by
+`relevanceWeight × normalizedRelevance + (1 - relevanceWeight) × Σ weightᵢ × signalᵢ`, with the metric
+weights and the two blend constants editable in Zed and synchronized to key-value storage — see
+[Ranking formula](#ranking-formula) for the full rationale — and a **data-driven normalization-authoring
+GUI**: a live preview of the typed formula against the metric's own real distribution, plotted alongside
+the theoretical max-discrimination reference curve, with ranked closed-form curve-fit suggestions.
 
-The tuning layer originally planned as phases 5/6 of this package — SRP weight-slider live preview, a
-propose/review/apply workflow, `rank_eval`-based offline evaluation, and a monthly auto-tune job — is now
-being built as a separate, dependent package,
-[spryker-community/search-ranking-optimizer](https://github.com/andrebarthelmeshellmuth/spryker-search-ranking-optimizer),
-so this package's own scope stays "use business signals to rank," not also "decide what the weights should
-be." See [Roadmap](#roadmap).
+This package deliberately scopes itself to *using* business signals to rank — deciding what the weights
+*should* be (tuning, evaluation, calibration) is a different concern. Nothing here depends on that
+decision being automated; a separate layer could reasonably be built on top of this one later without
+requiring any change here.
 
-## What it does today
+## What it does
 
 - **Ranking metrics** (`spy_search_ranking_metric`): named business signals (e.g. `pdp_impressions`,
-  `top_seller`, `random`) with a **weight** for their future contribution to the combined score, an
+  `top_seller`, `random`) with a **weight** for their contribution to the combined score, an
   **active** flag, a **normalization formula** stored as an expression string, and a **direction** flag
   (`isHigherBetter`) — whether a higher raw value is the better outcome (sales, impressions) or a lower
   one (days-since-restock, return rate). Direction is business knowledge that cannot be inferred from the
@@ -137,24 +130,24 @@ be." See [Roadmap](#roadmap).
   pair holding the **raw real-world value** (e.g. "8,250 impressions") and the **normalized value
   in ]0;1]** derived from it. Unique per pair, removed by cascade with either parent.
 - **Metric history** (`spy_search_ranking_metric_history`): every time a metric's formula, weight,
-  active flag or direction actually changes — via the Zed edit form today, or a future automated
-  parameter-tuning job — a snapshot is appended: the new config, the metric's [digest](#digest) at that moment
+  active flag or direction actually changes — via the Zed edit form, or any other process that saves
+  through the facade — a snapshot is appended: the new config, the metric's [digest](#digest) at that moment
   (min/max/mean/median/percentiles, null if none existed yet), and the new formula's R² against that
   digest. Append-only, never updated; deliberately **not** a hard foreign key to the live metric row, so
   history outlives a later rename or deletion. A save that changes nothing (a re-submitted, unmodified
   form) writes no row — this is a change log, not an access log. `metricName` is denormalized for the
   same outlive-the-live-row reason.
 
-  The `isChange` flag on every row (always `true` for today's writer) exists for a specific future need:
-  a periodic drift-detection job should compare a metric's CURRENT digest against the digest **as of its
-  last real change**, not merely against last month's snapshot — otherwise the comparison window silently
-  resets every period regardless of whether anything happened, and gradual multi-month drift can stay
-  invisible because each individual month-over-month delta looks small. Concretely: if a monthly check
-  finds the fit still adequate at 30 days and changes nothing, the *next* check should compare against the
-  30-day-old baseline grown to 60 days, not reset to "vs. 30 days ago" again — `isChange` is what lets that
-  job find the right anchor point (the newest row where `isChange = true`) instead of just the newest row.
-  A future check-only run (fit still fine, nothing changed) would append its own row with `isChange =
-  false`, extending the timeline without moving the anchor.
+  The `isChange` flag on every row (always `true` for the writer that populates it) exists for a
+  specific reason: a periodic drift-detection job should compare a metric's CURRENT digest against the
+  digest **as of its last real change**, not merely against last month's snapshot — otherwise the
+  comparison window silently resets every period regardless of whether anything happened, and gradual
+  multi-month drift can stay invisible because each individual month-over-month delta looks small.
+  Concretely: if a monthly check finds the fit still adequate at 30 days and changes nothing, the *next*
+  check should compare against the 30-day-old baseline grown to 60 days, not reset to "vs. 30 days ago"
+  again — `isChange` is what lets that job find the right anchor point (the newest row where `isChange =
+  true`) instead of just the newest row. A check-only run (fit still fine, nothing changed) would append
+  its own row with `isChange = false`, extending the timeline without moving the anchor.
 - **Zed UI**:
 
   ![The metrics list: ID, name, weight, formula, active/inactive status, and edit/delete actions for every configured business signal](docs/screenshots/metrics-list.png)
@@ -221,14 +214,14 @@ be." See [Roadmap](#roadmap).
   never a version-string comparison, since OpenSearch and Elasticsearch report incompatible version
   identifiers under the same API surface (this stack self-reports `distribution: opensearch, 1.3.4`; a
   bare Elasticsearch cluster reports a version number with no `distribution` field at all). Fires
-  `_validate/query` cluster-wide for each construct the package uses today or could use in a future
-  phase (`function_score` + `script_score`, `rank_feature`, `distance_feature`, `pinned`) and a
+  `_validate/query` cluster-wide for each construct this package uses, or could plausibly use later
+  (`function_score` + `script_score`, `rank_feature`, `distance_feature`, `pinned`) and a
   deliberately incomplete `_rank_eval` request to check whether that endpoint is recognized at all,
   reading back the engine's own parser response either way rather than trusting a claimed version.
   Read-only — every probe only asks "would the engine accept this?", it never touches real documents or
-  indices. Exits non-zero only if `function_score` + `script_score` is unsupported (the construct the
-  live phase-3 ranking actually depends on today); every other probed capability is purely
-  forward-looking and never affects the exit code, only the printed report.
+  indices. Exits non-zero only if `function_score` + `script_score` is unsupported (the one construct the
+  ranking itself actually depends on); every other probed capability is purely forward-looking and never
+  affects the exit code, only the printed report.
 - **Elasticsearch export**: the package ships a `page.json` fragment defining a dynamic `scores`
   object field (per Spryker's data-driven-ranking best practice) and a ProductPageSearch plugin trio
   — bulk data loader, data expander, map expander — that writes each product's normalized values
@@ -296,9 +289,10 @@ That said, the old formula wasn't all bad: `sqrt(_score)` never saturates, it ke
 `_score` grows, so on long, specific queries where many rare terms match and `_score` gets large, weight
 naturally drifted back toward text relevance instead of staying pinned to the business signals — a
 property the saturating curve below deliberately gives up, since it caps `_score`'s contribution at
-`[0;1)` no matter how large `_score` gets. Recovering that upside on purpose, instead of as a side effect
-of an otherwise unpredictable formula, is deferred to `spryker-community/search-ranking-optimizer`: an
-"entropy knob" plus a second query.
+`[0;1)` no matter how large `_score` gets. Recovering that upside on purpose, rather than as a side effect
+of an otherwise unpredictable formula, would need real additional machinery (some way to read the
+distribution of scores across the result set, not just one document at a time) — outside what this
+package builds, but not incompatible with it.
 
 **`relevanceWeight` and `relevanceSaturationPoint` fix that by normalizing first.**
 `_score / (_score + relevanceSaturationPoint)` is the same saturating-curve shape BM25 itself uses for
@@ -393,14 +387,13 @@ the instant a raw value is written. This is a deliberate choice, not an oversigh
   `getMetricStatistics()`), which by definition need every row for that metric, not just the one that
   changed. A single raw value cannot be correctly normalized in isolation — at best it could be evaluated
   against the *last known* (already slightly stale) aggregate stats, not freshly correct ones.
-- **There is no single-value write path to hook onto today.** The only writer of raw values is CSV import
+- **There is no single-value write path to hook onto.** The only writer of raw values is CSV import
   (`SearchRankingMetricWriterStep`/`SearchRankingProductMetricWriterStep` — see
-  [Data import](#what-it-does-today)), which is inherently bulk: one import run can touch thousands of
+  [Data import](#what-it-does)), which is inherently bulk: one import run can touch thousands of
   rows. Firing an immediate normalize-and-publish per row would mean thousands of individual publish
   events instead of the current few chunked ones — plausibly worse than the hourly batch — and every one
   of those rows would be published *again* an hour later once real stats catch up. The "Product Values"
-  Zed page is read-only today specifically because there is no single-row edit action this would attach to
-  yet.
+  Zed page is read-only specifically because there is no single-row edit action this would attach to.
 - **The underlying signals are ETL-style, refreshed once a day upstream by design** — Spryker's own
   data-driven-ranking best practice this package is based on assumes these get recomputed nightly from a
   data warehouse. If raw values only change once a day via import, "picked up within the hour" is already
@@ -431,7 +424,7 @@ The demo `random` metric is therefore not a special case anywhere in the *formul
 literally `random()`. It IS special-cased one level up, in scheduling: `search-ranking:normalize` (the
 hourly cron above) skips whichever metric is configured as the random tie-breaker, and a separate
 `search-ranking:randomize` cron refreshes only that one, nightly — see
-[What it does today](#what-it-does-today) and
+[What it does](#what-it-does) and
 [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update).
 
 Examples:
@@ -613,12 +606,6 @@ top-level `<search-ranking-gui>` entry (drop the `<pages>` block) still gives on
 into `/search-ranking-gui` — the individual pages stay reachable via their own in-page action buttons
 (Back to Metrics, View Product Values, etc.) instead of a dropdown.
 
-> Calibration (empirically sampling `relevanceSaturationPoint` k from real query scores) used to live
-> here as a sub-page of this menu. It has moved to the separate
-> [spryker-community/search-ranking-optimizer](https://github.com/andrebarthelmeshellmuth/spryker-search-ranking-optimizer)
-> package — see [Roadmap](#roadmap). This package no longer ships a `search-ranking:calibrate` command or a
-> Calibration page.
-
 ### 8. Schedule the normalization cron
 
 E.g. hourly, in `Pyz\Zed\SymfonyScheduler\SymfonySchedulerConfig::getCronJobs()`:
@@ -636,7 +623,7 @@ E.g. hourly, in `Pyz\Zed\SymfonyScheduler\SymfonySchedulerConfig::getCronJobs()`
 
 Besides normalizing, each run triggers publish events so the search documents pick up the fresh
 scores (suppress with `--skip-publish`). `search-ranking:randomize` is intentionally on its own,
-less-frequent schedule — see [What it does today](#what-it-does-today) for why — and is a safe no-op
+less-frequent schedule — see [What it does](#what-it-does) for why — and is a safe no-op
 to leave scheduled even if the random tie-breaker metric is inactive or does not exist.
 
 **Should do, if you already had search-ranking installed before `search-ranking:randomize`
@@ -691,9 +678,8 @@ any other change, the same way every core module (`search-elasticsearch`, `produ
 `merchant-product-search`, ...) ships its own `Schema/page.json` and relies on core's `vendor/spryker/*`
 glob rather than asking integrators to copy anything. The one downside is that core's glob only covers
 `vendor/spryker/*`, not `vendor/spryker-community/*` — hence this one-time override. It only needs to
-happen once per project, though, not once per package: it also covers `search-debug` and
-`search-ranking-optimizer`'s own schema fragments, and any other `spryker-community/*` package installed
-later, for free.
+happen once per project, though, not once per package: it also covers `search-debug`'s own schema
+fragment, and any other `spryker-community/*` package installed later, for free.
 
 ### 11. Register the ranking-configuration sync queue
 
@@ -809,10 +795,10 @@ abstract_sku,metric_name,raw_value
 
 Example files ship in this package under `data/import/`.
 
-## Limitations (current phase)
+## Limitations
 
 - The `function_score` applies to the **main catalog search query only** — suggest-as-you-type and
-  concrete-product search keep pure text relevance for now.
+  concrete-product search use pure text relevance.
 - Re-publishing of product documents happens **only via the normalize cron** (or manually) —
   importing raw values alone does not refresh the search documents until the next run.
 - Values are per abstract product and global — no per-store or per-locale signals; the ranking
@@ -820,53 +806,9 @@ Example files ship in this package under `data/import/`.
 - With Spryker's **direct synchronization** enabled, core only flushes the sync buffer on console
   termination; this package flushes explicitly after publishing so Zed web saves reach key-value
   storage immediately.
-
-## Roadmap
-
-- [x] **Phase 1** — metric definitions, product values, Zed UI, data import, normalization cron
-- [x] **Phase 2** — export normalized signals into the Elasticsearch page index
-- [x] **Phase 3** — `function_score` query wrapping the catalog search with weighted business signals, weights + Zed-editable blend constants (`relevanceWeight`, `relevanceSaturationPoint`) synced to key-value storage
-- [x] **Phase 4** — score breakdown integration with spryker-community/search-debug
-- [x] **Phase 4.5** — normalization-authoring GUI: distribution digest, live formula preview against the
-      metric's own real distribution, ranked closed-form curve-fit suggestions, and the `isHigherBetter`
-      direction flag. Numbered 4.5 (a phase-1 signal-axis enhancement) rather than 5, since it is logically
-      upstream of the tuning-layer work now built in spryker-community/search-ranking-optimizer (see
-      below) — better normalization improves the inputs that layer operates on.
-- [x] **`search-ranking:check-compatibility`** — probes the search engine's actual capabilities
-      (`_validate/query` + a `_rank_eval` recognition check) rather than trusting a version string
-- [x] **`search-ranking:check-installation`** — diagnoses an installation of this package itself (core
-      namespace, sibling console command registration, search engine reachability, the `scores` field in
-      the live page index mapping, at least one active metric configured) — see
-      [15. Verify the installation](#15-verify-the-installation)
-
-### Tuning layer moved to a separate package
-
-What was originally planned as this package's phases 5/6 — SRP weight-tuning sliders, a tier-2/tier-3
-propose/review/apply workflow with named checkpoints, `rank_eval`-based offline evaluation, and a monthly
-auto-tune job — is being built in
-[spryker-community/search-ranking-optimizer](https://github.com/andrebarthelmeshellmuth/spryker-search-ranking-optimizer)
-instead: a real, one-directional dependent of this package, not a part of it. That keeps this package's
-own scope to "use business signals to rank," not also "decide what the weights should be." See that
-package's own README for its roadmap.
-
-The **Calibration** feature (upload a list of search terms → fire the live catalog query for each →
-pool the raw text-relevance scores into a suggested `relevanceSaturationPoint` k) has already been built
-and now ships in that package too — it was previously a page of this one's Zed menu and a
-`search-ranking:calibrate` console command, both since removed here. Calibration is a "decide what k
-should be" activity, so it belongs with the tuning layer; the optimizer applies its result back into this
-package's `relevanceSaturationPoint` setting through this package's own facade (a `suggest`-level
-dependency, so this package still installs and runs without it).
-
-### Deferred (v1.1+)
-
-- **GAP 1 — `rank_features` field type** — needs prototyping/benchmarking and a reindex; must ship
-  together with a search-debug `ExplanationParser` update since it changes the explain-tree shape.
-  Realistically a v2-scale item, not v1.1.
-- **GAP 3 — recency/time decay** (`gauss`/`exp`/`linear` decay, `distance_feature`) — cheap, no reindex
-  needed, arguably the #2 commerce signal after text relevance. Not required for v1.0's coherence, but
-  a natural v1.1 candidate given the low cost.
-- **GAP 5 — demotion + curation** — soft-expressible today via inverted formulas; first-class support
-  and merchandiser pinning (hand-rolled, since OpenSearch has no `pinned` query) can wait.
+- Demotion/curation (pinning specific products up or down for a query) is only soft-expressible via
+  inverted formulas — there's no first-class merchandiser pinning, and OpenSearch itself has no
+  `pinned` query to build one on top of.
 
 ## Testing and CI
 
