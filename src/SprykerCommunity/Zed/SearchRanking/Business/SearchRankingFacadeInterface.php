@@ -90,6 +90,77 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
+     * - Returns the number of top-ranked candidates the entropy probe samples; falls back to the module
+     *   config default when no value was saved yet. Only meaningful once entropy-aware relevance
+     *   weighting is enabled at the code level (a Client-layer bundle config flag, off by default).
+     *
+     * @api
+     *
+     * @return int
+     */
+    public function getEntropyProbeResultSize(): int;
+
+    /**
+     * Specification:
+     * - Persists the entropy probe result-size setting.
+     *
+     * @api
+     *
+     * @param int $entropyProbeResultSize
+     *
+     * @return void
+     */
+    public function saveEntropyProbeResultSize(int $entropyProbeResultSize): void;
+
+    /**
+     * Specification:
+     * - Returns the exponent reshaping how sharply the entropy-derived shift ramps up; falls back to the
+     *   module config default when no value was saved yet.
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getEntropyWeightExponent(): float;
+
+    /**
+     * Specification:
+     * - Persists the entropy weight exponent setting.
+     *
+     * @api
+     *
+     * @param float $entropyWeightExponent
+     *
+     * @return void
+     */
+    public function saveEntropyWeightExponent(float $entropyWeightExponent): void;
+
+    /**
+     * Specification:
+     * - Returns the maximum amount the entropy-derived value may shift `relevanceWeight` away from its
+     *   configured baseline, in either direction; falls back to the module config default when no value
+     *   was saved yet.
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getEntropyWeightShiftMagnitude(): float;
+
+    /**
+     * Specification:
+     * - Persists the entropy weight shift-magnitude setting.
+     *
+     * @api
+     *
+     * @param float $entropyWeightShiftMagnitude
+     *
+     * @return void
+     */
+    public function saveEntropyWeightShiftMagnitude(float $entropyWeightShiftMagnitude): void;
+
+    /**
+     * Specification:
      * - Divides every ACTIVE metric's weight by the sum of all active weights, and persists the result
      *   into `spy_search_ranking_metric.weight` — the same normalization already forced on every publish
      *   (see `RankingConfigurationStorageWriter`), made visible in the Zed metric list on demand.

@@ -49,4 +49,28 @@ class SearchRankingStorageToSearchRankingFacadeBridge implements SearchRankingSt
     {
         return $this->searchRankingFacade->getRelevanceSaturationPoint();
     }
+
+    /**
+     * @return int
+     */
+    public function getEntropyProbeResultSize(): int
+    {
+        return $this->searchRankingFacade->getEntropyProbeResultSize();
+    }
+
+    /**
+     * @return float
+     */
+    public function getEntropyWeightExponent(): float
+    {
+        return $this->searchRankingFacade->getEntropyWeightExponent();
+    }
+
+    /**
+     * @return float
+     */
+    public function getEntropyWeightShiftMagnitude(): float
+    {
+        return $this->searchRankingFacade->getEntropyWeightShiftMagnitude();
+    }
 }

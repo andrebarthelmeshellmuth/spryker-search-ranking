@@ -119,7 +119,7 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
 
         $entropyDerivedRelevanceWeight = $this->getFactory()->createEntropyWeightCalculator()->calculateRelevanceWeight(
             $baseQuery,
-            (float)$configurationTransfer->getRelevanceWeight(),
+            $configurationTransfer,
         );
 
         return (clone $configurationTransfer)->setRelevanceWeight($entropyDerivedRelevanceWeight);

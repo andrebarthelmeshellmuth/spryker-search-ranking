@@ -107,6 +107,84 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @api
      *
+     * @return int
+     */
+    public function getEntropyProbeResultSize(): int
+    {
+        return $this->getFactory()->createSettingManager()->getEntropyProbeResultSize();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param int $entropyProbeResultSize
+     *
+     * @return void
+     */
+    public function saveEntropyProbeResultSize(int $entropyProbeResultSize): void
+    {
+        $this->getFactory()->createSettingManager()->saveEntropyProbeResultSize($entropyProbeResultSize);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getEntropyWeightExponent(): float
+    {
+        return $this->getFactory()->createSettingManager()->getEntropyWeightExponent();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param float $entropyWeightExponent
+     *
+     * @return void
+     */
+    public function saveEntropyWeightExponent(float $entropyWeightExponent): void
+    {
+        $this->getFactory()->createSettingManager()->saveEntropyWeightExponent($entropyWeightExponent);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getEntropyWeightShiftMagnitude(): float
+    {
+        return $this->getFactory()->createSettingManager()->getEntropyWeightShiftMagnitude();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param float $entropyWeightShiftMagnitude
+     *
+     * @return void
+     */
+    public function saveEntropyWeightShiftMagnitude(float $entropyWeightShiftMagnitude): void
+    {
+        $this->getFactory()->createSettingManager()->saveEntropyWeightShiftMagnitude($entropyWeightShiftMagnitude);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
      * @return bool
      */
     public function normalizeActiveMetricWeights(): bool

@@ -37,15 +37,4 @@ class SearchRankingConfigTest extends Unit
             'Entropy-aware weighting fires an extra live ES query per search — must default OFF, opt-in only.',
         );
     }
-
-    /**
-     * @return void
-     */
-    public function testEntropyProbeResultSizeAndWeightExponentHaveSaneDefaults(): void
-    {
-        $config = new SearchRankingConfig();
-
-        $this->assertGreaterThan(0, $config->getEntropyProbeResultSize());
-        $this->assertSame(1.0, $config->getEntropyWeightExponent());
-    }
 }

@@ -34,4 +34,40 @@ interface SettingManagerInterface
      * @return void
      */
     public function saveRelevanceSaturationPoint(float $relevanceSaturationPoint): void;
+
+    /**
+     * @return int
+     */
+    public function getEntropyProbeResultSize(): int;
+
+    /**
+     * @param int $entropyProbeResultSize
+     *
+     * @return void
+     */
+    public function saveEntropyProbeResultSize(int $entropyProbeResultSize): void;
+
+    /**
+     * @return float
+     */
+    public function getEntropyWeightExponent(): float;
+
+    /**
+     * @param float $entropyWeightExponent
+     *
+     * @return void
+     */
+    public function saveEntropyWeightExponent(float $entropyWeightExponent): void;
+
+    /**
+     * @return float
+     */
+    public function getEntropyWeightShiftMagnitude(): float;
+
+    /**
+     * @param float $entropyWeightShiftMagnitude
+     *
+     * @return void
+     */
+    public function saveEntropyWeightShiftMagnitude(float $entropyWeightShiftMagnitude): void;
 }

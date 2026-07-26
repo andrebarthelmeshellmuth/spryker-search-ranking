@@ -59,6 +59,40 @@ class SearchRankingConfig
 
     /**
      * Specification:
+     * - Setting key of the number of top-ranked candidates the entropy probe samples. Only meaningful
+     *   when entropy-aware relevance weighting is enabled (a Client-layer code flag — see
+     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()}).
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const SETTING_KEY_ENTROPY_PROBE_RESULT_SIZE = 'entropy_probe_result_size';
+
+    /**
+     * Specification:
+     * - Setting key of the exponent that reshapes how sharply the entropy-derived shift ramps up as the
+     *   probe's score distribution moves away from perfectly ambiguous (H_norm = 0.5).
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const SETTING_KEY_ENTROPY_WEIGHT_EXPONENT = 'entropy_weight_exponent';
+
+    /**
+     * Specification:
+     * - Setting key of the maximum amount the entropy-derived value may shift `relevanceWeight` away
+     *   from its configured baseline, in either direction.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const SETTING_KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 'entropy_weight_shift_magnitude';
+
+    /**
+     * Specification:
      * - Elasticsearch page-index source identifier passed to `IndexNameResolver::resolve()` when this
      *   package resolves the page index name directly (e.g. from the `search-ranking:check-installation`
      *   console, which runs in Zed where there is no request-scoped "current store").

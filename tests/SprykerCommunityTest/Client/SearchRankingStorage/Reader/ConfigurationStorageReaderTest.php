@@ -56,13 +56,16 @@ class ConfigurationStorageReaderTest extends Unit
     /**
      * @return void
      */
-    public function testParsesAllThreeFieldsFromTheStoredDocument(): void
+    public function testParsesAllFieldsFromTheStoredDocument(): void
     {
         // Arrange
         $reader = $this->createReader([
             'metric_weights' => ['top_seller' => 0.5, 'pdp_impressions' => 0.3],
             'relevance_weight' => 0.6,
             'relevance_saturation_point' => 12.0,
+            'entropy_probe_result_size' => 20,
+            'entropy_weight_exponent' => 1.5,
+            'entropy_weight_shift_magnitude' => 0.3,
         ]);
 
         // Act
@@ -72,6 +75,9 @@ class ConfigurationStorageReaderTest extends Unit
         $this->assertSame(['top_seller' => 0.5, 'pdp_impressions' => 0.3], $configurationTransfer->getMetricWeights());
         $this->assertSame(0.6, $configurationTransfer->getRelevanceWeight());
         $this->assertSame(12.0, $configurationTransfer->getRelevanceSaturationPoint());
+        $this->assertSame(20, $configurationTransfer->getEntropyProbeResultSize());
+        $this->assertSame(1.5, $configurationTransfer->getEntropyWeightExponent());
+        $this->assertSame(0.3, $configurationTransfer->getEntropyWeightShiftMagnitude());
     }
 
     /**
@@ -91,7 +97,11 @@ class ConfigurationStorageReaderTest extends Unit
 
     /**
      * A missing key inside an otherwise-present document must default rather than error — this can
-     * legitimately happen right after upgrading the package, before the first republish.
+     * legitimately happen right after upgrading the package, before the first republish. The three
+     * entropy-weighting fields are the newest, most likely to be missing from an old stored document —
+     * they must default to the same values `SearchRankingConfig`'s own Zed defaults use, NOT throw a
+     * `getXOrFail()`-style exception, since that would break every live catalog search the moment a
+     * project flips the entropy-weighting flag on before its first post-upgrade republish.
      *
      * @return void
      */
@@ -107,6 +117,9 @@ class ConfigurationStorageReaderTest extends Unit
         $this->assertSame([], $configurationTransfer->getMetricWeights());
         $this->assertSame(0.0, $configurationTransfer->getRelevanceWeight());
         $this->assertSame(0.0, $configurationTransfer->getRelevanceSaturationPoint());
+        $this->assertSame(10, $configurationTransfer->getEntropyProbeResultSize());
+        $this->assertSame(1.0, $configurationTransfer->getEntropyWeightExponent());
+        $this->assertSame(0.5, $configurationTransfer->getEntropyWeightShiftMagnitude());
     }
 
     /**

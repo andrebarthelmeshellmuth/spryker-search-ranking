@@ -139,6 +139,12 @@
         <property name="metricWeights" type="array" singular="metricWeight" associative="true"/>
         <property name="relevanceWeight" type="float"/>
         <property name="relevanceSaturationPoint" type="float"/>
+        <!-- Entropy-aware relevance weighting settings — only read when the Client-layer code flag
+             SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled() is
+             enabled; always published regardless, same as every other setting here. -->
+        <property name="entropyProbeResultSize" type="int"/>
+        <property name="entropyWeightExponent" type="float"/>
+        <property name="entropyWeightShiftMagnitude" type="float"/>
     </transfer>
 
     <transfer name="ProductPayload">

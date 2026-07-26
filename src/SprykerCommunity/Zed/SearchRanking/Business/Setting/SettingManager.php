@@ -99,4 +99,85 @@ class SettingManager implements SettingManagerInterface
             (string)$relevanceSaturationPoint,
         );
     }
+
+    /**
+     * @return int
+     */
+    public function getEntropyProbeResultSize(): int
+    {
+        $settingValue = $this->repository->findSettingValue(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_PROBE_RESULT_SIZE);
+
+        if ($settingValue === null) {
+            return $this->config->getDefaultEntropyProbeResultSize();
+        }
+
+        return (int)$settingValue;
+    }
+
+    /**
+     * @param int $entropyProbeResultSize
+     *
+     * @return void
+     */
+    public function saveEntropyProbeResultSize(int $entropyProbeResultSize): void
+    {
+        $this->entityManager->saveSetting(
+            SharedSearchRankingConfig::SETTING_KEY_ENTROPY_PROBE_RESULT_SIZE,
+            (string)$entropyProbeResultSize,
+        );
+    }
+
+    /**
+     * @return float
+     */
+    public function getEntropyWeightExponent(): float
+    {
+        $settingValue = $this->repository->findSettingValue(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_EXPONENT);
+
+        if ($settingValue === null) {
+            return $this->config->getDefaultEntropyWeightExponent();
+        }
+
+        return (float)$settingValue;
+    }
+
+    /**
+     * @param float $entropyWeightExponent
+     *
+     * @return void
+     */
+    public function saveEntropyWeightExponent(float $entropyWeightExponent): void
+    {
+        $this->entityManager->saveSetting(
+            SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_EXPONENT,
+            (string)$entropyWeightExponent,
+        );
+    }
+
+    /**
+     * @return float
+     */
+    public function getEntropyWeightShiftMagnitude(): float
+    {
+        $settingValue = $this->repository->findSettingValue(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE);
+
+        if ($settingValue === null) {
+            return $this->config->getDefaultEntropyWeightShiftMagnitude();
+        }
+
+        return (float)$settingValue;
+    }
+
+    /**
+     * @param float $entropyWeightShiftMagnitude
+     *
+     * @return void
+     */
+    public function saveEntropyWeightShiftMagnitude(float $entropyWeightShiftMagnitude): void
+    {
+        $this->entityManager->saveSetting(
+            SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE,
+            (string)$entropyWeightShiftMagnitude,
+        );
+    }
 }

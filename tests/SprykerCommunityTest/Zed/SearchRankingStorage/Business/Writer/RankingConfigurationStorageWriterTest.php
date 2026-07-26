@@ -60,6 +60,9 @@ class RankingConfigurationStorageWriterTest extends Unit
         $this->assertSame(['top_seller' => 0.5, 'pdp_impressions' => 0.5], $capturedConfiguration['metric_weights']);
         $this->assertSame(0.6, $capturedConfiguration['relevance_weight']);
         $this->assertSame(12.0, $capturedConfiguration['relevance_saturation_point']);
+        $this->assertSame(10, $capturedConfiguration['entropy_probe_result_size']);
+        $this->assertSame(1.0, $capturedConfiguration['entropy_weight_exponent']);
+        $this->assertSame(0.5, $capturedConfiguration['entropy_weight_shift_magnitude']);
     }
 
     /**
@@ -219,6 +222,9 @@ class RankingConfigurationStorageWriterTest extends Unit
         $searchRankingFacadeMock->method('getActiveMetricCollection')->willReturn($collectionTransfer);
         $searchRankingFacadeMock->method('getRelevanceWeight')->willReturn($relevanceWeight);
         $searchRankingFacadeMock->method('getRelevanceSaturationPoint')->willReturn($relevanceSaturationPoint);
+        $searchRankingFacadeMock->method('getEntropyProbeResultSize')->willReturn(10);
+        $searchRankingFacadeMock->method('getEntropyWeightExponent')->willReturn(1.0);
+        $searchRankingFacadeMock->method('getEntropyWeightShiftMagnitude')->willReturn(0.5);
 
         return $searchRankingFacadeMock;
     }
