@@ -142,15 +142,15 @@
     </transfer>
 
     <transfer name="ProductPayload">
-        <property name="searchRankingScores" type="array" singular="searchRankingScores"/>
+        <property name="searchRankingScores" type="array" singular="searchRankingScores" associative="true"/>
     </transfer>
 
     <transfer name="ProductPageSearch">
-        <property name="scores" type="array" singular="scores"/>
+        <property name="scores" type="array" singular="scores" associative="true"/>
     </transfer>
 
     <transfer name="PageMap">
-        <property name="scores" type="array" singular="scores"/>
+        <property name="scores" type="array" singular="scores" associative="true"/>
     </transfer>
 
     <!-- One capability probe result: a named search-engine construct this package uses today or could use

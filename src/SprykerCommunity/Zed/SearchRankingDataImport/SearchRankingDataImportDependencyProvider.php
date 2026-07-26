@@ -11,6 +11,11 @@ namespace SprykerCommunity\Zed\SearchRankingDataImport;
 
 use Spryker\Zed\DataImport\DataImportDependencyProvider;
 
+/**
+ * Empty on purpose, not dead weight: Spryker resolves a module's container by this exact
+ * per-namespace class name, so it must exist for the parent's wiring (propel connection, flysystem,
+ * touch/event facades — used by SearchRankingDataImportBusinessFactory) to reach this module at all.
+ */
 class SearchRankingDataImportDependencyProvider extends DataImportDependencyProvider
 {
 }

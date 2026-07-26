@@ -7,6 +7,49 @@
     {{ backActionButton('/search-ranking-gui', 'Back to Metrics' | trans) }}
 {% endblock %}
 
+{% block head_css %}
+    {{ parent() }}
+    <style>
+        .search-ranking-normalization-preview__plot {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 640px;
+            max-height: 480px;
+        }
+
+        .search-ranking-normalization-preview__plot text {
+            font-size: 11px;
+            fill: var(--search-ranking-axis-text-color, #888);
+            user-select: none;
+        }
+
+        .search-ranking-normalization-preview__plot text.search-ranking-normalization-preview__axis-title {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .search-ranking-normalization-preview__legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 20px;
+            margin: 4px 0 16px;
+            font-size: 12px;
+            color: var(--search-ranking-axis-text-color, #666);
+        }
+
+        .search-ranking-normalization-preview__legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .search-ranking-normalization-preview__legend-item svg {
+            flex: none;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Edit Ranking Metric' } %}
         {% block widget_content %}
@@ -25,6 +68,16 @@
             <div class="search-ranking-normalization-preview" data-id-search-ranking-metric="{{ idSearchRankingMetric }}">
                 <p class="search-ranking-normalization-preview__message" data-role="message"></p>
                 <svg class="search-ranking-normalization-preview__plot" data-role="plot" viewBox="0 0 640 320" preserveAspectRatio="xMidYMid meet"></svg>
+                <div class="search-ranking-normalization-preview__legend" data-role="legend">
+                    <span class="search-ranking-normalization-preview__legend-item">
+                        <svg width="20" height="10" aria-hidden="true"><line x1="0" y1="5" x2="20" y2="5" stroke="var(--search-ranking-cdf-line-color, #bbb)" stroke-width="1.5" stroke-dasharray="4 3" /></svg>
+                        {{ 'Empirical CDF — cumulative share of products at or below this value' | trans }}
+                    </span>
+                    <span class="search-ranking-normalization-preview__legend-item">
+                        <svg width="20" height="10" aria-hidden="true"><line x1="0" y1="5" x2="20" y2="5" stroke="var(--search-ranking-curve-color, #2a6ebb)" stroke-width="2" /></svg>
+                        {{ 'Score produced by the formula above, at that same value' | trans }}
+                    </span>
+                </div>
                 <table class="table" data-role="candidates">
                     <thead>
                         <tr>
@@ -64,6 +117,7 @@
             var isHigherBetterField = document.getElementById('search_ranking_metric_isHigherBetter');
             var messageElement = container.querySelector('[data-role="message"]');
             var plotElement = container.querySelector('[data-role="plot"]');
+            var legendElement = container.querySelector('[data-role="legend"]');
             var candidatesBody = container.querySelector('[data-role="candidates-body"]');
             var debounceTimeoutId = null;
 
@@ -99,6 +153,7 @@
                 messageElement.textContent = text;
                 messageElement.style.display = text ? 'block' : 'none';
                 plotElement.style.display = text ? 'none' : 'block';
+                legendElement.style.display = text ? 'none' : 'flex';
                 candidatesBody.innerHTML = '';
             }
 
@@ -114,23 +169,38 @@
                 renderCandidates(preview.candidates || []);
             }
 
+            function formatNumber(value) {
+                if (!isFinite(value)) {
+                    return String(value);
+                }
+
+                var rounded = Math.round(value * 100) / 100;
+
+                return rounded.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            }
+
             function drawPlot(points, cdfPoints) {
                 var width = 640;
                 var height = 320;
-                var padding = 32;
+                var paddingLeft = 50;
+                var paddingRight = 16;
+                var paddingTop = 14;
+                var paddingBottom = 42;
 
                 var xValues = points.map(function (point) { return point.xValue; });
                 var xMin = Math.min.apply(null, xValues);
                 var xMax = Math.max.apply(null, xValues);
 
                 function toPixelX(x) {
-                    return xMax > xMin ? padding + (x - xMin) / (xMax - xMin) * (width - 2 * padding) : width / 2;
+                    return xMax > xMin
+                        ? paddingLeft + (x - xMin) / (xMax - xMin) * (width - paddingLeft - paddingRight)
+                        : (paddingLeft + width - paddingRight) / 2;
                 }
 
                 function toPixelY(y) {
                     var clampedY = Math.max(0, Math.min(1, y));
 
-                    return height - padding - clampedY * (height - 2 * padding);
+                    return height - paddingBottom - clampedY * (height - paddingTop - paddingBottom);
                 }
 
                 function toPolylinePoints(seriesPoints) {
@@ -139,7 +209,39 @@
                     }).join(' ');
                 }
 
+                var axisColor = 'var(--search-ranking-axis-line-color, #ccc)';
+                var plotBottom = height - paddingBottom;
+                var plotTop = paddingTop;
+                var plotLeft = paddingLeft;
+                var plotRight = width - paddingRight;
+
                 var markup = '';
+
+                // axes
+                markup += '<line x1="' + plotLeft + '" y1="' + plotTop + '" x2="' + plotLeft + '" y2="' + plotBottom + '" stroke="' + axisColor + '" stroke-width="1" />';
+                markup += '<line x1="' + plotLeft + '" y1="' + plotBottom + '" x2="' + plotRight + '" y2="' + plotBottom + '" stroke="' + axisColor + '" stroke-width="1" />';
+
+                // y ticks: 0, 0.5, 1 - this axis is shared by both lines: the formula's score AND the CDF's
+                // cumulative share, both expressed on the same 0-1 range.
+                [0, 0.5, 1].forEach(function (tickValue) {
+                    var tickY = toPixelY(tickValue);
+                    markup += '<line x1="' + (plotLeft - 4) + '" y1="' + tickY + '" x2="' + plotLeft + '" y2="' + tickY + '" stroke="' + axisColor + '" stroke-width="1" />';
+                    markup += '<text x="' + (plotLeft - 8) + '" y="' + tickY + '" text-anchor="end" dominant-baseline="middle">' + tickValue + '</text>';
+                });
+
+                // x ticks: min and max of the metric's own real raw values - shown explicitly because this
+                // range differs wildly between metrics, which the plot's fixed viewBox otherwise hides.
+                [xMin, xMax].forEach(function (tickValue) {
+                    var tickX = toPixelX(tickValue);
+                    markup += '<line x1="' + tickX + '" y1="' + plotBottom + '" x2="' + tickX + '" y2="' + (plotBottom + 4) + '" stroke="' + axisColor + '" stroke-width="1" />';
+                    markup += '<text x="' + tickX + '" y="' + (plotBottom + 16) + '" text-anchor="middle">' + formatNumber(tickValue) + '</text>';
+                });
+
+                // axis titles
+                markup += '<text class="search-ranking-normalization-preview__axis-title" x="' + ((plotLeft + plotRight) / 2) + '" y="' + (height - 6) + '" text-anchor="middle">Raw metric value (x)</text>';
+                markup += '<text class="search-ranking-normalization-preview__axis-title" x="14" y="' + ((plotTop + plotBottom) / 2) + '" text-anchor="middle" transform="rotate(-90 14 ' + ((plotTop + plotBottom) / 2) + ')">Score / cumulative share</text>';
+
+                // data
                 markup += '<polyline points="' + toPolylinePoints(cdfPoints) + '" fill="none" stroke="var(--search-ranking-cdf-line-color, #bbb)" stroke-dasharray="4 3" stroke-width="1.5" />';
                 markup += '<polyline points="' + toPolylinePoints(points) + '" fill="none" stroke="var(--search-ranking-curve-color, #2a6ebb)" stroke-width="2" />';
 
