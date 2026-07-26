@@ -644,6 +644,14 @@ SearchRankingStorageConfig::SYNC_STORAGE_SEARCH_RANKING_QUEUE,
 Restart any long-running `symfonymessenger:consume` workers afterwards — they hold the old queue
 configuration until their time limit expires.
 
+This also assumes your project defines a `synchronizationPool` queue pool
+(`Pyz\Client\RabbitMq\RabbitMqConfig::getQueuePools()`) — standard in Spryker demoshops, but not
+guaranteed in a from-scratch project. `Zed\SearchRankingStorage\SearchRankingStorageConfig::getSearchRankingSynchronizationPoolName()`
+hardcodes that name because this sync resource is store-less (its schema has no `store` column), and a
+store-less synchronization resource must have a queue pool or message creation fails outright ("You must
+specify either store column or SynchronizationQueuePoolName"). If your project's pool has a different
+name, override that method in a project-level `SearchRankingStorageConfig`.
+
 ### 12. Register the function_score query expander
 
 In `Pyz\Client\Catalog\CatalogDependencyProvider::createCatalogSearchQueryExpanderPlugins()`,
