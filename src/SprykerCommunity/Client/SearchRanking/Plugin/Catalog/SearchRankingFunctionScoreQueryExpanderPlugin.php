@@ -10,7 +10,9 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking\Plugin\Catalog;
 
 use Elastica\Query;
+use Elastica\Query\AbstractQuery;
 use Generated\Shared\Search\PageIndexMap;
+use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 use Spryker\Client\Kernel\AbstractPlugin;
 use Spryker\Client\SearchExtension\Dependency\Plugin\QueryExpanderPluginInterface;
 use Spryker\Client\SearchExtension\Dependency\Plugin\QueryInterface;
@@ -42,6 +44,13 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
      *   rationale (including why an older, unbounded `(1 + sqrt(_score)) * (...)` formula was replaced).
      * - Metric weights, relevanceWeight, and relevanceSaturationPoint all come from the ranking
      *   configuration in key-value storage (synced from Zed).
+     * - **Entropy-aware relevance weighting (opt-in, OFF by default)**: when
+     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()}
+     *   is enabled, the configured `relevanceWeight` is replaced with a per-query value derived from ONE
+     *   ADDITIONAL lightweight probe query — see
+     *   {@see \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculator} for the full
+     *   mechanism and this package's README for the rationale. Left disabled, this plugin fires exactly
+     *   the one query it always has.
      * - Also adds the `scores` field to the query's source whitelist (when one is set), so consumers —
      *   the search-debug overlay's business-signal breakdown, client-side re-ranking — can read each
      *   hit's normalized signals without another round trip.
@@ -73,6 +82,8 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
             return $searchQuery;
         }
 
+        $configurationTransfer = $this->applyEntropyWeighting($configurationTransfer, $query->getQuery());
+
         $functionScore = $this->getFactory()->createFunctionScoreBuilder()->build(
             $query->getQuery(),
             $configurationTransfer,
@@ -86,6 +97,32 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
         $this->addScoresToSourceWhitelist($query);
 
         return $searchQuery;
+    }
+
+    /**
+     * OFF by default (see {@see \SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()}) —
+     * returns the configuration transfer unchanged, firing no additional query, unless a project has
+     * explicitly opted in.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
+     * @param \Elastica\Query\AbstractQuery $baseQuery
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer
+     */
+    protected function applyEntropyWeighting(
+        SearchRankingConfigurationStorageTransfer $configurationTransfer,
+        AbstractQuery $baseQuery,
+    ): SearchRankingConfigurationStorageTransfer {
+        if (!$this->getFactory()->getConfig()->isEntropyWeightingEnabled()) {
+            return $configurationTransfer;
+        }
+
+        $entropyDerivedRelevanceWeight = $this->getFactory()->createEntropyWeightCalculator()->calculateRelevanceWeight(
+            $baseQuery,
+            (float)$configurationTransfer->getRelevanceWeight(),
+        );
+
+        return (clone $configurationTransfer)->setRelevanceWeight($entropyDerivedRelevanceWeight);
     }
 
     /**

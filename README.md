@@ -21,6 +21,7 @@ closed-form curve-fit suggestions — no guessing what shape a business signal s
 - [Status](#status)
 - [What it does](#what-it-does)
 - [Ranking formula](#ranking-formula)
+- [Entropy-aware relevance weighting (opt-in)](#entropy-aware-relevance-weighting-opt-in)
 - [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update)
 - [Why hourly batch normalization, not an immediate per-value hook](#why-hourly-batch-normalization-not-an-immediate-per-value-hook)
 - [Normalization formulas](#normalization-formulas)
@@ -290,9 +291,12 @@ That said, the old formula wasn't all bad: `sqrt(_score)` never saturates, it ke
 naturally drifted back toward text relevance instead of staying pinned to the business signals — a
 property the saturating curve below deliberately gives up, since it caps `_score`'s contribution at
 `[0;1)` no matter how large `_score` gets. Recovering that upside on purpose, rather than as a side effect
-of an otherwise unpredictable formula, would need real additional machinery (some way to read the
-distribution of scores across the result set, not just one document at a time) — outside what this
-package builds, but not incompatible with it.
+of an otherwise unpredictable formula, needs real additional machinery — some way to read the
+distribution of scores across the result set, not just one document at a time. [Entropy-aware relevance
+weighting](#entropy-aware-relevance-weighting-opt-in) below is exactly that machinery, opt-in and off by
+default, built for a related but distinct purpose (deciding how much a query's own result set should lean
+on business signals at all, not recovering this specific upside) — the general shape of what "reading the
+distribution" looks like in this package now exists, even though it doesn't reintroduce the old formula.
 
 **`relevanceWeight` and `relevanceSaturationPoint` fix that by normalizing first.**
 `_score / (_score + relevanceSaturationPoint)` is the same saturating-curve shape BM25 itself uses for
@@ -338,6 +342,37 @@ overlay's `signal × weight = contribution` lines show the real, effective weigh
 whatever raw number was typed into the Zed form. All-zero (or zero active metrics) is left as-is rather
 than dividing by zero — `FunctionScoreBuilder` already treats that as "no usable business signal" and
 steps aside to pure text relevance.
+
+## Entropy-aware relevance weighting (opt-in)
+
+**Off by default.** A single global `relevanceWeight` is a reasonable default, but it can't tell an
+exact-SKU-style query ("SKU-12345", a query where text relevance already found one unambiguous winner)
+apart from a category-style query ("office chairs", where dozens of candidates are roughly equally
+relevant and business signals are what should actually decide the order). This feature derives
+`relevanceWeight` per query instead of using one static value for every search.
+
+**The mechanism:** with the flag enabled,
+`SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculator` fires ONE ADDITIONAL, lightweight
+Elasticsearch query per catalog search — the same base query, before this package's own `function_score`
+wrapper, requesting only the top `getEntropyProbeResultSize()` (default 10) candidates' raw `_score`
+values, no document bodies. From those scores it computes the normalized Shannon entropy of the
+score distribution (`Hₙₒᵣₘ = H / log(X)`, treating each score as a share of the total "relevance mass" —
+a plain ratio, not softmax, so real score gaps aren't artificially sharpened): a single dominant score
+gives `Hₙₒᵣₘ ≈ 0` (text relevance already discriminates well — stay close to the configured
+`relevanceWeight`'s text-relevance-heavy end), a flat distribution gives `Hₙₒᵣₘ ≈ 1` (text relevance can't
+tell candidates apart — pull weight toward business signals). An optional exponent
+(`getEntropyWeightExponent()`, default `1.0`) lets a project tune how aggressively the effect kicks in
+without touching the entropy math itself.
+
+**Why it's an opt-in flag, not the default:** it doubles the number of Elasticsearch round trips per
+catalog search. That's a real, permanent cost — worth it once you have a mixed catalog with both
+exact-match and browsy query patterns, not worth paying on every search by default. Enable it in your
+project's `Pyz\Client\SearchRanking\SearchRankingConfig` by overriding
+`isEntropyWeightingEnabled(): bool` to return `true`.
+
+**Safety:** a failing or empty probe (zero hits, a transient engine hiccup) is caught and falls back to
+the configured static `relevanceWeight` unchanged — this feature can degrade to "as if it were off" but
+never breaks or blocks the real search it's attached to.
 
 ## Why full republish, not a partial score-only ES update
 
@@ -844,7 +879,7 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-**107 tests, 910 assertions** across four Codeception suites (`Zed/SearchRanking`,
+**118 tests, 925 assertions** across four Codeception suites (`Zed/SearchRanking`,
 `Zed/SearchRankingStorage`, `Client/SearchRanking`, `Client/SearchRankingStorage`). From a shop that has
 the package installed:
 
@@ -871,10 +906,14 @@ fit quality captured correctly when a formula change has an existing digest to c
 unit tests — no database needed. The Client suite lives at
 `tests/SprykerCommunityTest/Client/SearchRanking`.
 
-Two tests in that Client suite are real integration tests, not unit tests: `FunctionScoreExecutionTest`
-builds a real `function_score` and executes it against real documents in a test-owned index, and
+Several tests in that Client suite are real integration tests, not unit tests: `FunctionScoreExecutionTest`
+builds a real `function_score` and executes it against real documents in a test-owned index,
 `EngineCompatibilityCheckerTest` runs `EngineCompatibilityChecker`'s real `_validate/query` probes against
-the actual cluster — both need a reachable search engine, though still no database.
+the actual cluster, and `EntropyWeightCalculatorTest` fires real BM25 queries against a test-owned index
+to prove the entropy-derived weight actually moves in the right direction for a uniform vs. a skewed
+score distribution — all three need a reachable search engine, though still no database.
+`ShannonEntropyCalculator`'s own entropy formula is covered separately as a plain unit test (plain arrays,
+no engine needed) in `ShannonEntropyCalculatorTest`.
 
 Coverage (Codeception + pcov): the Zed suite covers 90% of classes / 95.97% of lines; the uncovered
 remainder is almost entirely Spryker's own Facade/Factory DI-wiring boilerplate (thin delegation, not
