@@ -20,7 +20,14 @@ use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityChecker;
 use SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityCheckerInterface;
+use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculator;
+use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculatorInterface;
+use SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculator;
+use SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculatorInterface;
 
+/**
+ * @method \SprykerCommunity\Client\SearchRanking\SearchRankingConfig getConfig()
+ */
 class SearchRankingFactory extends AbstractFactory
 {
     /**
@@ -53,6 +60,27 @@ class SearchRankingFactory extends AbstractFactory
     public function createEngineCompatibilityChecker(): EngineCompatibilityCheckerInterface
     {
         return new EngineCompatibilityChecker($this->getElasticaClient());
+    }
+
+    /**
+     * @return \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculatorInterface
+     */
+    public function createEntropyWeightCalculator(): EntropyWeightCalculatorInterface
+    {
+        return new EntropyWeightCalculator(
+            $this->getElasticaClient(),
+            $this->createSearchElasticsearchConfig(),
+            $this->getConfig(),
+            $this->createShannonEntropyCalculator(),
+        );
+    }
+
+    /**
+     * @return \SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculatorInterface
+     */
+    public function createShannonEntropyCalculator(): ShannonEntropyCalculatorInterface
+    {
+        return new ShannonEntropyCalculator();
     }
 
     /**
