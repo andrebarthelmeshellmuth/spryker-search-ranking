@@ -123,7 +123,7 @@ class SearchRankingConfig extends AbstractBundleConfig
      *
      * @api
      *
-     * @return int
+     * @return positive-int
      */
     public function getPublishEventChunkSize(): int
     {

@@ -82,10 +82,16 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
             return $searchQuery;
         }
 
-        $configurationTransfer = $this->applyEntropyWeighting($configurationTransfer, $query->getQuery());
+        $wrappedQuery = $query->getQuery();
+
+        if (!($wrappedQuery instanceof AbstractQuery)) {
+            return $searchQuery;
+        }
+
+        $configurationTransfer = $this->applyEntropyWeighting($configurationTransfer, $wrappedQuery);
 
         $functionScore = $this->getFactory()->createFunctionScoreBuilder()->build(
-            $query->getQuery(),
+            $wrappedQuery,
             $configurationTransfer,
         );
 

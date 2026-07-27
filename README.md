@@ -102,7 +102,7 @@ data-driven curve-fitting workflow.
 Verified: dependency floors resolved and checked at their oldest allowed versions (`composer
 check-floors`), the ranking formula's `function_score`/`script_score` cross-validated across three
 engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 132
-tests, phpcs and phpstan level 6 clean.
+tests, phpcs and phpstan level 8 clean.
 
 This package's own mechanism is complete: the metric/value data model, the Zed management UI, CSV data
 import, the normalization cron, the export of normalized signals into the Elasticsearch page documents
@@ -983,8 +983,17 @@ For that reason the suites are **not** part of CI: a clean runner has neither a 
 cluster, and standing both up per build would cost far more than it returns. CI therefore covers the
 static guarantees; the test suite is run against a real shop before a release.
 
-Static analysis (`phpstan`) is likewise run from a host shop rather than in CI: it needs the generated
-`Generated\Shared\Transfer\*` classes, which only exist once a project has run `transfer:generate`.
+Static analysis (`phpstan`, level 8, config in [`phpstan.neon`](phpstan.neon)) is likewise run from a host
+shop rather than in CI: it needs the generated `Generated\Shared\Transfer\*` classes, which only exist once
+a project has run `transfer:generate`, and it needs the shop's `Ide/AutoCompletion` stub freshly
+regenerated (`console dev:ide-auto-completion:generate`) so the magic `Locator` calls in this package's
+DependencyProviders resolve instead of reporting as undefined methods.
+
+```bash
+vendor/bin/console dev:ide-auto-completion:generate
+vendor/bin/phpstan clear-result-cache -c vendor/spryker-community/search-ranking/phpstan.neon
+vendor/bin/phpstan analyse -c vendor/spryker-community/search-ranking/phpstan.neon vendor/spryker-community/search-ranking/src
+```
 
 ## License
 
