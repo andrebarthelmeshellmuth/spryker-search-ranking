@@ -27,7 +27,7 @@ class SearchRankingDataImportConfig extends DataImportConfig
     /**
      * @var int
      */
-    protected const MODULE_ROOT_DIRECTORY_LEVEL = 4;
+    final protected const MODULE_ROOT_DIRECTORY_LEVEL = 4;
 
     /**
      * @api
@@ -68,8 +68,11 @@ class SearchRankingDataImportConfig extends DataImportConfig
      */
     protected function getModuleRoot(): string
     {
+        /** @var positive-int $directoryLevel */
+        $directoryLevel = static::MODULE_ROOT_DIRECTORY_LEVEL;
+
         return realpath(
-            dirname(__DIR__, static::MODULE_ROOT_DIRECTORY_LEVEL),
+            dirname(__DIR__, $directoryLevel),
         ) . DIRECTORY_SEPARATOR;
     }
 }

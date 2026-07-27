@@ -374,7 +374,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
     {
         $curveFunction = $definition['curveFunction'];
 
-        if ($definition['paramLogMin'] === null) {
+        if ($definition['paramLogMin'] === null || $definition['paramLogMax'] === null) {
             $rSquared = $this->rSquared($points, $curveFunction, 0.0);
 
             if ($rSquared === null) {

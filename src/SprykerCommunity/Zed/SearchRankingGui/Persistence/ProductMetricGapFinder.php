@@ -9,8 +9,11 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRankingGui\Persistence;
 
+use PDOStatement;
 use Propel\Runtime\Connection\ConnectionInterface;
+use Propel\Runtime\Connection\StatementInterface;
 use Propel\Runtime\Propel;
+use RuntimeException;
 
 /**
  * Raw SQL, deliberately — see this package's README ("Product Value Gaps") for the full rationale. Short
@@ -91,7 +94,7 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
             $offset,
         );
 
-        $statement = $this->getConnection()->prepare($sql);
+        $statement = $this->prepareStatement($sql);
         $statement->execute($params);
 
         /** @var array<int, array{id_product_abstract: int, sku: string, missing_metric_name: string}> $rows */
@@ -137,7 +140,7 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
 
         $sql = sprintf('SELECT COUNT(*) %s %s', static::BASE_SQL, $whereSql);
 
-        $statement = $this->getConnection()->prepare($sql);
+        $statement = $this->prepareStatement($sql);
         $statement->execute($params);
 
         return (int)$statement->fetchColumn();
@@ -195,5 +198,28 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
     protected function getConnection(): ConnectionInterface
     {
         return Propel::getServiceContainer()->getReadConnection(static::CONNECTION_NAME);
+    }
+
+    /**
+     * `ConnectionInterface::prepare()` is declared to allow returning `false` on a driver-level prepare
+     * failure — never expected in practice here (the SQL is this class's own fixed, package-authored
+     * text, not caller-influenced), but a clear failure beats a confusing "call to a member function on
+     * bool" fatal if it ever did happen.
+     *
+     * @param string $sql
+     *
+     * @throws \RuntimeException
+     *
+     * @return \Propel\Runtime\Connection\StatementInterface|\PDOStatement
+     */
+    protected function prepareStatement(string $sql): StatementInterface|PDOStatement
+    {
+        $statement = $this->getConnection()->prepare($sql);
+
+        if ($statement === false) {
+            throw new RuntimeException(sprintf('Failed to prepare statement: %s', $sql));
+        }
+
+        return $statement;
     }
 }

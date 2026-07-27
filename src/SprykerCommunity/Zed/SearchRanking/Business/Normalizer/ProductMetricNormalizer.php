@@ -84,10 +84,10 @@ class ProductMetricNormalizer implements ProductMetricNormalizerInterface
         }
 
         $baseVariables = [
-            'min' => $statisticsTransfer->getMinValue(),
-            'max' => $statisticsTransfer->getMaxValue(),
-            'avg' => $statisticsTransfer->getAvgValue(),
-            'count' => $statisticsTransfer->getCount(),
+            'min' => $statisticsTransfer->getMinValueOrFail(),
+            'max' => $statisticsTransfer->getMaxValueOrFail(),
+            'avg' => $statisticsTransfer->getAvgValueOrFail(),
+            'count' => $statisticsTransfer->getCountOrFail(),
         ];
 
         $formula = $metricTransfer->getFormulaOrFail();
