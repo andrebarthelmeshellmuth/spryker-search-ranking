@@ -9,7 +9,6 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRankingGui\Communication\Controller;
 
-use ArrayObject;
 use Spryker\Zed\Kernel\Communication\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,11 +30,10 @@ class ProductMetricGapController extends AbstractController
      */
     public function indexAction(Request $request): array
     {
-        $metricTransfers = $this->getFactory()->getSearchRankingFacade()->getActiveMetricCollection()->getMetrics();
-        $idSearchRankingMetric = $this->resolveIdSearchRankingMetric($request, $metricTransfers);
+        $idSearchRankingMetric = $this->resolveIdSearchRankingMetric($request);
 
         return $this->viewResponse([
-            'metrics' => $metricTransfers,
+            'metrics' => $this->getFactory()->getSearchRankingFacade()->getActiveMetricCollection()->getMetrics(),
             'selectedIdSearchRankingMetric' => $idSearchRankingMetric,
             'productMetricGapTable' => $this->getFactory()->createProductMetricGapTable($idSearchRankingMetric)->render(),
         ]);
@@ -48,8 +46,7 @@ class ProductMetricGapController extends AbstractController
      */
     public function tableAction(Request $request): JsonResponse
     {
-        $metricTransfers = $this->getFactory()->getSearchRankingFacade()->getActiveMetricCollection()->getMetrics();
-        $idSearchRankingMetric = $this->resolveIdSearchRankingMetric($request, $metricTransfers);
+        $idSearchRankingMetric = $this->resolveIdSearchRankingMetric($request);
 
         return $this->jsonResponse(
             $this->getFactory()->createProductMetricGapTable($idSearchRankingMetric)->fetchData(),
@@ -57,27 +54,17 @@ class ProductMetricGapController extends AbstractController
     }
 
     /**
-     * Defaults to the first active metric when none was explicitly selected — an empty grid on first
-     * visit would look broken, not like "nothing to show yet". `null` only when there is no active
-     * metric at all to default to.
+     * `null` (no `?metric=` in the request) is the real default view — gaps across every active metric,
+     * not a fallback to avoid an empty-looking page. A real, positive metric ID narrows to just that one.
      *
      * @param \Symfony\Component\HttpFoundation\Request $request
-     * @param \ArrayObject<int, \Generated\Shared\Transfer\SearchRankingMetricTransfer> $metricTransfers
      *
      * @return int|null
      */
-    protected function resolveIdSearchRankingMetric(Request $request, ArrayObject $metricTransfers): ?int
+    protected function resolveIdSearchRankingMetric(Request $request): ?int
     {
         $requestedId = $request->query->getInt(static::PARAM_METRIC, 0);
 
-        if ($requestedId > 0) {
-            return $requestedId;
-        }
-
-        foreach ($metricTransfers as $metricTransfer) {
-            return $metricTransfer->getIdSearchRankingMetricOrFail();
-        }
-
-        return null;
+        return $requestedId > 0 ? $requestedId : null;
     }
 }

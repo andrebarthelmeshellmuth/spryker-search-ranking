@@ -9,7 +9,6 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRankingGui;
 
-use Orm\Zed\Product\Persistence\SpyProductAbstractQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistoryQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery;
@@ -46,11 +45,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
     public const PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY = 'PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY';
 
     /**
-     * @var string
-     */
-    public const PROPEL_QUERY_PRODUCT_ABSTRACT = 'PROPEL_QUERY_PRODUCT_ABSTRACT';
-
-    /**
      * @param \Spryker\Zed\Kernel\Container $container
      *
      * @return \Spryker\Zed\Kernel\Container
@@ -63,7 +57,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
         $container = $this->addSearchRankingMetricPropelQuery($container);
         $container = $this->addSearchRankingProductMetricPropelQuery($container);
         $container = $this->addSearchRankingMetricHistoryPropelQuery($container);
-        $container = $this->addProductAbstractPropelQuery($container);
 
         return $container;
     }
@@ -137,20 +130,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
     {
         $container->set(static::PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY, $container->factory(function () {
             return SpySearchRankingMetricHistoryQuery::create();
-        }));
-
-        return $container;
-    }
-
-    /**
-     * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
-     */
-    protected function addProductAbstractPropelQuery(Container $container): Container
-    {
-        $container->set(static::PROPEL_QUERY_PRODUCT_ABSTRACT, $container->factory(function () {
-            return SpyProductAbstractQuery::create();
         }));
 
         return $container;
