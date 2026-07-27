@@ -24,46 +24,23 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
 class MetricRandomizer implements MetricRandomizerInterface
 {
     /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface
-     */
-    protected SearchRankingRepositoryInterface $repository;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizerInterface
-     */
-    protected ProductMetricNormalizerInterface $normalizer;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisherInterface
-     */
-    protected ProductAbstractScorePublisherInterface $publisher;
-
-    /**
-     * Baked in at construction (from {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getRandomMetricName()},
-     * resolved by the business factory) rather than taken per-call — `AbstractFacade` has no `getConfig()`
-     * of its own, only `AbstractBusinessFactory` does, so resolving it here keeps that dependency where it
-     * already works instead of the facade reaching for a method it does not have.
-     *
-     * @var string
-     */
-    protected string $metricName;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizerInterface $normalizer
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisherInterface $publisher
      * @param string $metricName
      */
     public function __construct(
-        SearchRankingRepositoryInterface $repository,
-        ProductMetricNormalizerInterface $normalizer,
-        ProductAbstractScorePublisherInterface $publisher,
-        string $metricName,
+        protected SearchRankingRepositoryInterface $repository,
+        protected ProductMetricNormalizerInterface $normalizer,
+        protected ProductAbstractScorePublisherInterface $publisher,
+        /**
+         * Baked in at construction (from {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getRandomMetricName()},
+         * resolved by the business factory) rather than taken per-call — `AbstractFacade` has no `getConfig()`
+         * of its own, only `AbstractBusinessFactory` does, so resolving it here keeps that dependency where it
+         * already works instead of the facade reaching for a method it does not have.
+         */
+        protected string $metricName,
     ) {
-        $this->repository = $repository;
-        $this->normalizer = $normalizer;
-        $this->publisher = $publisher;
-        $this->metricName = $metricName;
     }
 
     /**

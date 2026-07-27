@@ -17,33 +17,15 @@ use SprykerCommunity\Zed\SearchRanking\SearchRankingConfig;
 class SettingManager implements SettingManagerInterface
 {
     /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface
-     */
-    protected SearchRankingRepositoryInterface $repository;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface
-     */
-    protected SearchRankingEntityManagerInterface $entityManager;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig
-     */
-    protected SearchRankingConfig $config;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface $entityManager
      * @param \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig $config
      */
     public function __construct(
-        SearchRankingRepositoryInterface $repository,
-        SearchRankingEntityManagerInterface $entityManager,
-        SearchRankingConfig $config,
+        protected SearchRankingRepositoryInterface $repository,
+        protected SearchRankingEntityManagerInterface $entityManager,
+        protected SearchRankingConfig $config,
     ) {
-        $this->repository = $repository;
-        $this->entityManager = $entityManager;
-        $this->config = $config;
     }
 
     /**

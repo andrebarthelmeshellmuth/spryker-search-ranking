@@ -26,23 +26,11 @@ use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterfac
 class MetricFormulaFitEvaluator implements MetricFormulaFitEvaluatorInterface
 {
     /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface
-     */
-    protected FormulaEvaluatorInterface $formulaEvaluator;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Business\Fitting\RSquaredCalculator
-     */
-    protected RSquaredCalculator $rSquaredCalculator;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface $formulaEvaluator
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Fitting\RSquaredCalculator $rSquaredCalculator
      */
-    public function __construct(FormulaEvaluatorInterface $formulaEvaluator, RSquaredCalculator $rSquaredCalculator)
+    public function __construct(protected FormulaEvaluatorInterface $formulaEvaluator, protected RSquaredCalculator $rSquaredCalculator)
     {
-        $this->formulaEvaluator = $formulaEvaluator;
-        $this->rSquaredCalculator = $rSquaredCalculator;
     }
 
     /**

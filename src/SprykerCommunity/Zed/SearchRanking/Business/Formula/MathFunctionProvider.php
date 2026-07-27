@@ -49,12 +49,8 @@ class MathFunctionProvider implements ExpressionFunctionProviderInterface
     {
         return new ExpressionFunction(
             'random',
-            static function (): string {
-                return '(1.0 - mt_rand(0, mt_getrandmax() - 1) / mt_getrandmax())';
-            },
-            static function (): float {
-                return 1.0 - mt_rand(0, mt_getrandmax() - 1) / mt_getrandmax();
-            },
+            static fn (): string => '(1.0 - mt_rand(0, mt_getrandmax() - 1) / mt_getrandmax())',
+            static fn (): float => 1.0 - mt_rand(0, mt_getrandmax() - 1) / mt_getrandmax(),
         );
     }
 }

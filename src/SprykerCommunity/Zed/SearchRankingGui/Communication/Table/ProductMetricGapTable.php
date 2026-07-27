@@ -38,23 +38,11 @@ class ProductMetricGapTable extends AbstractTable
     protected const URL_PARAM_METRIC = 'metric';
 
     /**
-     * @var \SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapFinderInterface
-     */
-    protected ProductMetricGapFinderInterface $productMetricGapFinder;
-
-    /**
-     * @var int|null
-     */
-    protected ?int $idSearchRankingMetric;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapFinderInterface $productMetricGapFinder
      * @param int|null $idSearchRankingMetric
      */
-    public function __construct(ProductMetricGapFinderInterface $productMetricGapFinder, ?int $idSearchRankingMetric)
+    public function __construct(protected ProductMetricGapFinderInterface $productMetricGapFinder, protected ?int $idSearchRankingMetric)
     {
-        $this->productMetricGapFinder = $productMetricGapFinder;
-        $this->idSearchRankingMetric = $idSearchRankingMetric;
     }
 
     /**

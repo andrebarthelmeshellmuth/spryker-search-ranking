@@ -32,25 +32,11 @@ class MetricDigestBuilder implements MetricDigestBuilderInterface
     protected const PERCENTILE_STEP_COUNT = 100;
 
     /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface
-     */
-    protected SearchRankingRepositoryInterface $repository;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface
-     */
-    protected SearchRankingEntityManagerInterface $entityManager;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface $entityManager
      */
-    public function __construct(
-        SearchRankingRepositoryInterface $repository,
-        SearchRankingEntityManagerInterface $entityManager,
-    ) {
-        $this->repository = $repository;
-        $this->entityManager = $entityManager;
+    public function __construct(protected SearchRankingRepositoryInterface $repository, protected SearchRankingEntityManagerInterface $entityManager)
+    {
     }
 
     /**

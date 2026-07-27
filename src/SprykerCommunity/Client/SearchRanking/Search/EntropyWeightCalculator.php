@@ -28,33 +28,15 @@ use Throwable;
 class EntropyWeightCalculator implements EntropyWeightCalculatorInterface
 {
     /**
-     * @var \Elastica\Client
-     */
-    protected Client $elasticaClient;
-
-    /**
-     * @var \Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig
-     */
-    protected SearchElasticsearchConfig $searchElasticsearchConfig;
-
-    /**
-     * @var \SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculatorInterface
-     */
-    protected ShannonEntropyCalculatorInterface $entropyCalculator;
-
-    /**
      * @param \Elastica\Client $elasticaClient
      * @param \Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig $searchElasticsearchConfig
      * @param \SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculatorInterface $entropyCalculator
      */
     public function __construct(
-        Client $elasticaClient,
-        SearchElasticsearchConfig $searchElasticsearchConfig,
-        ShannonEntropyCalculatorInterface $entropyCalculator,
+        protected Client $elasticaClient,
+        protected SearchElasticsearchConfig $searchElasticsearchConfig,
+        protected ShannonEntropyCalculatorInterface $entropyCalculator,
     ) {
-        $this->elasticaClient = $elasticaClient;
-        $this->searchElasticsearchConfig = $searchElasticsearchConfig;
-        $this->entropyCalculator = $entropyCalculator;
     }
 
     /**
@@ -130,7 +112,7 @@ class EntropyWeightCalculator implements EntropyWeightCalculatorInterface
                 static fn ($result) => $result->getScore(),
                 $resultSet->getResults(),
             );
-        } catch (Throwable $exception) {
+        } catch (Throwable) {
             return [];
         }
     }

@@ -49,6 +49,7 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
      *
      * @return \Spryker\Zed\Kernel\Container
      */
+    #[\Override]
     public function provideCommunicationLayerDependencies(Container $container): Container
     {
         $container = parent::provideCommunicationLayerDependencies($container);
@@ -68,11 +69,9 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
      */
     protected function addSearchRankingStorageFacade(Container $container): Container
     {
-        $container->set(static::FACADE_SEARCH_RANKING_STORAGE, function (Container $container) {
-            return new SearchRankingGuiToSearchRankingStorageFacadeBridge(
-                $container->getLocator()->searchRankingStorage()->facade(),
-            );
-        });
+        $container->set(static::FACADE_SEARCH_RANKING_STORAGE, fn (Container $container) => new SearchRankingGuiToSearchRankingStorageFacadeBridge(
+            $container->getLocator()->searchRankingStorage()->facade(),
+        ));
 
         return $container;
     }
@@ -84,11 +83,9 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
      */
     protected function addSearchRankingFacade(Container $container): Container
     {
-        $container->set(static::FACADE_SEARCH_RANKING, function (Container $container) {
-            return new SearchRankingGuiToSearchRankingFacadeBridge(
-                $container->getLocator()->searchRanking()->facade(),
-            );
-        });
+        $container->set(static::FACADE_SEARCH_RANKING, fn (Container $container) => new SearchRankingGuiToSearchRankingFacadeBridge(
+            $container->getLocator()->searchRanking()->facade(),
+        ));
 
         return $container;
     }
@@ -100,9 +97,7 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
      */
     protected function addSearchRankingMetricPropelQuery(Container $container): Container
     {
-        $container->set(static::PROPEL_QUERY_SEARCH_RANKING_METRIC, $container->factory(function () {
-            return SpySearchRankingMetricQuery::create();
-        }));
+        $container->set(static::PROPEL_QUERY_SEARCH_RANKING_METRIC, $container->factory(fn () => SpySearchRankingMetricQuery::create()));
 
         return $container;
     }
@@ -114,9 +109,7 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
      */
     protected function addSearchRankingProductMetricPropelQuery(Container $container): Container
     {
-        $container->set(static::PROPEL_QUERY_SEARCH_RANKING_PRODUCT_METRIC, $container->factory(function () {
-            return SpySearchRankingProductMetricQuery::create();
-        }));
+        $container->set(static::PROPEL_QUERY_SEARCH_RANKING_PRODUCT_METRIC, $container->factory(fn () => SpySearchRankingProductMetricQuery::create()));
 
         return $container;
     }
@@ -128,9 +121,7 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
      */
     protected function addSearchRankingMetricHistoryPropelQuery(Container $container): Container
     {
-        $container->set(static::PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY, $container->factory(function () {
-            return SpySearchRankingMetricHistoryQuery::create();
-        }));
+        $container->set(static::PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY, $container->factory(fn () => SpySearchRankingMetricHistoryQuery::create()));
 
         return $container;
     }

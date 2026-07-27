@@ -16,16 +16,10 @@ use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSe
 class MetricFormDataProvider
 {
     /**
-     * @var \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeInterface
-     */
-    protected SearchRankingGuiToSearchRankingFacadeInterface $searchRankingFacade;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeInterface $searchRankingFacade
      */
-    public function __construct(SearchRankingGuiToSearchRankingFacadeInterface $searchRankingFacade)
+    public function __construct(protected SearchRankingGuiToSearchRankingFacadeInterface $searchRankingFacade)
     {
-        $this->searchRankingFacade = $searchRankingFacade;
     }
 
     /**

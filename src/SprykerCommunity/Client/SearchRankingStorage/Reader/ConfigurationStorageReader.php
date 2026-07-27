@@ -68,16 +68,6 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     protected const DEFAULT_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 0.5;
 
     /**
-     * @var \SprykerCommunity\Client\SearchRankingStorage\Dependency\Client\SearchRankingStorageToStorageClientInterface
-     */
-    protected SearchRankingStorageToStorageClientInterface $storageClient;
-
-    /**
-     * @var \SprykerCommunity\Client\SearchRankingStorage\Dependency\Service\SearchRankingStorageToSynchronizationServiceInterface
-     */
-    protected SearchRankingStorageToSynchronizationServiceInterface $synchronizationService;
-
-    /**
      * Memoized per request; false = not read yet (null is a valid "no document" result). `static`, not
      * instance-level, matching Spryker core's own client-reader caching convention — safe under the
      * traditional process-per-request PHP-FPM model this project runs on, but would leak stale
@@ -93,11 +83,9 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
      * @param \SprykerCommunity\Client\SearchRankingStorage\Dependency\Service\SearchRankingStorageToSynchronizationServiceInterface $synchronizationService
      */
     public function __construct(
-        SearchRankingStorageToStorageClientInterface $storageClient,
-        SearchRankingStorageToSynchronizationServiceInterface $synchronizationService,
+        protected SearchRankingStorageToStorageClientInterface $storageClient,
+        protected SearchRankingStorageToSynchronizationServiceInterface $synchronizationService,
     ) {
-        $this->storageClient = $storageClient;
-        $this->synchronizationService = $synchronizationService;
     }
 
     /**

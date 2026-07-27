@@ -40,6 +40,7 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
      *
      * @return \Spryker\Zed\Kernel\Container
      */
+    #[\Override]
     public function provideBusinessLayerDependencies(Container $container): Container
     {
         $container = parent::provideBusinessLayerDependencies($container);
@@ -57,6 +58,7 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
      *
      * @return \Spryker\Zed\Kernel\Container
      */
+    #[\Override]
     public function provideCommunicationLayerDependencies(Container $container): Container
     {
         $container = parent::provideCommunicationLayerDependencies($container);
@@ -72,11 +74,9 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
      */
     protected function addSearchRankingStorageFacade(Container $container): Container
     {
-        $container->set(static::FACADE_SEARCH_RANKING_STORAGE, function (Container $container) {
-            return new SearchRankingToSearchRankingStorageFacadeBridge(
-                $container->getLocator()->searchRankingStorage()->facade(),
-            );
-        });
+        $container->set(static::FACADE_SEARCH_RANKING_STORAGE, fn (Container $container) => new SearchRankingToSearchRankingStorageFacadeBridge(
+            $container->getLocator()->searchRankingStorage()->facade(),
+        ));
 
         return $container;
     }
@@ -88,11 +88,9 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
      */
     protected function addEventFacade(Container $container): Container
     {
-        $container->set(static::FACADE_EVENT, function (Container $container) {
-            return new SearchRankingToEventFacadeBridge(
-                $container->getLocator()->event()->facade(),
-            );
-        });
+        $container->set(static::FACADE_EVENT, fn (Container $container) => new SearchRankingToEventFacadeBridge(
+            $container->getLocator()->event()->facade(),
+        ));
 
         return $container;
     }
@@ -108,11 +106,9 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
      */
     protected function addSearchRankingClient(Container $container): Container
     {
-        $container->set(static::CLIENT_SEARCH_RANKING, function (Container $container) {
-            return new SearchRankingToSearchRankingClientBridge(
-                $container->getLocator()->searchRanking()->client(),
-            );
-        });
+        $container->set(static::CLIENT_SEARCH_RANKING, fn (Container $container) => new SearchRankingToSearchRankingClientBridge(
+            $container->getLocator()->searchRanking()->client(),
+        ));
 
         return $container;
     }

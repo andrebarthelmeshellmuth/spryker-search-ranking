@@ -37,16 +37,10 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
     protected const REFINEMENT_PASS_COUNT = 6;
 
     /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Business\Fitting\RSquaredCalculator
-     */
-    protected RSquaredCalculator $rSquaredCalculator;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Fitting\RSquaredCalculator $rSquaredCalculator
      */
-    public function __construct(RSquaredCalculator $rSquaredCalculator)
+    public function __construct(protected RSquaredCalculator $rSquaredCalculator)
     {
-        $this->rSquaredCalculator = $rSquaredCalculator;
     }
 
     /**
@@ -263,7 +257,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
      */
     protected function buildPowerDefinition(float $maxValue, float $logMin, float $logMax, bool $isHigherBetter): array
     {
-        $power = fn (float $x, float $p): float => pow(max($x, 0.0) / $maxValue, $p);
+        $power = fn (float $x, float $p): float => (max($x, 0.0) / $maxValue) ** $p;
 
         if ($isHigherBetter) {
             return [

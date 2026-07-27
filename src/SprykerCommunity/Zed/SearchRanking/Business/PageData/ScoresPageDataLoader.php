@@ -15,16 +15,10 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
 class ScoresPageDataLoader implements ScoresPageDataLoaderInterface
 {
     /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface
-     */
-    protected SearchRankingRepositoryInterface $repository;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      */
-    public function __construct(SearchRankingRepositoryInterface $repository)
+    public function __construct(protected SearchRankingRepositoryInterface $repository)
     {
-        $this->repository = $repository;
     }
 
     /**

@@ -20,41 +20,17 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
 class MetricWriter implements MetricWriterInterface
 {
     /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface
-     */
-    protected SearchRankingRepositoryInterface $repository;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface
-     */
-    protected SearchRankingEntityManagerInterface $entityManager;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface
-     */
-    protected FormulaEvaluatorInterface $formulaEvaluator;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface
-     */
-    protected MetricFormulaFitEvaluatorInterface $fitEvaluator;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface $entityManager
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface $formulaEvaluator
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface $fitEvaluator
      */
     public function __construct(
-        SearchRankingRepositoryInterface $repository,
-        SearchRankingEntityManagerInterface $entityManager,
-        FormulaEvaluatorInterface $formulaEvaluator,
-        MetricFormulaFitEvaluatorInterface $fitEvaluator,
+        protected SearchRankingRepositoryInterface $repository,
+        protected SearchRankingEntityManagerInterface $entityManager,
+        protected FormulaEvaluatorInterface $formulaEvaluator,
+        protected MetricFormulaFitEvaluatorInterface $fitEvaluator,
     ) {
-        $this->repository = $repository;
-        $this->entityManager = $entityManager;
-        $this->formulaEvaluator = $formulaEvaluator;
-        $this->fitEvaluator = $fitEvaluator;
     }
 
     /**

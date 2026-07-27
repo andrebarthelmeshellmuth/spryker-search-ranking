@@ -34,6 +34,7 @@ class SearchRankingStorageDependencyProvider extends AbstractBundleDependencyPro
      *
      * @return \Spryker\Zed\Kernel\Container
      */
+    #[\Override]
     public function provideBusinessLayerDependencies(Container $container): Container
     {
         $container = parent::provideBusinessLayerDependencies($container);
@@ -50,11 +51,9 @@ class SearchRankingStorageDependencyProvider extends AbstractBundleDependencyPro
      */
     protected function addSynchronizationFacade(Container $container): Container
     {
-        $container->set(static::FACADE_SYNCHRONIZATION, function (Container $container) {
-            return new SearchRankingStorageToSynchronizationFacadeBridge(
-                $container->getLocator()->synchronization()->facade(),
-            );
-        });
+        $container->set(static::FACADE_SYNCHRONIZATION, fn (Container $container) => new SearchRankingStorageToSynchronizationFacadeBridge(
+            $container->getLocator()->synchronization()->facade(),
+        ));
 
         return $container;
     }
@@ -66,11 +65,9 @@ class SearchRankingStorageDependencyProvider extends AbstractBundleDependencyPro
      */
     protected function addSearchRankingFacade(Container $container): Container
     {
-        $container->set(static::FACADE_SEARCH_RANKING, function (Container $container) {
-            return new SearchRankingStorageToSearchRankingFacadeBridge(
-                $container->getLocator()->searchRanking()->facade(),
-            );
-        });
+        $container->set(static::FACADE_SEARCH_RANKING, fn (Container $container) => new SearchRankingStorageToSearchRankingFacadeBridge(
+            $container->getLocator()->searchRanking()->facade(),
+        ));
 
         return $container;
     }

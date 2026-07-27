@@ -177,7 +177,6 @@ class ConfigurationStorageReaderTest extends Unit
     protected function resetMemoizedCache(): void
     {
         $cacheProperty = new ReflectionProperty(ConfigurationStorageReader::class, 'rankingConfigurationCache');
-        $cacheProperty->setAccessible(true);
         $cacheProperty->setValue(null, false);
     }
 }
