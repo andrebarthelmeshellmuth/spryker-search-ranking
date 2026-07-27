@@ -66,16 +66,10 @@ class EngineCompatibilityChecker implements EngineCompatibilityCheckerInterface
     ];
 
     /**
-     * @var \Elastica\Client
-     */
-    protected Client $elasticaClient;
-
-    /**
      * @param \Elastica\Client $elasticaClient
      */
-    public function __construct(Client $elasticaClient)
+    public function __construct(protected Client $elasticaClient)
     {
-        $this->elasticaClient = $elasticaClient;
     }
 
     /**

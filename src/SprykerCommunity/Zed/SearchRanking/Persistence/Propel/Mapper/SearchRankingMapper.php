@@ -129,7 +129,7 @@ class SearchRankingMapper
             return [];
         }
 
-        return array_map('floatval', explode(',', $percentiles));
+        return array_map(static fn ($value): float => (float)$value, explode(',', $percentiles));
     }
 
     /**

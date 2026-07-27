@@ -55,33 +55,15 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
     protected const KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 'entropy_weight_shift_magnitude';
 
     /**
-     * @var \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface
-     */
-    protected SearchRankingStorageToSearchRankingFacadeInterface $searchRankingFacade;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRankingStorage\Persistence\SearchRankingStorageEntityManagerInterface
-     */
-    protected SearchRankingStorageEntityManagerInterface $entityManager;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSynchronizationFacadeInterface
-     */
-    protected SearchRankingStorageToSynchronizationFacadeInterface $synchronizationFacade;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface $searchRankingFacade
      * @param \SprykerCommunity\Zed\SearchRankingStorage\Persistence\SearchRankingStorageEntityManagerInterface $entityManager
      * @param \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSynchronizationFacadeInterface $synchronizationFacade
      */
     public function __construct(
-        SearchRankingStorageToSearchRankingFacadeInterface $searchRankingFacade,
-        SearchRankingStorageEntityManagerInterface $entityManager,
-        SearchRankingStorageToSynchronizationFacadeInterface $synchronizationFacade,
+        protected SearchRankingStorageToSearchRankingFacadeInterface $searchRankingFacade,
+        protected SearchRankingStorageEntityManagerInterface $entityManager,
+        protected SearchRankingStorageToSynchronizationFacadeInterface $synchronizationFacade,
     ) {
-        $this->searchRankingFacade = $searchRankingFacade;
-        $this->entityManager = $entityManager;
-        $this->synchronizationFacade = $synchronizationFacade;
     }
 
     /**

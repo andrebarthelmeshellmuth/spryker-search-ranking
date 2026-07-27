@@ -222,7 +222,7 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
             ->find()
             ->getData();
 
-        return array_map('intval', $productAbstractIds);
+        return array_map(static fn ($value): int => (int)$value, $productAbstractIds);
     }
 
     /**
@@ -254,7 +254,7 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
             ->find()
             ->getData();
 
-        return array_map('floatval', $rawValues);
+        return array_map(static fn ($value): float => (float)$value, $rawValues);
     }
 
     /**

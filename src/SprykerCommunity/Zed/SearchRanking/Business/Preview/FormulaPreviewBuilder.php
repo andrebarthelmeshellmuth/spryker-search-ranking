@@ -24,33 +24,15 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
 class FormulaPreviewBuilder implements FormulaPreviewBuilderInterface
 {
     /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface
-     */
-    protected SearchRankingRepositoryInterface $repository;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface
-     */
-    protected FormulaEvaluatorInterface $formulaEvaluator;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface
-     */
-    protected NormalizationCurveFitterInterface $curveFitter;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface $formulaEvaluator
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface $curveFitter
      */
     public function __construct(
-        SearchRankingRepositoryInterface $repository,
-        FormulaEvaluatorInterface $formulaEvaluator,
-        NormalizationCurveFitterInterface $curveFitter,
+        protected SearchRankingRepositoryInterface $repository,
+        protected FormulaEvaluatorInterface $formulaEvaluator,
+        protected NormalizationCurveFitterInterface $curveFitter,
     ) {
-        $this->repository = $repository;
-        $this->formulaEvaluator = $formulaEvaluator;
-        $this->curveFitter = $curveFitter;
     }
 
     /**

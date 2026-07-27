@@ -48,9 +48,7 @@ class ProductAbstractScorePublisherTest extends Unit
             ->willReturnCallback(function (string $eventName, array $eventEntityTransfers) use (&$triggeredEventNames, &$triggeredIdChunks): void {
                 $triggeredEventNames[] = $eventName;
                 $triggeredIdChunks[] = array_map(
-                    function ($eventEntityTransfer) {
-                        return $eventEntityTransfer->getId();
-                    },
+                    fn ($eventEntityTransfer) => $eventEntityTransfer->getId(),
                     $eventEntityTransfers,
                 );
             });
@@ -63,7 +61,7 @@ class ProductAbstractScorePublisherTest extends Unit
         // Assert: 1200 ids in chunks of 500 -> 3 bulk triggers of the product abstract publish event
         $this->assertSame(1200, $publishedProductCount);
         $this->assertSame(['Product.product_abstract.publish', 'Product.product_abstract.publish', 'Product.product_abstract.publish'], $triggeredEventNames);
-        $this->assertSame([500, 500, 200], array_map('count', $triggeredIdChunks));
+        $this->assertSame([500, 500, 200], array_map(count(...), $triggeredIdChunks));
         $this->assertSame($productAbstractIds, array_merge(...$triggeredIdChunks));
     }
 

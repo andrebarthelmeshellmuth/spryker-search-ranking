@@ -21,16 +21,10 @@ use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRa
 class CompatibilityChecker implements CompatibilityCheckerInterface
 {
     /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientInterface
-     */
-    protected SearchRankingToSearchRankingClientInterface $searchRankingClient;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientInterface $searchRankingClient
      */
-    public function __construct(SearchRankingToSearchRankingClientInterface $searchRankingClient)
+    public function __construct(protected SearchRankingToSearchRankingClientInterface $searchRankingClient)
     {
-        $this->searchRankingClient = $searchRankingClient;
     }
 
     /**

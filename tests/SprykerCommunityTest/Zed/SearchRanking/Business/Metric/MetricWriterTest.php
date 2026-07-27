@@ -151,12 +151,10 @@ class MetricWriterTest extends Unit
         $entityManagerMock->method('saveMetric')->willReturn($savedMetricTransfer);
         $entityManagerMock->expects($this->once())
             ->method('recordMetricHistory')
-            ->with($this->callback(function (SearchRankingMetricHistoryTransfer $historyTransfer): bool {
-                return $historyTransfer->getFkSearchRankingMetric() === 11
-                    && $historyTransfer->getMetricName() === 'pdp_impressions'
-                    && $historyTransfer->getFormula() === 'x / max'
-                    && $historyTransfer->getIsChange() === true;
-            }))
+            ->with($this->callback(fn (SearchRankingMetricHistoryTransfer $historyTransfer): bool => $historyTransfer->getFkSearchRankingMetric() === 11
+                && $historyTransfer->getMetricName() === 'pdp_impressions'
+                && $historyTransfer->getFormula() === 'x / max'
+                && $historyTransfer->getIsChange() === true))
             ->willReturnArgument(0);
 
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
@@ -242,12 +240,10 @@ class MetricWriterTest extends Unit
         $entityManagerMock->method('saveMetric')->willReturn($savedMetricTransfer);
         $entityManagerMock->expects($this->once())
             ->method('recordMetricHistory')
-            ->with($this->callback(function (SearchRankingMetricHistoryTransfer $historyTransfer): bool {
-                return $historyTransfer->getFormula() === 'atan(x / 100) / (pi() / 2)'
-                    && $historyTransfer->getSampleCount() === 3
-                    && $historyTransfer->getPercentiles() === [0.0, 50.0, 100.0]
-                    && $historyTransfer->getFitRSquared() === 0.75;
-            }))
+            ->with($this->callback(fn (SearchRankingMetricHistoryTransfer $historyTransfer): bool => $historyTransfer->getFormula() === 'atan(x / 100) / (pi() / 2)'
+                && $historyTransfer->getSampleCount() === 3
+                && $historyTransfer->getPercentiles() === [0.0, 50.0, 100.0]
+                && $historyTransfer->getFitRSquared() === 0.75))
             ->willReturnArgument(0);
 
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
@@ -287,11 +283,9 @@ class MetricWriterTest extends Unit
         $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManagerMock->expects($this->once())
             ->method('recordMetricHistory')
-            ->with($this->callback(function (SearchRankingMetricHistoryTransfer $historyTransfer): bool {
-                return $historyTransfer->getFkSearchRankingMetric() === 7
-                    && $historyTransfer->getMetricName() === 'top_seller'
-                    && $historyTransfer->getIsChange() === false;
-            }));
+            ->with($this->callback(fn (SearchRankingMetricHistoryTransfer $historyTransfer): bool => $historyTransfer->getFkSearchRankingMetric() === 7
+                && $historyTransfer->getMetricName() === 'top_seller'
+                && $historyTransfer->getIsChange() === false));
 
         $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
 

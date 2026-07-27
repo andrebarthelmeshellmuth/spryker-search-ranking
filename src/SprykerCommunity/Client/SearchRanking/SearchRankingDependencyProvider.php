@@ -25,6 +25,7 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
      *
      * @return \Spryker\Client\Kernel\Container
      */
+    #[\Override]
     public function provideServiceLayerDependencies(Container $container): Container
     {
         $container = parent::provideServiceLayerDependencies($container);
@@ -40,11 +41,9 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
      */
     protected function addSearchRankingStorageClient(Container $container): Container
     {
-        $container->set(static::CLIENT_SEARCH_RANKING_STORAGE, function (Container $container) {
-            return new SearchRankingToSearchRankingStorageClientBridge(
-                $container->getLocator()->searchRankingStorage()->client(),
-            );
-        });
+        $container->set(static::CLIENT_SEARCH_RANKING_STORAGE, fn (Container $container) => new SearchRankingToSearchRankingStorageClientBridge(
+            $container->getLocator()->searchRankingStorage()->client(),
+        ));
 
         return $container;
     }

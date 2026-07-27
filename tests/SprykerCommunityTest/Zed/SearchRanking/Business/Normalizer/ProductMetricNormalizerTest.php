@@ -199,15 +199,11 @@ class ProductMetricNormalizerTest extends Unit
         );
         $repositoryMock->method('getMetricStatistics')->willReturn($statisticsTransfer);
         $repositoryMock->method('getProductMetricBatch')->willReturnCallback(
-            function (int $idMetric, int $idLast) use ($productMetricTransfers): array {
-                return array_values(array_filter(
-                    $productMetricTransfers,
-                    function (SearchRankingProductMetricTransfer $productMetricTransfer) use ($idMetric, $idLast): bool {
-                        return $productMetricTransfer->getFkSearchRankingMetric() === $idMetric
-                            && $productMetricTransfer->getIdSearchRankingProductMetric() > $idLast;
-                    },
-                ));
-            },
+            fn (int $idMetric, int $idLast): array => array_values(array_filter(
+                $productMetricTransfers,
+                fn (SearchRankingProductMetricTransfer $productMetricTransfer): bool => $productMetricTransfer->getFkSearchRankingMetric() === $idMetric
+                    && $productMetricTransfer->getIdSearchRankingProductMetric() > $idLast,
+            )),
         );
 
         return $repositoryMock;

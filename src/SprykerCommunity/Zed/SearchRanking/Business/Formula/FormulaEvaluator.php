@@ -24,18 +24,12 @@ class FormulaEvaluator implements FormulaEvaluatorInterface
     protected ExpressionLanguage $expressionLanguage;
 
     /**
-     * @var \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig
-     */
-    protected SearchRankingConfig $config;
-
-    /**
      * @param \Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface $mathFunctionProvider
      * @param \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig $config
      */
-    public function __construct(ExpressionFunctionProviderInterface $mathFunctionProvider, SearchRankingConfig $config)
+    public function __construct(ExpressionFunctionProviderInterface $mathFunctionProvider, protected SearchRankingConfig $config)
     {
         $this->expressionLanguage = new ExpressionLanguage(null, [$mathFunctionProvider]);
-        $this->config = $config;
     }
 
     /**

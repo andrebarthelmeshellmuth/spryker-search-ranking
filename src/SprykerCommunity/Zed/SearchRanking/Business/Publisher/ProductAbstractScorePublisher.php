@@ -18,33 +18,15 @@ use SprykerCommunity\Zed\SearchRanking\SearchRankingConfig;
 class ProductAbstractScorePublisher implements ProductAbstractScorePublisherInterface
 {
     /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface
-     */
-    protected SearchRankingRepositoryInterface $repository;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface
-     */
-    protected SearchRankingToEventFacadeInterface $eventFacade;
-
-    /**
-     * @var \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig
-     */
-    protected SearchRankingConfig $config;
-
-    /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface $eventFacade
      * @param \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig $config
      */
     public function __construct(
-        SearchRankingRepositoryInterface $repository,
-        SearchRankingToEventFacadeInterface $eventFacade,
-        SearchRankingConfig $config,
+        protected SearchRankingRepositoryInterface $repository,
+        protected SearchRankingToEventFacadeInterface $eventFacade,
+        protected SearchRankingConfig $config,
     ) {
-        $this->repository = $repository;
-        $this->eventFacade = $eventFacade;
-        $this->config = $config;
     }
 
     /**
