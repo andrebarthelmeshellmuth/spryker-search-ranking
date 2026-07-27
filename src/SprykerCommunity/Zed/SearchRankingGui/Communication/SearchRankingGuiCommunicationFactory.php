@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRankingGui\Communication;
 
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Orm\Zed\Product\Persistence\SpyProductAbstractQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistoryQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery;
@@ -21,9 +22,12 @@ use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\NormalizeWeightsFor
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\SettingsForm;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricHistoryTable;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricTable;
+use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricGapTable;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricTable;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingStorageFacadeInterface;
+use SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapQueryBuilder;
+use SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapQueryBuilderInterface;
 use SprykerCommunity\Zed\SearchRankingGui\SearchRankingGuiDependencyProvider;
 use Symfony\Component\Form\FormInterface;
 
@@ -51,6 +55,28 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     public function createMetricHistoryTable(): MetricHistoryTable
     {
         return new MetricHistoryTable($this->getSearchRankingMetricHistoryPropelQuery());
+    }
+
+    /**
+     * @param int|null $idSearchRankingMetric
+     *
+     * @return \SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricGapTable
+     */
+    public function createProductMetricGapTable(?int $idSearchRankingMetric): ProductMetricGapTable
+    {
+        return new ProductMetricGapTable(
+            $this->getProductAbstractPropelQuery(),
+            $this->createProductMetricGapQueryBuilder(),
+            $idSearchRankingMetric,
+        );
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapQueryBuilderInterface
+     */
+    public function createProductMetricGapQueryBuilder(): ProductMetricGapQueryBuilderInterface
+    {
+        return new ProductMetricGapQueryBuilder();
     }
 
     /**
@@ -136,5 +162,13 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     public function getSearchRankingMetricHistoryPropelQuery(): SpySearchRankingMetricHistoryQuery
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY);
+    }
+
+    /**
+     * @return \Orm\Zed\Product\Persistence\SpyProductAbstractQuery
+     */
+    public function getProductAbstractPropelQuery(): SpyProductAbstractQuery
+    {
+        return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::PROPEL_QUERY_PRODUCT_ABSTRACT);
     }
 }

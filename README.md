@@ -101,7 +101,7 @@ data-driven curve-fitting workflow.
 
 Verified: dependency floors resolved and checked at their oldest allowed versions (`composer
 check-floors`), the ranking formula's `function_score`/`script_score` cross-validated across three
-engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 126
+engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 132
 tests, phpcs and phpstan level 6 clean.
 
 This package's own mechanism is complete: the metric/value data model, the Zed management UI, CSV data
@@ -160,6 +160,14 @@ requiring any change here.
     (abstract SKU, metric, raw value, normalized value, last update).
 
     ![The Product Values page: raw and normalized value per (abstract SKU, metric) pair, paginated across the whole catalog](docs/screenshots/product-values.png)
+  - `/search-ranking-gui/product-metric-gap` (linked from the Product Values page's "View Gaps" button)
+    — for the metric picked in the dropdown, a read-only, searchable table of every product abstract
+    with **no `spy_search_ranking_product_metric` row at all** for it — never imported, or imported
+    then deleted. With *N* products and *M* active metrics, `N × M` rows is the fully-covered baseline;
+    this page is where that gap actually becomes visible and filterable, one metric at a time, instead
+    of being invisible inside a `spy_search_ranking_product_metric` table that simply has fewer rows
+    than expected. Implemented as a single `LEFT JOIN ... IS NULL` query (not a `NOT IN` subquery), so
+    it stays one query regardless of catalog size.
   - `/search-ranking-gui/metric-history` — read-only, searchable, newest-first table of every row in
     `spy_search_ranking_metric_history`: the metric name and formula at that point in time, weight,
     active flag, direction, the formula's R² fit against the digest at that moment (a dash when no
@@ -667,7 +675,7 @@ That gives the full "Search Ranking" sidebar group with all 4 visible pages (Met
 Settings, History). If you'd rather not duplicate the whole page list, copying just the
 top-level `<search-ranking-gui>` entry (drop the `<pages>` block) still gives one working sidebar link
 into `/search-ranking-gui` — the individual pages stay reachable via their own in-page action buttons
-(Back to Metrics, View Product Values, etc.) instead of a dropdown.
+(Back to Metrics, View Product Values, View Gaps, etc.) instead of a dropdown.
 
 ### 8. Schedule the normalization cron
 
@@ -907,9 +915,9 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-**126 tests, 953 assertions** across four Codeception suites (`Zed/SearchRanking`,
-`Zed/SearchRankingStorage`, `Client/SearchRanking`, `Client/SearchRankingStorage`). From a shop that has
-the package installed:
+**132 tests, 966 assertions** across five Codeception suites (`Zed/SearchRanking`,
+`Zed/SearchRankingStorage`, `Zed/SearchRankingGui`, `Client/SearchRanking`, `Client/SearchRankingStorage`).
+From a shop that has the package installed:
 
 ```bash
 vendor/bin/codecept build -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRanking
@@ -942,6 +950,11 @@ to prove the entropy-derived weight actually moves in the right direction for a 
 score distribution — all three need a reachable search engine, though still no database.
 `ShannonEntropyCalculator`'s own entropy formula is covered separately as a plain unit test (plain arrays,
 no engine needed) in `ShannonEntropyCalculatorTest`.
+
+`Zed/SearchRankingGui` (`ProductMetricGapQueryBuilderTest`) is the mirror case on the database side: a
+real Propel `LEFT JOIN` + custom join condition + `IS NULL`, seeded with a real metric and a handful of
+real product abstracts, then torn down — the one piece of logic behind the Gaps page genuinely worth
+proving against a real database rather than a mocked query object.
 
 Coverage (Codeception + pcov): the Zed suite covers 90% of classes / 95.97% of lines; the uncovered
 remainder is almost entirely Spryker's own Facade/Factory DI-wiring boilerplate (thin delegation, not

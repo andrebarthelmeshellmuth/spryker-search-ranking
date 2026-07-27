@@ -1,0 +1,26 @@
+{% extends '@Gui/Layout/layout.twig' %}
+
+{% set widget_title = 'Product Metric Gaps' %}
+{% block section_title %}{{ widget_title | trans }}{% endblock %}
+
+{% block action %}
+    {{ backActionButton('/search-ranking-gui/product-metric', 'Back to Product Values' | trans) }}
+{% endblock %}
+
+{% block content %}
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Products with no value at all for the selected business score' } %}
+        {% block widget_content %}
+            <form method="get" class="form-inline" style="margin-bottom: 15px;">
+                <label for="metric">{{ 'Business score' | trans }}</label>
+                <select name="metric" id="metric" class="form-control" onchange="this.form.submit()">
+                    {% for metric in metrics %}
+                        <option value="{{ metric.idSearchRankingMetric }}" {% if metric.idSearchRankingMetric == selectedIdSearchRankingMetric %}selected="selected"{% endif %}>
+                            {{ metric.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+            {{ productMetricGapTable | raw }}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

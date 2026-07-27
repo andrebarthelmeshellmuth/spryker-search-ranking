@@ -11,10 +11,16 @@ namespace SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade;
 
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 
 interface SearchRankingGuiToSearchRankingFacadeInterface
 {
+    /**
+     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
+     */
+    public function getActiveMetricCollection(): SearchRankingMetricCollectionTransfer;
+
     /**
      * @return bool
      */
