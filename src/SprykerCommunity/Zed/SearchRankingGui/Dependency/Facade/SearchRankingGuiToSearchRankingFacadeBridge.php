@@ -11,6 +11,7 @@ namespace SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade;
 
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 
 class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToSearchRankingFacadeInterface
@@ -26,6 +27,14 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     public function __construct($searchRankingFacade)
     {
         $this->searchRankingFacade = $searchRankingFacade;
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
+     */
+    public function getActiveMetricCollection(): SearchRankingMetricCollectionTransfer
+    {
+        return $this->searchRankingFacade->getActiveMetricCollection();
     }
 
     /**

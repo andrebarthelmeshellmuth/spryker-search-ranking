@@ -36,6 +36,14 @@
                 <controller>metric-history</controller>
                 <action>index</action>
             </search-ranking-metric-history>
+            <search-ranking-product-metric-gap>
+                <label>Product Value Gaps</label>
+                <title>Product Value Gaps</title>
+                <bundle>search-ranking-gui</bundle>
+                <controller>product-metric-gap</controller>
+                <action>index</action>
+                <visible>0</visible>
+            </search-ranking-product-metric-gap>
             <search-ranking-create-metric>
                 <label>Create Metric</label>
                 <title>Create Metric</title>
