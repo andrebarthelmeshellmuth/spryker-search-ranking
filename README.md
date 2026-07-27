@@ -161,13 +161,29 @@ requiring any change here.
 
     ![The Product Values page: raw and normalized value per (abstract SKU, metric) pair, paginated across the whole catalog](docs/screenshots/product-values.png)
   - `/search-ranking-gui/product-metric-gap` (linked from the Product Values page's "View Gaps" button)
-    — for the metric picked in the dropdown, a read-only, searchable table of every product abstract
-    with **no `spy_search_ranking_product_metric` row at all** for it — never imported, or imported
-    then deleted. With *N* products and *M* active metrics, `N × M` rows is the fully-covered baseline;
-    this page is where that gap actually becomes visible and filterable, one metric at a time, instead
-    of being invisible inside a `spy_search_ranking_product_metric` table that simply has fewer rows
-    than expected. Implemented as a single `LEFT JOIN ... IS NULL` query (not a `NOT IN` subquery), so
-    it stays one query regardless of catalog size.
+    — a read-only, searchable table of every (product abstract, active metric) pair with **no
+    `spy_search_ranking_product_metric` row at all** — never imported, or imported then deleted. With
+    *N* products and *M* active metrics, `N × M` rows is the fully-covered baseline; this page is where
+    that gap actually becomes visible, instead of being invisible inside a
+    `spy_search_ranking_product_metric` table that simply has fewer rows than expected. Defaults to
+    gaps across **every** active metric (SKU + which business score is missing); the dropdown narrows
+    to one metric at a time.
+
+    **Raw SQL, deliberately** — the one query in this whole package that isn't built through Propel's
+    ActiveQuery. This needs either a `UNION` of one query per active metric, or a genuine `CROSS JOIN`
+    between `spy_search_ranking_metric` and `spy_product_abstract` — two tables with no direct relation
+    between them; every real relation here runs through `spy_search_ranking_product_metric`'s own two
+    foreign keys, which is exactly right (a metric applies to many products, a product has many
+    metrics — that association, and the value it carries, belongs entirely to the junction table, not
+    to either side directly). Propel 2.0 (what this project runs) has no `UNION` support at all in its
+    query builder, and a `CROSS JOIN` has no declared relation for Propel's generated `joinX()` methods
+    to hang off. Given the real scale here (a shop with thousands of products and a handful of metrics —
+    tens of thousands of combinations, not millions), a hand-rolled `CROSS JOIN` in raw SQL was the
+    simpler and more honest choice over reusing the single-metric `LEFT JOIN` once per active metric and
+    merging the results in PHP (which would have stayed inside Propel, at the cost of losing real
+    database-level pagination and sorting across the merged set). Every value that varies per call is
+    bound as a parameter; `$sortColumn`/`$sortDirection` are resolved through a fixed whitelist, never
+    interpolated from caller input directly — see `ProductMetricGapFinder`'s own docblock.
   - `/search-ranking-gui/metric-history` — read-only, searchable, newest-first table of every row in
     `spy_search_ranking_metric_history`: the metric name and formula at that point in time, weight,
     active flag, direction, the formula's R² fit against the digest at that moment (a dash when no
@@ -951,10 +967,12 @@ score distribution — all three need a reachable search engine, though still no
 `ShannonEntropyCalculator`'s own entropy formula is covered separately as a plain unit test (plain arrays,
 no engine needed) in `ShannonEntropyCalculatorTest`.
 
-`Zed/SearchRankingGui` (`ProductMetricGapQueryBuilderTest`) is the mirror case on the database side: a
-real Propel `LEFT JOIN` + custom join condition + `IS NULL`, seeded with a real metric and a handful of
-real product abstracts, then torn down — the one piece of logic behind the Gaps page genuinely worth
-proving against a real database rather than a mocked query object.
+`Zed/SearchRankingGui` (`ProductMetricGapFinderTest`) is the mirror case on the database side: real raw
+SQL (the `CROSS JOIN` + `LEFT JOIN` + `IS NULL` — see [What it does](#what-it-does) for why this one query
+isn't built through Propel), seeded with real metrics and product abstracts, then torn down — a mocked
+connection could confirm the PHP shaped a query string, never that the join actually returns the right
+rows, that parameters actually bind correctly, or that the sort-column whitelist actually blocks SQL
+injection rather than just looking like it does.
 
 Coverage (Codeception + pcov): the Zed suite covers 90% of classes / 95.97% of lines; the uncovered
 remainder is almost entirely Spryker's own Facade/Factory DI-wiring boilerplate (thin delegation, not
