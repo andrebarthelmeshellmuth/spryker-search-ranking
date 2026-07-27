@@ -97,11 +97,10 @@ class ConfigurationStorageReaderTest extends Unit
 
     /**
      * A missing key inside an otherwise-present document must default rather than error — this can
-     * legitimately happen right after upgrading the package, before the first republish. The three
-     * entropy-weighting fields are the newest, most likely to be missing from an old stored document —
-     * they must default to the same values `SearchRankingConfig`'s own Zed defaults use, NOT throw a
+     * legitimately happen right after upgrading the package, before the first republish. Every field
+     * must default to the same values `SearchRankingConfig`'s own Zed defaults use, NOT throw a
      * `getXOrFail()`-style exception, since that would break every live catalog search the moment a
-     * project flips the entropy-weighting flag on before its first post-upgrade republish.
+     * project flips a new feature on before its first post-upgrade republish.
      *
      * @return void
      */
@@ -115,8 +114,8 @@ class ConfigurationStorageReaderTest extends Unit
 
         // Assert
         $this->assertSame([], $configurationTransfer->getMetricWeights());
-        $this->assertSame(0.0, $configurationTransfer->getRelevanceWeight());
-        $this->assertSame(0.0, $configurationTransfer->getRelevanceSaturationPoint());
+        $this->assertSame(0.5, $configurationTransfer->getRelevanceWeight());
+        $this->assertSame(12.0, $configurationTransfer->getRelevanceSaturationPoint());
         $this->assertSame(10, $configurationTransfer->getEntropyProbeResultSize());
         $this->assertSame(1.0, $configurationTransfer->getEntropyWeightExponent());
         $this->assertSame(0.5, $configurationTransfer->getEntropyWeightShiftMagnitude());

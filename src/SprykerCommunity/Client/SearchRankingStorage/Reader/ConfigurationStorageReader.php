@@ -49,6 +49,28 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
 
     /**
      * Defaults for a KV payload published before this feature existed — matches
+     * `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultRelevanceWeight()`, so a
+     * payload predating this key still gets the same neutral 50/50 text-vs-signal split a fresh Zed save
+     * would produce, rather than silently collapsing to business-signals-only.
+     *
+     * @var float
+     */
+    protected const DEFAULT_RELEVANCE_WEIGHT = 0.5;
+
+    /**
+     * Defaults for a KV payload published before this feature existed — matches
+     * `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultRelevanceSaturationPoint()`, so
+     * a payload from before this key existed still gets a real, sane saturation point rather than `0.0`
+     * — which would make the painless script's `_score / (_score + relevanceSaturationPoint)` term
+     * degenerate to a constant `1.0` (or `NaN` for a `_score` of exactly `0`) instead of the intended
+     * saturating curve.
+     *
+     * @var float
+     */
+    protected const DEFAULT_RELEVANCE_SATURATION_POINT = 12.0;
+
+    /**
+     * Defaults for a KV payload published before this feature existed — matches
      * `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig`'s own defaults, so a shop that enables
      * entropy weighting before its first post-upgrade republish still gets the same values it would
      * have gotten from a fresh Zed save, not an arbitrary fallback.
@@ -119,8 +141,8 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
 
         return (new SearchRankingConfigurationStorageTransfer())
             ->setMetricWeights($configurationData[static::KEY_METRIC_WEIGHTS] ?? [])
-            ->setRelevanceWeight((float)($configurationData[static::KEY_RELEVANCE_WEIGHT] ?? 0.0))
-            ->setRelevanceSaturationPoint((float)($configurationData[static::KEY_RELEVANCE_SATURATION_POINT] ?? 0.0))
+            ->setRelevanceWeight((float)($configurationData[static::KEY_RELEVANCE_WEIGHT] ?? static::DEFAULT_RELEVANCE_WEIGHT))
+            ->setRelevanceSaturationPoint((float)($configurationData[static::KEY_RELEVANCE_SATURATION_POINT] ?? static::DEFAULT_RELEVANCE_SATURATION_POINT))
             ->setEntropyProbeResultSize((int)($configurationData[static::KEY_ENTROPY_PROBE_RESULT_SIZE] ?? static::DEFAULT_ENTROPY_PROBE_RESULT_SIZE))
             ->setEntropyWeightExponent((float)($configurationData[static::KEY_ENTROPY_WEIGHT_EXPONENT] ?? static::DEFAULT_ENTROPY_WEIGHT_EXPONENT))
             ->setEntropyWeightShiftMagnitude((float)($configurationData[static::KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE] ?? static::DEFAULT_ENTROPY_WEIGHT_SHIFT_MAGNITUDE));
