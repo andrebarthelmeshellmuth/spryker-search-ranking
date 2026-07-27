@@ -214,7 +214,11 @@ requiring any change here.
   batch/transaction machinery around each step already does. The one real consequence: importing a
   metric this way skips the formula validation and history recording `saveMetric()` normally does, so a
   malformed formula in a CSV row surfaces later — as a per-metric skip reported by the next
-  `search-ranking:normalize` run — rather than failing the import immediately. The product-metric
+  `search-ranking:normalize` run — rather than failing the import immediately. The metric NAME is the one
+  exception: it's validated immediately and fails the import row (not deferred like the formula), since a
+  name `FunctionScoreBuilder` doesn't recognize as a safe painless-script identifier would otherwise
+  silently never contribute to live ranking while still consuming weight-normalization budget and still
+  rendering as a live contribution in the search-debug overlay. The product-metric
   importer has no such gap: there's no facade-level "save one product metric" method it bypasses, this
   direct upsert is the only path that data ever takes.
 - **Normalization cron**: `vendor/bin/console search-ranking:normalize` recalculates every
