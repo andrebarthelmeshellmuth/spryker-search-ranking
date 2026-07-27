@@ -101,7 +101,7 @@ data-driven curve-fitting workflow.
 
 Verified: dependency floors resolved and checked at their oldest allowed versions (`composer
 check-floors`), the ranking formula's `function_score`/`script_score` cross-validated across three
-engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 132
+engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 141
 tests, phpcs and phpstan level 8 clean.
 
 This package's own mechanism is complete: the metric/value data model, the Zed management UI, CSV data
@@ -935,9 +935,9 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-**132 tests, 966 assertions** across five Codeception suites (`Zed/SearchRanking`,
-`Zed/SearchRankingStorage`, `Zed/SearchRankingGui`, `Client/SearchRanking`, `Client/SearchRankingStorage`).
-From a shop that has the package installed:
+**141 tests, 988 assertions** across six Codeception suites (`Zed/SearchRanking`,
+`Zed/SearchRankingStorage`, `Zed/SearchRankingGui`, `Zed/SearchRankingDataImport`, `Client/SearchRanking`,
+`Client/SearchRankingStorage`). From a shop that has the package installed:
 
 ```bash
 vendor/bin/codecept build -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRanking
@@ -977,6 +977,15 @@ isn't built through Propel), seeded with real metrics and product abstracts, the
 connection could confirm the PHP shaped a query string, never that the join actually returns the right
 rows, that parameters actually bind correctly, or that the sort-column whitelist actually blocks SQL
 injection rather than just looking like it does.
+
+`Zed/SearchRankingDataImport` covers the four data-import steps against a real database: the metric
+writer's upsert-by-name (create, update-not-duplicate, and the metric-name pattern rejection that keeps
+an unusable name from ever being persisted — see [Data import](#what-it-does) for why that fails the row
+immediately rather than deferring like a bad formula), the two name/SKU-to-ID resolver steps (real
+resolution plus the "not found" failure a project sees when it imports product metrics before the metrics
+themselves), and the product-metric writer's upsert-by-foreign-keys (create, and that re-importing an
+existing pair updates only `rawValue`, never touching an already-normalized `normalizedValue` — normalization
+only ever happens downstream, in the normalize cron).
 
 Coverage (Codeception + pcov): the Zed suite covers 90% of classes / 95.97% of lines; the uncovered
 remainder is almost entirely Spryker's own Facade/Factory DI-wiring boilerplate (thin delegation, not
