@@ -15,6 +15,7 @@ use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer;
 use Spryker\Zed\Kernel\Business\AbstractFacade;
@@ -377,5 +378,47 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     public function isEntropyWeightingEnabled(): bool
     {
         return SharedSearchRankingConfig::isEntropyWeightingEnabled();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     *
+     * @return void
+     */
+    public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer): void
+    {
+        $this->getFactory()->createMetricWriter()->recordCheckOnly($metricTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer|null
+     */
+    public function findLastMetricChangeHistoryEntry(int $idSearchRankingMetric): ?SearchRankingMetricHistoryTransfer
+    {
+        return $this->getRepository()->findLastMetricChangeHistoryEntry($idSearchRankingMetric);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     *
+     * @return float|null
+     */
+    public function evaluateCurrentMetricFit(int $idSearchRankingMetric): ?float
+    {
+        return $this->getFactory()->createCurrentMetricFitEvaluator()->evaluate($idSearchRankingMetric);
     }
 }

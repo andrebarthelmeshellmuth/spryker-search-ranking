@@ -15,6 +15,7 @@ use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer;
 
@@ -367,4 +368,50 @@ interface SearchRankingFacadeInterface
      * @return bool
      */
     public function isEntropyWeightingEnabled(): bool;
+
+    /**
+     * Specification:
+     * - Appends an `isChange=false` history row for $metricTransfer's CURRENT (unmodified) config and
+     *   digest — for a caller (e.g. `spryker-community/search-ranking-optimizer`'s monthly auto-tune job)
+     *   that checked a metric's fit but did not change it, so the audit/drift-detection timeline stays
+     *   complete even on runs that change nothing.
+     * - Never call this after an actual config change — {@see saveMetric()} already records an
+     *   `isChange=true` row for that itself.
+     *
+     * @api
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     *
+     * @return void
+     */
+    public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer): void;
+
+    /**
+     * Specification:
+     * - Returns the most recent history row for $idSearchRankingMetric that represents an actual change
+     *   (`isChange=true`) — the anchor a drift-detection job compares against, growing the comparison
+     *   window on every run that changes nothing rather than resetting it every period.
+     * - Returns null when the metric has never had a real change recorded (e.g. brand new).
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer|null
+     */
+    public function findLastMetricChangeHistoryEntry(int $idSearchRankingMetric): ?SearchRankingMetricHistoryTransfer;
+
+    /**
+     * Specification:
+     * - Evaluates how well $idSearchRankingMetric's OWN CONFIGURED formula fits its digest RIGHT NOW — a
+     *   fresh, side-effect-free read (writes nothing), safe to call as often as needed.
+     * - Returns null when the metric doesn't exist, or has no digest yet (nothing to fit against).
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     *
+     * @return float|null
+     */
+    public function evaluateCurrentMetricFit(int $idSearchRankingMetric): ?float;
 }

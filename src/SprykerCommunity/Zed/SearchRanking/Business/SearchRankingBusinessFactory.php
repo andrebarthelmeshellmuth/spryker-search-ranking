@@ -14,6 +14,8 @@ use SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityCheck
 use SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityCheckerInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilder;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilderInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Fitting\CurrentMetricFitEvaluator;
+use SprykerCommunity\Zed\SearchRanking\Business\Fitting\CurrentMetricFitEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluator;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitter;
@@ -92,6 +94,7 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
             $this->getEntityManager(),
             $this->createFormulaEvaluator(),
             $this->createMetricFormulaFitEvaluator(),
+            $this->createNormalizationCurveFitter(),
         );
     }
 
@@ -197,6 +200,17 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         return new MetricFormulaFitEvaluator(
             $this->createFormulaEvaluator(),
             $this->createRSquaredCalculator(),
+        );
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Business\Fitting\CurrentMetricFitEvaluatorInterface
+     */
+    public function createCurrentMetricFitEvaluator(): CurrentMetricFitEvaluatorInterface
+    {
+        return new CurrentMetricFitEvaluator(
+            $this->getRepository(),
+            $this->createMetricFormulaFitEvaluator(),
         );
     }
 
