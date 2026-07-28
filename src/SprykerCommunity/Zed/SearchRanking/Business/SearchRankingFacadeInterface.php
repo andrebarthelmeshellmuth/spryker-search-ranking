@@ -353,4 +353,18 @@ interface SearchRankingFacadeInterface
      * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
      */
     public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer;
+
+    /**
+     * Specification:
+     * - Returns whether entropy-aware relevance weighting is active
+     *   ({@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()}).
+     * - Unlike every other method on this facade, this is NOT Zed-editable/persisted — it's a pure
+     *   code-level project flag, read directly rather than routed through `SettingManager`, since there
+     *   is nothing to read-modify-write here.
+     *
+     * @api
+     *
+     * @return bool
+     */
+    public function isEntropyWeightingEnabled(): bool;
 }

@@ -10,23 +10,19 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking;
 
 use Spryker\Client\Kernel\AbstractBundleConfig;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
 class SearchRankingConfig extends AbstractBundleConfig
 {
     /**
      * Specification:
-     * - Whether entropy-aware relevance weighting is active. OFF by default — enabling it makes
-     *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
-     *   fire ONE ADDITIONAL lightweight Elasticsearch query per live catalog search (a cheap, scores-only
-     *   probe against the Zed-editable probe-result-size setting) to derive a per-query `relevanceWeight`
-     *   instead of using the configured static one. Override this in your project's
-     *   `Pyz\Client\SearchRanking\SearchRankingConfig` to turn it on — do not flip this on by editing this
-     *   package's own source.
-     * - Deliberately a code-level flag, not a Zed-editable setting: this is the one switch that decides
-     *   whether a second live Elasticsearch query fires on every catalog search at all, so flipping it
-     *   requires a project deploy, not just a Zed form save. The probe's own tuning numbers (result size,
-     *   weight exponent, shift magnitude) ARE Zed-editable — see `/search-ranking-gui/settings` — once
-     *   this flag is on.
+     * - Whether entropy-aware relevance weighting is active — see
+     *   {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()},
+     *   the real source of truth (moved here from a Client-only flag so Zed can read the same value).
+     *   **Override `Pyz\Shared\SearchRanking\SearchRankingConfig` now, not this class** — this method
+     *   stays only so existing callers (e.g.
+     *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin})
+     *   don't need to change.
      *
      * @api
      *
@@ -34,6 +30,6 @@ class SearchRankingConfig extends AbstractBundleConfig
      */
     public function isEntropyWeightingEnabled(): bool
     {
-        return false;
+        return SharedSearchRankingConfig::isEntropyWeightingEnabled();
     }
 }

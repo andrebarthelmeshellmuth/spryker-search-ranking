@@ -18,6 +18,7 @@ use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer;
 use Spryker\Zed\Kernel\Business\AbstractFacade;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
 /**
  * @method \SprykerCommunity\Zed\SearchRanking\Business\SearchRankingBusinessFactory getFactory()
@@ -364,5 +365,17 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer
     {
         return $this->getFactory()->createCompatibilityChecker()->checkCompatibility();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return bool
+     */
+    public function isEntropyWeightingEnabled(): bool
+    {
+        return SharedSearchRankingConfig::isEntropyWeightingEnabled();
     }
 }

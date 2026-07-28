@@ -439,8 +439,13 @@ code-level flag below is on:
 **Why the ON/OFF switch is code-level, not one of the three settings above:** it's the one control that
 decides whether a second live Elasticsearch query fires on every catalog search at all — flipping it
 should take a project deploy, not just a Zed form save. Enable it in your project's
-`Pyz\Client\SearchRanking\SearchRankingConfig` by overriding `isEntropyWeightingEnabled(): bool` to
-return `true`; the three tuning settings become meaningful once that's done.
+`Pyz\Shared\SearchRanking\SearchRankingConfig` by overriding `isEntropyWeightingEnabled(): bool` to
+return `true`; the three tuning settings become meaningful once that's done. It lives in Shared (not
+Client-only) specifically so both the Client query-expander plugin and Zed code (e.g. a checkpoint/
+rollback feature built on top of this package, which needs to know whether the entropy knobs it snapshots
+are actually live) can read the same flag —
+`Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()` still exists and delegates here,
+for callers already using that entry point.
 
 **Why it's opt-in at all:** it doubles the number of Elasticsearch round trips per catalog search. That's
 a real, permanent cost — worth it once you have a mixed catalog with both exact-match and browsy query
