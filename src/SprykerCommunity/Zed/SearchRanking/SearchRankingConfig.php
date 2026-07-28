@@ -43,8 +43,23 @@ class SearchRankingConfig extends AbstractBundleConfig
     /**
      * Specification:
      * - Default blend weight (share of the final score coming from normalized text relevance, vs.
-     *   `(1 - relevanceWeight)` going to business signals) when none was saved in Zed yet. 0.5 is a
-     *   neutral starting split with no prior favoring either side.
+     *   `(1 - relevanceWeight)` going to business signals) when none was saved in Zed yet.
+     * - **0.75, not a neutral 0.5** — text relevance is deliberately favored as the primary signal, with
+     *   business signals refining/tiebreaking rather than competing as an equal partner. Two reasons:
+     *   (1) this package's own predecessor formula, `(1 + sqrt(_score)) * (business + baseline)`, was
+     *   MULTIPLICATIVE — for this catalog's typical scores (roughly 4-20, see
+     *   {@see getDefaultRelevanceSaturationPoint()}), that unbounded `1 + sqrt(_score)` term swung
+     *   roughly 2x-5x across weak-to-strong text matches, structurally dominant over the bounded business
+     *   term it multiplied. A flat 0.5/0.5 additive split on the current (correctly bounded) formula is
+     *   NOT an equivalent balance — it under-weights text relevance relative to what this package
+     *   previously did in practice; (2) this matches established field guidance (e.g. Turnbull &
+     *   Berryman, "Relevant Search"): text relevance should stay the primary ranking signal, with
+     *   business/popularity signals used to refine and tiebreak rather than override it — an equal-weight
+     *   additive blend risks letting a popular-but-off-target result outrank an exact/obviously-right
+     *   match, a common and easily user-visible search-relevance failure mode.
+     * - This is still a starting point, not a measured optimum — `spryker-community/search-ranking-optimizer`'s
+     *   rank_eval evaluation (nDCG against real rated queries) is the intended way to validate or refine
+     *   it against a real catalog's own traffic, once enough ratings exist.
      *
      * @api
      *
@@ -52,7 +67,7 @@ class SearchRankingConfig extends AbstractBundleConfig
      */
     public function getDefaultRelevanceWeight(): float
     {
-        return 0.5;
+        return 0.75;
     }
 
     /**
@@ -103,10 +118,17 @@ class SearchRankingConfig extends AbstractBundleConfig
     /**
      * Specification:
      * - Default maximum amount the entropy-derived value may shift `relevanceWeight` away from its
-     *   configured baseline, in either direction, when none was saved in Zed yet. `0.5` lets a baseline
-     *   of exactly 0.5 reach the full `[0;1]` range; baselines closer to either edge reach
-     *   correspondingly less on the side nearer that edge — an unavoidable consequence of `relevanceWeight`
-     *   itself being bounded to `[0;1]`, not a flaw in the shift formula.
+     *   configured baseline, in either direction, when none was saved in Zed yet.
+     * - **0.25, sized to match the 0.75 default baseline** (see {@see getDefaultRelevanceWeight()}):
+     *   `shiftMagnitude = 1 - relevanceWeight`. With a baseline above 0.5, the shift has less headroom
+     *   upward (toward 1.0) than downward (toward 0.0) before clamping; sizing the magnitude to exactly
+     *   the tighter (upward) side means a fully navigational/dominant-score query (`H_norm = 0`) reaches
+     *   precisely `1.0` — pure text relevance — with no clamped/wasted resolution, while a fully
+     *   browsy/flat query (`H_norm = 1`) floors at exactly `0.75 - 0.25 = 0.5`: the OLD global default,
+     *   never lower. That gives a clean, defensible property: the entropy shift only ever moves a query
+     *   toward more text-appropriate behavior for its own shape, never below what the un-tuned baseline
+     *   used to give every query equally. If the baseline default changes, re-derive this as
+     *   `1 - relevanceWeight` again rather than leaving it fixed at 0.25.
      *
      * @api
      *
@@ -114,7 +136,7 @@ class SearchRankingConfig extends AbstractBundleConfig
      */
     public function getDefaultEntropyWeightShiftMagnitude(): float
     {
-        return 0.5;
+        return 0.25;
     }
 
     /**
