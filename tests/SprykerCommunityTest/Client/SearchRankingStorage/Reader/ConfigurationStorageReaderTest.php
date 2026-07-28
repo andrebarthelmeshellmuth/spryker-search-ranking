@@ -114,11 +114,11 @@ class ConfigurationStorageReaderTest extends Unit
 
         // Assert
         $this->assertSame([], $configurationTransfer->getMetricWeights());
-        $this->assertSame(0.5, $configurationTransfer->getRelevanceWeight());
+        $this->assertSame(0.75, $configurationTransfer->getRelevanceWeight());
         $this->assertSame(12.0, $configurationTransfer->getRelevanceSaturationPoint());
         $this->assertSame(10, $configurationTransfer->getEntropyProbeResultSize());
         $this->assertSame(1.0, $configurationTransfer->getEntropyWeightExponent());
-        $this->assertSame(0.5, $configurationTransfer->getEntropyWeightShiftMagnitude());
+        $this->assertSame(0.25, $configurationTransfer->getEntropyWeightShiftMagnitude());
     }
 
     /**

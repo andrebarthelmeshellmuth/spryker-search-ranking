@@ -49,13 +49,14 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
 
     /**
      * Defaults for a KV payload published before this feature existed — matches
-     * `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultRelevanceWeight()`, so a
-     * payload predating this key still gets the same neutral 50/50 text-vs-signal split a fresh Zed save
-     * would produce, rather than silently collapsing to business-signals-only.
+     * `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultRelevanceWeight()` (see that
+     * method's own docblock for why 0.75, not a neutral 0.5), so a payload predating this key still gets
+     * the same text-favoring split a fresh Zed save would produce, rather than silently collapsing to
+     * business-signals-only.
      *
      * @var float
      */
-    protected const DEFAULT_RELEVANCE_WEIGHT = 0.5;
+    protected const DEFAULT_RELEVANCE_WEIGHT = 0.75;
 
     /**
      * Defaults for a KV payload published before this feature existed — matches
@@ -85,9 +86,12 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     protected const DEFAULT_ENTROPY_WEIGHT_EXPONENT = 1.0;
 
     /**
+     * Matches `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultEntropyWeightShiftMagnitude()`
+     * — see that method's own docblock for why 0.25 (sized to the 0.75 relevance-weight baseline), not 0.5.
+     *
      * @var float
      */
-    protected const DEFAULT_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 0.5;
+    protected const DEFAULT_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 0.25;
 
     /**
      * Memoized per request; false = not read yet (null is a valid "no document" result). `static`, not

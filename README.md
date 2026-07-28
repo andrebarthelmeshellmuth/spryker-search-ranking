@@ -342,6 +342,21 @@ The two constants play different roles operationally:
   set once from real `_score` values (the search-debug overlay's "Text match total score" line is
   exactly the number to sample) and rarely touched afterwards, not guessed.
 
+**Default `relevanceWeight` is `0.75`, not a neutral `0.5`.** Two reasons, both rooted in the
+multiplicative-formula history above: (1) the old `(1 + sqrt(_score)) × (signals + baseline)` shape gave
+text relevance an *unbounded* multiplier — for this catalog's typical scores (roughly 4-20, see
+`relevanceSaturationPoint` above), that term swung roughly 2x-5x across weak-to-strong matches, so text
+relevance was structurally dominant in practice, not a 50/50 partner with business signals. A flat `0.5`
+split on the current (correctly bounded) formula would be a real behavior change, not a like-for-like
+fix — it under-weights text relevance relative to what this package used to do. (2) it matches
+established field guidance (e.g. Turnbull & Berryman, *Relevant Search*): text relevance should stay the
+*primary* ranking signal, with business/popularity signals refining and tiebreaking rather than competing
+as an equal partner — an equal-weight blend risks letting a popular-but-off-target result outrank an
+exact/obviously-right match, a common and easily user-visible relevance failure. This is still a starting
+point, not a measured optimum: `spryker-community/search-ranking-optimizer`'s rank_eval evaluation (nDCG
+against real rated queries) is the intended way to validate or refine it against a shop's own real
+traffic, once enough ratings exist.
+
 One practical constraint shaped this design: `script_score` inside `function_score` runs *per
 document*, with no visibility into the score distribution of the other candidates in the result set.
 A saturating function only ever needs the current document's own `_score`, so it drops into the
@@ -408,11 +423,17 @@ code-level flag below is on:
 - **Entropy probe result size** (default `10`) — *N* above.
 - **Entropy weight exponent** (default `1.0`) — how sharply the shift ramps up away from the neutral
   point.
-- **Entropy weight shift magnitude** (default `0.5`) — the maximum shift in either direction. A
-  `relevanceWeight` baseline of exactly `0.5` reaches the full `[0;1]` range at the default `0.5`
-  magnitude; a baseline nearer either edge reaches correspondingly less on the side nearer that edge —
+- **Entropy weight shift magnitude** (default `0.25`) — the maximum shift in either direction. Sized to
+  match the `0.75` `relevanceWeight` baseline: `shiftMagnitude = 1 - relevanceWeight`. A baseline above
+  `0.5` has less headroom upward (toward `1.0`) than downward (toward `0.0`) before clamping;
   `relevanceWeight` itself cannot leave `[0;1]`, so this isn't a formula flaw, just where a bounded knob
-  sitting near its own edge runs out of room.
+  sitting near its own edge runs out of room. Sizing the magnitude to the *tighter* side means a fully
+  navigational query (`Hₙₒᵣₘ = 0`) reaches exactly `1.0` — pure text relevance — with no clamped/wasted
+  resolution, while a fully browsy query (`Hₙₒᵣₘ = 1`) floors at exactly `0.75 - 0.25 = 0.5`: the OLD
+  global default, never lower. The entropy shift only ever moves a query toward more text-appropriate
+  behavior for its own shape — it never makes any query less text-favoring than the un-tuned baseline
+  used to be for every query. If you change the `relevanceWeight` baseline, re-derive this value as
+  `1 - relevanceWeight` again rather than leaving it fixed.
 
 **Why the ON/OFF switch is code-level, not one of the three settings above:** it's the one control that
 decides whether a second live Elasticsearch query fires on every catalog search at all — flipping it
