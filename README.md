@@ -877,7 +877,14 @@ abstract_sku,metric_name,raw_value
 001,random,0
 ```
 
-Example files ship in this package under `data/import/`.
+Example files ship in this package under `data/import/`, formatted correctly but **populated with this
+package's own development shop's real catalog SKUs and metric values** — they exist to prove the import
+mechanics work end-to-end against a real catalog, not as generic/portable seed data. Copy the format, not
+the rows: replace every `abstract_sku` with your own shop's own abstract SKUs (and real
+`pdp_impressions`/`top_seller` values, or your own metric names entirely — `random` is the only metric this
+package assumes nothing about) before importing into a different Spryker installation. Importing them
+as-is elsewhere will not error, but will silently do nothing useful — either no rows match your catalog's
+SKUs at all, or coincidentally-matching SKUs get some other shop's numbers.
 
 ## Limitations
 
