@@ -353,9 +353,10 @@ established field guidance (e.g. Turnbull & Berryman, *Relevant Search*): text r
 *primary* ranking signal, with business/popularity signals refining and tiebreaking rather than competing
 as an equal partner — an equal-weight blend risks letting a popular-but-off-target result outrank an
 exact/obviously-right match, a common and easily user-visible relevance failure. This is still a starting
-point, not a measured optimum: `spryker-community/search-ranking-optimizer`'s rank_eval evaluation (nDCG
-against real rated queries) is the intended way to validate or refine it against a shop's own real
-traffic, once enough ratings exist.
+point, not a measured optimum — this package deliberately scopes itself to *using* business signals to
+rank, not deciding what the weights *should* be (see [What it does](#what-it-does)); an `nDCG`-style
+evaluation against real rated queries, run by separate tooling on top of this one, is one principled way
+to validate or refine this value once enough ratings exist.
 
 One practical constraint shaped this design: `script_score` inside `function_score` runs *per
 document*, with no visibility into the score distribution of the other candidates in the result set.
