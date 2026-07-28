@@ -57,9 +57,11 @@ class SearchRankingConfig extends AbstractBundleConfig
      *   business/popularity signals used to refine and tiebreak rather than override it — an equal-weight
      *   additive blend risks letting a popular-but-off-target result outrank an exact/obviously-right
      *   match, a common and easily user-visible search-relevance failure mode.
-     * - This is still a starting point, not a measured optimum — `spryker-community/search-ranking-optimizer`'s
-     *   rank_eval evaluation (nDCG against real rated queries) is the intended way to validate or refine
-     *   it against a real catalog's own traffic, once enough ratings exist.
+     * - This is still a starting point, not a measured optimum — this package doesn't decide what this
+     *   value should be for a given shop, only how the blend is computed once it's set. An `nDCG`-style
+     *   evaluation against real rated queries, run by separate tooling on top of this one, is one
+     *   principled way to validate or refine it against a real catalog's own traffic, once enough ratings
+     *   exist.
      *
      * @api
      *
