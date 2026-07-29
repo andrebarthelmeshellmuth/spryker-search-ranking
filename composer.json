@@ -1,6 +1,7 @@
 {
     "name": "spryker-community/search-ranking",
     "type": "library",
+    "version": "1.1.1",
     "description": "Data-driven search ranking for Spryker: business-signal metrics (impressions, sales, ...) with configurable weights and normalization formulas, a Zed management UI, data import, and a normalization cron - the foundation for function_score based result ranking.",
     "license": "MIT",
     "keywords": [
