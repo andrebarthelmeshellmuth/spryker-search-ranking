@@ -12,6 +12,7 @@ namespace SprykerCommunityTest\Client\SearchRanking\Debug;
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilder;
+use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult;
 
 /**
  * Auto-generated group annotations
@@ -181,5 +182,63 @@ class ScoreSectionBuilderTest extends Unit
 
         // Assert
         $this->assertNull($section);
+    }
+
+    /**
+     * The configured relevanceWeight (0.6) must NOT leak into the formula/relevanceWeightValue once
+     * entropy weighting actually adjusted it for this query (to 0.9 here) — otherwise the printed formula
+     * would silently disagree with the real final score entropy weighting produced.
+     *
+     * @return void
+     */
+    public function testUsesTheEntropyAdjustedRelevanceWeightInTheFormulaWhenGiven(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
+            ->setMetricWeights(['top_seller' => 0.5])
+            ->setRelevanceWeight(0.6)
+            ->setRelevanceSaturationPoint(12.0);
+
+        $entropyWeightingResult = new EntropyWeightingResult(0.6, 0.9, 0.1, 0.3, 8);
+
+        // Act
+        $section = (new ScoreSectionBuilder())->build(
+            $configurationTransfer,
+            ['top_seller' => 0.5],
+            6.9244,
+            $entropyWeightingResult,
+        );
+
+        // Assert: normalizedRelevance is unaffected by entropy (only relevanceWeight is)
+        $this->assertSame(0.9, $section['relevanceWeightValue']);
+        $this->assertSame('0.900 × 0.366 + (1 - 0.900) × 0.250', $section['formulaCalculation']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testBuildsAnEntropySectionWithOneLinePerDiagnostic(): void
+    {
+        // Arrange
+        $entropyWeightingResult = new EntropyWeightingResult(0.75, 0.6, 0.8, -0.15, 10);
+
+        // Act
+        $section = (new ScoreSectionBuilder())->buildEntropySection($entropyWeightingResult);
+
+        // Assert
+        $this->assertSame('Entropy weighting', $section['title']);
+        $this->assertCount(4, $section['lines']);
+
+        $this->assertSame('Configured relevance weight (α₀)', $section['lines'][0]['label']);
+        $this->assertSame(0.75, $section['lines'][0]['value']);
+
+        $this->assertSame('Normalized entropy (H)', $section['lines'][1]['label']);
+        $this->assertSame(0.8, $section['lines'][1]['value']);
+
+        $this->assertSame('Shift applied to α', $section['lines'][2]['label']);
+        $this->assertSame(-0.15, $section['lines'][2]['value']);
+
+        $this->assertSame('Effective relevance weight (α)', $section['lines'][3]['label']);
+        $this->assertSame(0.6, $section['lines'][3]['value']);
     }
 }

@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking;
 
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
+use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult;
 
 interface SearchRankingClientInterface
 {
@@ -25,4 +26,34 @@ interface SearchRankingClientInterface
      * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
      */
     public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer;
+
+    /**
+     * NOT @api — internal plumbing only. This Client instance is the one object the Locator guarantees
+     * stays the SAME single instance across every plugin in this package for the current request, which
+     * is exactly what lets {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
+     * (computes the entropy-adjusted `relevanceWeight` while building the real query) hand its result off
+     * to {@see \SprykerCommunity\Client\SearchRanking\Plugin\SearchDebug\SearchRankingProductDebugDataExpanderPlugin}
+     * (needs that SAME value later, while building the debug overlay) without either plugin knowing about
+     * the other. No BC promise; do not call this from project code.
+     *
+     * Overwritten on every {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin::expandQuery()}
+     * call (including with `null`, when entropy weighting is disabled or doesn't apply) — never carries a
+     * stale value over from an earlier query in the same request.
+     *
+     * @param \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null $entropyWeightingResult
+     *
+     * @return void
+     */
+    public function rememberLastEntropyWeightingResult(?EntropyWeightingResult $entropyWeightingResult): void;
+
+    /**
+     * NOT @api — internal plumbing only, see {@see rememberLastEntropyWeightingResult()}.
+     *
+     * `null` means entropy weighting did not run for the current query — either it's disabled, or
+     * {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin::expandQuery()}
+     * hasn't run yet this request.
+     *
+     * @return \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null
+     */
+    public function getLastEntropyWeightingResult(): ?EntropyWeightingResult;
 }
