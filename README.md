@@ -977,7 +977,7 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-**141 tests, 988 assertions** across six Codeception suites (`Zed/SearchRanking`,
+**154 tests, 1043 assertions** across six Codeception suites (`Zed/SearchRanking`,
 `Zed/SearchRankingStorage`, `Zed/SearchRankingGui`, `Zed/SearchRankingDataImport`, `Client/SearchRanking`,
 `Client/SearchRankingStorage`). From a shop that has the package installed:
 
