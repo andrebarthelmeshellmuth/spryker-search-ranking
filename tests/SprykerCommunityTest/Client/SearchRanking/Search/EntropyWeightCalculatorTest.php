@@ -14,6 +14,7 @@ use Elastica\Query\MatchQuery;
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 use Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig;
 use Spryker\Shared\SearchElasticsearch\ElasticaClient\ElasticaClientFactory;
+use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface;
 use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculator;
 use SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculator;
 use SprykerCommunityTest\Client\SearchRanking\Fixture\TestRelevanceIndexTrait;
@@ -251,6 +252,10 @@ class EntropyWeightCalculatorTest extends Unit
             $elasticaClient,
             $searchElasticsearchConfig,
             new ShannonEntropyCalculator(),
+            // Never actually called — resolveIndexName() is overridden below to bypass store resolution
+            // entirely, the same way it bypasses the real page index. A real StoreClientInterface isn't
+            // needed just to satisfy this constructor parameter.
+            $this->createMock(SearchRankingToStoreClientInterface::class),
         ) extends EntropyWeightCalculator {
             /**
              * Hardcoded rather than referencing `TestRelevanceIndexTrait::TEST_RELEVANCE_INDEX_NAME` —
