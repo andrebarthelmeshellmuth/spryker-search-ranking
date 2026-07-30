@@ -60,8 +60,7 @@ class SearchRankingConfig
     /**
      * Specification:
      * - Setting key of the number of top-ranked candidates the entropy probe samples. Only meaningful
-     *   when entropy-aware relevance weighting is enabled (a Client-layer code flag — see
-     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()}).
+     *   when entropy-aware relevance weighting is enabled — see {@see isEntropyWeightingEnabled()}.
      *
      * @api
      *
@@ -102,4 +101,32 @@ class SearchRankingConfig
      * @var string
      */
     public const PAGE_SOURCE_IDENTIFIER = 'page';
+
+    /**
+     * Specification:
+     * - Whether entropy-aware relevance weighting is active. OFF by default — enabling it makes
+     *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
+     *   fire ONE ADDITIONAL lightweight Elasticsearch query per live catalog search to derive a per-query
+     *   `relevanceWeight` instead of using the configured static one. Override this in your project's
+     *   `Pyz\Shared\SearchRanking\SearchRankingConfig` to turn it on — do not flip this on by editing this
+     *   package's own source.
+     * - Lives here in Shared, not Client-only, specifically so BOTH the Client query-expander plugin AND
+     *   Zed code (e.g. `spryker-community/search-ranking-optimizer`'s weight-checkpoint feature, which
+     *   needs to know whether the entropy knobs it snapshots are actually live) can read the same flag
+     *   without a Client/Zed layering violation. `Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()`
+     *   still exists and delegates here, for callers already using that entry point.
+     * - Deliberately a code-level flag, not a Zed-editable setting: this is the one switch that decides
+     *   whether a second live Elasticsearch query fires on every catalog search at all, so flipping it
+     *   requires a project deploy, not just a Zed form save. The probe's own tuning numbers (result size,
+     *   weight exponent, shift magnitude) ARE Zed-editable — see `/search-ranking-gui/settings` — once
+     *   this flag is on.
+     *
+     * @api
+     *
+     * @return bool
+     */
+    public static function isEntropyWeightingEnabled(): bool
+    {
+        return false;
+    }
 }

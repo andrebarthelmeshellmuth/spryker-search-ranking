@@ -8,6 +8,7 @@
         <column name="formula" type="VARCHAR" size="512" required="true" description="Normalization expression mapping raw values into ]0;1]; variables: x, min, max, avg, count."/>
         <column name="is_active" type="BOOLEAN" required="true" defaultValue="true" description="Only active metrics are normalized and exported to the search index."/>
         <column name="is_higher_better" type="BOOLEAN" required="true" defaultValue="true" description="Whether a HIGHER raw value is the better outcome for this signal (e.g. sales) as opposed to a lower one (e.g. days since restock, return rate). Not inferrable from the data — direction is business knowledge. Used by the normalization-curve fit suggestion to pick increasing vs. decreasing candidate shapes; does not affect the formula itself."/>
+        <column name="shape" type="VARCHAR" size="32" required="false" description="Stable curve-family slug (e.g. atan, sigmoid, hyperbolic) derived automatically at save time by matching the formula against a fresh NormalizationCurveFitter pass; NULL for a freeform/custom formula that matches no known candidate shape."/>
 
         <behavior name="timestampable"/>
         <id-method-parameter value="spy_search_ranking_metric_pk_seq"/>

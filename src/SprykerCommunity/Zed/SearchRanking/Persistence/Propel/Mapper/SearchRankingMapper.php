@@ -36,7 +36,8 @@ class SearchRankingMapper
             ->setWeight($metricEntity->getWeight())
             ->setFormula($metricEntity->getFormula())
             ->setIsActive($metricEntity->getIsActive())
-            ->setIsHigherBetter($metricEntity->getIsHigherBetter());
+            ->setIsHigherBetter($metricEntity->getIsHigherBetter())
+            ->setShape($metricEntity->getShape());
     }
 
     /**
@@ -54,6 +55,7 @@ class SearchRankingMapper
         $metricEntity->setFormula($metricTransfer->getFormulaOrFail());
         $metricEntity->setIsActive($metricTransfer->getIsActive() ?? true);
         $metricEntity->setIsHigherBetter($metricTransfer->getIsHigherBetter() ?? true);
+        $metricEntity->setShape($metricTransfer->getShape());
 
         return $metricEntity;
     }
