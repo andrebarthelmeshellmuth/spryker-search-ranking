@@ -107,14 +107,17 @@ class SearchRankingConfig
      * - Whether entropy-aware relevance weighting is active. OFF by default — enabling it makes
      *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
      *   fire ONE ADDITIONAL lightweight Elasticsearch query per live catalog search to derive a per-query
-     *   `relevanceWeight` instead of using the configured static one. Override this in your project's
-     *   `Pyz\Shared\SearchRanking\SearchRankingConfig` to turn it on — do not flip this on by editing this
-     *   package's own source.
-     * - Lives here in Shared, not Client-only, specifically so BOTH the Client query-expander plugin AND
-     *   Zed code (e.g. `spryker-community/search-ranking-optimizer`'s weight-checkpoint feature, which
-     *   needs to know whether the entropy knobs it snapshots are actually live) can read the same flag
-     *   without a Client/Zed layering violation. `Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()`
-     *   still exists and delegates here, for callers already using that entry point.
+     *   `relevanceWeight` instead of using the configured static one.
+     * - **This class is a plain static-method holder, not a project-overridable `AbstractSharedConfig`** —
+     *   there is no real way to make THIS method return `true` from a project. Do not override a
+     *   `Pyz\Shared\SearchRanking\SearchRankingConfig` expecting it to take effect here; it won't (an
+     *   earlier version of this docblock and the README both incorrectly claimed it would). The one
+     *   override point that actually works is `Pyz\Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()`
+     *   — that class IS a real, Locator-resolved `AbstractBundleConfig`, which is what
+     *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
+     *   actually checks (via `$this->getFactory()->getConfig()`), and what {@see \SprykerCommunity\Client\SearchRanking\SearchRankingClientInterface::isEntropyWeightingEnabled()}
+     *   exposes for other code to ask without duplicating that resolution logic. This method's `false`
+     *   return only matters as the Client config's own internal default when a project hasn't overridden it.
      * - Deliberately a code-level flag, not a Zed-editable setting: this is the one switch that decides
      *   whether a second live Elasticsearch query fires on every catalog search at all, so flipping it
      *   requires a project deploy, not just a Zed form save. The probe's own tuning numbers (result size,

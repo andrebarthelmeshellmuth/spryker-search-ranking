@@ -28,6 +28,27 @@ interface SearchRankingClientInterface
     public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer;
 
     /**
+     * Specification:
+     * - Whether entropy-aware relevance weighting is active for THIS project, resolved the same
+     *   project-override-aware way {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
+     *   itself checks before ever firing the live probe query — i.e. via this Client's own, Locator-resolved
+     *   `SearchRankingConfig` (overridable in a project's `Pyz\Client\SearchRanking\SearchRankingConfig`),
+     *   NOT {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()}
+     *   directly — that Shared method is a plain hardcoded `return false;` with no project-override path of
+     *   its own; referencing it directly (as this package's own Client config used to, and as
+     *   spryker-community/search-ranking-optimizer's `RankEvalRunner` still did before this method existed)
+     *   silently ignores any project override.
+     * - The one correct way for code OUTSIDE this package (a different package's own evaluation/tooling
+     *   logic that reimplements the ranking formula, for instance) to ask whether entropy weighting is
+     *   live for this project, without duplicating the Locator-resolution logic itself.
+     *
+     * @api
+     *
+     * @return bool
+     */
+    public function isEntropyWeightingEnabled(): bool;
+
+    /**
      * NOT @api — internal plumbing only. This Client instance is the one object the Locator guarantees
      * stays the SAME single instance across every plugin in this package for the current request, which
      * is exactly what lets {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}

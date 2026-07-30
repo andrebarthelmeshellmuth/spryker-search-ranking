@@ -40,6 +40,18 @@ class SearchRankingClient extends AbstractClient implements SearchRankingClientI
     /**
      * {@inheritDoc}
      *
+     * @api
+     *
+     * @return bool
+     */
+    public function isEntropyWeightingEnabled(): bool
+    {
+        return $this->getFactory()->getConfig()->isEntropyWeightingEnabled();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * @param \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null $entropyWeightingResult
      *
      * @return void
