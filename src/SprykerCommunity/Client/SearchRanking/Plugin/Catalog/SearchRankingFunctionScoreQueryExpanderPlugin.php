@@ -20,6 +20,7 @@ use Spryker\Client\SearchExtension\Dependency\Plugin\SearchStringGetterInterface
 
 /**
  * @method \SprykerCommunity\Client\SearchRanking\SearchRankingFactory getFactory()
+ * @method \SprykerCommunity\Client\SearchRanking\SearchRankingClientInterface getClient()
  */
 class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin implements QueryExpanderPluginInterface
 {
@@ -66,6 +67,11 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
      */
     public function expandQuery(QueryInterface $searchQuery, array $requestParameters = []): QueryInterface
     {
+        // Reset unconditionally, before any early return: a stale result from an earlier query in the
+        // same request (e.g. a prior facet/autosuggest call this plugin also ran for) must never leak
+        // into this one — see SearchRankingClientInterface::rememberLastEntropyWeightingResult().
+        $this->getClient()->rememberLastEntropyWeightingResult(null);
+
         if ($this->getSearchString($searchQuery, $requestParameters) === '') {
             return $searchQuery;
         }
@@ -110,6 +116,13 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
      * returns the configuration transfer unchanged, firing no additional query, unless a project has
      * explicitly opted in.
      *
+     * Remembers the full {@see \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult} on
+     * this package's own Client (see {@see \SprykerCommunity\Client\SearchRanking\SearchRankingClientInterface::rememberLastEntropyWeightingResult()})
+     * whenever entropy weighting is enabled — including when the probe itself found no usable signal and
+     * fell back to the configured weight unchanged — so the search-debug overlay can later show the SAME
+     * relevanceWeight (and the diagnostics behind it) that this method actually used to build the query,
+     * not a stale, independently-fetched configured value.
+     *
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
      * @param \Elastica\Query\AbstractQuery $baseQuery
      *
@@ -123,12 +136,14 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
             return $configurationTransfer;
         }
 
-        $entropyDerivedRelevanceWeight = $this->getFactory()->createEntropyWeightCalculator()->calculateRelevanceWeight(
+        $entropyWeightingResult = $this->getFactory()->createEntropyWeightCalculator()->calculateWeightingResult(
             $baseQuery,
             $configurationTransfer,
         );
 
-        return (clone $configurationTransfer)->setRelevanceWeight($entropyDerivedRelevanceWeight);
+        $this->getClient()->rememberLastEntropyWeightingResult($entropyWeightingResult);
+
+        return (clone $configurationTransfer)->setRelevanceWeight($entropyWeightingResult->getRelevanceWeight());
     }
 
     /**

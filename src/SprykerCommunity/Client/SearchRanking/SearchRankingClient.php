@@ -11,12 +11,18 @@ namespace SprykerCommunity\Client\SearchRanking;
 
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Spryker\Client\Kernel\AbstractClient;
+use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult;
 
 /**
  * @method \SprykerCommunity\Client\SearchRanking\SearchRankingFactory getFactory()
  */
 class SearchRankingClient extends AbstractClient implements SearchRankingClientInterface
 {
+    /**
+     * @var \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null
+     */
+    protected ?EntropyWeightingResult $lastEntropyWeightingResult = null;
+
     /**
      * {@inheritDoc}
      *
@@ -29,5 +35,27 @@ class SearchRankingClient extends AbstractClient implements SearchRankingClientI
         return $this->getFactory()
             ->createEngineCompatibilityChecker()
             ->checkCompatibility();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null $entropyWeightingResult
+     *
+     * @return void
+     */
+    public function rememberLastEntropyWeightingResult(?EntropyWeightingResult $entropyWeightingResult): void
+    {
+        $this->lastEntropyWeightingResult = $entropyWeightingResult;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null
+     */
+    public function getLastEntropyWeightingResult(): ?EntropyWeightingResult
+    {
+        return $this->lastEntropyWeightingResult;
     }
 }

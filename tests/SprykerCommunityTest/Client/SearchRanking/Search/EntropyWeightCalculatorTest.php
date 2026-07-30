@@ -145,6 +145,89 @@ class EntropyWeightCalculatorTest extends Unit
     }
 
     /**
+     * `calculateRelevanceWeight()` is now a thin wrapper around `calculateWeightingResult()` — this proves
+     * the diagnostics it carries (probe candidate count, normalized entropy, shift) are internally
+     * consistent with each other and with the resulting weight, for the same near-flat distribution
+     * `testUniformScoreDistributionShiftsWeightBelowTheConfiguredBaseline()` covers.
+     *
+     * @return void
+     */
+    public function testWeightingResultCarriesConsistentDiagnosticsForAUniformDistribution(): void
+    {
+        $this->indexTestRelevanceDocuments([
+            $this->createTestRelevanceDocument('doc-1', 'gadget for the home'),
+            $this->createTestRelevanceDocument('doc-2', 'gadget for the office'),
+            $this->createTestRelevanceDocument('doc-3', 'gadget for the garden'),
+            $this->createTestRelevanceDocument('doc-4', 'gadget for the kitchen'),
+            $this->createTestRelevanceDocument('doc-5', 'gadget for the workshop'),
+        ]);
+
+        $result = $this->createCalculator()->calculateWeightingResult(
+            new MatchQuery('full-text', 'gadget'),
+            $this->createConfigurationTransfer(),
+        );
+
+        $this->assertSame(static::CONFIGURED_RELEVANCE_WEIGHT, $result->getConfiguredRelevanceWeight());
+        $this->assertSame(5, $result->getProbeCandidateCount());
+        $this->assertGreaterThan(0.0, $result->getNormalizedEntropy());
+        $this->assertLessThan(0.0, $result->getShift(), 'A near-flat distribution shifts weight DOWN, so the shift itself must be negative.');
+        $this->assertSame(
+            max(0.0, min(1.0, static::CONFIGURED_RELEVANCE_WEIGHT + $result->getShift())),
+            $result->getRelevanceWeight(),
+            'relevanceWeight must be exactly configuredRelevanceWeight + shift (clamped) — the same arithmetic calculateRelevanceWeight() performs.',
+        );
+    }
+
+    /**
+     * Same relationship as above, for the single-dominant-candidate case
+     * (`testASingleMatchingCandidateShiftsWeightAboveTheConfiguredBaseline()`), where normalizedEntropy is
+     * `0.0` by `ShannonEntropyCalculator`'s own "fewer than 2 scores" guard.
+     *
+     * @return void
+     */
+    public function testWeightingResultCarriesConsistentDiagnosticsForASingleDominantCandidate(): void
+    {
+        $this->indexTestRelevanceDocuments([
+            $this->createTestRelevanceDocument('doc-dominant', 'gadget for the home'),
+            $this->createTestRelevanceDocument('doc-2', 'widget for the office'),
+            $this->createTestRelevanceDocument('doc-3', 'widget for the garden'),
+        ]);
+
+        $result = $this->createCalculator()->calculateWeightingResult(
+            new MatchQuery('full-text', 'gadget'),
+            $this->createConfigurationTransfer(),
+        );
+
+        $this->assertSame(1, $result->getProbeCandidateCount());
+        $this->assertSame(0.0, $result->getNormalizedEntropy());
+        $this->assertGreaterThan(0.0, $result->getShift(), 'A single dominant candidate shifts weight UP, so the shift itself must be positive.');
+    }
+
+    /**
+     * Zero hits must produce a result whose fields all read as "nothing to measure", not merely a weight
+     * that happens to match the configured baseline.
+     *
+     * @return void
+     */
+    public function testWeightingResultForNoHitsCarriesZeroedDiagnostics(): void
+    {
+        $this->indexTestRelevanceDocuments([
+            $this->createTestRelevanceDocument('doc-1', 'gadget for the home'),
+        ]);
+
+        $result = $this->createCalculator()->calculateWeightingResult(
+            new MatchQuery('full-text', 'no-such-term-anywhere'),
+            $this->createConfigurationTransfer(),
+        );
+
+        $this->assertSame(static::CONFIGURED_RELEVANCE_WEIGHT, $result->getConfiguredRelevanceWeight());
+        $this->assertSame(static::CONFIGURED_RELEVANCE_WEIGHT, $result->getRelevanceWeight());
+        $this->assertSame(0.0, $result->getNormalizedEntropy());
+        $this->assertSame(0.0, $result->getShift());
+        $this->assertSame(0, $result->getProbeCandidateCount());
+    }
+
+    /**
      * @return \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer
      */
     protected function createConfigurationTransfer(): SearchRankingConfigurationStorageTransfer
@@ -157,7 +240,7 @@ class EntropyWeightCalculatorTest extends Unit
     }
 
     /**
-     * @return \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculatorInterface
+     * @return \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculator
      */
     protected function createCalculator(): EntropyWeightCalculator
     {

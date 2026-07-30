@@ -471,6 +471,19 @@ never breaks or blocks the real search it's attached to. The same fallback cover
 published before this feature existed: a project that enables the flag before its first post-upgrade
 Zed save still gets sane defaults, not an exception.
 
+**Visible in the search-debug overlay.** `SearchRankingFunctionScoreQueryExpanderPlugin` hands its
+`EntropyWeightingResult` off to `SearchRankingClient` (the one instance the Locator guarantees stays the
+same across this package's plugins for the whole request), so
+`SearchRankingProductDebugDataExpanderPlugin` can read the SAME result back later, when building the
+overlay — not an independent, stale config lookup. Two effects:
+
+- The overlay's "Relevance weight (α)" line and the closing combination formula use the per-query
+  effective weight entropy actually applied, not the static configured one — the formula stays
+  reproducible-by-eye against the real final score even with entropy weighting on.
+- A second "Entropy weighting" section appears (only when the feature actually ran for that query),
+  listing the configured baseline, the measured normalized entropy, the shift, and the resulting
+  effective weight — so the debug overlay explains *why* `relevanceWeight` moved, not just its new value.
+
 ## Why full republish, not a partial score-only ES update
 
 After normalizing, the cron re-triggers the standard `Product.product_abstract.publish` event for every
@@ -983,7 +996,7 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-**147 tests, 1020 assertions** across six Codeception suites (`Zed/SearchRanking`,
+**160 tests, 1075 assertions** across six Codeception suites (`Zed/SearchRanking`,
 `Zed/SearchRankingStorage`, `Zed/SearchRankingGui`, `Zed/SearchRankingDataImport`, `Client/SearchRanking`,
 `Client/SearchRankingStorage`). From a shop that has the package installed:
 

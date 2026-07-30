@@ -42,4 +42,23 @@ interface EntropyWeightCalculatorInterface
         AbstractQuery $baseQuery,
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
     ): float;
+
+    /**
+     * Specification:
+     * - Same computation as {@see calculateRelevanceWeight()}, returned as a full
+     *   {@see \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult} instead of just the
+     *   resulting weight — so a caller that needs to explain the shift (e.g. the search-debug overlay)
+     *   doesn't have to re-derive the probe/entropy/shift arithmetic itself.
+     *
+     * @api
+     *
+     * @param \Elastica\Query\AbstractQuery $baseQuery
+     * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
+     *
+     * @return \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult
+     */
+    public function calculateWeightingResult(
+        AbstractQuery $baseQuery,
+        SearchRankingConfigurationStorageTransfer $configurationTransfer,
+    ): EntropyWeightingResult;
 }

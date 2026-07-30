@@ -51,11 +51,26 @@ class EntropyWeightCalculator implements EntropyWeightCalculatorInterface
         AbstractQuery $baseQuery,
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
     ): float {
+        return $this->calculateWeightingResult($baseQuery, $configurationTransfer)->getRelevanceWeight();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param \Elastica\Query\AbstractQuery $baseQuery
+     * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
+     *
+     * @return \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult
+     */
+    public function calculateWeightingResult(
+        AbstractQuery $baseQuery,
+        SearchRankingConfigurationStorageTransfer $configurationTransfer,
+    ): EntropyWeightingResult {
         $configuredRelevanceWeight = (float)$configurationTransfer->getRelevanceWeight();
         $scores = $this->fetchProbeScores($baseQuery, (int)$configurationTransfer->getEntropyProbeResultSize());
 
         if ($scores === []) {
-            return $configuredRelevanceWeight;
+            return new EntropyWeightingResult($configuredRelevanceWeight, $configuredRelevanceWeight, 0.0, 0.0, 0);
         }
 
         $normalizedEntropy = $this->entropyCalculator->calculateNormalizedEntropy($scores);
@@ -64,8 +79,15 @@ class EntropyWeightCalculator implements EntropyWeightCalculatorInterface
             (float)$configurationTransfer->getEntropyWeightExponent(),
             (float)$configurationTransfer->getEntropyWeightShiftMagnitude(),
         );
+        $relevanceWeight = max(0.0, min(1.0, $configuredRelevanceWeight + $shift));
 
-        return max(0.0, min(1.0, $configuredRelevanceWeight + $shift));
+        return new EntropyWeightingResult(
+            $configuredRelevanceWeight,
+            $relevanceWeight,
+            $normalizedEntropy,
+            $shift,
+            count($scores),
+        );
     }
 
     /**

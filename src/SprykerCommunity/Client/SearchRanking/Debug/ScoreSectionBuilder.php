@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking\Debug;
 
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
+use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult;
 use SprykerCommunity\Shared\SearchDebug\SearchDebugConfig;
 
 /**
@@ -84,9 +85,35 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
     protected const RELEVANCE_WEIGHT_LABEL = 'Relevance weight (α)';
 
     /**
+     * @var string
+     */
+    protected const ENTROPY_SECTION_TITLE = 'Entropy weighting';
+
+    /**
+     * @var string
+     */
+    protected const ENTROPY_CONFIGURED_WEIGHT_LABEL = 'Configured relevance weight (α₀)';
+
+    /**
+     * @var string
+     */
+    protected const ENTROPY_NORMALIZED_ENTROPY_LABEL = 'Normalized entropy (H)';
+
+    /**
+     * @var string
+     */
+    protected const ENTROPY_SHIFT_LABEL = 'Shift applied to α';
+
+    /**
+     * @var string
+     */
+    protected const ENTROPY_EFFECTIVE_WEIGHT_LABEL = 'Effective relevance weight (α)';
+
+    /**
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
      * @param array<string, float> $documentScores
      * @param float|null $queryScore
+     * @param \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null $entropyWeightingResult
      *
      * @return array<string, mixed>|null
      */
@@ -94,6 +121,7 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
         array $documentScores,
         ?float $queryScore,
+        ?EntropyWeightingResult $entropyWeightingResult = null,
     ): ?array {
         $lines = [];
         $signalTotal = 0.0;
@@ -126,7 +154,13 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
         ];
 
         if ($queryScore !== null && $queryScore >= 0) {
-            $relevanceWeight = (float)$configurationTransfer->getRelevanceWeight();
+            // Entropy weighting, when it ran for this query, replaced the configured relevanceWeight with
+            // a per-query one BEFORE the real function_score was built — read from there instead of
+            // $configurationTransfer's static value, so this line (and the formula below) stay
+            // reproducible-by-eye against the real final score. See EntropyWeightingResult's docblock.
+            $relevanceWeight = $entropyWeightingResult !== null
+                ? $entropyWeightingResult->getRelevanceWeight()
+                : (float)$configurationTransfer->getRelevanceWeight();
             $relevanceSaturationPoint = (float)$configurationTransfer->getRelevanceSaturationPoint();
             // $relevanceSaturationPoint is always > 0 (Zed form enforces GreaterThan(0)), so this never
             // divides by zero even when $queryScore is 0.
@@ -156,6 +190,38 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
         }
 
         return $section;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult $entropyWeightingResult
+     *
+     * @return array<string, mixed>
+     */
+    public function buildEntropySection(EntropyWeightingResult $entropyWeightingResult): array
+    {
+        return [
+            'title' => static::ENTROPY_SECTION_TITLE,
+            'lines' => [
+                [
+                    'label' => static::ENTROPY_CONFIGURED_WEIGHT_LABEL,
+                    'value' => $entropyWeightingResult->getConfiguredRelevanceWeight(),
+                ],
+                [
+                    'label' => static::ENTROPY_NORMALIZED_ENTROPY_LABEL,
+                    'value' => $entropyWeightingResult->getNormalizedEntropy(),
+                ],
+                [
+                    'label' => static::ENTROPY_SHIFT_LABEL,
+                    'value' => $entropyWeightingResult->getShift(),
+                ],
+                [
+                    'label' => static::ENTROPY_EFFECTIVE_WEIGHT_LABEL,
+                    'value' => $entropyWeightingResult->getRelevanceWeight(),
+                ],
+            ],
+        ];
     }
 
     /**
