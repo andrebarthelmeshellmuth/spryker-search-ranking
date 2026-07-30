@@ -6,7 +6,12 @@
     <!-- One ranking metric definition: a named business signal (e.g. pdp_impressions) with the weight
          it contributes to the final score and the normalization formula that maps raw real-world
          values into ]0;1]. The formula is a symfony/expression-language expression over the variables
-         x (raw value), min, max, avg, count (per-metric aggregates). -->
+         x (raw value), min, max, avg, count (per-metric aggregates). shape is a stable curve-family slug
+         (e.g. "atan", "sigmoid", "hyperbolic" - see NormalizationCurveFitter/SearchRankingCurveFitCandidate)
+         derived automatically at save time by matching the submitted formula against a fresh fit over the
+         metric's own digest; null when the formula is a freeform/custom expression that matches no known
+         candidate shape (e.g. no digest exists yet, or the admin typed something the fitter doesn't offer).
+         Read-only from a consumer's point of view - never set this directly, it is derived, not authored. -->
     <transfer name="SearchRankingMetric" strict="true">
         <property name="idSearchRankingMetric" type="int"/>
         <property name="name" type="string"/>
@@ -14,6 +19,7 @@
         <property name="formula" type="string"/>
         <property name="isActive" type="bool"/>
         <property name="isHigherBetter" type="bool"/>
+        <property name="shape" type="string"/>
     </transfer>
 
     <transfer name="SearchRankingMetricCollection" strict="true">
@@ -102,11 +108,15 @@
     </transfer>
 
     <!-- One candidate normalization curve NormalizationCurveFitter fit against a metric's digest: name
-         is the human-readable shape ("x / (x + k)"), formula is that shape with its fitted parameter
-         substituted in (ready to paste into the metric's own formula field), rSquared measures fit
-         quality against the empirical CDF (1.0 = perfect), isWinner flags the best-fitting candidate. -->
+         is the human-readable shape ("x / (x + k)"), shape is the same family as a short stable slug
+         ("hyperbolic") independent of isHigherBetter direction or the exact fitted parameter - this is
+         what gets persisted onto SearchRankingMetric.shape when a metric is saved with a matching formula.
+         formula is that shape with its fitted parameter substituted in (ready to paste into the metric's
+         own formula field), rSquared measures fit quality against the empirical CDF (1.0 = perfect),
+         isWinner flags the best-fitting candidate. -->
     <transfer name="SearchRankingCurveFitCandidate" strict="true">
         <property name="name" type="string"/>
+        <property name="shape" type="string"/>
         <property name="formula" type="string"/>
         <property name="parameterValue" type="float"/>
         <property name="rSquared" type="float"/>

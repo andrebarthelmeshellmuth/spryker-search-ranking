@@ -13,6 +13,7 @@ use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use SprykerCommunity\Zed\SearchRanking\Business\Exception\InvalidFormulaException;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
@@ -24,12 +25,14 @@ class MetricWriter implements MetricWriterInterface
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface $entityManager
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface $formulaEvaluator
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface $fitEvaluator
+     * @param \SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface $curveFitter
      */
     public function __construct(
         protected SearchRankingRepositoryInterface $repository,
         protected SearchRankingEntityManagerInterface $entityManager,
         protected FormulaEvaluatorInterface $formulaEvaluator,
         protected MetricFormulaFitEvaluatorInterface $fitEvaluator,
+        protected NormalizationCurveFitterInterface $curveFitter,
     ) {
     }
 
@@ -52,6 +55,8 @@ class MetricWriter implements MetricWriterInterface
             ? $this->repository->findMetricById($metricTransfer->getIdSearchRankingMetric())
             : null;
 
+        $metricTransfer->setShape($this->detectShape($metricTransfer));
+
         $savedMetricTransfer = $this->entityManager->saveMetric($metricTransfer);
 
         if ($this->hasAnyTrackedFieldChanged($previousMetricTransfer, $savedMetricTransfer)) {
@@ -59,6 +64,42 @@ class MetricWriter implements MetricWriterInterface
         }
 
         return $savedMetricTransfer;
+    }
+
+    /**
+     * Derives $metricTransfer's curve-family `shape` slug by re-running {@see NormalizationCurveFitter}
+     * against the metric's own current digest and looking for a candidate whose fully-substituted
+     * `formula` string matches the metric's submitted one exactly — both the candidate and a genuinely
+     * shape-following formula are deterministic functions of the same digest, so a real match reproduces
+     * byte-for-byte. Deliberately NOT derived any other way (e.g. parsing the formula string): the Edit
+     * page's "Use this formula" button only ever copies plain text into the form field, so this is the
+     * only reliable signal available for "which shape is this, if any" without changing that UI.
+     * Returns null (a freeform/custom formula, or no digest yet to fit against) when nothing matches —
+     * a safe, expected outcome, not an error.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     *
+     * @return string|null
+     */
+    protected function detectShape(SearchRankingMetricTransfer $metricTransfer): ?string
+    {
+        if ($metricTransfer->getIdSearchRankingMetric() === null) {
+            return null;
+        }
+
+        $digestTransfer = $this->repository->findMetricDigest($metricTransfer->getIdSearchRankingMetric());
+
+        if ($digestTransfer === null) {
+            return null;
+        }
+
+        foreach ($this->curveFitter->fit($digestTransfer, $metricTransfer->getIsHigherBetter() ?? true) as $candidateTransfer) {
+            if ($candidateTransfer->getFormula() === $metricTransfer->getFormula()) {
+                return $candidateTransfer->getShape();
+            }
+        }
+
+        return null;
     }
 
     /**

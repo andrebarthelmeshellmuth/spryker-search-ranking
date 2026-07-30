@@ -149,6 +149,14 @@ requiring any change here.
   again — `isChange` is what lets that job find the right anchor point (the newest row where `isChange =
   true`) instead of just the newest row. A check-only run (fit still fine, nothing changed) would append
   its own row with `isChange = false`, extending the timeline without moving the anchor.
+
+  Three read-only primitives on `SearchRankingFacade` exist specifically for a drift-detection job like
+  that to build on, without it needing any direct database access of its own: `findLastMetricChangeHistoryEntry()`
+  (the anchor row above), `evaluateCurrentMetricFit()` (a fresh, side-effect-free "how well does this
+  metric's CURRENT formula fit its CURRENT digest right now" read — never writes a history row, safe to
+  call as often as needed), and `recordCheckOnly()` (appends the `isChange = false` row itself once a
+  check has run). This package makes no decision about thresholds, schedules, or notifications with
+  them — that policy is deliberately somebody else's job to build on top.
 - **Zed UI**:
 
   ![The metrics list: ID, name, weight, formula, active/inactive status, and edit/delete actions for every configured business signal](docs/screenshots/metrics-list.png)
@@ -205,7 +213,13 @@ requiring any change here.
     closely each closed-form shape tracks that empirical CDF (R²), with a one-click "use this formula"
     action. The best fit is a data-driven *default*, never imposed — a metric can have a legitimate
     business reason (e.g. a rating signal where only 4.5★+ should approach 1) to deviate from the
-    statistically "ideal" spread.
+    statistically "ideal" spread. Whichever candidate's formula the saved one byte-for-byte matches (both
+    are deterministic functions of the same digest, so a genuine match reproduces exactly) has its stable
+    family slug (`atan`, `sigmoid`, `hyperbolic`, ...) persisted onto the metric's own `shape` — silently
+    `null` for a freeform/custom formula that matches no offered candidate. This is derived bookkeeping,
+    not something to set directly: it exists so on-top tooling can tell "still the same curve family,
+    just re-fitted" apart from "a materially different shape was chosen" without re-parsing formula
+    strings.
 - **Data import**: importer types `search-ranking-metric` (upsert by name) and
   `search-ranking-product-metric` (resolves metric name + abstract SKU to foreign keys, writes raw
   values only — normalized values are never imported). Both writer steps go straight to Propel rather
@@ -439,8 +453,13 @@ code-level flag below is on:
 **Why the ON/OFF switch is code-level, not one of the three settings above:** it's the one control that
 decides whether a second live Elasticsearch query fires on every catalog search at all — flipping it
 should take a project deploy, not just a Zed form save. Enable it in your project's
-`Pyz\Client\SearchRanking\SearchRankingConfig` by overriding `isEntropyWeightingEnabled(): bool` to
-return `true`; the three tuning settings become meaningful once that's done.
+`Pyz\Shared\SearchRanking\SearchRankingConfig` by overriding `isEntropyWeightingEnabled(): bool` to
+return `true`; the three tuning settings become meaningful once that's done. It lives in Shared (not
+Client-only) specifically so both the Client query-expander plugin and Zed code (e.g. a checkpoint/
+rollback feature built on top of this package, which needs to know whether the entropy knobs it snapshots
+are actually live) can read the same flag —
+`Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()` still exists and delegates here,
+for callers already using that entry point.
 
 **Why it's opt-in at all:** it doubles the number of Elasticsearch round trips per catalog search. That's
 a real, permanent cost — worth it once you have a mixed catalog with both exact-match and browsy query
@@ -964,7 +983,7 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-**141 tests, 988 assertions** across six Codeception suites (`Zed/SearchRanking`,
+**147 tests, 1020 assertions** across six Codeception suites (`Zed/SearchRanking`,
 `Zed/SearchRankingStorage`, `Zed/SearchRankingGui`, `Zed/SearchRankingDataImport`, `Client/SearchRanking`,
 `Client/SearchRankingStorage`). From a shop that has the package installed:
 
@@ -985,10 +1004,14 @@ normalization-authoring GUI's live SVG preview (the "no digest yet" error, the h
 CDF/formula points and curve-fit candidates, and formula-evaluation failure returning a fresh error
 transfer rather than a half-populated chart), the metric randomizer (no-op when the metric is missing or
 inactive, re-normalizes and republishes only when it is active), the shared R² calculator and per-formula
-fit evaluator (both feeding the metric-history snapshot), and the metric writer's history recording (an
+fit evaluator (both feeding the metric-history snapshot), the metric writer's history recording (an
 initial row for a brand-new metric, no row when nothing tracked actually changed, the digest snapshot and
-fit quality captured correctly when a formula change has an existing digest to compare against) as pure
-unit tests — no database needed. The Client suite lives at
+fit quality captured correctly when a formula change has an existing digest to compare against, and
+`shape` derivation: a saved formula that matches a fresh fit candidate gets that candidate's slug, a
+freeform formula or a brand-new metric with no digest yet leaves it null), and the standalone
+current-fit evaluator backing the read-only drift-detection primitive (metric missing, no digest yet,
+and the happy path delegating to the shared fit evaluator) as pure unit tests — no database needed. The
+Client suite lives at
 `tests/SprykerCommunityTest/Client/SearchRanking`.
 
 Several tests in that Client suite are real integration tests, not unit tests: `FunctionScoreExecutionTest`

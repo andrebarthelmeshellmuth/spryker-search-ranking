@@ -97,17 +97,21 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
     }
 
     /**
-     * One entry per candidate shape: `name` is the human-readable label, `formulaTemplate` builds the
-     * concrete, pastable expression-language string from the fitted parameter (or null for the
-     * zero-parameter linear candidate), `curveFunction` is `fn(x, param): float` used both for fitting
-     * and (implicitly, via the same math) for what the formula string evaluates to, and the two log-space
-     * bounds constrain the 1D parameter search. `paramLogMin`/`paramLogMax` are null for the zero-parameter
-     * linear candidate, which is scored once with no search.
+     * One entry per candidate shape: `name` is the human-readable label, `shape` is a stable slug for the
+     * SAME family regardless of isHigherBetter direction (used to recognize "this metric is still using
+     * the atan family" across a re-fit, independently of the human-readable `name` text or the exact fitted
+     * parameter — see {@see \SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriter} where a
+     * saved metric's own `shape` is derived by matching its formula string against a fresh fit),
+     * `formulaTemplate` builds the concrete, pastable expression-language string from the fitted parameter
+     * (or null for the zero-parameter linear candidate), `curveFunction` is `fn(x, param): float` used both
+     * for fitting and (implicitly, via the same math) for what the formula string evaluates to, and the two
+     * log-space bounds constrain the 1D parameter search. `paramLogMin`/`paramLogMax` are null for the
+     * zero-parameter linear candidate, which is scored once with no search.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer $digestTransfer
      * @param bool $isHigherBetter
      *
-     * @return array<int, array{name: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}>
+     * @return array<int, array{name: string, shape: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}>
      */
     protected function buildCandidateDefinitions(SearchRankingMetricDigestTransfer $digestTransfer, bool $isHigherBetter): array
     {
@@ -157,7 +161,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
      * @param float $maxValue
      * @param bool $isHigherBetter
      *
-     * @return array{name: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
+     * @return array{name: string, shape: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
      */
     protected function buildLinearDefinition(float $minValue, float $maxValue, bool $isHigherBetter): array
     {
@@ -167,6 +171,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
         if ($isHigherBetter) {
             return [
                 'name' => '(x - min) / (max - min)',
+                'shape' => 'linear',
                 'formulaTemplate' => fn (): string => '(x - min) / (max - min)',
                 /** @phpcsSuppress SlevomatCodingStandard.Functions.UnusedParameter */
                 'curveFunction' => fn (float $x, float $param): float => $maxValue > $minValue ? ($x - $minValue) / ($maxValue - $minValue) : 0.5,
@@ -177,6 +182,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
 
         return [
             'name' => '(max - x) / (max - min)',
+            'shape' => 'linear',
             'formulaTemplate' => fn (): string => '(max - x) / (max - min)',
             /** @phpcsSuppress SlevomatCodingStandard.Functions.UnusedParameter */
             'curveFunction' => fn (float $x, float $param): float => $maxValue > $minValue ? ($maxValue - $x) / ($maxValue - $minValue) : 0.5,
@@ -190,13 +196,14 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
      * @param float $logMax
      * @param bool $isHigherBetter
      *
-     * @return array{name: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
+     * @return array{name: string, shape: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
      */
     protected function buildAtanDefinition(float $logMin, float $logMax, bool $isHigherBetter): array
     {
         if ($isHigherBetter) {
             return [
                 'name' => 'atan(x / k) / (pi / 2)',
+                'shape' => 'atan',
                 'formulaTemplate' => fn (float $k): string => sprintf('atan(x / %s) / (pi() / 2)', $this->formatParameter($k)),
                 'curveFunction' => fn (float $x, float $k): float => atan($x / $k) / (M_PI / 2),
                 'paramLogMin' => $logMin,
@@ -206,6 +213,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
 
         return [
             'name' => '1 - atan(x / k) / (pi / 2)',
+            'shape' => 'atan',
             'formulaTemplate' => fn (float $k): string => sprintf('1 - atan(x / %s) / (pi() / 2)', $this->formatParameter($k)),
             'curveFunction' => fn (float $x, float $k): float => 1 - atan($x / $k) / (M_PI / 2),
             'paramLogMin' => $logMin,
@@ -219,7 +227,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
      * @param float $logMax
      * @param bool $isHigherBetter
      *
-     * @return array{name: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
+     * @return array{name: string, shape: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
      */
     protected function buildSigmoidDefinition(float $meanValue, float $logMin, float $logMax, bool $isHigherBetter): array
     {
@@ -228,6 +236,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
         if ($isHigherBetter) {
             return [
                 'name' => '1 / (1 + exp(-(x - avg) / k))',
+                'shape' => 'sigmoid',
                 'formulaTemplate' => fn (float $k): string => sprintf('1 / (1 + exp(-(x - avg) / %s))', $this->formatParameter($k)),
                 'curveFunction' => $sigmoid,
                 'paramLogMin' => $logMin,
@@ -237,6 +246,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
 
         return [
             'name' => '1 - 1 / (1 + exp(-(x - avg) / k))',
+            'shape' => 'sigmoid',
             'formulaTemplate' => fn (float $k): string => sprintf('1 - 1 / (1 + exp(-(x - avg) / %s))', $this->formatParameter($k)),
             'curveFunction' => fn (float $x, float $k): float => 1 - $sigmoid($x, $k),
             'paramLogMin' => $logMin,
@@ -253,7 +263,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
      * @param float $logMax
      * @param bool $isHigherBetter
      *
-     * @return array{name: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
+     * @return array{name: string, shape: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
      */
     protected function buildPowerDefinition(float $maxValue, float $logMin, float $logMax, bool $isHigherBetter): array
     {
@@ -262,6 +272,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
         if ($isHigherBetter) {
             return [
                 'name' => 'pow(x / max, p)',
+                'shape' => 'power',
                 'formulaTemplate' => fn (float $p): string => sprintf('pow(x / max, %s)', $this->formatParameter($p)),
                 'curveFunction' => $power,
                 'paramLogMin' => $logMin,
@@ -271,6 +282,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
 
         return [
             'name' => '1 - pow(x / max, p)',
+            'shape' => 'power',
             'formulaTemplate' => fn (float $p): string => sprintf('1 - pow(x / max, %s)', $this->formatParameter($p)),
             'curveFunction' => fn (float $x, float $p): float => 1 - $power($x, $p),
             'paramLogMin' => $logMin,
@@ -290,7 +302,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
      * @param float $logMax
      * @param bool $isHigherBetter
      *
-     * @return array{name: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
+     * @return array{name: string, shape: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
      */
     protected function buildLogDefinition(float $maxValue, float $logMin, float $logMax, bool $isHigherBetter): array
     {
@@ -304,6 +316,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
         if ($isHigherBetter) {
             return [
                 'name' => 'log(1 + x / k) / log(1 + max / k)',
+                'shape' => 'log',
                 'formulaTemplate' => fn (float $k): string => sprintf('log(1 + x / %1$s) / log(1 + max / %1$s)', $this->formatParameter($k)),
                 'curveFunction' => $log,
                 'paramLogMin' => $logMin,
@@ -313,6 +326,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
 
         return [
             'name' => '1 - log(1 + x / k) / log(1 + max / k)',
+            'shape' => 'log',
             'formulaTemplate' => fn (float $k): string => sprintf('1 - log(1 + x / %1$s) / log(1 + max / %1$s)', $this->formatParameter($k)),
             'curveFunction' => fn (float $x, float $k): float => 1 - $log($x, $k),
             'paramLogMin' => $logMin,
@@ -328,12 +342,13 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
      * @param float $logMin
      * @param float $logMax
      *
-     * @return array{name: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
+     * @return array{name: string, shape: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
      */
     protected function buildSaturatingRatioDefinition(float $logMin, float $logMax): array
     {
         return [
             'name' => 'x / (x + k)',
+            'shape' => 'hyperbolic',
             'formulaTemplate' => fn (float $k): string => sprintf('x / (x + %s)', $this->formatParameter($k)),
             'curveFunction' => fn (float $x, float $k): float => max($x, 0.0) / (max($x, 0.0) + $k),
             'paramLogMin' => $logMin,
@@ -349,12 +364,13 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
      * @param float $logMin
      * @param float $logMax
      *
-     * @return array{name: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
+     * @return array{name: string, shape: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null}
      */
     protected function buildDecayDefinition(float $logMin, float $logMax): array
     {
         return [
             'name' => 'exp(-x / tau)',
+            'shape' => 'exponential-decay',
             'formulaTemplate' => fn (float $tau): string => sprintf('exp(-x / %s)', $this->formatParameter($tau)),
             'curveFunction' => fn (float $x, float $tau): float => exp(-max($x, 0.0) / $tau),
             'paramLogMin' => $logMin,
@@ -365,7 +381,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
     // phpcs:disable Spryker.Commenting.DocBlockParamAllowDefaultValue.Typehint -- misreads this shaped array docblock as a default-value typehint check
 
     /**
-     * @param array{name: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null} $definition
+     * @param array{name: string, shape: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null} $definition
      * @param array<int, array{x: float, y: float}> $points
      *
      * @return \Generated\Shared\Transfer\SearchRankingCurveFitCandidateTransfer|null
@@ -383,6 +399,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
 
             return (new SearchRankingCurveFitCandidateTransfer())
                 ->setName($definition['name'])
+                ->setShape($definition['shape'])
                 ->setFormula(($definition['formulaTemplate'])())
                 ->setParameterValue(0.0)
                 ->setRSquared($rSquared)
@@ -397,6 +414,7 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
 
         return (new SearchRankingCurveFitCandidateTransfer())
             ->setName($definition['name'])
+            ->setShape($definition['shape'])
             ->setFormula(($definition['formulaTemplate'])($searchResult['param']))
             ->setParameterValue($searchResult['param'])
             ->setRSquared($searchResult['rSquared'])
