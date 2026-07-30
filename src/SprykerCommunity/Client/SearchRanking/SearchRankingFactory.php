@@ -16,6 +16,7 @@ use Spryker\Shared\SearchElasticsearch\ElasticaClient\ElasticaClientFactory;
 use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilder;
 use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface;
+use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityChecker;
@@ -71,7 +72,16 @@ class SearchRankingFactory extends AbstractFactory
             $this->getElasticaClient(),
             $this->createSearchElasticsearchConfig(),
             $this->createShannonEntropyCalculator(),
+            $this->getStoreClient(),
         );
+    }
+
+    /**
+     * @return \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface
+     */
+    public function getStoreClient(): SearchRankingToStoreClientInterface
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::CLIENT_STORE);
     }
 
     /**

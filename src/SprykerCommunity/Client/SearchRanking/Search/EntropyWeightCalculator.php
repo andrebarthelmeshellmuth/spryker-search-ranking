@@ -14,16 +14,18 @@ use Elastica\Query;
 use Elastica\Query\AbstractQuery;
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 use Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig;
-use Spryker\Shared\Kernel\Store;
+use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use Throwable;
 
 /**
  * Resolves the index name the same way
  * {@see \Spryker\Client\SearchElasticsearch\Index\IndexNameResolver\IndexNameResolver} does
- * (`<prefix>_<store>_<sourceIdentifier>`), without pulling in its Store-client bridge — this class already
- * runs inside a real Yves request, where {@see \Spryker\Shared\Kernel\Store::getInstance()} is always
- * available directly.
+ * (`<prefix>_<store>_<sourceIdentifier>`), via the injected {@see \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface}
+ * rather than {@see \Spryker\Shared\Kernel\Store::getInstance()} — that static singleton throws
+ * "Dynamic store mode enabled. Store object cannot be used anymore." on any shop with dynamic store mode
+ * on, which a Client-layer class has no business assuming is off. The real `StoreClient::getCurrentStore()`
+ * works in both modes.
  */
 class EntropyWeightCalculator implements EntropyWeightCalculatorInterface
 {
@@ -31,11 +33,13 @@ class EntropyWeightCalculator implements EntropyWeightCalculatorInterface
      * @param \Elastica\Client $elasticaClient
      * @param \Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig $searchElasticsearchConfig
      * @param \SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculatorInterface $entropyCalculator
+     * @param \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface $storeClient
      */
     public function __construct(
         protected Client $elasticaClient,
         protected SearchElasticsearchConfig $searchElasticsearchConfig,
         protected ShannonEntropyCalculatorInterface $entropyCalculator,
+        protected SearchRankingToStoreClientInterface $storeClient,
     ) {
     }
 
@@ -146,7 +150,7 @@ class EntropyWeightCalculator implements EntropyWeightCalculatorInterface
     {
         $indexParameters = [
             $this->searchElasticsearchConfig->getIndexPrefix(),
-            Store::getInstance()->getStoreName(),
+            $this->storeClient->getCurrentStore()->getNameOrFail(),
             SharedSearchRankingConfig::PAGE_SOURCE_IDENTIFIER,
         ];
 
