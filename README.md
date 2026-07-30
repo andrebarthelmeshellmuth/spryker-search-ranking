@@ -453,13 +453,15 @@ code-level flag below is on:
 **Why the ON/OFF switch is code-level, not one of the three settings above:** it's the one control that
 decides whether a second live Elasticsearch query fires on every catalog search at all — flipping it
 should take a project deploy, not just a Zed form save. Enable it in your project's
-`Pyz\Shared\SearchRanking\SearchRankingConfig` by overriding `isEntropyWeightingEnabled(): bool` to
-return `true`; the three tuning settings become meaningful once that's done. It lives in Shared (not
-Client-only) specifically so both the Client query-expander plugin and Zed code (e.g. a checkpoint/
-rollback feature built on top of this package, which needs to know whether the entropy knobs it snapshots
-are actually live) can read the same flag —
-`Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()` still exists and delegates here,
-for callers already using that entry point.
+`Pyz\Client\SearchRanking\SearchRankingConfig` by overriding `isEntropyWeightingEnabled(): bool` to return
+`true`; the three tuning settings become meaningful once that's done. **This is the only override point
+that actually works** — `Shared\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()` is a plain
+hardcoded `return false;`, not a project-overridable `AbstractSharedConfig`, so overriding a
+`Pyz\Shared\SearchRanking\SearchRankingConfig` class (an earlier version of this README claimed this
+worked — it doesn't) has no effect. Other code that needs to ask whether entropy weighting is live for
+this project — e.g. a different package reimplementing this formula for its own evaluation tooling —
+should call `SearchRankingClientInterface::isEntropyWeightingEnabled()` rather than referencing either
+config class directly; it resolves through this same, genuinely project-override-aware Client config.
 
 **Why it's opt-in at all:** it doubles the number of Elasticsearch round trips per catalog search. That's
 a real, permanent cost — worth it once you have a mixed catalog with both exact-match and browsy query

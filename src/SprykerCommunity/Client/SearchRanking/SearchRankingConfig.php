@@ -16,13 +16,18 @@ class SearchRankingConfig extends AbstractBundleConfig
 {
     /**
      * Specification:
-     * - Whether entropy-aware relevance weighting is active — see
-     *   {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()},
-     *   the real source of truth (moved here from a Client-only flag so Zed can read the same value).
-     *   **Override `Pyz\Shared\SearchRanking\SearchRankingConfig` now, not this class** — this method
-     *   stays only so existing callers (e.g.
-     *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin})
-     *   don't need to change.
+     * - Whether entropy-aware relevance weighting is active for this project. **Override THIS method in
+     *   your project's `Pyz\Client\SearchRanking\SearchRankingConfig` to turn it on** — this class is a
+     *   real, Locator-resolved `AbstractBundleConfig`, the only layer this flag is genuinely
+     *   project-overridable at. {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()}
+     *   below is a plain hardcoded `return false;`, not overridable by any project class, despite an
+     *   earlier docblock/README revision claiming otherwise — it only supplies this method's own default
+     *   when a project hasn't overridden it.
+     * - Read via {@see \SprykerCommunity\Client\SearchRanking\SearchRankingClientInterface::isEntropyWeightingEnabled()}
+     *   by any code that needs to ask without duplicating this resolution, and directly via
+     *   `$this->getFactory()->getConfig()->isEntropyWeightingEnabled()` by
+     *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
+     *   itself.
      *
      * @api
      *

@@ -12,6 +12,8 @@ namespace SprykerCommunityTest\Client\SearchRanking;
 use Codeception\Test\Unit;
 use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult;
 use SprykerCommunity\Client\SearchRanking\SearchRankingClient;
+use SprykerCommunity\Client\SearchRanking\SearchRankingConfig;
+use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;
 
 /**
  * Auto-generated group annotations
@@ -72,5 +74,29 @@ class SearchRankingClientTest extends Unit
 
         // Assert
         $this->assertNull($client->getLastEntropyWeightingResult());
+    }
+
+    /**
+     * The whole point of this method existing: it must resolve through THIS Client's own, Locator-resolved
+     * `getFactory()->getConfig()` — the only place a project override of `isEntropyWeightingEnabled()`
+     * actually takes effect — rather than referencing `Shared\SearchRanking\SearchRankingConfig` directly,
+     * which has no project-override path at all. See both classes' docblocks for the full history.
+     *
+     * @return void
+     */
+    public function testIsEntropyWeightingEnabledDelegatesToTheLocatorResolvedClientConfig(): void
+    {
+        // Arrange
+        $configMock = $this->createMock(SearchRankingConfig::class);
+        $configMock->method('isEntropyWeightingEnabled')->willReturn(true);
+
+        $factoryMock = $this->createMock(SearchRankingFactory::class);
+        $factoryMock->method('getConfig')->willReturn($configMock);
+
+        $client = new SearchRankingClient();
+        $client->setFactory($factoryMock);
+
+        // Act & Assert
+        $this->assertTrue($client->isEntropyWeightingEnabled());
     }
 }
