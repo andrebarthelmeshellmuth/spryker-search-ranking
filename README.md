@@ -436,6 +436,32 @@ relevanceWeight = clamp(configuredRelevanceWeight + shiftMagnitude × shapedDevi
 The exponent is applied to the deviation's magnitude, not to `Hₙₒᵣₘ` directly — that keeps `Hₙₒᵣₘ = 0.5`
 an exact neutral point regardless of the exponent's value, rather than moving it.
 
+> [!CAUTION]
+> **Verify against real score data before assuming this differentiates "somewhat specific" from "very
+> generic" queries — on a typical catalog it may only ever fire at the two extremes.** Measured live
+> against a real (if modestly sized) product catalog: an ordinary multi-term/browsy query's top-*N* raw
+> BM25 `_score`s cluster tightly — e.g. real top-10 scores for `"chair"` spanned only 16.43→15.37 (≈7%) —
+> which computes to `Hₙₒᵣₘ ≈ 0.9998`, not just "high," but numerically almost indistinguishable from the
+> mathematical maximum of `1.0`. Reaching a materially lower reading needs roughly a 10–500× gap between
+> the top score and the rest (`Hₙₒᵣₘ ≈ 0.75` at 10×, `≈ 0.03` at 1000×) — a gap ordinary `multi_match`
+> queries essentially never produce, since BM25 is log-scaled and saturating by design. In practice, on
+> data shaped like this, the reading that actually moves is the **`candidateCount < 2` guard** — an
+> exact-SKU-style query matching exactly one document (or none) collapses `Hₙₒᵣₘ` straight to exactly
+> `0.0`/leaves the baseline untouched, with no continuous middle ground between "browsy" and "singular"
+> in real, observed use.
+>
+> **The exponent cannot compensate for this.** It reshapes how an ALREADY-COMPUTED `Hₙₒᵣₘ` maps to a
+> weight shift — it has no way to change what `Hₙₒᵣₘ` the probe measures for a given real score
+> distribution. Since `|signedDeviation|` for a typical browsy query is already ≈`0.9996` (i.e. `Hₙₒᵣₘ ≈
+> 0.9998`), raising it to any reasonable exponent still leaves it at ≈`1.0` — `0.9996^5 ≈ 0.998`,
+> `0.9996^0.2 ≈ 0.9999` — so the applied shift stays pinned at (or extremely close to) the full configured
+> `shiftMagnitude` regardless of which exponent you configure. The exponent only reshapes the mapping
+> *between* genuinely different `Hₙₒᵣₘ` readings — useful once your own queries actually produce a
+> meaningful spread of them, which this package cannot promise for every catalog/query-shape combination.
+> **Measure your own shop's real `Hₙₒᵣₘ` distribution (e.g. via the search-debug overlay's "Entropy
+> weighting" section across a representative sample of real queries) before tuning the exponent — don't
+> assume it will grade the "somewhat vs. very generic" middle ground your project cares about.**
+
 **Three Zed-editable settings, at `/search-ranking-gui/settings`** (alongside `relevanceWeight` and
 `relevanceSaturationPoint` — see [Ranking formula](#ranking-formula)) — all only take effect once the
 code-level flag below is on:
