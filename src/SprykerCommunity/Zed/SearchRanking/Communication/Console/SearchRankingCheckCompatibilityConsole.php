@@ -70,21 +70,21 @@ class SearchRankingCheckCompatibilityConsole extends Console
         $output->writeln('');
 
         $isProductionCapabilityBroken = false;
-        // Set once, right before the FIRST optional capability line — a blank line acting as an unlabeled
-        // section break between the one required line above it and the whole block of optional ones below,
-        // so the "these don't affect anything" note (see writeCapabilityLine()) reads as covering a
-        // visually distinct group rather than needing to be re-parsed line by line.
-        $hasPrintedOptionalSeparator = false;
+        // Printed once, right before the FIRST optional capability line — a blank line plus a single
+        // headline covering the whole block of optional ones below, rather than repeating the same note
+        // on every one of their individual lines.
+        $hasPrintedOptionalHeadline = false;
 
         foreach ($compatibilityTransfer->getCapabilities() as $capabilityTransfer) {
             $isRequired = $capabilityTransfer->getNameOrFail() === static::CAPABILITY_IN_PRODUCTION_USE;
 
-            if (!$isRequired && !$hasPrintedOptionalSeparator) {
+            if (!$isRequired && !$hasPrintedOptionalHeadline) {
                 $output->writeln('');
-                $hasPrintedOptionalSeparator = true;
+                $output->writeln('<comment>Optional — forward-looking only, does not affect this package\'s current version and therefore this command\'s exit code:</comment>');
+                $hasPrintedOptionalHeadline = true;
             }
 
-            $this->writeCapabilityLine($output, $capabilityTransfer, $isRequired);
+            $this->writeCapabilityLine($output, $capabilityTransfer);
 
             if (!$isRequired) {
                 continue;
@@ -111,30 +111,20 @@ class SearchRankingCheckCompatibilityConsole extends Console
     }
 
     /**
-     * $isRequired is false for every capability this package doesn't actually depend on today (see
-     * {@see CAPABILITY_IN_PRODUCTION_USE}'s own docblock) — an unsupported one of THOSE is not a
-     * problem, just a "not available on this engine yet" data point for future-phase planning, but a
-     * bare `✗` next to it reads exactly like a failure to anyone who hasn't read this class's docblock or
-     * the README first. Spelling that out right on the line itself (rather than only in the surrounding
-     * docs) is what actually prevents the "did I break something?" reaction.
-     *
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      * @param \Generated\Shared\Transfer\SearchRankingEngineCapabilityTransfer $capabilityTransfer
-     * @param bool $isRequired
      *
      * @return void
      */
-    protected function writeCapabilityLine(OutputInterface $output, SearchRankingEngineCapabilityTransfer $capabilityTransfer, bool $isRequired): void
+    protected function writeCapabilityLine(OutputInterface $output, SearchRankingEngineCapabilityTransfer $capabilityTransfer): void
     {
         $marker = $capabilityTransfer->getIsSupportedOrFail() ? '<info>✓</info>' : '<comment>✗</comment>';
-        $optionalNote = $isRequired ? '' : ' <comment>(optional — forward-looking only, does not affect this package\'s current version and therefore this command\'s exit code)</comment>';
 
         $output->writeln(sprintf(
-            '%s %s — %s%s',
+            '%s %s — %s',
             $marker,
             $capabilityTransfer->getNameOrFail(),
             $capabilityTransfer->getDetailOrFail(),
-            $optionalNote,
         ));
     }
 }
