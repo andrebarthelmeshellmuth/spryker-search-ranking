@@ -294,14 +294,16 @@ requiring any change here.
   is normalized.
 - **search-debug overlay integration** (optional, needs
   [spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debugger)):
-  `SearchRankingProductDebugDataExpanderPlugin` adds a "Business signals" section to the per-product
-  SRP overlay — one `signal × weight = contribution` line per metric, their total, the saturation point
-  (`k`) and the normalized relevance it produces (`score/(score+k)`), the relevance weight (`α`), and
-  the full blend formula, e.g. `0.60 × 0.37 + (1 - 0.60) × 0.53 =`, reconciling exactly with the final
-  score shown directly below it. The formula plugs in the already-shown normalized-relevance value
-  directly rather than repeating `score / (score + k)` inline, and spells out `(1 - α)` literally
+  `SearchRankingProductDebugDataExpanderPlugin` adds a "Business signals" section to the per-product SRP
+  overlay — one `signal × weight = contribution` line per metric and their total — plus, distributed
+  across a few other dedicated spots in the same overlay (not all bundled into that one section): the
+  saturation point (`k`), grouped under "Text signals" with the raw text-match score it normalizes; the
+  normalized relevance it produces (`score/(score+k)`), labeled "Text Signal total"; the relevance weight
+  (`α`); and the full blend formula, e.g. `0.60 × 0.37 + (1 - 0.60) × 0.53 =`, reconciling exactly with
+  the final score shown directly below it. The formula plugs in the already-shown "Text Signal total"
+  value directly rather than repeating `score / (score + k)` inline, and spells out `(1 - α)` literally
   instead of pre-subtracting it into a single number, so it stays visibly tied to the `α` line just
-  above it. Every number in that section is rounded to
+  above it. Every number here is rounded to
   `SprykerCommunity\Shared\SearchDebug\SearchDebugConfig::SCORE_DECIMAL_PLACES` (default **3**) — the
   same constant search-debug's own overlay numbers use, so the whole page shows one consistent
   precision; see that package's README for details. Rounding happens only at this display step — the
@@ -355,7 +357,7 @@ The two constants play different roles operationally:
   A/B test — how much should business performance move the needle relative to text match.
 - **`relevanceSaturationPoint`** is a **search-infra tuning constant**. It has no universal correct
   value — it depends entirely on this shop's own field boosts and typical query shapes. It should be
-  set once from real `_score` values (the search-debug overlay's "Text match total score" line is
+  set once from real `_score` values (the search-debug overlay's "Text match raw score" line is
   exactly the number to sample) and rarely touched afterwards, not guessed.
 
 **Default `relevanceWeight` is `0.75`, not a neutral `0.5`.** Two reasons, both rooted in the
@@ -485,8 +487,10 @@ overlay — not an independent, stale config lookup. Two effects:
   effective weight entropy actually applied, not the static configured one — the formula stays
   reproducible-by-eye against the real final score even with entropy weighting on.
 - A second "Entropy weighting" section appears (only when the feature actually ran for that query),
-  listing the configured baseline, the measured normalized entropy, the shift, and the resulting
-  effective weight — so the debug overlay explains *why* `relevanceWeight` moved, not just its new value.
+  directly above the "Relevance weight (α)" line it explains the shift for, listing the configured
+  baseline, the measured normalized entropy, the shift, and the resulting effective weight — so the
+  debug overlay explains *why* `relevanceWeight` moved, right next to its new value, not just the value
+  itself elsewhere on the page.
 
 ## Why full republish, not a partial score-only ES update
 

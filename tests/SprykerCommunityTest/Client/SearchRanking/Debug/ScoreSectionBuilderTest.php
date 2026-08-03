@@ -59,6 +59,9 @@ class ScoreSectionBuilderTest extends Unit
         $this->assertEqualsWithDelta(0.25495 + 0.06099, $section['summaryValue'], 1.0E-9);
 
         $this->assertArrayNotHasKey('formulaCalculation', $section);
+        // Only buildEntropySection()'s section carries this flag — the search-debug overlay uses it to
+        // single out the "Entropy weighting" section for its own dedicated render position.
+        $this->assertArrayNotHasKey('isEntropySection', $section);
     }
 
     /**
@@ -102,7 +105,7 @@ class ScoreSectionBuilderTest extends Unit
         //   = 6.9244 / (6.9244 + 12.0) = 0.365864...
         $this->assertSame('Saturation point (k)', $section['relevanceSaturationPointLabel']);
         $this->assertSame(12.0, $section['relevanceSaturationPointValue']);
-        $this->assertSame('|--> Normalized (score/(score+k))', $section['normalizedRelevanceLabel']);
+        $this->assertSame('Text Signal total', $section['normalizedRelevanceLabel']);
         $this->assertEqualsWithDelta(0.365898, $section['normalizedRelevanceValue'], 1.0E-6);
         $this->assertSame('Relevance weight (α)', $section['relevanceWeightLabel']);
         $this->assertSame(0.6, $section['relevanceWeightValue']);
@@ -227,6 +230,9 @@ class ScoreSectionBuilderTest extends Unit
 
         // Assert
         $this->assertSame('Entropy weighting', $section['title']);
+        // The search-debug overlay reads this flag to render this section in its own dedicated spot
+        // (above the relevance-weight line) instead of the default top-of-page position.
+        $this->assertTrue($section['isEntropySection']);
         $this->assertCount(4, $section['lines']);
 
         $this->assertSame('Configured relevance weight (α₀)', $section['lines'][0]['label']);

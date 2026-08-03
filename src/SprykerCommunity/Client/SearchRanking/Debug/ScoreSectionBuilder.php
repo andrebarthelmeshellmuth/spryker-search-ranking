@@ -16,22 +16,32 @@ use SprykerCommunity\Shared\SearchDebug\SearchDebugConfig;
 /**
  * Builds the business-signal breakdown section for the search-debug SRP overlay: one line per
  * weighted metric (normalized signal × weight = contribution), their sum, and — when the wrapped
- * query's own relevance score is known — the saturation-point/normalization/weight lines plus the full
- * blend formula, so the final `_score` is reproducible by eye:
+ * query's own relevance score is known — the saturation-point/normalization/weight values plus the
+ * full blend formula, so the final `_score` is reproducible by eye. This section's OWN array only ever
+ * holds these values as data (`relevanceSaturationPointLabel`/`Value`, `normalizedRelevanceLabel`/
+ * `Value`, `relevanceWeightLabel`/`Value`, `formulaCalculation`) — the search-debug overlay template
+ * decides where each one actually renders, and deliberately does NOT print them as one contiguous
+ * block: the saturation point sits grouped with the raw text-match score it normalizes, the normalized
+ * result gets its own standalone line right after, and the relevance weight sits directly next to the
+ * closing formula, with search-ranking's own "Entropy weighting" section (see
+ * {@see buildEntropySection()}) placed between the two:
  *
  *   top_seller: 0.51 × 0.50 = 0.26
  *   pdp_impressions: 0.20 × 0.30 = 0.06
  *   Business signal total: 0.32
- *   Saturation point (k): 12.00
- *   |--> Normalized (score/(score+k)): 0.37
+ *   ...
+ *   Saturation point (k): 12.00 <- grouped with the raw text-match score, under "Text signals"
+ *   Text Signal total: 0.37 <- its own standalone line, right after
+ *   ...
+ *   Entropy weighting: ... <- search-ranking's other section, when it ran for this query
  *   Relevance weight (α): 0.50
  *   0.50 × 0.37 + (1 - 0.50) × 0.32 =
  *
  * The formula deliberately stops at "=" without repeating the result — the search-debug overlay
  * already shows that same number right below, as the final score. Spelling it out twice would just be
- * redundant. It plugs in the ALREADY-shown `Normalized (score/(score+k))` value directly rather than
- * repeating the `queryScore / (queryScore + relevanceSaturationPoint)` sub-expression inline — that
- * expression has its own line right above for exactly this reason. The `(1 - relevanceWeight)` half is
+ * redundant. It plugs in the ALREADY-shown "Text Signal total" value directly rather than repeating the
+ * `queryScore / (queryScore + relevanceSaturationPoint)` sub-expression inline — that expression has
+ * its own line elsewhere in the overlay for exactly this reason. The `(1 - relevanceWeight)` half is
  * spelled out literally (not pre-subtracted into a single number) so it stays visibly tied to the
  * `relevanceWeight` value shown just above the formula, rather than reading as some other, unexplained
  * constant.
@@ -75,9 +85,14 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
     protected const RELEVANCE_SATURATION_POINT_LABEL = 'Saturation point (k)';
 
     /**
+     * Deliberately no longer a "|--> Normalized (...)" nested-arrow label: that visual nesting made sense
+     * only while this line rendered directly under "Saturation point (k)" — now that the saturation point
+     * moved inside the "Text signals" box and this line stays outside it (see this class's own docblock),
+     * an arrow implying "follows from the line above" would point at nothing.
+     *
      * @var string
      */
-    protected const NORMALIZED_RELEVANCE_LABEL = '|--> Normalized (score/(score+k))';
+    protected const NORMALIZED_RELEVANCE_LABEL = 'Text Signal total';
 
     /**
      * @var string
@@ -203,6 +218,11 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
     {
         return [
             'title' => static::ENTROPY_SECTION_TITLE,
+            // Tells the search-debug overlay template to render this section in its own dedicated spot
+            // (directly above the relevance-weight line it explains the shift for) instead of the default
+            // top-of-page position every other section (e.g. "Business signals") uses — see
+            // ProductDebugDataExpanderPluginInterface's docblock for the full contract.
+            'isEntropySection' => true,
             'lines' => [
                 [
                     'label' => static::ENTROPY_CONFIGURED_WEIGHT_LABEL,
