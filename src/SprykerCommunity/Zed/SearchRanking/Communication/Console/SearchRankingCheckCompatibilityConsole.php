@@ -72,9 +72,10 @@ class SearchRankingCheckCompatibilityConsole extends Console
         $isProductionCapabilityBroken = false;
 
         foreach ($compatibilityTransfer->getCapabilities() as $capabilityTransfer) {
-            $this->writeCapabilityLine($output, $capabilityTransfer);
+            $isRequired = $capabilityTransfer->getNameOrFail() === static::CAPABILITY_IN_PRODUCTION_USE;
+            $this->writeCapabilityLine($output, $capabilityTransfer, $isRequired);
 
-            if ($capabilityTransfer->getNameOrFail() !== static::CAPABILITY_IN_PRODUCTION_USE) {
+            if (!$isRequired) {
                 continue;
             }
 
@@ -99,20 +100,30 @@ class SearchRankingCheckCompatibilityConsole extends Console
     }
 
     /**
+     * $isRequired is false for every capability this package doesn't actually depend on today (see
+     * {@see CAPABILITY_IN_PRODUCTION_USE}'s own docblock) — an unsupported one of THOSE is not a
+     * problem, just a "not available on this engine yet" data point for future-phase planning, but a
+     * bare `✗` next to it reads exactly like a failure to anyone who hasn't read this class's docblock or
+     * the README first. Spelling that out right on the line itself (rather than only in the surrounding
+     * docs) is what actually prevents the "did I break something?" reaction.
+     *
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      * @param \Generated\Shared\Transfer\SearchRankingEngineCapabilityTransfer $capabilityTransfer
+     * @param bool $isRequired
      *
      * @return void
      */
-    protected function writeCapabilityLine(OutputInterface $output, SearchRankingEngineCapabilityTransfer $capabilityTransfer): void
+    protected function writeCapabilityLine(OutputInterface $output, SearchRankingEngineCapabilityTransfer $capabilityTransfer, bool $isRequired): void
     {
         $marker = $capabilityTransfer->getIsSupportedOrFail() ? '<info>✓</info>' : '<comment>✗</comment>';
+        $optionalNote = $isRequired ? '' : ' <comment>(optional — forward-looking only, does not affect this command\'s exit code)</comment>';
 
         $output->writeln(sprintf(
-            '%s %s — %s',
+            '%s %s — %s%s',
             $marker,
             $capabilityTransfer->getNameOrFail(),
             $capabilityTransfer->getDetailOrFail(),
+            $optionalNote,
         ));
     }
 }
