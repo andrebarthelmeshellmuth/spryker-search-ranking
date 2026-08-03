@@ -70,9 +70,20 @@ class SearchRankingCheckCompatibilityConsole extends Console
         $output->writeln('');
 
         $isProductionCapabilityBroken = false;
+        // Set once, right before the FIRST optional capability line — a blank line acting as an unlabeled
+        // section break between the one required line above it and the whole block of optional ones below,
+        // so the "these don't affect anything" note (see writeCapabilityLine()) reads as covering a
+        // visually distinct group rather than needing to be re-parsed line by line.
+        $hasPrintedOptionalSeparator = false;
 
         foreach ($compatibilityTransfer->getCapabilities() as $capabilityTransfer) {
             $isRequired = $capabilityTransfer->getNameOrFail() === static::CAPABILITY_IN_PRODUCTION_USE;
+
+            if (!$isRequired && !$hasPrintedOptionalSeparator) {
+                $output->writeln('');
+                $hasPrintedOptionalSeparator = true;
+            }
+
             $this->writeCapabilityLine($output, $capabilityTransfer, $isRequired);
 
             if (!$isRequired) {
@@ -116,7 +127,7 @@ class SearchRankingCheckCompatibilityConsole extends Console
     protected function writeCapabilityLine(OutputInterface $output, SearchRankingEngineCapabilityTransfer $capabilityTransfer, bool $isRequired): void
     {
         $marker = $capabilityTransfer->getIsSupportedOrFail() ? '<info>✓</info>' : '<comment>✗</comment>';
-        $optionalNote = $isRequired ? '' : ' <comment>(optional — forward-looking only, does not affect this command\'s exit code)</comment>';
+        $optionalNote = $isRequired ? '' : ' <comment>(optional — forward-looking only, does not affect this package\'s current version and therefore this command\'s exit code)</comment>';
 
         $output->writeln(sprintf(
             '%s %s — %s%s',
