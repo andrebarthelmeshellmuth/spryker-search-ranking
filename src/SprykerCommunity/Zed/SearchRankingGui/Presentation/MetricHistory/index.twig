@@ -10,6 +10,10 @@
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Every recorded metric config change, newest first' } %}
         {% block widget_content %}
+            <div class="alert alert-info">
+                <span class="material-symbols-outlined">info</span>
+                {{ 'Each row is a snapshot of a metric\'s configuration AS OF that timestamp — not a before/after diff of the edit that triggered it. To see what a value was BEFORE a given change, look at the next OLDER row for that same metric, not the row itself.' | trans }}
+            </div>
             {{ metricHistoryTable | raw }}
         {% endblock %}
     {% endembed %}
