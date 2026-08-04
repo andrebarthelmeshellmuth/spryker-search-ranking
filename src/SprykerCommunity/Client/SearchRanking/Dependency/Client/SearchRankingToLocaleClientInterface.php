@@ -11,8 +11,5 @@ namespace SprykerCommunity\Client\SearchRanking\Dependency\Client;
 
 interface SearchRankingToLocaleClientInterface
 {
-    /**
-     * @return string
-     */
     public function getCurrentLocale(): string;
 }

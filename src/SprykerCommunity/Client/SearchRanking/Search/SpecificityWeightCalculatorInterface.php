@@ -36,8 +36,6 @@ interface SpecificityWeightCalculatorInterface
      *
      * @param string $searchString
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
-     *
-     * @return float
      */
     public function calculateRelevanceWeight(
         string $searchString,
@@ -55,8 +53,6 @@ interface SpecificityWeightCalculatorInterface
      *
      * @param string $searchString
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
-     *
-     * @return \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult
      */
     public function calculateWeightingResult(
         string $searchString,

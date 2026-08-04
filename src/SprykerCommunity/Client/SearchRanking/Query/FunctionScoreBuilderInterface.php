@@ -21,8 +21,6 @@ interface FunctionScoreBuilderInterface
      *
      * @param \Elastica\Query\AbstractQuery $wrappedQuery
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
-     *
-     * @return \Elastica\Query\FunctionScore|null
      */
     public function build(
         AbstractQuery $wrappedQuery,

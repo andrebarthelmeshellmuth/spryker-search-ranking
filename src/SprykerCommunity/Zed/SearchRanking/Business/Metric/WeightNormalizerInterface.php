@@ -14,8 +14,6 @@ interface WeightNormalizerInterface
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return bool
      */
     public function normalizeActiveWeights(string $storeName, string $localeName): bool;
 }

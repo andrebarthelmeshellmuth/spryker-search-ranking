@@ -14,8 +14,6 @@ interface SearchRankingToEventFacadeInterface
     /**
      * @param string $eventName
      * @param array<\Generated\Shared\Transfer\EventEntityTransfer> $eventEntityTransfers
-     *
-     * @return void
      */
     public function triggerBulk(string $eventName, array $eventEntityTransfers): void;
 }

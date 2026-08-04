@@ -23,8 +23,6 @@ interface MetricFormulaFitEvaluatorInterface
      *
      * @param string $formula
      * @param \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer $digestTransfer
-     *
-     * @return float|null
      */
     public function evaluateFit(string $formula, SearchRankingMetricDigestTransfer $digestTransfer): ?float;
 }

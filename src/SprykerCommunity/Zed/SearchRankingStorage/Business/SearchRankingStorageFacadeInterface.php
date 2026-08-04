@@ -20,8 +20,6 @@ interface SearchRankingStorageFacadeInterface
      *   propagates it to key-value storage via the sync queue.
      *
      * @api
-     *
-     * @return void
      */
     public function publishRankingConfiguration(): void;
 

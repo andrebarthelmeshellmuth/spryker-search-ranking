@@ -15,8 +15,6 @@ interface SearchRankingStorageToSynchronizationServiceInterface
 {
     /**
      * @param string $resourceName
-     *
-     * @return \Spryker\Service\Synchronization\Dependency\Plugin\SynchronizationKeyGeneratorPluginInterface
      */
     public function getStorageKeyBuilder(string $resourceName): SynchronizationKeyGeneratorPluginInterface;
 }

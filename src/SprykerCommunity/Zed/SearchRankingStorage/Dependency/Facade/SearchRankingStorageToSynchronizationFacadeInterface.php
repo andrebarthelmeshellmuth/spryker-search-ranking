@@ -11,8 +11,5 @@ namespace SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade;
 
 interface SearchRankingStorageToSynchronizationFacadeInterface
 {
-    /**
-     * @return void
-     */
     public function flushSynchronizationMessagesFromBuffer(): void;
 }

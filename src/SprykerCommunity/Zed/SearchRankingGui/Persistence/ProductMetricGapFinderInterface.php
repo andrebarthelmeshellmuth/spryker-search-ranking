@@ -58,8 +58,6 @@ interface ProductMetricGapFinderInterface
      * @param int|null $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return int
      */
     public function countGaps(?int $idSearchRankingMetric, string $storeName, string $localeName): int;
 
@@ -74,8 +72,6 @@ interface ProductMetricGapFinderInterface
      * @param string $storeName
      * @param string $localeName
      * @param string $searchTerm
-     *
-     * @return int
      */
     public function countFilteredGaps(?int $idSearchRankingMetric, string $storeName, string $localeName, string $searchTerm): int;
 }

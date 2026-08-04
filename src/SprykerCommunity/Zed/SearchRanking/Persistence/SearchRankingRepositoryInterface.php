@@ -20,16 +20,12 @@ interface SearchRankingRepositoryInterface
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
     public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
 
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
     public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
 
@@ -37,8 +33,6 @@ interface SearchRankingRepositoryInterface
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
     public function findMetricById(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricTransfer;
 
@@ -46,8 +40,6 @@ interface SearchRankingRepositoryInterface
      * @param string $name
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
     public function findMetricByName(string $name, string $storeName, string $localeName): ?SearchRankingMetricTransfer;
 
@@ -58,8 +50,6 @@ interface SearchRankingRepositoryInterface
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float|null
      */
     public function findMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName): ?float;
 
@@ -67,8 +57,6 @@ interface SearchRankingRepositoryInterface
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer
      */
     public function getMetricStatistics(int $idSearchRankingMetric, string $storeName, string $localeName): SearchRankingMetricStatisticsTransfer;
 
@@ -119,8 +107,6 @@ interface SearchRankingRepositoryInterface
      * @param string $settingKey
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return string|null
      */
     public function findSettingValue(string $settingKey, string $storeName, string $localeName): ?string;
 
@@ -142,8 +128,6 @@ interface SearchRankingRepositoryInterface
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer|null
      */
     public function findMetricDigest(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricDigestTransfer;
 
@@ -169,8 +153,6 @@ interface SearchRankingRepositoryInterface
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer|null
      */
     public function findLastMetricChangeHistoryEntry(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricHistoryTransfer;
 }

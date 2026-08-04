@@ -33,8 +33,6 @@ interface QueryTermFrequencyFetcherInterface
      *
      * @param string $searchString
      * @param array<string, string> $fieldToSearchAnalyzer
-     *
-     * @return \SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyResult
      */
     public function fetch(string $searchString, array $fieldToSearchAnalyzer): QueryTermFrequencyResult;
 }

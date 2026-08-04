@@ -30,8 +30,6 @@ interface MetricDigestBuilderInterface
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return bool
      */
     public function rebuildDigest(int $idSearchRankingMetric, string $storeName, string $localeName): bool;
 }

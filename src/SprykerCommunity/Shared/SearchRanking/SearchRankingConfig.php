@@ -162,8 +162,6 @@ class SearchRankingConfig
      *   is on; the saturation point is Calibration-tunable only.
      *
      * @api
-     *
-     * @return bool
      */
     public static function isSpecificityWeightingEnabled(): bool
     {

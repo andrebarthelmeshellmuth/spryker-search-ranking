@@ -29,9 +29,6 @@ class QueryTermFrequencyResult
     ) {
     }
 
-    /**
-     * @return int
-     */
     public function getDocCount(): int
     {
         return $this->docCount;

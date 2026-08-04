@@ -11,8 +11,5 @@ namespace SprykerCommunity\Zed\SearchRanking\Business\Publisher;
 
 interface ProductAbstractScorePublisherInterface
 {
-    /**
-     * @return int
-     */
     public function publishScoredProductAbstracts(): int;
 }
