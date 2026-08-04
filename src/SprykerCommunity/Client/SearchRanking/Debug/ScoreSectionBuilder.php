@@ -167,7 +167,7 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
             $signalTotal += $contribution;
 
             $lines[] = [
-                'label' => (string)$metricName,
+                'label' => $metricName,
                 'calculation' => sprintf($decimalFormat . ' × ' . $decimalFormat, $signal, $weight),
                 'value' => $contribution,
             ];
