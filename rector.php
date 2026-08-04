@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Rector\Config\RectorConfig;
+use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\Php80\Rector\Class_\ClassPropertyAssignToConstructorPromotionRector;
 
 return RectorConfig::configure()
@@ -23,11 +24,18 @@ return RectorConfig::configure()
         ClassPropertyAssignToConstructorPromotionRector::class => [
             __DIR__ . '/src/*Bridge.php',
         ],
+        // Spryker.Commenting.DocBlockParam (active via the base Spryker ruleset, phpcs.xml) requires
+        // exactly one @param tag per method parameter, typed or not, plus a specific docblock spacing
+        // that a stripped tag breaks. This rule removes @param tags for natively typed params, which
+        // empirically produced "There must be exactly one blank line before the tags" phpcs errors
+        // (verified live on FunctionScoreBuilderInterface.php) — a direct, systemic contradiction of
+        // that convention across every file in this codebase, not just an isolated case.
+        RemoveUselessParamTagRector::class,
     ])
     // Picks up the PHP floor (>=8.3) from composer.json.
     ->withPhpSets()
     // Gradual levels (0 = safest rules only). Raising in batches; stop at the first hit that
     // conflicts with established Spryker style rather than applying it automatically.
-    ->withDeadCodeLevel(20)
-    ->withCodeQualityLevel(20)
+    ->withDeadCodeLevel(25)
+    ->withCodeQualityLevel(25)
     ->withoutParallel();
