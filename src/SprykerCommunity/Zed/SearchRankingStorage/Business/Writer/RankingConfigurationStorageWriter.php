@@ -78,8 +78,6 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
      * Publishes one configuration document per (store, locale) — mirrors core's
      * `CategoryNodeStorageWriter` nested-loop shape (all stores outer, that store's own available
      * locales inner), never a cross-join against every globally available locale.
-     *
-     * @return void
      */
     public function publishRankingConfiguration(): void
     {
@@ -102,8 +100,6 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return void
      */
     protected function publishRankingConfigurationForStoreAndLocale(string $storeName, string $localeName): void
     {

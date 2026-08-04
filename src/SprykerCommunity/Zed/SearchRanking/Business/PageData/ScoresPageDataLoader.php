@@ -24,8 +24,6 @@ class ScoresPageDataLoader implements ScoresPageDataLoaderInterface
 
     /**
      * @param \Generated\Shared\Transfer\ProductPageLoadTransfer $productPageLoadTransfer
-     *
-     * @return \Generated\Shared\Transfer\ProductPageLoadTransfer
      */
     public function expandProductPageLoadTransfer(ProductPageLoadTransfer $productPageLoadTransfer): ProductPageLoadTransfer
     {

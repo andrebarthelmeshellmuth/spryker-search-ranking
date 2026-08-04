@@ -56,8 +56,6 @@ class ProductMetricGapController extends AbstractController
 
     /**
      * @param \Symfony\Component\HttpFoundation\Request $request
-     *
-     * @return \Symfony\Component\HttpFoundation\JsonResponse
      */
     public function tableAction(Request $request): JsonResponse
     {
@@ -75,8 +73,6 @@ class ProductMetricGapController extends AbstractController
      * not a fallback to avoid an empty-looking page. A real, positive metric ID narrows to just that one.
      *
      * @param \Symfony\Component\HttpFoundation\Request $request
-     *
-     * @return int|null
      */
     protected function resolveIdSearchRankingMetric(Request $request): ?int
     {
@@ -87,8 +83,6 @@ class ProductMetricGapController extends AbstractController
 
     /**
      * @param \Symfony\Component\HttpFoundation\Request $request
-     *
-     * @return string
      */
     protected function resolveStoreName(Request $request): string
     {
@@ -97,8 +91,6 @@ class ProductMetricGapController extends AbstractController
 
     /**
      * @param \Symfony\Component\HttpFoundation\Request $request
-     *
-     * @return string
      */
     protected function resolveLocaleName(Request $request): string
     {

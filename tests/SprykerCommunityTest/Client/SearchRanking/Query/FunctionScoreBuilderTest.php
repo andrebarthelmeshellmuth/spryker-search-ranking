@@ -28,9 +28,6 @@ use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder;
  */
 class FunctionScoreBuilderTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testBuildsFunctionScoreWithWeightParamsAndGuardedDocValues(): void
     {
         // Arrange
@@ -56,9 +53,6 @@ class FunctionScoreBuilderTest extends Unit
         $this->assertStringContainsString('(1 - params.relevanceWeight) * (', $script['source']);
     }
 
-    /**
-     * @return void
-     */
     public function testSkipsZeroWeightedMetrics(): void
     {
         // Arrange
@@ -80,8 +74,6 @@ class FunctionScoreBuilderTest extends Unit
      * Metric names are embedded into the painless source, so anything not matching the
      * strict name pattern (only enforceable via the Zed form, not via data import) must
      * never reach the script.
-     *
-     * @return void
      */
     public function testRejectsMetricNamesThatCouldInjectScriptCode(): void
     {
@@ -100,9 +92,6 @@ class FunctionScoreBuilderTest extends Unit
         $this->assertStringContainsString('valid_metric', $script['source']);
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsNullWhenNoUsableSignalTermsRemain(): void
     {
         // Arrange
@@ -118,9 +107,6 @@ class FunctionScoreBuilderTest extends Unit
         $this->assertNull($functionScore);
     }
 
-    /**
-     * @return void
-     */
     public function testWrapsTheGivenQuery(): void
     {
         // Arrange

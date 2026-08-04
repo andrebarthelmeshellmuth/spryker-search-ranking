@@ -111,8 +111,6 @@ class EditController extends AbstractController
      * free, so a GET is correct even though the browser-typed formula may not be saved (or even valid).
      *
      * @param \Symfony\Component\HttpFoundation\Request $request
-     *
-     * @return \Symfony\Component\HttpFoundation\JsonResponse
      */
     public function previewAction(Request $request): JsonResponse
     {
@@ -129,8 +127,6 @@ class EditController extends AbstractController
 
     /**
      * @param \Symfony\Component\HttpFoundation\Request $request
-     *
-     * @return string
      */
     protected function resolveStoreName(Request $request): string
     {
@@ -139,8 +135,6 @@ class EditController extends AbstractController
 
     /**
      * @param \Symfony\Component\HttpFoundation\Request $request
-     *
-     * @return string
      */
     protected function resolveLocaleName(Request $request): string
     {

@@ -32,9 +32,6 @@ use SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSearch\Se
  */
 class SearchRankingScoresMapExpanderPluginTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testWritesTheScoresFieldWhenTheProductDataHoldsScores(): void
     {
         // Arrange
@@ -58,8 +55,6 @@ class SearchRankingScoresMapExpanderPluginTest extends Unit
      * one — see the plugin's own docblock. `getScores()` alone can't tell "never set" apart from "set to
      * []" since the transfer already defaults to [], so this asserts via `modifiedToArray()` (only
      * explicitly-set fields) instead.
-     *
-     * @return void
      */
     public function testLeavesTheScoresFieldUnsetWhenTheProductDataHasNoScores(): void
     {

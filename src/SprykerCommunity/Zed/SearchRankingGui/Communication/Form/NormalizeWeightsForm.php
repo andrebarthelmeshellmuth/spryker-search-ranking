@@ -22,9 +22,6 @@ use Spryker\Zed\Kernel\Communication\Form\AbstractType;
  */
 class NormalizeWeightsForm extends AbstractType
 {
-    /**
-     * @return string
-     */
     #[\Override]
     public function getBlockPrefix(): string
     {

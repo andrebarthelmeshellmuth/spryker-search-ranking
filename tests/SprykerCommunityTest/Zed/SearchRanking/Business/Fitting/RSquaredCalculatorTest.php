@@ -25,9 +25,6 @@ use SprykerCommunity\Zed\SearchRanking\Business\Fitting\RSquaredCalculator;
  */
 class RSquaredCalculatorTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testReturnsExactlyOneForAPerfectPrediction(): void
     {
         // Arrange
@@ -43,8 +40,6 @@ class RSquaredCalculatorTest extends Unit
     /**
      * A prediction that is always exactly the mean of the actual values explains none of the variance —
      * R² = 0 by definition, the baseline every real fit is judged against.
-     *
-     * @return void
      */
     public function testReturnsZeroWhenThePredictionIsAlwaysTheMean(): void
     {
@@ -58,9 +53,6 @@ class RSquaredCalculatorTest extends Unit
         $this->assertSame(0.0, $rSquared);
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsNullWhenArrayLengthsDiffer(): void
     {
         // Arrange
@@ -73,9 +65,6 @@ class RSquaredCalculatorTest extends Unit
         $this->assertNull($rSquared);
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsNullWhenAPredictedValueIsNonFinite(): void
     {
         // Arrange
@@ -91,8 +80,6 @@ class RSquaredCalculatorTest extends Unit
     /**
      * A single-point comparison has zero variance to explain (SS_tot = 0) — an exact match still reports
      * a perfect fit rather than dividing by zero.
-     *
-     * @return void
      */
     public function testReturnsOneForAnExactSinglePointMatchDespiteZeroVariance(): void
     {

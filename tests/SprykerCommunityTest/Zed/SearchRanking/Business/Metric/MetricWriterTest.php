@@ -38,9 +38,6 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  */
 class MetricWriterTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testPersistsTheMetricWhenItsFormulaValidatesSuccessfully(): void
     {
         // Arrange
@@ -77,9 +74,6 @@ class MetricWriterTest extends Unit
         $this->assertSame(7, $resultTransfer->getIdSearchRankingMetric());
     }
 
-    /**
-     * @return void
-     */
     public function testThrowsAndNeverPersistsWhenTheFormulaFailsValidation(): void
     {
         // Arrange
@@ -117,9 +111,6 @@ class MetricWriterTest extends Unit
             ->saveMetric($metricTransfer);
     }
 
-    /**
-     * @return void
-     */
     public function testDeletesTheMetricByIdViaTheEntityManager(): void
     {
         // Arrange
@@ -140,8 +131,6 @@ class MetricWriterTest extends Unit
 
     /**
      * A brand-new metric (no previous state to compare against) always gets an initial history row.
-     *
-     * @return void
      */
     public function testRecordsAnInitialHistoryRowForABrandNewMetric(): void
     {
@@ -186,8 +175,6 @@ class MetricWriterTest extends Unit
     /**
      * Saving a metric with NOTHING tracked actually changed (same formula/weight/isActive/isHigherBetter
      * as before) must not write a redundant history row.
-     *
-     * @return void
      */
     public function testDoesNotRecordHistoryWhenNoTrackedFieldActuallyChanged(): void
     {
@@ -225,8 +212,6 @@ class MetricWriterTest extends Unit
     /**
      * When the formula actually changes AND a digest already exists, the history row must carry the
      * digest snapshot and the new formula's fit quality against it.
-     *
-     * @return void
      */
     public function testRecordsTheDigestSnapshotAndFitQualityWhenAFormulaChangeHasAnExistingDigest(): void
     {
@@ -282,8 +267,6 @@ class MetricWriterTest extends Unit
      * Used by the auto-tune job (search-ranking-optimizer) when a metric's fit was checked but no update
      * was applied — must append an isChange=false row, unlike every other history-recording path here,
      * which always records isChange=true.
-     *
-     * @return void
      */
     public function testRecordCheckOnlyAppendsAnIsChangeFalseHistoryRow(): void
     {
@@ -320,8 +303,6 @@ class MetricWriterTest extends Unit
     /**
      * A saved formula that byte-for-byte matches one of a fresh fit's candidates gets that candidate's
      * `shape` slug persisted onto it.
-     *
-     * @return void
      */
     public function testSaveMetricSetsShapeWhenTheFormulaMatchesAFitCandidate(): void
     {
@@ -385,8 +366,6 @@ class MetricWriterTest extends Unit
     /**
      * A freeform/custom formula that matches no fit candidate leaves `shape` null — a safe, expected
      * outcome, not an error.
-     *
-     * @return void
      */
     public function testSaveMetricLeavesShapeNullWhenTheFormulaMatchesNoFitCandidate(): void
     {
@@ -443,8 +422,6 @@ class MetricWriterTest extends Unit
     /**
      * A brand-new metric (no id yet) has no digest to derive a shape from at all — shape stays null,
      * without even attempting a digest lookup.
-     *
-     * @return void
      */
     public function testSaveMetricLeavesShapeNullForABrandNewMetricWithNoIdYet(): void
     {

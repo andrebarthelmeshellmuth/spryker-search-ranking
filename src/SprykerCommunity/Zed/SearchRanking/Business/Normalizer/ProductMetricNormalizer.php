@@ -39,8 +39,6 @@ class ProductMetricNormalizer implements ProductMetricNormalizerInterface
     /**
      * @param string|null $filterStoreName
      * @param string|null $filterLocaleName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer
      */
     public function normalize(?string $filterStoreName = null, ?string $filterLocaleName = null): SearchRankingNormalizationResultTransfer
     {
@@ -99,8 +97,6 @@ class ProductMetricNormalizer implements ProductMetricNormalizerInterface
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return int
      */
     public function normalizeMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): int
     {
@@ -158,8 +154,6 @@ class ProductMetricNormalizer implements ProductMetricNormalizerInterface
 
     /**
      * @param float $value
-     *
-     * @return float
      */
     protected function clamp(float $value): float
     {

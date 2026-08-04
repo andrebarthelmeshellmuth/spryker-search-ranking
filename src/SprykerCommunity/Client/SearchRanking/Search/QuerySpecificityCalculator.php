@@ -16,8 +16,6 @@ class QuerySpecificityCalculator implements QuerySpecificityCalculatorInterface
      *
      * @param array<string, float> $idfByTerm
      * @param float $blendWeight
-     *
-     * @return float
      */
     public function calculateRawSpecificity(array $idfByTerm, float $blendWeight): float
     {
@@ -43,8 +41,6 @@ class QuerySpecificityCalculator implements QuerySpecificityCalculatorInterface
      *
      * @param float $rawSpecificity
      * @param float $saturationPoint
-     *
-     * @return float
      */
     public function normalize(float $rawSpecificity, float $saturationPoint): float
     {
@@ -61,8 +57,6 @@ class QuerySpecificityCalculator implements QuerySpecificityCalculatorInterface
      * zero.
      *
      * @param array<float> $values
-     *
-     * @return float
      */
     protected function calculateHarmonicMean(array $values): float
     {

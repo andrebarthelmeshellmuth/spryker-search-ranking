@@ -51,8 +51,6 @@ class IndexController extends AbstractController
 
     /**
      * @param \Symfony\Component\HttpFoundation\Request $request
-     *
-     * @return \Symfony\Component\HttpFoundation\JsonResponse
      */
     public function tableAction(Request $request): JsonResponse
     {
@@ -63,8 +61,6 @@ class IndexController extends AbstractController
 
     /**
      * @param \Symfony\Component\HttpFoundation\Request $request
-     *
-     * @return string
      */
     protected function resolveStoreName(Request $request): string
     {
@@ -73,8 +69,6 @@ class IndexController extends AbstractController
 
     /**
      * @param \Symfony\Component\HttpFoundation\Request $request
-     *
-     * @return string
      */
     protected function resolveLocaleName(Request $request): string
     {

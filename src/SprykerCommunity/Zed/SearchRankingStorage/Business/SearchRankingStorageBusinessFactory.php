@@ -24,9 +24,6 @@ use SprykerCommunity\Zed\SearchRankingStorage\SearchRankingStorageDependencyProv
  */
 class SearchRankingStorageBusinessFactory extends AbstractBusinessFactory
 {
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingStorage\Business\Writer\RankingConfigurationStorageWriterInterface
-     */
     public function createRankingConfigurationStorageWriter(): RankingConfigurationStorageWriterInterface
     {
         return new RankingConfigurationStorageWriter(
@@ -37,25 +34,16 @@ class SearchRankingStorageBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface
-     */
     public function getSearchRankingFacade(): SearchRankingStorageToSearchRankingFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingStorageDependencyProvider::FACADE_SEARCH_RANKING);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSynchronizationFacadeInterface
-     */
     public function getSynchronizationFacade(): SearchRankingStorageToSynchronizationFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingStorageDependencyProvider::FACADE_SYNCHRONIZATION);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToStoreFacadeInterface
-     */
     public function getStoreFacade(): SearchRankingStorageToStoreFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingStorageDependencyProvider::FACADE_STORE);

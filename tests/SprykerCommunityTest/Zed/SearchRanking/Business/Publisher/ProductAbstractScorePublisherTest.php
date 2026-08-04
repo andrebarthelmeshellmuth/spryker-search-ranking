@@ -30,9 +30,6 @@ use SprykerCommunity\Zed\SearchRanking\SearchRankingConfig;
  */
 class ProductAbstractScorePublisherTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testTriggersChunkedPublishEventsForAllScoredProducts(): void
     {
         // Arrange
@@ -65,9 +62,6 @@ class ProductAbstractScorePublisherTest extends Unit
         $this->assertSame($productAbstractIds, array_merge(...$triggeredIdChunks));
     }
 
-    /**
-     * @return void
-     */
     public function testTriggersNothingWhenNoProductHasScores(): void
     {
         // Arrange

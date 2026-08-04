@@ -24,9 +24,6 @@ class SearchRankingToLocaleClientBridge implements SearchRankingToLocaleClientIn
         $this->localeClient = $localeClient;
     }
 
-    /**
-     * @return string
-     */
     public function getCurrentLocale(): string
     {
         return $this->localeClient->getCurrentLocale();

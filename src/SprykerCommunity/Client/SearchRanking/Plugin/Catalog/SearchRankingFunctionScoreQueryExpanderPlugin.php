@@ -62,8 +62,6 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
      *
      * @param \Spryker\Client\SearchExtension\Dependency\Plugin\QueryInterface $searchQuery
      * @param array<string, mixed> $requestParameters
-     *
-     * @return \Spryker\Client\SearchExtension\Dependency\Plugin\QueryInterface
      */
     public function expandQuery(QueryInterface $searchQuery, array $requestParameters = []): QueryInterface
     {
@@ -130,8 +128,6 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
      *
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
      * @param string $searchString
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer
      */
     protected function applySpecificityWeighting(
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
@@ -156,8 +152,6 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
      * existing whitelist needs the field appended.
      *
      * @param \Elastica\Query $query
-     *
-     * @return void
      */
     protected function addScoresToSourceWhitelist(Query $query): void
     {
@@ -178,8 +172,6 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
     /**
      * @param \Spryker\Client\SearchExtension\Dependency\Plugin\QueryInterface $searchQuery
      * @param array<string, mixed> $requestParameters
-     *
-     * @return string
      */
     protected function getSearchString(QueryInterface $searchQuery, array $requestParameters): string
     {

@@ -74,8 +74,6 @@ class EngineCompatibilityChecker implements EngineCompatibilityCheckerInterface
 
     /**
      * {@inheritDoc}
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
      */
     public function checkCompatibility(): SearchRankingEngineCompatibilityTransfer
     {
@@ -123,9 +121,6 @@ class EngineCompatibilityChecker implements EngineCompatibilityCheckerInterface
         return $compatibilityTransfer;
     }
 
-    /**
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
-     */
     protected function buildEngineIdentification(): SearchRankingEngineCompatibilityTransfer
     {
         $rootResponseData = $this->requestData('', Request::GET, []);
@@ -147,8 +142,6 @@ class EngineCompatibilityChecker implements EngineCompatibilityCheckerInterface
      *
      * @param string $capabilityName
      * @param array<string, mixed> $queryBody
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCapabilityTransfer
      */
     protected function probeQuery(string $capabilityName, array $queryBody): SearchRankingEngineCapabilityTransfer
     {
@@ -169,8 +162,6 @@ class EngineCompatibilityChecker implements EngineCompatibilityCheckerInterface
      * `x_content_parse_exception`/`illegal_argument_exception` about the empty `requests` array); an
      * engine that does not know this endpoint falls through to the legacy `{index}/{type}` mapping-API
      * route instead and fails on something unrelated (see {@see RANK_EVAL_UNRECOGNIZED_MARKERS}).
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCapabilityTransfer
      */
     protected function probeRankEval(): SearchRankingEngineCapabilityTransfer
     {
@@ -217,8 +208,6 @@ class EngineCompatibilityChecker implements EngineCompatibilityCheckerInterface
      * @param string $name
      * @param bool $isSupported
      * @param string $detail
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCapabilityTransfer
      */
     protected function buildCapabilityTransfer(string $name, bool $isSupported, string $detail): SearchRankingEngineCapabilityTransfer
     {

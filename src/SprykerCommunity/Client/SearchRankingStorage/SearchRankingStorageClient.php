@@ -21,8 +21,6 @@ class SearchRankingStorageClient extends AbstractClient implements SearchRanking
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer|null
      */
     public function findRankingConfiguration(string $storeName, string $localeName): ?SearchRankingConfigurationStorageTransfer
     {

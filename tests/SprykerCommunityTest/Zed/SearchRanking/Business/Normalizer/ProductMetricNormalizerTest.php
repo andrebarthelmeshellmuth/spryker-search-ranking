@@ -38,9 +38,6 @@ use SprykerCommunity\Zed\SearchRanking\SearchRankingConfig;
  */
 class ProductMetricNormalizerTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testNormalizesRowsOfActiveMetricAndClampsIntoHalfOpenUnitInterval(): void
     {
         // Arrange
@@ -83,8 +80,6 @@ class ProductMetricNormalizerTest extends Unit
     /**
      * A metric whose formula cannot be evaluated must be skipped with an error instead of
      * aborting the whole normalization run.
-     *
-     * @return void
      */
     public function testSkipsMetricWithFailingFormulaAndReportsError(): void
     {
@@ -119,8 +114,6 @@ class ProductMetricNormalizerTest extends Unit
      * The random tie-breaker metric (named per {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getRandomMetricName()})
      * is refreshed on its own nightly cadence by `MetricRandomizer` instead — this hourly loop must never
      * touch it, active or not.
-     *
-     * @return void
      */
     public function testSkipsTheRandomTieBreakerMetricEntirely(): void
     {
@@ -153,8 +146,6 @@ class ProductMetricNormalizerTest extends Unit
     /**
      * A metric with zero rows to normalize (e.g. brand new, no product-metric data imported yet) must be
      * skipped cleanly rather than evaluating its formula against an empty/meaningless statistics base.
-     *
-     * @return void
      */
     public function testSkipsAMetricWithNoProductMetricRowsAtAll(): void
     {
@@ -187,8 +178,6 @@ class ProductMetricNormalizerTest extends Unit
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param array<\Generated\Shared\Transfer\SearchRankingProductMetricTransfer> $productMetricTransfers
      * @param \Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer $statisticsTransfer
-     *
-     * @return \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface
      */
     protected function createRepositoryMock(
         SearchRankingMetricTransfer $metricTransfer,
@@ -214,8 +203,6 @@ class ProductMetricNormalizerTest extends Unit
     /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface $entityManager
-     *
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizer
      */
     protected function createNormalizer(
         SearchRankingRepositoryInterface $repository,
@@ -236,8 +223,6 @@ class ProductMetricNormalizerTest extends Unit
      * A single store/locale is enough to exercise normalize()'s per-metric logic — the store×locale
      * fan-out itself is MetricDigestBuilderTest/MetricRandomizerTest's concern (multiple stores would
      * just multiply every assertion below by the store count for no extra coverage).
-     *
-     * @return \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface
      */
     protected function createStoreFacadeMock(): SearchRankingToStoreFacadeInterface
     {
@@ -253,8 +238,6 @@ class ProductMetricNormalizerTest extends Unit
      * @param int $idSearchRankingProductMetric
      * @param float $rawValue
      * @param int $fkSearchRankingMetric
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingProductMetricTransfer
      */
     protected function createProductMetricTransfer(
         int $idSearchRankingProductMetric,
@@ -273,8 +256,6 @@ class ProductMetricNormalizerTest extends Unit
      * @param float $max
      * @param float $avg
      * @param int $count
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer
      */
     protected function createStatistics(float $min, float $max, float $avg, int $count): SearchRankingMetricStatisticsTransfer
     {

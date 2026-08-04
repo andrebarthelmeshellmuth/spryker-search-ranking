@@ -27,9 +27,6 @@ class CompatibilityChecker implements CompatibilityCheckerInterface
     {
     }
 
-    /**
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
-     */
     public function checkCompatibility(): SearchRankingEngineCompatibilityTransfer
     {
         return $this->searchRankingClient->checkEngineCompatibility();

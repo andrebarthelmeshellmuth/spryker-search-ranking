@@ -28,9 +28,6 @@ use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
  */
 class ScoreSectionBuilderTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testBuildsOneLinePerMetricPlusTotal(): void
     {
         // Arrange
@@ -67,8 +64,6 @@ class ScoreSectionBuilderTest extends Unit
     /**
      * A product without a signal for some metric contributes 0 for it — the line still shows up, so the
      * displayed lines always account for the full total.
-     *
-     * @return void
      */
     public function testShowsZeroContributionForAMissingDocumentScore(): void
     {
@@ -87,9 +82,6 @@ class ScoreSectionBuilderTest extends Unit
         $this->assertSame(0.0, $section['summaryValue']);
     }
 
-    /**
-     * @return void
-     */
     public function testAddsTheCombinationFormulaWhenTheQueryScoreIsKnown(): void
     {
         // Arrange
@@ -122,8 +114,6 @@ class ScoreSectionBuilderTest extends Unit
      * non-negative), but the `$queryScore >= 0` guard exists specifically to keep it from ever plugging a
      * negative number into `queryScore / (queryScore + relevanceSaturationPoint)` — assert that guard
      * actually suppresses the combination formula rather than just trusting it silently does.
-     *
-     * @return void
      */
     public function testOmitsTheCombinationFormulaWhenTheQueryScoreIsNegative(): void
     {
@@ -147,8 +137,6 @@ class ScoreSectionBuilderTest extends Unit
     /**
      * "random" is a noise-comparison metric, not a real business signal — kept last in the display order
      * regardless of where it was configured, so the metrics that actually explain the ranking read first.
-     *
-     * @return void
      */
     public function testMovesTheRandomMetricToTheEndRegardlessOfConfiguredOrder(): void
     {
@@ -169,9 +157,6 @@ class ScoreSectionBuilderTest extends Unit
         $this->assertSame(['top_seller', 'pdp_impressions', 'random'], array_column($section['lines'], 'label'));
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsNullWhenNoMetricWeightsAreConfigured(): void
     {
         // Arrange
@@ -191,8 +176,6 @@ class ScoreSectionBuilderTest extends Unit
      * The configured relevanceWeight (0.6) must NOT leak into the formula/relevanceWeightValue once
      * specificity weighting actually adjusted it for this query (to 0.9 here) — otherwise the printed
      * formula would silently disagree with the real final score specificity weighting produced.
-     *
-     * @return void
      */
     public function testUsesTheSpecificityAdjustedRelevanceWeightInTheFormulaWhenGiven(): void
     {
@@ -217,9 +200,6 @@ class ScoreSectionBuilderTest extends Unit
         $this->assertSame('0.900 × 0.366 + (1 - 0.900) × 0.250', $section['formulaCalculation']);
     }
 
-    /**
-     * @return void
-     */
     public function testBuildsASpecificitySectionWithOneLinePerDiagnostic(): void
     {
         // Arrange

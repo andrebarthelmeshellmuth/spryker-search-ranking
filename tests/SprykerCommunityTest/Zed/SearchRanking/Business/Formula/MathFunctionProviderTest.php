@@ -33,9 +33,6 @@ use Symfony\Component\ExpressionLanguage\ExpressionFunction;
  */
 class MathFunctionProviderTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testRandomFunctionCompilerProducesPhpSourceEquivalentToItsEvaluator(): void
     {
         // Arrange
@@ -48,9 +45,6 @@ class MathFunctionProviderTest extends Unit
         $this->assertSame('(1.0 - mt_rand(0, mt_getrandmax() - 1) / mt_getrandmax())', $compiledSource);
     }
 
-    /**
-     * @return void
-     */
     public function testRandomFunctionEvaluatorStaysWithinHalfOpenUnitInterval(): void
     {
         // Arrange
@@ -66,9 +60,6 @@ class MathFunctionProviderTest extends Unit
         }
     }
 
-    /**
-     * @return \Symfony\Component\ExpressionLanguage\ExpressionFunction
-     */
     protected function findRandomFunction(): ExpressionFunction
     {
         foreach ((new MathFunctionProvider())->getFunctions() as $function) {

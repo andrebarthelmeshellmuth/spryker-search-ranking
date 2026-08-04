@@ -32,9 +32,6 @@ use SprykerCommunity\Zed\SearchRanking\SearchRankingConfig;
  */
 class SettingManagerTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testReturnsTheSavedRelevanceWeightWhenOneExists(): void
     {
         // Arrange
@@ -52,9 +49,6 @@ class SettingManagerTest extends Unit
         $this->assertSame(0.75, $relevanceWeight);
     }
 
-    /**
-     * @return void
-     */
     public function testFallsBackToTheConfigDefaultWhenNoRelevanceWeightIsSaved(): void
     {
         // Arrange
@@ -72,9 +66,6 @@ class SettingManagerTest extends Unit
         $this->assertSame((new SearchRankingConfig())->getDefaultRelevanceWeight(), $relevanceWeight);
     }
 
-    /**
-     * @return void
-     */
     public function testSavesTheRelevanceWeightAsAStringUnderItsSettingKey(): void
     {
         // Arrange
@@ -101,9 +92,6 @@ class SettingManagerTest extends Unit
         $settingManager->saveRelevanceWeight('DE', 'de_DE', 0.42);
     }
 
-    /**
-     * @return void
-     */
     public function testDoesNotRecordHistoryWhenTheSavedRelevanceWeightIsUnchanged(): void
     {
         // Arrange
@@ -119,9 +107,6 @@ class SettingManagerTest extends Unit
         $settingManager->saveRelevanceWeight('DE', 'de_DE', 0.42);
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsTheSavedRelevanceSaturationPointWhenOneExists(): void
     {
         // Arrange
@@ -139,9 +124,6 @@ class SettingManagerTest extends Unit
         $this->assertSame(20.5, $relevanceSaturationPoint);
     }
 
-    /**
-     * @return void
-     */
     public function testFallsBackToTheConfigDefaultWhenNoRelevanceSaturationPointIsSaved(): void
     {
         // Arrange
@@ -159,9 +141,6 @@ class SettingManagerTest extends Unit
         $this->assertSame((new SearchRankingConfig())->getDefaultRelevanceSaturationPoint(), $relevanceSaturationPoint);
     }
 
-    /**
-     * @return void
-     */
     public function testSavesTheRelevanceSaturationPointAsAStringUnderItsSettingKey(): void
     {
         // Arrange
@@ -188,9 +167,6 @@ class SettingManagerTest extends Unit
         $settingManager->saveRelevanceSaturationPoint('DE', 'de_DE', 15.0);
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsTheSavedSpecificityBlendWeightWhenOneExists(): void
     {
         // Arrange
@@ -208,9 +184,6 @@ class SettingManagerTest extends Unit
         $this->assertSame(0.8, $specificityBlendWeight);
     }
 
-    /**
-     * @return void
-     */
     public function testFallsBackToTheConfigDefaultWhenNoSpecificityBlendWeightIsSaved(): void
     {
         // Arrange
@@ -228,9 +201,6 @@ class SettingManagerTest extends Unit
         $this->assertSame((new SearchRankingConfig())->getDefaultSpecificityBlendWeight(), $specificityBlendWeight);
     }
 
-    /**
-     * @return void
-     */
     public function testSavesTheSpecificityBlendWeightAsAStringUnderItsSettingKey(): void
     {
         // Arrange
@@ -257,9 +227,6 @@ class SettingManagerTest extends Unit
         $settingManager->saveSpecificityBlendWeight('DE', 'de_DE', 0.8);
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsTheSavedSpecificitySaturationPointWhenOneExists(): void
     {
         // Arrange
@@ -277,9 +244,6 @@ class SettingManagerTest extends Unit
         $this->assertSame(4.0, $specificitySaturationPoint);
     }
 
-    /**
-     * @return void
-     */
     public function testFallsBackToTheConfigDefaultWhenNoSpecificitySaturationPointIsSaved(): void
     {
         // Arrange
@@ -297,9 +261,6 @@ class SettingManagerTest extends Unit
         $this->assertSame((new SearchRankingConfig())->getDefaultSpecificitySaturationPoint(), $specificitySaturationPoint);
     }
 
-    /**
-     * @return void
-     */
     public function testSavesTheSpecificitySaturationPointAsAStringUnderItsSettingKey(): void
     {
         // Arrange
@@ -326,9 +287,6 @@ class SettingManagerTest extends Unit
         $settingManager->saveSpecificitySaturationPoint('DE', 'de_DE', 4.0);
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsTheSavedSpecificityWeightExponentWhenOneExists(): void
     {
         // Arrange
@@ -346,9 +304,6 @@ class SettingManagerTest extends Unit
         $this->assertSame(1.5, $specificityWeightExponent);
     }
 
-    /**
-     * @return void
-     */
     public function testFallsBackToTheConfigDefaultWhenNoSpecificityWeightExponentIsSaved(): void
     {
         // Arrange
@@ -366,9 +321,6 @@ class SettingManagerTest extends Unit
         $this->assertSame((new SearchRankingConfig())->getDefaultSpecificityWeightExponent(), $specificityWeightExponent);
     }
 
-    /**
-     * @return void
-     */
     public function testSavesTheSpecificityWeightExponentAsAStringUnderItsSettingKey(): void
     {
         // Arrange
@@ -395,9 +347,6 @@ class SettingManagerTest extends Unit
         $settingManager->saveSpecificityWeightExponent('DE', 'de_DE', 1.5);
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsTheSavedSpecificityWeightShiftMagnitudeWhenOneExists(): void
     {
         // Arrange
@@ -415,9 +364,6 @@ class SettingManagerTest extends Unit
         $this->assertSame(0.3, $specificityWeightShiftMagnitude);
     }
 
-    /**
-     * @return void
-     */
     public function testFallsBackToTheConfigDefaultWhenNoSpecificityWeightShiftMagnitudeIsSaved(): void
     {
         // Arrange
@@ -435,9 +381,6 @@ class SettingManagerTest extends Unit
         $this->assertSame((new SearchRankingConfig())->getDefaultSpecificityWeightShiftMagnitude(), $specificityWeightShiftMagnitude);
     }
 
-    /**
-     * @return void
-     */
     public function testSavesTheSpecificityWeightShiftMagnitudeAsAStringUnderItsSettingKey(): void
     {
         // Arrange
@@ -467,8 +410,6 @@ class SettingManagerTest extends Unit
     /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface|null $entityManager
-     *
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManager
      */
     protected function createSettingManager(
         SearchRankingRepositoryInterface $repository,

@@ -29,8 +29,6 @@ class CurrentMetricFitEvaluator implements CurrentMetricFitEvaluatorInterface
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float|null
      */
     public function evaluate(int $idSearchRankingMetric, string $storeName, string $localeName): ?float
     {

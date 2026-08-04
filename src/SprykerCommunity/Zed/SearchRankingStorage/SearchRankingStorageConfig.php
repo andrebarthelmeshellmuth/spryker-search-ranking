@@ -21,8 +21,6 @@ class SearchRankingStorageConfig extends AbstractBundleConfig
      *   'synchronizationPool' is the pool the standard demoshops define in RabbitMqConfig::getQueuePools().
      *
      * @api
-     *
-     * @return string|null
      */
     public function getSearchRankingSynchronizationPoolName(): ?string
     {

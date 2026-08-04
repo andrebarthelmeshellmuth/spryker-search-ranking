@@ -31,9 +31,6 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  */
 class FormulaPreviewBuilderTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testReturnsAnErrorMessageWhenNoDigestExistsYet(): void
     {
         // Arrange
@@ -60,9 +57,6 @@ class FormulaPreviewBuilderTest extends Unit
         $this->assertCount(0, $previewTransfer->getCdfPoints());
     }
 
-    /**
-     * @return void
-     */
     public function testBuildsCdfAndFormulaPointsFromTheDigestPercentilesAndIncludesCurveFitCandidates(): void
     {
         // Arrange
@@ -112,9 +106,6 @@ class FormulaPreviewBuilderTest extends Unit
         $this->assertSame([$candidateTransfer], $previewTransfer->getCandidates()->getArrayCopy());
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsAFreshErrorTransferWhenFormulaEvaluationFailsPartway(): void
     {
         // Arrange
@@ -149,8 +140,6 @@ class FormulaPreviewBuilderTest extends Unit
 
     /**
      * @param array<float> $percentiles
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer
      */
     protected function buildDigestTransfer(array $percentiles): SearchRankingMetricDigestTransfer
     {

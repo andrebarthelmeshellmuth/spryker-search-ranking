@@ -29,9 +29,6 @@ class ProductAbstractScorePublisher implements ProductAbstractScorePublisherInte
     ) {
     }
 
-    /**
-     * @return int
-     */
     public function publishScoredProductAbstracts(): int
     {
         $productAbstractIds = $this->repository->getProductAbstractIdsWithActiveMetricValues();

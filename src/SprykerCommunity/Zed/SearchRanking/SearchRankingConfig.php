@@ -18,8 +18,6 @@ class SearchRankingConfig extends AbstractBundleConfig
      * - Number of product-metric rows the normalization processes per batch.
      *
      * @api
-     *
-     * @return int
      */
     public function getNormalizationBatchSize(): int
     {
@@ -32,8 +30,6 @@ class SearchRankingConfig extends AbstractBundleConfig
      *   of 0 or below are raised to this minimum, results above 1 are capped at 1.
      *
      * @api
-     *
-     * @return float
      */
     public function getNormalizedValueMinimum(): float
     {
@@ -64,8 +60,6 @@ class SearchRankingConfig extends AbstractBundleConfig
      *   exist.
      *
      * @api
-     *
-     * @return float
      */
     public function getDefaultRelevanceWeight(): float
     {
@@ -81,8 +75,6 @@ class SearchRankingConfig extends AbstractBundleConfig
      *   shop's own field boosts and query patterns.
      *
      * @api
-     *
-     * @return float
      */
     public function getDefaultRelevanceSaturationPoint(): float
     {
@@ -100,8 +92,6 @@ class SearchRankingConfig extends AbstractBundleConfig
      *   specificity-aware relevance weighting is enabled at the code level.
      *
      * @api
-     *
-     * @return float
      */
     public function getDefaultSpecificityBlendWeight(): float
     {
@@ -116,8 +106,6 @@ class SearchRankingConfig extends AbstractBundleConfig
      *   {@see getDefaultRelevanceSaturationPoint()} for the same role on the text-relevance side).
      *
      * @api
-     *
-     * @return float
      */
     public function getDefaultSpecificitySaturationPoint(): float
     {
@@ -130,8 +118,6 @@ class SearchRankingConfig extends AbstractBundleConfig
      *   saved in Zed yet. `1.0` applies the shift linearly with no reshaping.
      *
      * @api
-     *
-     * @return float
      */
     public function getDefaultSpecificityWeightExponent(): float
     {
@@ -152,8 +138,6 @@ class SearchRankingConfig extends AbstractBundleConfig
      *   `1 - relevanceWeight` again rather than leaving it fixed at 0.25.
      *
      * @api
-     *
-     * @return float
      */
     public function getDefaultSpecificityWeightShiftMagnitude(): float
     {
@@ -205,8 +189,6 @@ class SearchRankingConfig extends AbstractBundleConfig
      *   formula, and get the same "own nightly cadence, skipped by the hourly loop" treatment.
      *
      * @api
-     *
-     * @return string
      */
     public function getRandomMetricName(): string
     {

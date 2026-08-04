@@ -47,8 +47,6 @@ class MetricDigestBuilder implements MetricDigestBuilderInterface
     /**
      * @param string|null $filterStoreName
      * @param string|null $filterLocaleName
-     *
-     * @return int
      */
     public function rebuildDigests(?string $filterStoreName = null, ?string $filterLocaleName = null): int
     {
@@ -83,8 +81,6 @@ class MetricDigestBuilder implements MetricDigestBuilderInterface
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return bool
      */
     public function rebuildDigest(int $idSearchRankingMetric, string $storeName, string $localeName): bool
     {
@@ -111,8 +107,6 @@ class MetricDigestBuilder implements MetricDigestBuilderInterface
      * linear interpolation between closest ranks — the same method `numpy.percentile()` defaults to.
      *
      * @param array<float> $rawValues
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer
      */
     public function buildDigest(array $rawValues): SearchRankingMetricDigestTransfer
     {
@@ -137,8 +131,6 @@ class MetricDigestBuilder implements MetricDigestBuilderInterface
     /**
      * @param array<int, float> $sortedValues
      * @param float $percentile
-     *
-     * @return float
      */
     protected function percentile(array $sortedValues, float $percentile): float
     {

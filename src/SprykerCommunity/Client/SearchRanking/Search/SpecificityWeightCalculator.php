@@ -30,8 +30,6 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
      *
      * @param string $searchString
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
-     *
-     * @return float
      */
     public function calculateRelevanceWeight(
         string $searchString,
@@ -45,8 +43,6 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
      *
      * @param string $searchString
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
-     *
-     * @return \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult
      */
     public function calculateWeightingResult(
         string $searchString,
@@ -101,8 +97,6 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
      * @param float $normalizedSpecificity
      * @param float $exponent
      * @param float $shiftMagnitude
-     *
-     * @return float
      */
     protected function calculateShift(float $normalizedSpecificity, float $exponent, float $shiftMagnitude): float
     {

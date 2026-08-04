@@ -39,9 +39,6 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  */
 class MetricDigestBuilderTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testComputesMinMaxMeanMedianAndSampleCount(): void
     {
         // Arrange
@@ -61,8 +58,6 @@ class MetricDigestBuilderTest extends Unit
     /**
      * The percentile backbone must have exactly 101 points (0, 1, 2, ..., 100), regardless of how many
      * raw values were given.
-     *
-     * @return void
      */
     public function testPercentileBackboneHasExactlyOneHundredAndOneEntries(): void
     {
@@ -79,8 +74,6 @@ class MetricDigestBuilderTest extends Unit
     /**
      * percentiles[0] is the p0 (minimum) point, percentiles[100] is the p100 (maximum) point, and
      * percentiles[50] is the median — all three must agree exactly with the corresponding top-level stat.
-     *
-     * @return void
      */
     public function testFirstMiddleAndLastPercentileMatchMinMedianAndMax(): void
     {
@@ -100,8 +93,6 @@ class MetricDigestBuilderTest extends Unit
     /**
      * A single-element sample has no interpolation range — every statistic collapses onto that one value,
      * a single-value edge case.
-     *
-     * @return void
      */
     public function testASingleRawValueMakesEveryStatisticEqualToItself(): void
     {
@@ -124,8 +115,6 @@ class MetricDigestBuilderTest extends Unit
     /**
      * Raw values must be sorted internally before computing statistics — scrambled input must produce
      * the identical digest as already-sorted input.
-     *
-     * @return void
      */
     public function testResultIsIndependentOfInputOrder(): void
     {
@@ -146,8 +135,6 @@ class MetricDigestBuilderTest extends Unit
     /**
      * A metric with no raw values yet (e.g. freshly created, cron hasn't collected anything) must be
      * skipped rather than persisted as an empty/bogus digest.
-     *
-     * @return void
      */
     public function testRebuildDigestReturnsFalseAndSavesNothingWhenNoRawValuesExist(): void
     {
@@ -169,9 +156,6 @@ class MetricDigestBuilderTest extends Unit
         $this->assertFalse($result);
     }
 
-    /**
-     * @return void
-     */
     public function testRebuildDigestBuildsAndSavesADigestAttributedToTheGivenMetric(): void
     {
         // Arrange
@@ -202,9 +186,6 @@ class MetricDigestBuilderTest extends Unit
         $this->assertSame(20.0, $savedDigestTransfer->getMeanValue());
     }
 
-    /**
-     * @return void
-     */
     public function testRebuildDigestsProcessesOnlyMetricsWithRawValuesAndCountsThem(): void
     {
         // Arrange
@@ -232,9 +213,6 @@ class MetricDigestBuilderTest extends Unit
         $this->assertSame(1, $processedCount);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilder
-     */
     protected function createDigestBuilder(): MetricDigestBuilder
     {
         return new MetricDigestBuilder(
@@ -244,9 +222,6 @@ class MetricDigestBuilderTest extends Unit
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface
-     */
     protected function createStoreFacadeMock(): SearchRankingToStoreFacadeInterface
     {
         $storeFacadeMock = $this->createMock(SearchRankingToStoreFacadeInterface::class);

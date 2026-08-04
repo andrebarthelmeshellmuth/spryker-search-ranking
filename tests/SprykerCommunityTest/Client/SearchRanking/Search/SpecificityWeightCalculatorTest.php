@@ -40,9 +40,6 @@ class SpecificityWeightCalculatorTest extends Unit
      */
     protected const SHIFT_MAGNITUDE = 0.5;
 
-    /**
-     * @return void
-     */
     public function testAHighlySpecificQueryShiftsWeightAboveTheConfiguredBaseline(): void
     {
         // idf = ln(1000/2) = 6.21 — far above the saturation point (3.0), so normalized specificity is
@@ -57,9 +54,6 @@ class SpecificityWeightCalculatorTest extends Unit
         );
     }
 
-    /**
-     * @return void
-     */
     public function testAnUnspecificQueryShiftsWeightBelowTheConfiguredBaseline(): void
     {
         // idf = ln(1000/900) = 0.105 — far below the saturation point (3.0), so normalized specificity is
@@ -74,9 +68,6 @@ class SpecificityWeightCalculatorTest extends Unit
         );
     }
 
-    /**
-     * @return void
-     */
     public function testEmptySearchStringFallsBackToTheConfiguredWeightUnchanged(): void
     {
         $weight = $this->createCalculator($this->createFetcherStub(0, []))
@@ -87,8 +78,6 @@ class SpecificityWeightCalculatorTest extends Unit
 
     /**
      * A failed/empty probe (docCount 0) must fall back gracefully, not error out or divide by zero.
-     *
-     * @return void
      */
     public function testAFailedProbeFallsBackToTheConfiguredWeightUnchanged(): void
     {
@@ -101,8 +90,6 @@ class SpecificityWeightCalculatorTest extends Unit
     /**
      * A term with zero real corpus evidence must be skipped, not treated as maximally specific — a query
      * consisting ONLY of such terms therefore has nothing to measure, same as an empty search string.
-     *
-     * @return void
      */
     public function testATermWithZeroDocFrequencyIsSkippedEntirely(): void
     {
@@ -113,9 +100,6 @@ class SpecificityWeightCalculatorTest extends Unit
         $this->assertSame(0, $result->getQueryTermCount());
     }
 
-    /**
-     * @return void
-     */
     public function testWeightingResultCarriesConsistentDiagnostics(): void
     {
         $result = $this->createCalculator($this->createFetcherStub(1000, ['m11480' => 2]))
@@ -132,9 +116,6 @@ class SpecificityWeightCalculatorTest extends Unit
         );
     }
 
-    /**
-     * @return void
-     */
     public function testWeightingResultForAnEmptySearchStringCarriesZeroedDiagnostics(): void
     {
         $result = $this->createCalculator($this->createFetcherStub(0, []))
@@ -150,8 +131,6 @@ class SpecificityWeightCalculatorTest extends Unit
     /**
      * @param int $docCount
      * @param array<string, int> $termDocumentFrequencies
-     *
-     * @return \SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyFetcherInterface
      */
     protected function createFetcherStub(int $docCount, array $termDocumentFrequencies): QueryTermFrequencyFetcherInterface
     {
@@ -163,8 +142,6 @@ class SpecificityWeightCalculatorTest extends Unit
 
     /**
      * @param \SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyFetcherInterface $fetcher
-     *
-     * @return \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculator
      */
     protected function createCalculator(QueryTermFrequencyFetcherInterface $fetcher): SpecificityWeightCalculator
     {
@@ -175,9 +152,6 @@ class SpecificityWeightCalculatorTest extends Unit
         );
     }
 
-    /**
-     * @return \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer
-     */
     protected function createConfigurationTransfer(): SearchRankingConfigurationStorageTransfer
     {
         return (new SearchRankingConfigurationStorageTransfer())

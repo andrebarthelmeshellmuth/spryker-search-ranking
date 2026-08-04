@@ -30,9 +30,6 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  */
 class ScoresPageDataLoaderTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testSetsScoresPerPayloadAndEmptyMapForProductsWithoutScores(): void
     {
         // Arrange
@@ -60,9 +57,6 @@ class ScoresPageDataLoaderTest extends Unit
         $this->assertSame([], $payloadTransfers[1]->getSearchRankingScores());
     }
 
-    /**
-     * @return void
-     */
     public function testSkipsRepositoryCallWhenNoProductAbstractIdsAreProvided(): void
     {
         // Arrange

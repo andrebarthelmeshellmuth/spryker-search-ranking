@@ -24,9 +24,6 @@ class SearchRankingToSearchRankingStorageFacadeBridge implements SearchRankingTo
         $this->searchRankingStorageFacade = $searchRankingStorageFacade;
     }
 
-    /**
-     * @return void
-     */
     public function publishRankingConfiguration(): void
     {
         $this->searchRankingStorageFacade->publishRankingConfiguration();

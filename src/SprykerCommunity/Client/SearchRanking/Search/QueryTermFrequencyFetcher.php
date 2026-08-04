@@ -46,8 +46,6 @@ class QueryTermFrequencyFetcher implements QueryTermFrequencyFetcherInterface
      *
      * @param string $searchString
      * @param array<string, string> $fieldToSearchAnalyzer
-     *
-     * @return \SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyResult
      */
     public function fetch(string $searchString, array $fieldToSearchAnalyzer): QueryTermFrequencyResult
     {
@@ -82,8 +80,6 @@ class QueryTermFrequencyFetcher implements QueryTermFrequencyFetcherInterface
      * slightly in how many documents populate them at all, see this package's README.
      *
      * @param array<string, mixed> $responseData
-     *
-     * @return \SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyResult
      */
     protected function extractResult(array $responseData): QueryTermFrequencyResult
     {
@@ -111,9 +107,6 @@ class QueryTermFrequencyFetcher implements QueryTermFrequencyFetcherInterface
         return new QueryTermFrequencyResult($docCount, $termDocumentFrequencies);
     }
 
-    /**
-     * @return string
-     */
     protected function resolveIndexName(): string
     {
         $indexParameters = [

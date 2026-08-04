@@ -53,8 +53,6 @@ class MetricRandomizer implements MetricRandomizerInterface
      *
      * @param string|null $filterStoreName
      * @param string|null $filterLocaleName
-     *
-     * @return bool
      */
     public function randomizeIfActive(?string $filterStoreName = null, ?string $filterLocaleName = null): bool
     {

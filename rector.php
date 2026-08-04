@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\Php80\Rector\Class_\ClassPropertyAssignToConstructorPromotionRector;
+use Rector\Php83\Rector\ClassConst\AddTypeToConstRector;
 
 return RectorConfig::configure()
     ->withPaths([
@@ -31,11 +32,15 @@ return RectorConfig::configure()
         // (verified live on FunctionScoreBuilderInterface.php) — a direct, systemic contradiction of
         // that convention across every file in this codebase, not just an isolated case.
         RemoveUselessParamTagRector::class,
+        // Typed class constants (PHP 8.3) aren't understood by the installed phpcs 3.7.1
+        // (Generic.NamingConventions.UpperCaseConstantName misreads the type as the constant name).
+        // Same bug already documented and skipped for this exact rule in the sibling search-debug package.
+        AddTypeToConstRector::class,
     ])
     // Picks up the PHP floor (>=8.3) from composer.json.
     ->withPhpSets()
     // Gradual levels (0 = safest rules only). Raising in batches; stop at the first hit that
     // conflicts with established Spryker style rather than applying it automatically.
-    ->withDeadCodeLevel(30)
-    ->withCodeQualityLevel(30)
+    ->withDeadCodeLevel(35)
+    ->withCodeQualityLevel(35)
     ->withoutParallel();

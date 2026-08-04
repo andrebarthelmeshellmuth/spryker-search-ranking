@@ -31,9 +31,6 @@ use SprykerCommunity\Client\SearchRankingStorage\Reader\ConfigurationStorageRead
  */
 class ConfigurationStorageReaderTest extends Unit
 {
-    /**
-     * @return void
-     */
     protected function _before(): void
     {
         parent::_before();
@@ -43,9 +40,6 @@ class ConfigurationStorageReaderTest extends Unit
         $this->resetMemoizedCache();
     }
 
-    /**
-     * @return void
-     */
     protected function _after(): void
     {
         $this->resetMemoizedCache();
@@ -53,9 +47,6 @@ class ConfigurationStorageReaderTest extends Unit
         parent::_after();
     }
 
-    /**
-     * @return void
-     */
     public function testParsesAllFieldsFromTheStoredDocument(): void
     {
         // Arrange
@@ -82,9 +73,6 @@ class ConfigurationStorageReaderTest extends Unit
         $this->assertSame(0.3, $configurationTransfer->getSpecificityWeightShiftMagnitude());
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsNullWhenNoDocumentIsStoredUnderTheKey(): void
     {
         // Arrange
@@ -103,8 +91,6 @@ class ConfigurationStorageReaderTest extends Unit
      * must default to the same values `SearchRankingConfig`'s own Zed defaults use, NOT throw a
      * `getXOrFail()`-style exception, since that would break every live catalog search the moment a
      * project flips a new feature on before its first post-upgrade republish.
-     *
-     * @return void
      */
     public function testDefaultsMissingKeysInsteadOfErroring(): void
     {
@@ -127,8 +113,6 @@ class ConfigurationStorageReaderTest extends Unit
     /**
      * The storage client is only ever hit once per reader instance — the second call must be served from
      * the memoized value.
-     *
-     * @return void
      */
     public function testMemoizesTheResultAcrossRepeatedCallsOnTheSameInstance(): void
     {
@@ -148,8 +132,6 @@ class ConfigurationStorageReaderTest extends Unit
     /**
      * Two different (store, locale) scopes must be memoized independently — a DE lookup must not be
      * served from an AT value cached earlier in the same process, and vice versa.
-     *
-     * @return void
      */
     public function testMemoizesEachStoreAndLocaleScopeIndependently(): void
     {
@@ -170,8 +152,6 @@ class ConfigurationStorageReaderTest extends Unit
 
     /**
      * @param array<string, mixed>|null $storedDocument
-     *
-     * @return \SprykerCommunity\Client\SearchRankingStorage\Reader\ConfigurationStorageReader
      */
     protected function createReader(?array $storedDocument): ConfigurationStorageReader
     {
@@ -181,9 +161,6 @@ class ConfigurationStorageReaderTest extends Unit
         return new ConfigurationStorageReader($storageClientMock, $this->createSynchronizationServiceMock());
     }
 
-    /**
-     * @return \SprykerCommunity\Client\SearchRankingStorage\Dependency\Service\SearchRankingStorageToSynchronizationServiceInterface
-     */
     protected function createSynchronizationServiceMock(): SearchRankingStorageToSynchronizationServiceInterface
     {
         $keyGeneratorMock = $this->createMock(SynchronizationKeyGeneratorPluginInterface::class);
@@ -196,9 +173,6 @@ class ConfigurationStorageReaderTest extends Unit
         return $synchronizationServiceMock;
     }
 
-    /**
-     * @return void
-     */
     protected function resetMemoizedCache(): void
     {
         $cacheProperty = new ReflectionProperty(ConfigurationStorageReader::class, 'rankingConfigurationCache');

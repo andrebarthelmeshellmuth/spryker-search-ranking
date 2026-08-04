@@ -21,9 +21,6 @@ use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculator;
  */
 class QuerySpecificityCalculatorTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testNoTermsReturnsZero(): void
     {
         $calculator = new QuerySpecificityCalculator();
@@ -31,9 +28,6 @@ class QuerySpecificityCalculatorTest extends Unit
         $this->assertSame(0.0, $calculator->calculateRawSpecificity([], 0.7));
     }
 
-    /**
-     * @return void
-     */
     public function testASingleTermReturnsItsOwnIdfRegardlessOfBlendWeight(): void
     {
         $calculator = new QuerySpecificityCalculator();
@@ -43,9 +37,6 @@ class QuerySpecificityCalculatorTest extends Unit
         $this->assertSame(6.28, $calculator->calculateRawSpecificity(['m11480' => 6.28], 1.0));
     }
 
-    /**
-     * @return void
-     */
     public function testBlendsMaxAndHarmonicMeanByTheGivenWeight(): void
     {
         $calculator = new QuerySpecificityCalculator();
@@ -59,8 +50,6 @@ class QuerySpecificityCalculatorTest extends Unit
     /**
      * A blend weight of 1.0 collapses to pure max — the harmonic mean term should have no influence at
      * all, even with a very small other value that would otherwise drag the harmonic mean toward zero.
-     *
-     * @return void
      */
     public function testBlendWeightOfOneIgnoresTheHarmonicMeanEntirely(): void
     {
@@ -74,8 +63,6 @@ class QuerySpecificityCalculatorTest extends Unit
     /**
      * A blend weight of 0.0 collapses to pure harmonic mean — a single common (near-zero idf) term should
      * drag the whole result toward zero, even alongside a very rare one.
-     *
-     * @return void
      */
     public function testBlendWeightOfZeroIsDominatedByTheSmallestValue(): void
     {
@@ -86,9 +73,6 @@ class QuerySpecificityCalculatorTest extends Unit
         $this->assertSame(0.0, $rawSpecificity, 'A 0.0 idf term is the correct harmonic-mean limiting case, not an error to guard against.');
     }
 
-    /**
-     * @return void
-     */
     public function testNormalizeMapsRawSpecificityIntoZeroToOneRange(): void
     {
         $calculator = new QuerySpecificityCalculator();
@@ -100,9 +84,6 @@ class QuerySpecificityCalculatorTest extends Unit
         $this->assertLessThan(0.5, $calculator->normalize(1.0, 3.0));
     }
 
-    /**
-     * @return void
-     */
     public function testNormalizeOfZeroOrNegativeRawSpecificityReturnsZero(): void
     {
         $calculator = new QuerySpecificityCalculator();

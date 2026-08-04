@@ -17,9 +17,6 @@ use SprykerCommunity\Client\SearchRankingStorage\Reader\ConfigurationStorageRead
 
 class SearchRankingStorageFactory extends AbstractFactory
 {
-    /**
-     * @return \SprykerCommunity\Client\SearchRankingStorage\Reader\ConfigurationStorageReaderInterface
-     */
     public function createConfigurationStorageReader(): ConfigurationStorageReaderInterface
     {
         return new ConfigurationStorageReader(
@@ -28,17 +25,11 @@ class SearchRankingStorageFactory extends AbstractFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Client\SearchRankingStorage\Dependency\Client\SearchRankingStorageToStorageClientInterface
-     */
     public function getStorageClient(): SearchRankingStorageToStorageClientInterface
     {
         return $this->getProvidedDependency(SearchRankingStorageDependencyProvider::CLIENT_STORAGE);
     }
 
-    /**
-     * @return \SprykerCommunity\Client\SearchRankingStorage\Dependency\Service\SearchRankingStorageToSynchronizationServiceInterface
-     */
     public function getSynchronizationService(): SearchRankingStorageToSynchronizationServiceInterface
     {
         return $this->getProvidedDependency(SearchRankingStorageDependencyProvider::SERVICE_SYNCHRONIZATION);

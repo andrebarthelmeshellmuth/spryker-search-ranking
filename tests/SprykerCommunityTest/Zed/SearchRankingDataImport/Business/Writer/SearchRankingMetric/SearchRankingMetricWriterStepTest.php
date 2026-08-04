@@ -45,9 +45,6 @@ class SearchRankingMetricWriterStepTest extends Unit
      */
     protected array $metricEntities = [];
 
-    /**
-     * @return void
-     */
     protected function _after(): void
     {
         foreach ($this->metricEntities as $metricEntity) {
@@ -57,9 +54,6 @@ class SearchRankingMetricWriterStepTest extends Unit
         parent::_after();
     }
 
-    /**
-     * @return void
-     */
     public function testExecuteCreatesANewMetricWhenNoneWithThatNameExistsYet(): void
     {
         // Arrange
@@ -84,9 +78,6 @@ class SearchRankingMetricWriterStepTest extends Unit
         $this->assertTrue($metricEntity->getIsActive());
     }
 
-    /**
-     * @return void
-     */
     public function testExecuteUpdatesTheExistingMetricInsteadOfCreatingADuplicateWhenTheNameAlreadyExists(): void
     {
         // Arrange
@@ -114,9 +105,6 @@ class SearchRankingMetricWriterStepTest extends Unit
         $this->assertFalse($metricEntity->getIsActive());
     }
 
-    /**
-     * @return void
-     */
     public function testExecuteThrowsForANameThatWouldNeverContributeToLiveRanking(): void
     {
         // Arrange — mixed case is rejected by FunctionScoreBuilder::METRIC_NAME_PATTERN just like a
@@ -147,8 +135,6 @@ class SearchRankingMetricWriterStepTest extends Unit
      * @param float $weight
      * @param string $formula
      * @param bool $isActive
-     *
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric
      */
     protected function createTestMetric(string $name, float $weight, string $formula, bool $isActive): SpySearchRankingMetric
     {
@@ -174,8 +160,6 @@ class SearchRankingMetricWriterStepTest extends Unit
 
     /**
      * @param string $name
-     *
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric
      */
     protected function findAndTrackMetric(string $name): SpySearchRankingMetric
     {
@@ -191,8 +175,6 @@ class SearchRankingMetricWriterStepTest extends Unit
      * TEMPORARY Phase-1 default scope lookup — see SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME.
      *
      * @param int $idSearchRankingMetric
-     *
-     * @return float|null
      */
     protected function findWeight(int $idSearchRankingMetric): ?float
     {

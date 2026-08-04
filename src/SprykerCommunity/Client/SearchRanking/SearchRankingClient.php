@@ -18,17 +18,12 @@ use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
  */
 class SearchRankingClient extends AbstractClient implements SearchRankingClientInterface
 {
-    /**
-     * @var \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null
-     */
     protected ?SpecificityWeightingResult $lastSpecificityWeightingResult = null;
 
     /**
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
      */
     public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer
     {
@@ -41,8 +36,6 @@ class SearchRankingClient extends AbstractClient implements SearchRankingClientI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return bool
      */
     public function isSpecificityWeightingEnabled(): bool
     {
@@ -65,8 +58,6 @@ class SearchRankingClient extends AbstractClient implements SearchRankingClientI
      * {@inheritDoc}
      *
      * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null $specificityWeightingResult
-     *
-     * @return void
      */
     public function rememberLastSpecificityWeightingResult(?SpecificityWeightingResult $specificityWeightingResult): void
     {
@@ -75,8 +66,6 @@ class SearchRankingClient extends AbstractClient implements SearchRankingClientI
 
     /**
      * {@inheritDoc}
-     *
-     * @return \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null
      */
     public function getLastSpecificityWeightingResult(): ?SpecificityWeightingResult
     {

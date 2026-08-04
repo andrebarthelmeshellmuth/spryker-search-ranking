@@ -29,9 +29,6 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  */
 class CurrentMetricFitEvaluatorTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testReturnsNullWhenTheMetricDoesNotExist(): void
     {
         // Arrange
@@ -50,9 +47,6 @@ class CurrentMetricFitEvaluatorTest extends Unit
         $this->assertNull($result);
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsNullWhenTheMetricHasNoDigestYet(): void
     {
         // Arrange
@@ -76,9 +70,6 @@ class CurrentMetricFitEvaluatorTest extends Unit
         $this->assertNull($result);
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsTheFitEvaluatorsResultForTheMetricsOwnFormulaAndDigest(): void
     {
         // Arrange

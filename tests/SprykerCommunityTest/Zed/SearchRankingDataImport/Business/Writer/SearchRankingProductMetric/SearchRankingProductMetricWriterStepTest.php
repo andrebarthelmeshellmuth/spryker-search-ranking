@@ -56,9 +56,6 @@ class SearchRankingProductMetricWriterStepTest extends Unit
      */
     protected array $productMetricEntities = [];
 
-    /**
-     * @return void
-     */
     protected function _after(): void
     {
         foreach ($this->productMetricEntities as $productMetricEntity) {
@@ -76,9 +73,6 @@ class SearchRankingProductMetricWriterStepTest extends Unit
         parent::_after();
     }
 
-    /**
-     * @return void
-     */
     public function testExecuteCreatesANewProductMetricRowWhenNoneExistsYetForThatPair(): void
     {
         // Arrange
@@ -103,9 +97,6 @@ class SearchRankingProductMetricWriterStepTest extends Unit
         $this->assertNull($productMetricEntity->getNormalizedValue());
     }
 
-    /**
-     * @return void
-     */
     public function testExecuteUpdatesRawValueButLeavesAnAlreadyNormalizedValueUntouched(): void
     {
         // Arrange
@@ -149,8 +140,6 @@ class SearchRankingProductMetricWriterStepTest extends Unit
 
     /**
      * @param string $name
-     *
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric
      */
     protected function createTestMetric(string $name): SpySearchRankingMetric
     {
@@ -168,8 +157,6 @@ class SearchRankingProductMetricWriterStepTest extends Unit
 
     /**
      * @param string $sku
-     *
-     * @return \Orm\Zed\Product\Persistence\SpyProductAbstract
      */
     protected function createTestProductAbstract(string $sku): SpyProductAbstract
     {
@@ -186,8 +173,6 @@ class SearchRankingProductMetricWriterStepTest extends Unit
     /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric $metricEntity
      * @param \Orm\Zed\Product\Persistence\SpyProductAbstract $productAbstractEntity
-     *
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric
      */
     protected function findAndTrackProductMetric(
         SpySearchRankingMetric $metricEntity,

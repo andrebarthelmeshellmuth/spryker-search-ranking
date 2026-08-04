@@ -39,9 +39,6 @@ class MetricTable extends AbstractTable
      */
     protected const COL_ACTIONS = 'actions';
 
-    /**
-     * @var \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery
-     */
     protected SpySearchRankingMetricQuery $metricQuery;
 
     /**
@@ -59,8 +56,6 @@ class MetricTable extends AbstractTable
 
     /**
      * @param \Spryker\Zed\Gui\Communication\Table\TableConfiguration $config
-     *
-     * @return \Spryker\Zed\Gui\Communication\Table\TableConfiguration
      */
     protected function configure(TableConfiguration $config): TableConfiguration
     {

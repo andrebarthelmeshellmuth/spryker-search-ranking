@@ -36,9 +36,6 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper\SearchRankingMa
  */
 class SearchRankingMapperTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testMapsMetricEntityFieldsOntoTheTransfer(): void
     {
         // Arrange
@@ -58,9 +55,6 @@ class SearchRankingMapperTest extends Unit
         $this->assertTrue($metricTransfer->getIsActive());
     }
 
-    /**
-     * @return void
-     */
     public function testMapsMetricTransferFieldsOntoTheEntity(): void
     {
         // Arrange
@@ -81,8 +75,6 @@ class SearchRankingMapperTest extends Unit
     /**
      * A transfer with no `isActive` set (null) must still default the entity to active — mirrors the
      * Propel column default and the "new metrics are active by default" admin expectation.
-     *
-     * @return void
      */
     public function testDefaultsTheEntityToActiveWhenTheTransferLeavesIsActiveUnset(): void
     {
@@ -99,9 +91,6 @@ class SearchRankingMapperTest extends Unit
         $this->assertTrue($metricEntity->getIsActive());
     }
 
-    /**
-     * @return void
-     */
     public function testMapsProductMetricEntityFieldsOntoTheTransfer(): void
     {
         // Arrange
@@ -126,9 +115,6 @@ class SearchRankingMapperTest extends Unit
         $this->assertSame(0.25, $productMetricTransfer->getNormalizedValue());
     }
 
-    /**
-     * @return void
-     */
     public function testMapsMetricHistoryEntityFieldsOntoTheTransferIncludingTheDigestSnapshot(): void
     {
         // Arrange
@@ -166,8 +152,6 @@ class SearchRankingMapperTest extends Unit
      * A brand-new metric with no digest yet at snapshot time has a NULL percentiles column (the history
      * table's percentiles is nullable, unlike the live digest table's) — must decode to an empty array,
      * not a one-element `[0.0]` array a naive `explode(',', '')` would produce.
-     *
-     * @return void
      */
     public function testMapsAHistoryEntityWithNoDigestYetToEmptyPercentiles(): void
     {
@@ -188,9 +172,6 @@ class SearchRankingMapperTest extends Unit
         $this->assertSame([], $historyTransfer->getPercentiles());
     }
 
-    /**
-     * @return void
-     */
     public function testMapsMetricHistoryTransferFieldsOntoTheEntity(): void
     {
         // Arrange
@@ -228,8 +209,6 @@ class SearchRankingMapperTest extends Unit
      * No digest existed yet at snapshot time (e.g. a brand-new metric) — the transfer's empty percentiles
      * array must map to a genuinely NULL column, not an empty string, so "no digest" stays distinguishable
      * from "a digest that happened to be empty".
-     *
-     * @return void
      */
     public function testMapsAnEmptyPercentilesArrayToANullColumnRatherThanAnEmptyString(): void
     {
@@ -252,9 +231,6 @@ class SearchRankingMapperTest extends Unit
         $this->assertNull($historyEntity->getPercentiles());
     }
 
-    /**
-     * @return void
-     */
     public function testMapsMetricDigestEntityFieldsOntoTheTransferIncludingExplodedPercentiles(): void
     {
         // Arrange
@@ -280,9 +256,6 @@ class SearchRankingMapperTest extends Unit
         $this->assertSame([0.0, 50.0, 100.0], $digestTransfer->getPercentiles());
     }
 
-    /**
-     * @return void
-     */
     public function testMapsMetricDigestTransferFieldsOntoTheEntity(): void
     {
         // Arrange

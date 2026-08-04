@@ -25,8 +25,6 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
 {
     /**
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer
      */
     public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer
     {
@@ -55,8 +53,6 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
 
     /**
      * @param int $idSearchRankingMetric
-     *
-     * @return void
      */
     public function deleteMetric(int $idSearchRankingMetric): void
     {
@@ -73,8 +69,6 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
 
     /**
      * @param array<int, float> $normalizedValuesByIdProductMetric
-     *
-     * @return void
      */
     public function updateNormalizedValues(array $normalizedValuesByIdProductMetric): void
     {
@@ -100,8 +94,6 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
      * @param string $storeName
      * @param string $localeName
      * @param float $weight
-     *
-     * @return void
      */
     public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void
     {
@@ -120,8 +112,6 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
      * @param array<int, float> $weightsByIdSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return void
      */
     public function updateMetricWeights(array $weightsByIdSearchRankingMetric, string $storeName, string $localeName): void
     {
@@ -135,8 +125,6 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
      * @param string $storeName
      * @param string $localeName
      * @param string $settingValue
-     *
-     * @return void
      */
     public function saveSetting(string $settingKey, string $storeName, string $localeName, string $settingValue): void
     {
@@ -156,8 +144,6 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
      * write in this class.
      *
      * @param \Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer $settingHistoryTransfer
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer
      */
     public function recordSettingHistory(SearchRankingSettingHistoryTransfer $settingHistoryTransfer): SearchRankingSettingHistoryTransfer
     {
@@ -172,8 +158,6 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
 
     /**
      * @param \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer $digestTransfer
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer
      */
     public function saveMetricDigest(SearchRankingMetricDigestTransfer $digestTransfer): SearchRankingMetricDigestTransfer
     {
@@ -196,8 +180,6 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
      * write in this class.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer $historyTransfer
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer
      */
     public function recordMetricHistory(SearchRankingMetricHistoryTransfer $historyTransfer): SearchRankingMetricHistoryTransfer
     {

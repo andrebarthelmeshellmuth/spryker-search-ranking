@@ -34,8 +34,6 @@ class SearchRankingScoresMapExpanderPlugin extends AbstractPlugin implements Pro
      * @param \Spryker\Zed\ProductPageSearchExtension\Dependency\PageMapBuilderInterface $pageMapBuilder
      * @param array<string, mixed> $productData
      * @param \Generated\Shared\Transfer\LocaleTransfer $localeTransfer
-     *
-     * @return \Generated\Shared\Transfer\PageMapTransfer
      */
     // phpcs:disable SlevomatCodingStandard.Functions.UnusedParameter -- signature is fixed by ProductAbstractMapExpanderPluginInterface.
     public function expandProductMap(

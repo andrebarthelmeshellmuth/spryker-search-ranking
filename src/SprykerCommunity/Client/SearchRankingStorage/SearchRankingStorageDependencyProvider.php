@@ -28,8 +28,6 @@ class SearchRankingStorageDependencyProvider extends AbstractDependencyProvider
 
     /**
      * @param \Spryker\Client\Kernel\Container $container
-     *
-     * @return \Spryker\Client\Kernel\Container
      */
     #[\Override]
     public function provideServiceLayerDependencies(Container $container): Container
@@ -43,8 +41,6 @@ class SearchRankingStorageDependencyProvider extends AbstractDependencyProvider
 
     /**
      * @param \Spryker\Client\Kernel\Container $container
-     *
-     * @return \Spryker\Client\Kernel\Container
      */
     protected function addStorageClient(Container $container): Container
     {
@@ -57,8 +53,6 @@ class SearchRankingStorageDependencyProvider extends AbstractDependencyProvider
 
     /**
      * @param \Spryker\Client\Kernel\Container $container
-     *
-     * @return \Spryker\Client\Kernel\Container
      */
     protected function addSynchronizationService(Container $container): Container
     {

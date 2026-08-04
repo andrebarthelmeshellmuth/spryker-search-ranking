@@ -19,9 +19,6 @@ use Spryker\Zed\Kernel\Persistence\AbstractPersistenceFactory;
  */
 class SearchRankingStoragePersistenceFactory extends AbstractPersistenceFactory
 {
-    /**
-     * @return \Orm\Zed\SearchRankingStorage\Persistence\SpySearchRankingConfigurationStorageQuery
-     */
     public function createSearchRankingConfigurationStorageQuery(): SpySearchRankingConfigurationStorageQuery
     {
         return SpySearchRankingConfigurationStorageQuery::create();

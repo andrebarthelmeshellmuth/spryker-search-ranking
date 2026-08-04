@@ -41,8 +41,6 @@ class FormulaPreviewBuilder implements FormulaPreviewBuilderInterface
      * @param bool $isHigherBetter
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer
      */
     public function buildPreview(
         int $idSearchRankingMetric,

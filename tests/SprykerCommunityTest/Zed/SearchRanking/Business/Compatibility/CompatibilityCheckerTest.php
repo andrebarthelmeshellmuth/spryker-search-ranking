@@ -28,9 +28,6 @@ use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRa
  */
 class CompatibilityCheckerTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testDelegatesStraightToTheSearchRankingClientAndReturnsItsResultUnchanged(): void
     {
         // Arrange

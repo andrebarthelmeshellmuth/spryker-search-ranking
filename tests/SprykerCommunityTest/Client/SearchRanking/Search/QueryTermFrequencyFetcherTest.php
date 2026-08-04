@@ -34,25 +34,16 @@ class QueryTermFrequencyFetcherTest extends Unit
 {
     use TestTermVectorIndexTrait;
 
-    /**
-     * @return void
-     */
     protected function _before(): void
     {
         $this->createTestTermVectorIndex();
     }
 
-    /**
-     * @return void
-     */
     protected function _after(): void
     {
         $this->deleteTestTermVectorIndex();
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsDocFrequencyAndDocCountForATermPresentInTheCorpus(): void
     {
         $this->indexTestTermVectorDocuments([
@@ -72,8 +63,6 @@ class QueryTermFrequencyFetcherTest extends Unit
     /**
      * A term absent from the corpus entirely must resolve to a real `0`, not an error or a missing key —
      * `_termvectors` omits `doc_freq` for such a term rather than reporting it explicitly.
-     *
-     * @return void
      */
     public function testReturnsZeroDocFrequencyForATermAbsentFromTheCorpus(): void
     {
@@ -94,8 +83,6 @@ class QueryTermFrequencyFetcherTest extends Unit
      * would explode "gadget" into edge-ngram sub-tokens ("g", "ga", "gad", ...) rather than the one clean
      * "gadget" token the real search-time `standard` analyzer produces. Probing with the correct override
      * must return exactly the single whole token.
-     *
-     * @return void
      */
     public function testForcesTheSearchTimeAnalyzerRatherThanTheMismatchedIndexTimeOne(): void
     {
@@ -115,8 +102,6 @@ class QueryTermFrequencyFetcherTest extends Unit
     /**
      * A term living in only ONE of several probed fields must still be combined via `max()` across
      * fields, not dropped because it's absent from the other field's own term list.
-     *
-     * @return void
      */
     public function testCombinesDocFrequencyAcrossFieldsViaMax(): void
     {
@@ -133,9 +118,6 @@ class QueryTermFrequencyFetcherTest extends Unit
         $this->assertSame(2, $result->getTermDocumentFrequencies()['gadget']);
     }
 
-    /**
-     * @return void
-     */
     public function testEmptySearchStringReturnsAnEmptyResultWithoutFiringAnyRequest(): void
     {
         $result = $this->createFetcher()->fetch('', [static::TEST_TERM_VECTOR_FIELD_PLAIN => 'standard']);
@@ -144,9 +126,6 @@ class QueryTermFrequencyFetcherTest extends Unit
         $this->assertSame([], $result->getTermDocumentFrequencies());
     }
 
-    /**
-     * @return void
-     */
     public function testEmptyFieldMapReturnsAnEmptyResultWithoutFiringAnyRequest(): void
     {
         $result = $this->createFetcher()->fetch('gadget', []);
@@ -158,8 +137,6 @@ class QueryTermFrequencyFetcherTest extends Unit
     /**
      * A nonexistent index must fail gracefully (empty result), never throw — the probe firing alongside a
      * real search must never be able to break it.
-     *
-     * @return void
      */
     public function testFailedProbeReturnsAnEmptyResultRatherThanThrowing(): void
     {
@@ -171,9 +148,6 @@ class QueryTermFrequencyFetcherTest extends Unit
         $this->assertSame([], $result->getTermDocumentFrequencies());
     }
 
-    /**
-     * @return \SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyFetcher
-     */
     protected function createFetcher(): QueryTermFrequencyFetcher
     {
         $searchElasticsearchConfig = new SearchElasticsearchConfig();
@@ -191,8 +165,6 @@ class QueryTermFrequencyFetcherTest extends Unit
              * Hardcoded rather than referencing `TestTermVectorIndexTrait::TEST_TERM_VECTOR_INDEX_NAME` —
              * an anonymous class can't reach an enclosing test case's trait constant. Must match that
              * constant's value.
-             *
-             * @return string
              */
             protected function resolveIndexName(): string
             {

@@ -31,8 +31,6 @@ class SearchRankingScoresDataExpanderPlugin extends AbstractPlugin implements Pr
      *
      * @param array<string, mixed> $productData
      * @param \Generated\Shared\Transfer\ProductPageSearchTransfer $productAbstractPageSearchTransfer
-     *
-     * @return void
      */
     public function expandProductPageData(array $productData, ProductPageSearchTransfer $productAbstractPageSearchTransfer): void
     {
@@ -43,8 +41,6 @@ class SearchRankingScoresDataExpanderPlugin extends AbstractPlugin implements Pr
 
     /**
      * @param array<string, mixed> $productData
-     *
-     * @return \Generated\Shared\Transfer\ProductPayloadTransfer
      */
     protected function getProductPayloadTransfer(array $productData): ProductPayloadTransfer
     {
