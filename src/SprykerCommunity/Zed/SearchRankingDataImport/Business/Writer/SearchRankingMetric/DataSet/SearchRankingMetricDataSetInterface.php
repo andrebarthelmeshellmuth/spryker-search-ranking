@@ -30,4 +30,14 @@ interface SearchRankingMetricDataSetInterface
      * @var string
      */
     public const COL_IS_ACTIVE = 'is_active';
+
+    /**
+     * @var string
+     */
+    public const COL_STORE = 'store';
+
+    /**
+     * @var string
+     */
+    public const COL_LOCALE = 'locale';
 }

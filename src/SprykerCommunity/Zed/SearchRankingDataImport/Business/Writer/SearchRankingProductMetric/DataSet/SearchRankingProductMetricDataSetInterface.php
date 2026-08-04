@@ -29,6 +29,16 @@ interface SearchRankingProductMetricDataSetInterface
     /**
      * @var string
      */
+    public const COL_STORE = 'store';
+
+    /**
+     * @var string
+     */
+    public const COL_LOCALE = 'locale';
+
+    /**
+     * @var string
+     */
     public const KEY_ID_SEARCH_RANKING_METRIC = 'id_search_ranking_metric';
 
     /**

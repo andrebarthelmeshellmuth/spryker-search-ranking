@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business\Digest;
 
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
@@ -34,24 +35,45 @@ class MetricDigestBuilder implements MetricDigestBuilderInterface
     /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface $entityManager
+     * @param \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface $storeFacade
      */
-    public function __construct(protected SearchRankingRepositoryInterface $repository, protected SearchRankingEntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        protected SearchRankingRepositoryInterface $repository,
+        protected SearchRankingEntityManagerInterface $entityManager,
+        protected SearchRankingToStoreFacadeInterface $storeFacade,
+    ) {
     }
 
     /**
+     * @param string|null $filterStoreName
+     * @param string|null $filterLocaleName
+     *
      * @return int
      */
-    public function rebuildDigests(): int
+    public function rebuildDigests(?string $filterStoreName = null, ?string $filterLocaleName = null): int
     {
         $processedCount = 0;
 
-        foreach ($this->repository->getActiveMetricCollection()->getMetrics() as $metricTransfer) {
-            if (!$this->rebuildDigest($metricTransfer->getIdSearchRankingMetricOrFail())) {
+        foreach ($this->storeFacade->getAllStores() as $storeTransfer) {
+            $storeName = $storeTransfer->getNameOrFail();
+
+            if ($filterStoreName !== null && $storeName !== $filterStoreName) {
                 continue;
             }
 
-            $processedCount++;
+            foreach ($storeTransfer->getAvailableLocaleIsoCodes() as $localeName) {
+                if ($filterLocaleName !== null && $localeName !== $filterLocaleName) {
+                    continue;
+                }
+
+                foreach ($this->repository->getActiveMetricCollection($storeName, $localeName)->getMetrics() as $metricTransfer) {
+                    if (!$this->rebuildDigest($metricTransfer->getIdSearchRankingMetricOrFail(), $storeName, $localeName)) {
+                        continue;
+                    }
+
+                    $processedCount++;
+                }
+            }
         }
 
         return $processedCount;
@@ -59,18 +81,23 @@ class MetricDigestBuilder implements MetricDigestBuilderInterface
 
     /**
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return bool
      */
-    public function rebuildDigest(int $idSearchRankingMetric): bool
+    public function rebuildDigest(int $idSearchRankingMetric, string $storeName, string $localeName): bool
     {
-        $rawValues = $this->repository->getRawValues($idSearchRankingMetric);
+        $rawValues = $this->repository->getRawValues($idSearchRankingMetric, $storeName, $localeName);
 
         if ($rawValues === []) {
             return false;
         }
 
-        $digestTransfer = $this->buildDigest($rawValues)->setFkSearchRankingMetric($idSearchRankingMetric);
+        $digestTransfer = $this->buildDigest($rawValues)
+            ->setFkSearchRankingMetric($idSearchRankingMetric)
+            ->setStoreName($storeName)
+            ->setLocaleName($localeName);
         $this->entityManager->saveMetricDigest($digestTransfer);
 
         return true;

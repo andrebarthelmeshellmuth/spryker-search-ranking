@@ -14,32 +14,58 @@ use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 interface SearchRankingStorageToSearchRankingFacadeInterface
 {
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
-    public function getActiveMetricCollection(): SearchRankingMetricCollectionTransfer;
+    public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getRelevanceWeight(): float;
+    public function getRelevanceWeight(string $storeName, string $localeName): float;
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getRelevanceSaturationPoint(): float;
+    public function getRelevanceSaturationPoint(string $storeName, string $localeName): float;
 
     /**
-     * @return int
-     */
-    public function getEntropyProbeResultSize(): int;
-
-    /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getEntropyWeightExponent(): float;
+    public function getSpecificityBlendWeight(string $storeName, string $localeName): float;
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getEntropyWeightShiftMagnitude(): float;
+    public function getSpecificitySaturationPoint(string $storeName, string $localeName): float;
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return float
+     */
+    public function getSpecificityWeightExponent(string $storeName, string $localeName): float;
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return float
+     */
+    public function getSpecificityWeightShiftMagnitude(string $storeName, string $localeName): float;
 }

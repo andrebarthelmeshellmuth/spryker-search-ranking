@@ -100,7 +100,6 @@ class MetricNameToIdSearchRankingMetricStepTest extends Unit
     {
         $metricEntity = new SpySearchRankingMetric();
         $metricEntity->setName($name)
-            ->setWeight(1.0)
             ->setFormula('x')
             ->setIsActive(true)
             ->setIsHigherBetter(true)

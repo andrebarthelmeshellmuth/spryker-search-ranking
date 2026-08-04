@@ -45,11 +45,11 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
      *   rationale (including why an older, unbounded `(1 + sqrt(_score)) * (...)` formula was replaced).
      * - Metric weights, relevanceWeight, and relevanceSaturationPoint all come from the ranking
      *   configuration in key-value storage (synced from Zed).
-     * - **Entropy-aware relevance weighting (opt-in, OFF by default)**: when
-     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()}
+     * - **Specificity-aware relevance weighting (opt-in, OFF by default)**: when
+     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled()}
      *   is enabled, the configured `relevanceWeight` is replaced with a per-query value derived from ONE
-     *   ADDITIONAL lightweight probe query — see
-     *   {@see \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculator} for the full
+     *   ADDITIONAL lightweight `_termvectors` probe (no real catalog query) — see
+     *   {@see \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculator} for the full
      *   mechanism and this package's README for the rationale. Left disabled, this plugin fires exactly
      *   the one query it always has.
      * - Also adds the `scores` field to the query's source whitelist (when one is set), so consumers —
@@ -69,10 +69,12 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
     {
         // Reset unconditionally, before any early return: a stale result from an earlier query in the
         // same request (e.g. a prior facet/autosuggest call this plugin also ran for) must never leak
-        // into this one — see SearchRankingClientInterface::rememberLastEntropyWeightingResult().
-        $this->getClient()->rememberLastEntropyWeightingResult(null);
+        // into this one — see SearchRankingClientInterface::rememberLastSpecificityWeightingResult().
+        $this->getClient()->rememberLastSpecificityWeightingResult(null);
 
-        if ($this->getSearchString($searchQuery, $requestParameters) === '') {
+        $searchString = $this->getSearchString($searchQuery, $requestParameters);
+
+        if ($searchString === '') {
             return $searchQuery;
         }
 
@@ -82,7 +84,10 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
             return $searchQuery;
         }
 
-        $configurationTransfer = $this->getFactory()->getSearchRankingStorageClient()->findRankingConfiguration();
+        $configurationTransfer = $this->getFactory()->getSearchRankingStorageClient()->findRankingConfiguration(
+            $this->getFactory()->getStoreClient()->getCurrentStore()->getNameOrFail(),
+            $this->getFactory()->getLocaleClient()->getCurrentLocale(),
+        );
 
         if ($configurationTransfer === null) {
             return $searchQuery;
@@ -94,7 +99,7 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
             return $searchQuery;
         }
 
-        $configurationTransfer = $this->applyEntropyWeighting($configurationTransfer, $wrappedQuery);
+        $configurationTransfer = $this->applySpecificityWeighting($configurationTransfer, $searchString);
 
         $functionScore = $this->getFactory()->createFunctionScoreBuilder()->build(
             $wrappedQuery,
@@ -112,38 +117,38 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
     }
 
     /**
-     * OFF by default (see {@see \SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()}) —
-     * returns the configuration transfer unchanged, firing no additional query, unless a project has
+     * OFF by default (see {@see \SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled()}) —
+     * returns the configuration transfer unchanged, firing no additional probe, unless a project has
      * explicitly opted in.
      *
-     * Remembers the full {@see \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult} on
-     * this package's own Client (see {@see \SprykerCommunity\Client\SearchRanking\SearchRankingClientInterface::rememberLastEntropyWeightingResult()})
-     * whenever entropy weighting is enabled — including when the probe itself found no usable signal and
-     * fell back to the configured weight unchanged — so the search-debug overlay can later show the SAME
-     * relevanceWeight (and the diagnostics behind it) that this method actually used to build the query,
-     * not a stale, independently-fetched configured value.
+     * Remembers the full {@see \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult}
+     * on this package's own Client (see {@see \SprykerCommunity\Client\SearchRanking\SearchRankingClientInterface::rememberLastSpecificityWeightingResult()})
+     * whenever specificity weighting is enabled — including when the probe itself found no usable signal
+     * and fell back to the configured weight unchanged — so the search-debug overlay can later show the
+     * SAME relevanceWeight (and the diagnostics behind it) that this method actually used to build the
+     * query, not a stale, independently-fetched configured value.
      *
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
-     * @param \Elastica\Query\AbstractQuery $baseQuery
+     * @param string $searchString
      *
      * @return \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer
      */
-    protected function applyEntropyWeighting(
+    protected function applySpecificityWeighting(
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
-        AbstractQuery $baseQuery,
+        string $searchString,
     ): SearchRankingConfigurationStorageTransfer {
-        if (!$this->getFactory()->getConfig()->isEntropyWeightingEnabled()) {
+        if (!$this->getFactory()->getConfig()->isSpecificityWeightingEnabled()) {
             return $configurationTransfer;
         }
 
-        $entropyWeightingResult = $this->getFactory()->createEntropyWeightCalculator()->calculateWeightingResult(
-            $baseQuery,
+        $specificityWeightingResult = $this->getFactory()->createSpecificityWeightCalculator()->calculateWeightingResult(
+            $searchString,
             $configurationTransfer,
         );
 
-        $this->getClient()->rememberLastEntropyWeightingResult($entropyWeightingResult);
+        $this->getClient()->rememberLastSpecificityWeightingResult($specificityWeightingResult);
 
-        return (clone $configurationTransfer)->setRelevanceWeight($entropyWeightingResult->getRelevanceWeight());
+        return (clone $configurationTransfer)->setRelevanceWeight($specificityWeightingResult->getRelevanceWeight());
     }
 
     /**

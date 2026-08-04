@@ -13,8 +13,10 @@ interface SearchRankingStorageEntityManagerInterface
 {
     /**
      * @param array<string, mixed> $configurationData
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return void
      */
-    public function saveRankingConfiguration(array $configurationData): void;
+    public function saveRankingConfiguration(array $configurationData, string $storeName, string $localeName): void;
 }

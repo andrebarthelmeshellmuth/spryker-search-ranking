@@ -26,9 +26,12 @@ use Spryker\Zed\Kernel\Persistence\AbstractRepository;
 class SearchRankingRepository extends AbstractRepository implements SearchRankingRepositoryInterface
 {
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
-    public function getMetricCollection(): SearchRankingMetricCollectionTransfer
+    public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
         $metricEntities = $this->getFactory()
             ->createSearchRankingMetricQuery()
@@ -39,18 +42,20 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
         $mapper = $this->getFactory()->createSearchRankingMapper();
 
         foreach ($metricEntities as $metricEntity) {
-            $collectionTransfer->addMetric(
-                $mapper->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer()),
-            );
+            $metricTransfer = $mapper->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
+            $collectionTransfer->addMetric($this->attachWeight($metricTransfer, $storeName, $localeName));
         }
 
         return $collectionTransfer;
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
-    public function getActiveMetricCollection(): SearchRankingMetricCollectionTransfer
+    public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
         $metricEntities = $this->getFactory()
             ->createSearchRankingMetricQuery()
@@ -62,9 +67,8 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
         $mapper = $this->getFactory()->createSearchRankingMapper();
 
         foreach ($metricEntities as $metricEntity) {
-            $collectionTransfer->addMetric(
-                $mapper->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer()),
-            );
+            $metricTransfer = $mapper->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
+            $collectionTransfer->addMetric($this->attachWeight($metricTransfer, $storeName, $localeName));
         }
 
         return $collectionTransfer;
@@ -72,10 +76,12 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
     /**
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
-    public function findMetricById(int $idSearchRankingMetric): ?SearchRankingMetricTransfer
+    public function findMetricById(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricTransfer
     {
         $metricEntity = $this->getFactory()
             ->createSearchRankingMetricQuery()
@@ -85,17 +91,21 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
             return null;
         }
 
-        return $this->getFactory()
+        $metricTransfer = $this->getFactory()
             ->createSearchRankingMapper()
             ->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
+
+        return $this->attachWeight($metricTransfer, $storeName, $localeName);
     }
 
     /**
      * @param string $name
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
-    public function findMetricByName(string $name): ?SearchRankingMetricTransfer
+    public function findMetricByName(string $name, string $storeName, string $localeName): ?SearchRankingMetricTransfer
     {
         $metricEntity = $this->getFactory()
             ->createSearchRankingMetricQuery()
@@ -105,22 +115,64 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
             return null;
         }
 
-        return $this->getFactory()
+        $metricTransfer = $this->getFactory()
             ->createSearchRankingMapper()
             ->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
+
+        return $this->attachWeight($metricTransfer, $storeName, $localeName);
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer
+     */
+    protected function attachWeight(
+        SearchRankingMetricTransfer $metricTransfer,
+        string $storeName,
+        string $localeName,
+    ): SearchRankingMetricTransfer {
+        $weight = $this->findMetricWeight($metricTransfer->getIdSearchRankingMetricOrFail(), $storeName, $localeName);
+
+        return $metricTransfer->setWeight($weight ?? 0.0);
     }
 
     /**
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return float|null
+     */
+    public function findMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName): ?float
+    {
+        $metricWeightEntity = $this->getFactory()
+            ->createSearchRankingMetricWeightQuery()
+            ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
+            ->findOne();
+
+        return $metricWeightEntity?->getWeight();
+    }
+
+    /**
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer
      */
-    public function getMetricStatistics(int $idSearchRankingMetric): SearchRankingMetricStatisticsTransfer
+    public function getMetricStatistics(int $idSearchRankingMetric, string $storeName, string $localeName): SearchRankingMetricStatisticsTransfer
     {
         /** @var array<string, mixed>|null $statisticsRow */
         $statisticsRow = $this->getFactory()
             ->createSearchRankingProductMetricQuery()
             ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
             ->withColumn(sprintf('MIN(%s)', SpySearchRankingProductMetricTableMap::COL_RAW_VALUE), 'min_value')
             ->withColumn(sprintf('MAX(%s)', SpySearchRankingProductMetricTableMap::COL_RAW_VALUE), 'max_value')
             ->withColumn(sprintf('AVG(%s)', SpySearchRankingProductMetricTableMap::COL_RAW_VALUE), 'avg_value')
@@ -137,6 +189,8 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
     /**
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      * @param int $idLastSearchRankingProductMetric
      * @param int $limit
      *
@@ -144,12 +198,16 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
      */
     public function getProductMetricBatch(
         int $idSearchRankingMetric,
+        string $storeName,
+        string $localeName,
         int $idLastSearchRankingProductMetric,
         int $limit,
     ): array {
         $productMetricEntities = $this->getFactory()
             ->createSearchRankingProductMetricQuery()
             ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
             ->filterByIdSearchRankingProductMetric($idLastSearchRankingProductMetric, Criteria::GREATER_THAN)
             ->orderByIdSearchRankingProductMetric()
             ->limit($limit)
@@ -170,10 +228,12 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
     /**
      * @param array<int> $productAbstractIds
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return array<int, array<string, float>>
      */
-    public function getNormalizedScoresGroupedByIdProductAbstract(array $productAbstractIds): array
+    public function getNormalizedScoresGroupedByIdProductAbstract(array $productAbstractIds, string $storeName, string $localeName): array
     {
         if ($productAbstractIds === []) {
             return [];
@@ -182,6 +242,8 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
         $scoreRows = $this->getFactory()
             ->createSearchRankingProductMetricQuery()
             ->filterByFkProductAbstract_In($productAbstractIds)
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
             ->filterByNormalizedValue(null, Criteria::ISNOTNULL)
             ->useSearchRankingMetricQuery()
                 ->filterByIsActive(true)
@@ -227,29 +289,38 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
     /**
      * @param string $settingKey
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return string|null
      */
-    public function findSettingValue(string $settingKey): ?string
+    public function findSettingValue(string $settingKey, string $storeName, string $localeName): ?string
     {
         $settingEntity = $this->getFactory()
             ->createSearchRankingSettingQuery()
-            ->findOneBySettingKey($settingKey);
+            ->filterBySettingKey($settingKey)
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
+            ->findOne();
 
         return $settingEntity?->getSettingValue();
     }
 
     /**
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return array<float>
      */
-    public function getRawValues(int $idSearchRankingMetric): array
+    public function getRawValues(int $idSearchRankingMetric, string $storeName, string $localeName): array
     {
         /** @var array<int|string|float> $rawValues */
         $rawValues = $this->getFactory()
             ->createSearchRankingProductMetricQuery()
             ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
             ->select([SpySearchRankingProductMetricTableMap::COL_RAW_VALUE])
             ->find()
             ->getData();
@@ -259,14 +330,19 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
     /**
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer|null
      */
-    public function findMetricDigest(int $idSearchRankingMetric): ?SearchRankingMetricDigestTransfer
+    public function findMetricDigest(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricDigestTransfer
     {
         $digestEntity = $this->getFactory()
             ->createSearchRankingMetricDigestQuery()
-            ->findOneByFkSearchRankingMetric($idSearchRankingMetric);
+            ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
+            ->findOne();
 
         if ($digestEntity === null) {
             return null;
@@ -279,14 +355,18 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
     /**
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return array<\Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer>
      */
-    public function getMetricHistory(int $idSearchRankingMetric): array
+    public function getMetricHistory(int $idSearchRankingMetric, string $storeName, string $localeName): array
     {
         $historyEntities = $this->getFactory()
             ->createSearchRankingMetricHistoryQuery()
             ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
             ->orderByIdSearchRankingMetricHistory(Criteria::DESC)
             ->find();
 
@@ -302,14 +382,18 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
     /**
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer|null
      */
-    public function findLastMetricChangeHistoryEntry(int $idSearchRankingMetric): ?SearchRankingMetricHistoryTransfer
+    public function findLastMetricChangeHistoryEntry(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricHistoryTransfer
     {
         $historyEntity = $this->getFactory()
             ->createSearchRankingMetricHistoryQuery()
             ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
             ->filterByIsChange(true)
             ->orderByIdSearchRankingMetricHistory(Criteria::DESC)
             ->findOne();

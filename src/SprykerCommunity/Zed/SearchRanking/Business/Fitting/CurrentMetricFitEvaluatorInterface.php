@@ -20,8 +20,10 @@ interface CurrentMetricFitEvaluatorInterface
      * - Returns null when the metric doesn't exist, or has no digest yet (nothing to fit against).
      *
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return float|null
      */
-    public function evaluate(int $idSearchRankingMetric): ?float;
+    public function evaluate(int $idSearchRankingMetric, string $storeName, string $localeName): ?float;
 }

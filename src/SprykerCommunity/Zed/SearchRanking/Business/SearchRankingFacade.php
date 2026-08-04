@@ -35,9 +35,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
-    public function getMetricCollection(): SearchRankingMetricCollectionTransfer
+    public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
-        return $this->getRepository()->getMetricCollection();
+        return $this->getRepository()->getMetricCollection($storeName, $localeName);
     }
 
     /**
@@ -47,9 +47,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
-    public function getActiveMetricCollection(): SearchRankingMetricCollectionTransfer
+    public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
-        return $this->getRepository()->getActiveMetricCollection();
+        return $this->getRepository()->getActiveMetricCollection($storeName, $localeName);
     }
 
     /**
@@ -59,9 +59,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return float
      */
-    public function getRelevanceWeight(): float
+    public function getRelevanceWeight(string $storeName, string $localeName): float
     {
-        return $this->getFactory()->createSettingManager()->getRelevanceWeight();
+        return $this->getFactory()->createSettingManager()->getRelevanceWeight($storeName, $localeName);
     }
 
     /**
@@ -73,9 +73,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return void
      */
-    public function saveRelevanceWeight(float $relevanceWeight): void
+    public function saveRelevanceWeight(string $storeName, string $localeName, float $relevanceWeight): void
     {
-        $this->getFactory()->createSettingManager()->saveRelevanceWeight($relevanceWeight);
+        $this->getFactory()->createSettingManager()->saveRelevanceWeight($storeName, $localeName, $relevanceWeight);
     }
 
     /**
@@ -85,9 +85,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return float
      */
-    public function getRelevanceSaturationPoint(): float
+    public function getRelevanceSaturationPoint(string $storeName, string $localeName): float
     {
-        return $this->getFactory()->createSettingManager()->getRelevanceSaturationPoint();
+        return $this->getFactory()->createSettingManager()->getRelevanceSaturationPoint($storeName, $localeName);
     }
 
     /**
@@ -99,35 +99,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return void
      */
-    public function saveRelevanceSaturationPoint(float $relevanceSaturationPoint): void
+    public function saveRelevanceSaturationPoint(string $storeName, string $localeName, float $relevanceSaturationPoint): void
     {
-        $this->getFactory()->createSettingManager()->saveRelevanceSaturationPoint($relevanceSaturationPoint);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
-     *
-     * @return int
-     */
-    public function getEntropyProbeResultSize(): int
-    {
-        return $this->getFactory()->createSettingManager()->getEntropyProbeResultSize();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
-     *
-     * @param int $entropyProbeResultSize
-     *
-     * @return void
-     */
-    public function saveEntropyProbeResultSize(int $entropyProbeResultSize): void
-    {
-        $this->getFactory()->createSettingManager()->saveEntropyProbeResultSize($entropyProbeResultSize);
+        $this->getFactory()->createSettingManager()->saveRelevanceSaturationPoint($storeName, $localeName, $relevanceSaturationPoint);
     }
 
     /**
@@ -137,9 +111,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return float
      */
-    public function getEntropyWeightExponent(): float
+    public function getSpecificityBlendWeight(string $storeName, string $localeName): float
     {
-        return $this->getFactory()->createSettingManager()->getEntropyWeightExponent();
+        return $this->getFactory()->createSettingManager()->getSpecificityBlendWeight($storeName, $localeName);
     }
 
     /**
@@ -147,13 +121,13 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @api
      *
-     * @param float $entropyWeightExponent
+     * @param float $specificityBlendWeight
      *
      * @return void
      */
-    public function saveEntropyWeightExponent(float $entropyWeightExponent): void
+    public function saveSpecificityBlendWeight(string $storeName, string $localeName, float $specificityBlendWeight): void
     {
-        $this->getFactory()->createSettingManager()->saveEntropyWeightExponent($entropyWeightExponent);
+        $this->getFactory()->createSettingManager()->saveSpecificityBlendWeight($storeName, $localeName, $specificityBlendWeight);
     }
 
     /**
@@ -163,9 +137,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return float
      */
-    public function getEntropyWeightShiftMagnitude(): float
+    public function getSpecificitySaturationPoint(string $storeName, string $localeName): float
     {
-        return $this->getFactory()->createSettingManager()->getEntropyWeightShiftMagnitude();
+        return $this->getFactory()->createSettingManager()->getSpecificitySaturationPoint($storeName, $localeName);
     }
 
     /**
@@ -173,13 +147,65 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @api
      *
-     * @param float $entropyWeightShiftMagnitude
+     * @param float $specificitySaturationPoint
      *
      * @return void
      */
-    public function saveEntropyWeightShiftMagnitude(float $entropyWeightShiftMagnitude): void
+    public function saveSpecificitySaturationPoint(string $storeName, string $localeName, float $specificitySaturationPoint): void
     {
-        $this->getFactory()->createSettingManager()->saveEntropyWeightShiftMagnitude($entropyWeightShiftMagnitude);
+        $this->getFactory()->createSettingManager()->saveSpecificitySaturationPoint($storeName, $localeName, $specificitySaturationPoint);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getSpecificityWeightExponent(string $storeName, string $localeName): float
+    {
+        return $this->getFactory()->createSettingManager()->getSpecificityWeightExponent($storeName, $localeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param float $specificityWeightExponent
+     *
+     * @return void
+     */
+    public function saveSpecificityWeightExponent(string $storeName, string $localeName, float $specificityWeightExponent): void
+    {
+        $this->getFactory()->createSettingManager()->saveSpecificityWeightExponent($storeName, $localeName, $specificityWeightExponent);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getSpecificityWeightShiftMagnitude(string $storeName, string $localeName): float
+    {
+        return $this->getFactory()->createSettingManager()->getSpecificityWeightShiftMagnitude($storeName, $localeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param float $specificityWeightShiftMagnitude
+     *
+     * @return void
+     */
+    public function saveSpecificityWeightShiftMagnitude(string $storeName, string $localeName, float $specificityWeightShiftMagnitude): void
+    {
+        $this->getFactory()->createSettingManager()->saveSpecificityWeightShiftMagnitude($storeName, $localeName, $specificityWeightShiftMagnitude);
     }
 
     /**
@@ -189,9 +215,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return bool
      */
-    public function normalizeActiveMetricWeights(): bool
+    public function normalizeActiveMetricWeights(string $storeName, string $localeName): bool
     {
-        return $this->getFactory()->createWeightNormalizer()->normalizeActiveWeights();
+        return $this->getFactory()->createWeightNormalizer()->normalizeActiveWeights($storeName, $localeName);
     }
 
     /**
@@ -200,12 +226,14 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
-    public function findMetricById(int $idSearchRankingMetric): ?SearchRankingMetricTransfer
+    public function findMetricById(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricTransfer
     {
-        return $this->getRepository()->findMetricById($idSearchRankingMetric);
+        return $this->getRepository()->findMetricById($idSearchRankingMetric, $storeName, $localeName);
     }
 
     /**
@@ -219,7 +247,11 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      */
     public function findMetricByName(string $name): ?SearchRankingMetricTransfer
     {
-        return $this->getRepository()->findMetricByName($name);
+        return $this->getRepository()->findMetricByName(
+            $name,
+            SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+        );
     }
 
     /**
@@ -234,6 +266,23 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer
     {
         return $this->getFactory()->createMetricWriter()->saveMetric($metricTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $weight
+     *
+     * @return void
+     */
+    public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void
+    {
+        $this->getFactory()->createMetricWriter()->saveMetricWeight($idSearchRankingMetric, $storeName, $localeName, $weight);
     }
 
     /**
@@ -271,9 +320,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return \Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer
      */
-    public function normalizeProductMetricValues(): SearchRankingNormalizationResultTransfer
+    public function normalizeProductMetricValues(?string $storeName = null, ?string $localeName = null): SearchRankingNormalizationResultTransfer
     {
-        return $this->getFactory()->createProductMetricNormalizer()->normalize();
+        return $this->getFactory()->createProductMetricNormalizer()->normalize($storeName, $localeName);
     }
 
     /**
@@ -309,9 +358,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return int
      */
-    public function rebuildMetricDigests(): int
+    public function rebuildMetricDigests(?string $storeName = null, ?string $localeName = null): int
     {
-        return $this->getFactory()->createMetricDigestBuilder()->rebuildDigests();
+        return $this->getFactory()->createMetricDigestBuilder()->rebuildDigests($storeName, $localeName);
     }
 
     /**
@@ -320,12 +369,14 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer|null
      */
-    public function findMetricDigest(int $idSearchRankingMetric): ?SearchRankingMetricDigestTransfer
+    public function findMetricDigest(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricDigestTransfer
     {
-        return $this->getRepository()->findMetricDigest($idSearchRankingMetric);
+        return $this->getRepository()->findMetricDigest($idSearchRankingMetric, $storeName, $localeName);
     }
 
     /**
@@ -336,12 +387,25 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @param int $idSearchRankingMetric
      * @param string $formula
      * @param bool $isHigherBetter
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer
      */
-    public function previewFormula(int $idSearchRankingMetric, string $formula, bool $isHigherBetter): SearchRankingFormulaPreviewTransfer
-    {
-        return $this->getFactory()->createFormulaPreviewBuilder()->buildPreview($idSearchRankingMetric, $formula, $isHigherBetter);
+    public function previewFormula(
+        int $idSearchRankingMetric,
+        string $formula,
+        bool $isHigherBetter,
+        string $storeName,
+        string $localeName,
+    ): SearchRankingFormulaPreviewTransfer {
+        return $this->getFactory()->createFormulaPreviewBuilder()->buildPreview(
+            $idSearchRankingMetric,
+            $formula,
+            $isHigherBetter,
+            $storeName,
+            $localeName,
+        );
     }
 
     /**
@@ -351,9 +415,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return bool
      */
-    public function randomizeRandomMetricIfActive(): bool
+    public function randomizeRandomMetricIfActive(?string $storeName = null, ?string $localeName = null): bool
     {
-        return $this->getFactory()->createMetricRandomizer()->randomizeIfActive();
+        return $this->getFactory()->createMetricRandomizer()->randomizeIfActive($storeName, $localeName);
     }
 
     /**
@@ -375,9 +439,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return bool
      */
-    public function isEntropyWeightingEnabled(): bool
+    public function isSpecificityWeightingEnabled(): bool
     {
-        return SharedSearchRankingConfig::isEntropyWeightingEnabled();
+        return SharedSearchRankingConfig::isSpecificityWeightingEnabled();
     }
 
     /**
@@ -389,9 +453,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @return void
      */
-    public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer): void
+    public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): void
     {
-        $this->getFactory()->createMetricWriter()->recordCheckOnly($metricTransfer);
+        $this->getFactory()->createMetricWriter()->recordCheckOnly($metricTransfer, $storeName, $localeName);
     }
 
     /**
@@ -405,7 +469,11 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      */
     public function findLastMetricChangeHistoryEntry(int $idSearchRankingMetric): ?SearchRankingMetricHistoryTransfer
     {
-        return $this->getRepository()->findLastMetricChangeHistoryEntry($idSearchRankingMetric);
+        return $this->getRepository()->findLastMetricChangeHistoryEntry(
+            $idSearchRankingMetric,
+            SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+        );
     }
 
     /**
@@ -414,11 +482,13 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return float|null
      */
-    public function evaluateCurrentMetricFit(int $idSearchRankingMetric): ?float
+    public function evaluateCurrentMetricFit(int $idSearchRankingMetric, string $storeName, string $localeName): ?float
     {
-        return $this->getFactory()->createCurrentMetricFitEvaluator()->evaluate($idSearchRankingMetric);
+        return $this->getFactory()->createCurrentMetricFitEvaluator()->evaluate($idSearchRankingMetric, $storeName, $localeName);
     }
 }

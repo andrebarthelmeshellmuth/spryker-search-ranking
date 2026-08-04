@@ -10,7 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunityTest\Client\SearchRanking;
 
 use Codeception\Test\Unit;
-use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult;
+use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
 use SprykerCommunity\Client\SearchRanking\SearchRankingClient;
 use SprykerCommunity\Client\SearchRanking\SearchRankingConfig;
 use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;
@@ -31,34 +31,34 @@ class SearchRankingClientTest extends Unit
     /**
      * @return void
      */
-    public function testHasNoRememberedEntropyWeightingResultInitially(): void
+    public function testHasNoRememberedSpecificityWeightingResultInitially(): void
     {
         // Act & Assert
-        $this->assertNull((new SearchRankingClient())->getLastEntropyWeightingResult());
+        $this->assertNull((new SearchRankingClient())->getLastSpecificityWeightingResult());
     }
 
     /**
      * The whole point of this holder: it must stay the same across calls so two independent plugins in
      * the same request can exchange this value without knowing about each other — see
-     * SearchRankingClientInterface::rememberLastEntropyWeightingResult()'s docblock.
+     * SearchRankingClientInterface::rememberLastSpecificityWeightingResult()'s docblock.
      *
      * @return void
      */
-    public function testReturnsTheLastRememberedEntropyWeightingResult(): void
+    public function testReturnsTheLastRememberedSpecificityWeightingResult(): void
     {
         // Arrange
         $client = new SearchRankingClient();
-        $entropyWeightingResult = new EntropyWeightingResult(0.75, 0.9, 0.1, 0.15, 10);
+        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.9, 0.1, 0.15, 10);
 
         // Act
-        $client->rememberLastEntropyWeightingResult($entropyWeightingResult);
+        $client->rememberLastSpecificityWeightingResult($specificityWeightingResult);
 
         // Assert
-        $this->assertSame($entropyWeightingResult, $client->getLastEntropyWeightingResult());
+        $this->assertSame($specificityWeightingResult, $client->getLastSpecificityWeightingResult());
     }
 
     /**
-     * A later query in the same request (e.g. after a category/browse page where entropy weighting
+     * A later query in the same request (e.g. after a category/browse page where specificity weighting
      * doesn't apply) must overwrite an earlier result rather than leave it in place.
      *
      * @return void
@@ -67,28 +67,28 @@ class SearchRankingClientTest extends Unit
     {
         // Arrange
         $client = new SearchRankingClient();
-        $client->rememberLastEntropyWeightingResult(new EntropyWeightingResult(0.75, 0.9, 0.1, 0.15, 10));
+        $client->rememberLastSpecificityWeightingResult(new SpecificityWeightingResult(0.75, 0.9, 0.1, 0.15, 10));
 
         // Act
-        $client->rememberLastEntropyWeightingResult(null);
+        $client->rememberLastSpecificityWeightingResult(null);
 
         // Assert
-        $this->assertNull($client->getLastEntropyWeightingResult());
+        $this->assertNull($client->getLastSpecificityWeightingResult());
     }
 
     /**
      * The whole point of this method existing: it must resolve through THIS Client's own, Locator-resolved
-     * `getFactory()->getConfig()` — the only place a project override of `isEntropyWeightingEnabled()`
+     * `getFactory()->getConfig()` — the only place a project override of `isSpecificityWeightingEnabled()`
      * actually takes effect — rather than referencing `Shared\SearchRanking\SearchRankingConfig` directly,
      * which has no project-override path at all. See both classes' docblocks for the full history.
      *
      * @return void
      */
-    public function testIsEntropyWeightingEnabledDelegatesToTheLocatorResolvedClientConfig(): void
+    public function testIsSpecificityWeightingEnabledDelegatesToTheLocatorResolvedClientConfig(): void
     {
         // Arrange
         $configMock = $this->createMock(SearchRankingConfig::class);
-        $configMock->method('isEntropyWeightingEnabled')->willReturn(true);
+        $configMock->method('isSpecificityWeightingEnabled')->willReturn(true);
 
         $factoryMock = $this->createMock(SearchRankingFactory::class);
         $factoryMock->method('getConfig')->willReturn($configMock);
@@ -97,6 +97,27 @@ class SearchRankingClientTest extends Unit
         $client->setFactory($factoryMock);
 
         // Act & Assert
-        $this->assertTrue($client->isEntropyWeightingEnabled());
+        $this->assertTrue($client->isSpecificityWeightingEnabled());
+    }
+
+    /**
+     * @return void
+     */
+    public function testGetSpecificityProbeFieldSearchAnalyzersDelegatesToTheLocatorResolvedClientConfig(): void
+    {
+        // Arrange
+        $fieldToSearchAnalyzer = ['full-text' => 'fulltext_search_analyzer'];
+
+        $configMock = $this->createMock(SearchRankingConfig::class);
+        $configMock->method('getSpecificityProbeFieldSearchAnalyzers')->willReturn($fieldToSearchAnalyzer);
+
+        $factoryMock = $this->createMock(SearchRankingFactory::class);
+        $factoryMock->method('getConfig')->willReturn($configMock);
+
+        $client = new SearchRankingClient();
+        $client->setFactory($factoryMock);
+
+        // Act & Assert
+        $this->assertSame($fieldToSearchAnalyzer, $client->getSpecificityProbeFieldSearchAnalyzers());
     }
 }

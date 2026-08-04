@@ -15,6 +15,7 @@ use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery;
 use Spryker\Zed\DataImport\Business\Model\DataSet\DataSet;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingProductMetric\DataSet\SearchRankingProductMetricDataSetInterface;
 use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingProductMetric\SearchRankingProductMetricWriterStep;
 
@@ -88,6 +89,8 @@ class SearchRankingProductMetricWriterStepTest extends Unit
             SearchRankingProductMetricDataSetInterface::KEY_ID_SEARCH_RANKING_METRIC => $metricEntity->getIdSearchRankingMetric(),
             SearchRankingProductMetricDataSetInterface::KEY_ID_PRODUCT_ABSTRACT => $productAbstractEntity->getIdProductAbstract(),
             SearchRankingProductMetricDataSetInterface::COL_RAW_VALUE => '42.5',
+            SearchRankingProductMetricDataSetInterface::COL_STORE => SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SearchRankingProductMetricDataSetInterface::COL_LOCALE => SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
         ]);
 
         // Act
@@ -112,6 +115,8 @@ class SearchRankingProductMetricWriterStepTest extends Unit
         $productMetricEntity = new SpySearchRankingProductMetric();
         $productMetricEntity->setFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
             ->setFkProductAbstract($productAbstractEntity->getIdProductAbstract())
+            ->setStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+            ->setLocaleName(SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)
             ->setRawValue(1.0)
             ->setNormalizedValue(0.75)
             ->save();
@@ -121,6 +126,8 @@ class SearchRankingProductMetricWriterStepTest extends Unit
             SearchRankingProductMetricDataSetInterface::KEY_ID_SEARCH_RANKING_METRIC => $metricEntity->getIdSearchRankingMetric(),
             SearchRankingProductMetricDataSetInterface::KEY_ID_PRODUCT_ABSTRACT => $productAbstractEntity->getIdProductAbstract(),
             SearchRankingProductMetricDataSetInterface::COL_RAW_VALUE => '99.0',
+            SearchRankingProductMetricDataSetInterface::COL_STORE => SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SearchRankingProductMetricDataSetInterface::COL_LOCALE => SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
         ]);
 
         // Act
@@ -149,7 +156,6 @@ class SearchRankingProductMetricWriterStepTest extends Unit
     {
         $metricEntity = new SpySearchRankingMetric();
         $metricEntity->setName($name)
-            ->setWeight(1.0)
             ->setFormula('x')
             ->setIsActive(true)
             ->setIsHigherBetter(true)

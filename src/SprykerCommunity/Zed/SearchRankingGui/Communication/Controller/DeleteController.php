@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRankingGui\Communication\Controller;
 
 use Spryker\Zed\Kernel\Communication\Controller\AbstractController;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricTable;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,18 +26,32 @@ class DeleteController extends AbstractController
     protected const URL_METRIC_LIST = '/search-ranking-gui';
 
     /**
+     * @var string
+     */
+    protected const PARAM_STORE_NAME = 'storeName';
+
+    /**
+     * @var string
+     */
+    protected const PARAM_LOCALE_NAME = 'localeName';
+
+    /**
      * @param \Symfony\Component\HttpFoundation\Request $request
      *
      * @return \Symfony\Component\HttpFoundation\RedirectResponse
      */
     public function indexAction(Request $request): RedirectResponse
     {
+        $storeName = (string)$request->query->get(static::PARAM_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
+        $localeName = (string)$request->query->get(static::PARAM_LOCALE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME;
+        $redirectUrl = sprintf('%s?%s=%s&%s=%s', static::URL_METRIC_LIST, static::PARAM_STORE_NAME, $storeName, static::PARAM_LOCALE_NAME, $localeName);
+
         $deleteForm = $this->getFactory()->createDeleteForm()->handleRequest($request);
 
         if (!$deleteForm->isSubmitted() || !$deleteForm->isValid()) {
             $this->addErrorMessage('CSRF token is not valid.');
 
-            return $this->redirectResponse(static::URL_METRIC_LIST);
+            return $this->redirectResponse($redirectUrl);
         }
 
         $idSearchRankingMetric = $this->castId(
@@ -47,6 +62,6 @@ class DeleteController extends AbstractController
         $this->getFactory()->getSearchRankingStorageFacade()->publishRankingConfiguration();
         $this->addSuccessMessage('Metric was deleted.');
 
-        return $this->redirectResponse(static::URL_METRIC_LIST);
+        return $this->redirectResponse($redirectUrl);
     }
 }

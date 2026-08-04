@@ -10,7 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking\Debug;
 
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
-use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult;
+use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
 use SprykerCommunity\Shared\SearchDebug\SearchDebugConfig;
 
 /**
@@ -23,8 +23,8 @@ use SprykerCommunity\Shared\SearchDebug\SearchDebugConfig;
  * decides where each one actually renders, and deliberately does NOT print them as one contiguous
  * block: the saturation point sits grouped with the raw text-match score it normalizes, the normalized
  * result gets its own standalone line right after, and the relevance weight sits directly next to the
- * closing formula, with search-ranking's own "Entropy weighting" section (see
- * {@see buildEntropySection()}) placed between the two:
+ * closing formula, with search-ranking's own "Specificity weighting" section (see
+ * {@see buildSpecificitySection()}) placed between the two:
  *
  *   top_seller: 0.51 × 0.50 = 0.26
  *   pdp_impressions: 0.20 × 0.30 = 0.06
@@ -33,7 +33,7 @@ use SprykerCommunity\Shared\SearchDebug\SearchDebugConfig;
  *   Saturation point (k): 12.00 <- grouped with the raw text-match score, under "Text signals"
  *   Text Signal total: 0.37 <- its own standalone line, right after
  *   ...
- *   Entropy weighting: ... <- search-ranking's other section, when it ran for this query
+ *   Specificity weighting: ... <- search-ranking's other section, when it ran for this query
  *   Relevance weight (α): 0.50
  *   0.50 × 0.37 + (1 - 0.50) × 0.32 =
  *
@@ -102,33 +102,33 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
     /**
      * @var string
      */
-    protected const ENTROPY_SECTION_TITLE = 'Entropy weighting';
+    protected const SPECIFICITY_SECTION_TITLE = 'Specificity weighting';
 
     /**
      * @var string
      */
-    protected const ENTROPY_CONFIGURED_WEIGHT_LABEL = 'Configured relevance weight (α₀)';
+    protected const SPECIFICITY_CONFIGURED_WEIGHT_LABEL = 'Configured relevance weight (α₀)';
 
     /**
      * @var string
      */
-    protected const ENTROPY_NORMALIZED_ENTROPY_LABEL = 'Normalized entropy (H)';
+    protected const SPECIFICITY_NORMALIZED_LABEL = 'Normalized specificity';
 
     /**
      * @var string
      */
-    protected const ENTROPY_SHIFT_LABEL = 'Shift applied to α';
+    protected const SPECIFICITY_SHIFT_LABEL = 'Shift applied to α';
 
     /**
      * @var string
      */
-    protected const ENTROPY_EFFECTIVE_WEIGHT_LABEL = 'Effective relevance weight (α)';
+    protected const SPECIFICITY_EFFECTIVE_WEIGHT_LABEL = 'Effective relevance weight (α)';
 
     /**
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
      * @param array<string, float> $documentScores
      * @param float|null $queryScore
-     * @param \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null $entropyWeightingResult
+     * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null $specificityWeightingResult
      *
      * @return array<string, mixed>|null
      */
@@ -136,7 +136,7 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
         array $documentScores,
         ?float $queryScore,
-        ?EntropyWeightingResult $entropyWeightingResult = null,
+        ?SpecificityWeightingResult $specificityWeightingResult = null,
     ): ?array {
         $lines = [];
         $signalTotal = 0.0;
@@ -169,12 +169,12 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
         ];
 
         if ($queryScore !== null && $queryScore >= 0) {
-            // Entropy weighting, when it ran for this query, replaced the configured relevanceWeight with
-            // a per-query one BEFORE the real function_score was built — read from there instead of
+            // Specificity weighting, when it ran for this query, replaced the configured relevanceWeight
+            // with a per-query one BEFORE the real function_score was built — read from there instead of
             // $configurationTransfer's static value, so this line (and the formula below) stay
-            // reproducible-by-eye against the real final score. See EntropyWeightingResult's docblock.
-            $relevanceWeight = $entropyWeightingResult !== null
-                ? $entropyWeightingResult->getRelevanceWeight()
+            // reproducible-by-eye against the real final score. See SpecificityWeightingResult's docblock.
+            $relevanceWeight = $specificityWeightingResult !== null
+                ? $specificityWeightingResult->getRelevanceWeight()
                 : (float)$configurationTransfer->getRelevanceWeight();
             $relevanceSaturationPoint = (float)$configurationTransfer->getRelevanceSaturationPoint();
             // $relevanceSaturationPoint is always > 0 (Zed form enforces GreaterThan(0)), so this never
@@ -210,35 +210,35 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
     /**
      * {@inheritDoc}
      *
-     * @param \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult $entropyWeightingResult
+     * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult $specificityWeightingResult
      *
      * @return array<string, mixed>
      */
-    public function buildEntropySection(EntropyWeightingResult $entropyWeightingResult): array
+    public function buildSpecificitySection(SpecificityWeightingResult $specificityWeightingResult): array
     {
         return [
-            'title' => static::ENTROPY_SECTION_TITLE,
+            'title' => static::SPECIFICITY_SECTION_TITLE,
             // Tells the search-debug overlay template to render this section in its own dedicated spot
             // (directly above the relevance-weight line it explains the shift for) instead of the default
             // top-of-page position every other section (e.g. "Business signals") uses — see
             // ProductDebugDataExpanderPluginInterface's docblock for the full contract.
-            'isEntropySection' => true,
+            'isSpecificitySection' => true,
             'lines' => [
                 [
-                    'label' => static::ENTROPY_CONFIGURED_WEIGHT_LABEL,
-                    'value' => $entropyWeightingResult->getConfiguredRelevanceWeight(),
+                    'label' => static::SPECIFICITY_CONFIGURED_WEIGHT_LABEL,
+                    'value' => $specificityWeightingResult->getConfiguredRelevanceWeight(),
                 ],
                 [
-                    'label' => static::ENTROPY_NORMALIZED_ENTROPY_LABEL,
-                    'value' => $entropyWeightingResult->getNormalizedEntropy(),
+                    'label' => static::SPECIFICITY_NORMALIZED_LABEL,
+                    'value' => $specificityWeightingResult->getNormalizedSpecificity(),
                 ],
                 [
-                    'label' => static::ENTROPY_SHIFT_LABEL,
-                    'value' => $entropyWeightingResult->getShift(),
+                    'label' => static::SPECIFICITY_SHIFT_LABEL,
+                    'value' => $specificityWeightingResult->getShift(),
                 ],
                 [
-                    'label' => static::ENTROPY_EFFECTIVE_WEIGHT_LABEL,
-                    'value' => $entropyWeightingResult->getRelevanceWeight(),
+                    'label' => static::SPECIFICITY_EFFECTIVE_WEIGHT_LABEL,
+                    'value' => $specificityWeightingResult->getRelevanceWeight(),
                 ],
             ],
         ];

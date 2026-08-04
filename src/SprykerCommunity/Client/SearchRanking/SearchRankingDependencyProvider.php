@@ -11,6 +11,7 @@ namespace SprykerCommunity\Client\SearchRanking;
 
 use Spryker\Client\Kernel\AbstractDependencyProvider;
 use Spryker\Client\Kernel\Container;
+use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocaleClientBridge;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientBridge;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientBridge;
 
@@ -27,6 +28,11 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
     public const CLIENT_STORE = 'CLIENT_STORE';
 
     /**
+     * @var string
+     */
+    public const CLIENT_LOCALE = 'CLIENT_LOCALE';
+
+    /**
      * @param \Spryker\Client\Kernel\Container $container
      *
      * @return \Spryker\Client\Kernel\Container
@@ -37,6 +43,7 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
         $container = parent::provideServiceLayerDependencies($container);
         $container = $this->addSearchRankingStorageClient($container);
         $container = $this->addStoreClient($container);
+        $container = $this->addLocaleClient($container);
 
         return $container;
     }
@@ -64,6 +71,20 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
     {
         $container->set(static::CLIENT_STORE, fn (Container $container) => new SearchRankingToStoreClientBridge(
             $container->getLocator()->store()->client(),
+        ));
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Client\Kernel\Container $container
+     *
+     * @return \Spryker\Client\Kernel\Container
+     */
+    protected function addLocaleClient(Container $container): Container
+    {
+        $container->set(static::CLIENT_LOCALE, fn (Container $container) => new SearchRankingToLocaleClientBridge(
+            $container->getLocator()->locale()->client(),
         ));
 
         return $container;

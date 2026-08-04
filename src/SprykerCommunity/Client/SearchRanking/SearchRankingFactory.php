@@ -15,16 +15,19 @@ use Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig;
 use Spryker\Shared\SearchElasticsearch\ElasticaClient\ElasticaClientFactory;
 use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilder;
 use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilderInterface;
+use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocaleClientInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityChecker;
 use SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityCheckerInterface;
-use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculator;
-use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculatorInterface;
-use SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculator;
-use SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculatorInterface;
+use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculator;
+use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInterface;
+use SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyFetcher;
+use SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyFetcherInterface;
+use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculator;
+use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculatorInterface;
 
 /**
  * @method \SprykerCommunity\Client\SearchRanking\SearchRankingConfig getConfig()
@@ -64,15 +67,14 @@ class SearchRankingFactory extends AbstractFactory
     }
 
     /**
-     * @return \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculatorInterface
+     * @return \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculatorInterface
      */
-    public function createEntropyWeightCalculator(): EntropyWeightCalculatorInterface
+    public function createSpecificityWeightCalculator(): SpecificityWeightCalculatorInterface
     {
-        return new EntropyWeightCalculator(
-            $this->getElasticaClient(),
-            $this->createSearchElasticsearchConfig(),
-            $this->createShannonEntropyCalculator(),
-            $this->getStoreClient(),
+        return new SpecificityWeightCalculator(
+            $this->createQueryTermFrequencyFetcher(),
+            $this->createQuerySpecificityCalculator(),
+            $this->getConfig()->getSpecificityProbeFieldSearchAnalyzers(),
         );
     }
 
@@ -85,11 +87,31 @@ class SearchRankingFactory extends AbstractFactory
     }
 
     /**
-     * @return \SprykerCommunity\Client\SearchRanking\Search\ShannonEntropyCalculatorInterface
+     * @return \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocaleClientInterface
      */
-    public function createShannonEntropyCalculator(): ShannonEntropyCalculatorInterface
+    public function getLocaleClient(): SearchRankingToLocaleClientInterface
     {
-        return new ShannonEntropyCalculator();
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::CLIENT_LOCALE);
+    }
+
+    /**
+     * @return \SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyFetcherInterface
+     */
+    public function createQueryTermFrequencyFetcher(): QueryTermFrequencyFetcherInterface
+    {
+        return new QueryTermFrequencyFetcher(
+            $this->getElasticaClient(),
+            $this->createSearchElasticsearchConfig(),
+            $this->getStoreClient(),
+        );
+    }
+
+    /**
+     * @return \SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInterface
+     */
+    public function createQuerySpecificityCalculator(): QuerySpecificityCalculatorInterface
+    {
+        return new QuerySpecificityCalculator();
     }
 
     /**

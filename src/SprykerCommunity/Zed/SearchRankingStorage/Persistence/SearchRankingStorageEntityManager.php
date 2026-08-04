@@ -9,7 +9,6 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRankingStorage\Persistence;
 
-use Orm\Zed\SearchRankingStorage\Persistence\SpySearchRankingConfigurationStorage;
 use Spryker\Zed\Kernel\Persistence\AbstractEntityManager;
 
 /**
@@ -19,18 +18,18 @@ class SearchRankingStorageEntityManager extends AbstractEntityManager implements
 {
     /**
      * @param array<string, mixed> $configurationData
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return void
      */
-    public function saveRankingConfiguration(array $configurationData): void
+    public function saveRankingConfiguration(array $configurationData, string $storeName, string $localeName): void
     {
         $storageEntity = $this->getFactory()
             ->createSearchRankingConfigurationStorageQuery()
-            ->findOne();
-
-        if ($storageEntity === null) {
-            $storageEntity = new SpySearchRankingConfigurationStorage();
-        }
+            ->filterByStore($storeName)
+            ->filterByLocale($localeName)
+            ->findOneOrCreate();
 
         $storageEntity->setData($configurationData);
         $storageEntity->save();

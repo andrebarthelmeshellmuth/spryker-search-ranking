@@ -49,7 +49,7 @@ class FormulaPreviewBuilderTest extends Unit
         $builder = new FormulaPreviewBuilder($repositoryMock, $formulaEvaluatorMock, $curveFitterMock);
 
         // Act
-        $previewTransfer = $builder->buildPreview(5, 'x / (x + k)', true);
+        $previewTransfer = $builder->buildPreview(5, 'x / (x + k)', true, 'DE', 'de_DE');
 
         // Assert
         $this->assertSame(
@@ -90,7 +90,7 @@ class FormulaPreviewBuilderTest extends Unit
         $builder = new FormulaPreviewBuilder($repositoryMock, $formulaEvaluatorMock, $curveFitterMock);
 
         // Act
-        $previewTransfer = $builder->buildPreview(5, 'x / max', true);
+        $previewTransfer = $builder->buildPreview(5, 'x / max', true, 'DE', 'de_DE');
 
         // Assert
         $this->assertNull($previewTransfer->getErrorMessage());
@@ -137,7 +137,7 @@ class FormulaPreviewBuilderTest extends Unit
         $builder = new FormulaPreviewBuilder($repositoryMock, $formulaEvaluatorMock, $curveFitterMock);
 
         // Act
-        $previewTransfer = $builder->buildPreview(5, 'bogus(x)', true);
+        $previewTransfer = $builder->buildPreview(5, 'bogus(x)', true, 'DE', 'de_DE');
 
         // Assert: a brand-new transfer is returned on failure — any cdf/points already added before the
         // failing evaluation are discarded, not surfaced as a half-populated chart.

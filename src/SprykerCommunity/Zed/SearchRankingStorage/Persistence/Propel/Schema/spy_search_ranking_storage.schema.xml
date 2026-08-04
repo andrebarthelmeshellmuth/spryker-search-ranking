@@ -7,6 +7,8 @@
 
         <behavior name="synchronization">
             <parameter name="resource" value="search_ranking_configuration"/>
+            <parameter name="locale" required="true"/>
+            <parameter name="store" required="true"/>
             <parameter name="queue_group" value="sync.storage.search_ranking"/>
         </behavior>
 

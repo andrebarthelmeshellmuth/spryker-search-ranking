@@ -44,7 +44,7 @@ class CurrentMetricFitEvaluatorTest extends Unit
         $evaluator = new CurrentMetricFitEvaluator($repositoryMock, $fitEvaluatorMock);
 
         // Act
-        $result = $evaluator->evaluate(7);
+        $result = $evaluator->evaluate(7, 'DE', 'de_DE');
 
         // Assert
         $this->assertNull($result);
@@ -70,7 +70,7 @@ class CurrentMetricFitEvaluatorTest extends Unit
         $evaluator = new CurrentMetricFitEvaluator($repositoryMock, $fitEvaluatorMock);
 
         // Act
-        $result = $evaluator->evaluate(7);
+        $result = $evaluator->evaluate(7, 'DE', 'de_DE');
 
         // Assert
         $this->assertNull($result);
@@ -104,7 +104,7 @@ class CurrentMetricFitEvaluatorTest extends Unit
         $evaluator = new CurrentMetricFitEvaluator($repositoryMock, $fitEvaluatorMock);
 
         // Act
-        $result = $evaluator->evaluate(7);
+        $result = $evaluator->evaluate(7, 'DE', 'de_DE');
 
         // Assert
         $this->assertSame(0.87, $result);

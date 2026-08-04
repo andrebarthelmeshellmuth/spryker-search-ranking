@@ -91,52 +91,71 @@ class SearchRankingConfig extends AbstractBundleConfig
 
     /**
      * Specification:
-     * - Default number of top-ranked candidates the entropy probe samples when none was saved in Zed
-     *   yet. Only meaningful once entropy-aware relevance weighting is enabled at the code level.
-     *
-     * @api
-     *
-     * @return int
-     */
-    public function getDefaultEntropyProbeResultSize(): int
-    {
-        return 10;
-    }
-
-    /**
-     * Specification:
-     * - Default exponent reshaping how sharply the entropy-derived shift ramps up, when none was saved
-     *   in Zed yet. `1.0` applies the shift linearly with no reshaping.
+     * - Default blend weight (alpha) combining a query's per-term IDF values into one raw specificity
+     *   value, when none was saved in Zed yet: `alpha * max(idf) + (1 - alpha) * harmonicMean(idf)`.
+     * - **0.7, favoring `max`** — a query with one genuinely rare term (e.g. a SKU trailing a common
+     *   word) should still read as specific even though its OTHER terms are common; weighting `max` more
+     *   heavily than the harmonic mean achieves that, while the harmonic mean's own 0.3 share still lets
+     *   an all-common-words query (no rare term at all) read as unspecific. Only meaningful once
+     *   specificity-aware relevance weighting is enabled at the code level.
      *
      * @api
      *
      * @return float
      */
-    public function getDefaultEntropyWeightExponent(): float
+    public function getDefaultSpecificityBlendWeight(): float
+    {
+        return 0.7;
+    }
+
+    /**
+     * Specification:
+     * - Default raw specificity value at which normalized specificity reaches 0.5, when none was saved in
+     *   Zed yet. An unmeasured placeholder to tune from via Calibration — this package doesn't know a
+     *   shop's own idf range in advance, since it depends entirely on catalog size and vocabulary (see
+     *   {@see getDefaultRelevanceSaturationPoint()} for the same role on the text-relevance side).
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getDefaultSpecificitySaturationPoint(): float
+    {
+        return 3.0;
+    }
+
+    /**
+     * Specification:
+     * - Default exponent reshaping how sharply the specificity-derived shift ramps up, when none was
+     *   saved in Zed yet. `1.0` applies the shift linearly with no reshaping.
+     *
+     * @api
+     *
+     * @return float
+     */
+    public function getDefaultSpecificityWeightExponent(): float
     {
         return 1.0;
     }
 
     /**
      * Specification:
-     * - Default maximum amount the entropy-derived value may shift `relevanceWeight` away from its
+     * - Default maximum amount the specificity-derived value may shift `relevanceWeight` away from its
      *   configured baseline, in either direction, when none was saved in Zed yet.
      * - **0.25, sized to match the 0.75 default baseline** (see {@see getDefaultRelevanceWeight()}):
      *   `shiftMagnitude = 1 - relevanceWeight`. With a baseline above 0.5, the shift has less headroom
      *   upward (toward 1.0) than downward (toward 0.0) before clamping; sizing the magnitude to exactly
-     *   the tighter (upward) side means a fully navigational/dominant-score query (`H_norm = 0`) reaches
-     *   precisely `1.0` — pure text relevance — with no clamped/wasted resolution, while a fully
-     *   browsy/flat query (`H_norm = 1`) floors at exactly `0.75 - 0.25 = 0.5`: the OLD global default,
-     *   never lower. That gives a clean, defensible property: the entropy shift only ever moves a query
-     *   toward more text-appropriate behavior for its own shape, never below what the un-tuned baseline
-     *   used to give every query equally. If the baseline default changes, re-derive this as
+     *   the tighter (upward) side means a maximally specific query (normalized specificity 1.0) reaches
+     *   precisely `1.0` — pure text relevance — with no clamped/wasted resolution, while a maximally
+     *   unspecific query (normalized specificity 0.0) floors at exactly `0.75 - 0.25 = 0.5`: the OLD
+     *   global default, never lower. If the baseline default changes, re-derive this as
      *   `1 - relevanceWeight` again rather than leaving it fixed at 0.25.
      *
      * @api
      *
      * @return float
      */
-    public function getDefaultEntropyWeightShiftMagnitude(): float
+    public function getDefaultSpecificityWeightShiftMagnitude(): float
     {
         return 0.25;
     }

@@ -38,11 +38,27 @@ class ProductMetricGapTable extends AbstractTable
     protected const URL_PARAM_METRIC = 'metric';
 
     /**
+     * @var string
+     */
+    protected const URL_PARAM_STORE_NAME = 'storeName';
+
+    /**
+     * @var string
+     */
+    protected const URL_PARAM_LOCALE_NAME = 'localeName';
+
+    /**
      * @param \SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapFinderInterface $productMetricGapFinder
      * @param int|null $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      */
-    public function __construct(protected ProductMetricGapFinderInterface $productMetricGapFinder, protected ?int $idSearchRankingMetric)
-    {
+    public function __construct(
+        protected ProductMetricGapFinderInterface $productMetricGapFinder,
+        protected ?int $idSearchRankingMetric,
+        protected string $storeName,
+        protected string $localeName,
+    ) {
     }
 
     /**
@@ -71,12 +87,23 @@ class ProductMetricGapTable extends AbstractTable
 
         // Same reasoning as before: the AJAX endpoint DataTables calls for every sort/page/search action
         // is a fresh request that never sees the request this Table was originally constructed for — the
-        // selected metric (if any) has to be baked into that URL. `setUrl()` takes a fragment RELATIVE to
-        // the auto-derived `/{module}/{controller}/` base (the framework's own default is the bare string
-        // 'table') — passing an absolute path here would be appended after that base, not replace it.
+        // selected metric (if any) and the selected scope both have to be baked into that URL. `setUrl()`
+        // takes a fragment RELATIVE to the auto-derived `/{module}/{controller}/` base (the framework's
+        // own default is the bare string 'table') — passing an absolute path here would be appended after
+        // that base, not replace it.
+        $tableUrl = sprintf(
+            'table?%s=%s&%s=%s',
+            static::URL_PARAM_STORE_NAME,
+            urlencode($this->storeName),
+            static::URL_PARAM_LOCALE_NAME,
+            urlencode($this->localeName),
+        );
+
         if ($this->idSearchRankingMetric !== null) {
-            $config->setUrl(sprintf('table?%s=%d', static::URL_PARAM_METRIC, $this->idSearchRankingMetric));
+            $tableUrl .= sprintf('&%s=%d', static::URL_PARAM_METRIC, $this->idSearchRankingMetric);
         }
+
+        $config->setUrl($tableUrl);
 
         return $config;
     }
@@ -88,20 +115,22 @@ class ProductMetricGapTable extends AbstractTable
      */
     protected function prepareData(TableConfiguration $config): array
     {
-        $this->setTotal($this->productMetricGapFinder->countGaps($this->idSearchRankingMetric));
+        $this->setTotal($this->productMetricGapFinder->countGaps($this->idSearchRankingMetric, $this->storeName, $this->localeName));
 
         $searchTerm = (string)($this->getSearchTerm()[static::PARAMETER_VALUE] ?? '');
 
         $this->setFiltered(
             $searchTerm === ''
                 ? $this->total
-                : $this->productMetricGapFinder->countFilteredGaps($this->idSearchRankingMetric, $searchTerm),
+                : $this->productMetricGapFinder->countFilteredGaps($this->idSearchRankingMetric, $this->storeName, $this->localeName, $searchTerm),
         );
 
         [$sortColumn, $sortDirection] = $this->resolveSort($config);
 
         $gapRows = $this->productMetricGapFinder->findGaps(
             $this->idSearchRankingMetric,
+            $this->storeName,
+            $this->localeName,
             $searchTerm,
             $sortColumn,
             $sortDirection,

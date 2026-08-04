@@ -11,7 +11,7 @@ namespace SprykerCommunity\Client\SearchRanking;
 
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Spryker\Client\Kernel\AbstractClient;
-use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult;
+use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
 
 /**
  * @method \SprykerCommunity\Client\SearchRanking\SearchRankingFactory getFactory()
@@ -19,9 +19,9 @@ use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult;
 class SearchRankingClient extends AbstractClient implements SearchRankingClientInterface
 {
     /**
-     * @var \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null
+     * @var \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null
      */
-    protected ?EntropyWeightingResult $lastEntropyWeightingResult = null;
+    protected ?SpecificityWeightingResult $lastSpecificityWeightingResult = null;
 
     /**
      * {@inheritDoc}
@@ -44,30 +44,42 @@ class SearchRankingClient extends AbstractClient implements SearchRankingClientI
      *
      * @return bool
      */
-    public function isEntropyWeightingEnabled(): bool
+    public function isSpecificityWeightingEnabled(): bool
     {
-        return $this->getFactory()->getConfig()->isEntropyWeightingEnabled();
+        return $this->getFactory()->getConfig()->isSpecificityWeightingEnabled();
     }
 
     /**
      * {@inheritDoc}
      *
-     * @param \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null $entropyWeightingResult
+     * @api
+     *
+     * @return array<string, string>
+     */
+    public function getSpecificityProbeFieldSearchAnalyzers(): array
+    {
+        return $this->getFactory()->getConfig()->getSpecificityProbeFieldSearchAnalyzers();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null $specificityWeightingResult
      *
      * @return void
      */
-    public function rememberLastEntropyWeightingResult(?EntropyWeightingResult $entropyWeightingResult): void
+    public function rememberLastSpecificityWeightingResult(?SpecificityWeightingResult $specificityWeightingResult): void
     {
-        $this->lastEntropyWeightingResult = $entropyWeightingResult;
+        $this->lastSpecificityWeightingResult = $specificityWeightingResult;
     }
 
     /**
      * {@inheritDoc}
      *
-     * @return \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null
+     * @return \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null
      */
-    public function getLastEntropyWeightingResult(): ?EntropyWeightingResult
+    public function getLastSpecificityWeightingResult(): ?SpecificityWeightingResult
     {
-        return $this->lastEntropyWeightingResult;
+        return $this->lastSpecificityWeightingResult;
     }
 }

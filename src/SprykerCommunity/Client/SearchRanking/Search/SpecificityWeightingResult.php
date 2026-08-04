@@ -10,35 +10,35 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking\Search;
 
 /**
- * Immutable snapshot of one {@see \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculatorInterface}
+ * Immutable snapshot of one {@see \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculatorInterface}
  * outcome — carries both the `relevanceWeight` that was actually applied to the real query AND the
- * diagnostics behind it (probe candidate count, normalized entropy, shift), so a consumer like the
+ * diagnostics behind it (query term count, normalized specificity, shift), so a consumer like the
  * search-debug overlay can show the SAME numbers that produced the real score, not just the end result.
  *
- * A failed or empty probe still produces one of these: `relevanceWeight` equals `configuredRelevanceWeight`
- * unchanged, and `normalizedEntropy`/`shift` are `0.0` with `probeCandidateCount` `0` — there was simply
- * nothing to measure, not an error.
+ * A failed probe, or a query with no terms carrying any real corpus evidence, still produces one of
+ * these: `relevanceWeight` equals `configuredRelevanceWeight` unchanged, and `normalizedSpecificity`/
+ * `shift` are `0.0` with `queryTermCount` `0` — there was simply nothing to measure, not an error.
  */
-class EntropyWeightingResult
+class SpecificityWeightingResult
 {
     /**
      * @param float $configuredRelevanceWeight
      * @param float $relevanceWeight
-     * @param float $normalizedEntropy
+     * @param float $normalizedSpecificity
      * @param float $shift
-     * @param int $probeCandidateCount
+     * @param int $queryTermCount
      */
     public function __construct(
         protected float $configuredRelevanceWeight,
         protected float $relevanceWeight,
-        protected float $normalizedEntropy,
+        protected float $normalizedSpecificity,
         protected float $shift,
-        protected int $probeCandidateCount,
+        protected int $queryTermCount,
     ) {
     }
 
     /**
-     * The statically configured `relevanceWeight`, before any entropy-derived shift.
+     * The statically configured `relevanceWeight`, before any specificity-derived shift.
      *
      * @return float
      */
@@ -60,9 +60,9 @@ class EntropyWeightingResult
     /**
      * @return float
      */
-    public function getNormalizedEntropy(): float
+    public function getNormalizedSpecificity(): float
     {
-        return $this->normalizedEntropy;
+        return $this->normalizedSpecificity;
     }
 
     /**
@@ -74,13 +74,14 @@ class EntropyWeightingResult
     }
 
     /**
-     * How many probe candidates the entropy calculation was based on (`0` when the probe returned no
-     * hits or failed).
+     * How many of the query's terms carried real corpus evidence (a nonzero `doc_freq` for at least one
+     * probed field) and therefore contributed to the specificity calculation (`0` when none did, or the
+     * probe returned no hits or failed).
      *
      * @return int
      */
-    public function getProbeCandidateCount(): int
+    public function getQueryTermCount(): int
     {
-        return $this->probeCandidateCount;
+        return $this->queryTermCount;
     }
 }

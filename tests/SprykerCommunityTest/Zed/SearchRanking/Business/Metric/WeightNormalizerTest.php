@@ -51,7 +51,7 @@ class WeightNormalizerTest extends Unit
             });
 
         // Act
-        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights();
+        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights('DE', 'de_DE');
 
         // Assert
         $this->assertTrue($wasNormalized);
@@ -79,7 +79,7 @@ class WeightNormalizerTest extends Unit
             });
 
         // Act
-        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights();
+        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights('DE', 'de_DE');
 
         // Assert
         $this->assertTrue($wasNormalized);
@@ -101,7 +101,7 @@ class WeightNormalizerTest extends Unit
         $entityManagerMock->expects($this->never())->method('updateMetricWeights');
 
         // Act
-        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights();
+        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights('DE', 'de_DE');
 
         // Assert
         $this->assertFalse($wasNormalized);
@@ -122,7 +122,7 @@ class WeightNormalizerTest extends Unit
         $entityManagerMock->expects($this->never())->method('updateMetricWeights');
 
         // Act
-        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights();
+        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights('DE', 'de_DE');
 
         // Assert
         $this->assertFalse($wasNormalized);
@@ -140,7 +140,7 @@ class WeightNormalizerTest extends Unit
         $entityManagerMock->expects($this->never())->method('updateMetricWeights');
 
         // Act
-        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights();
+        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights('DE', 'de_DE');
 
         // Assert
         $this->assertFalse($wasNormalized);

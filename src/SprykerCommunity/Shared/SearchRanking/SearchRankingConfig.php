@@ -59,36 +59,50 @@ class SearchRankingConfig
 
     /**
      * Specification:
-     * - Setting key of the number of top-ranked candidates the entropy probe samples. Only meaningful
-     *   when entropy-aware relevance weighting is enabled — see {@see isEntropyWeightingEnabled()}.
+     * - Setting key of the blend weight (alpha) used to combine a query's per-term IDF values into one
+     *   "raw specificity" value: `alpha * max(idf) + (1 - alpha) * harmonicMean(idf)`. CMA-ES-tunable via
+     *   spryker-community/search-ranking-optimizer. Only meaningful when specificity-aware relevance
+     *   weighting is enabled — see {@see isSpecificityWeightingEnabled()}.
      *
      * @api
      *
      * @var string
      */
-    public const SETTING_KEY_ENTROPY_PROBE_RESULT_SIZE = 'entropy_probe_result_size';
+    public const SETTING_KEY_SPECIFICITY_BLEND_WEIGHT = 'specificity_blend_weight';
 
     /**
      * Specification:
-     * - Setting key of the exponent that reshapes how sharply the entropy-derived shift ramps up as the
-     *   probe's score distribution moves away from perfectly ambiguous (H_norm = 0.5).
+     * - Setting key of the saturation point (k) used to normalize the unbounded raw specificity value
+     *   into `[0;1[` before deriving the shift: the raw specificity at which the normalized result
+     *   reaches 0.5. Calibration-tunable only (like `relevance_saturation_point`), NOT CMA-ES-tunable.
      *
      * @api
      *
      * @var string
      */
-    public const SETTING_KEY_ENTROPY_WEIGHT_EXPONENT = 'entropy_weight_exponent';
+    public const SETTING_KEY_SPECIFICITY_SATURATION_POINT = 'specificity_saturation_point';
 
     /**
      * Specification:
-     * - Setting key of the maximum amount the entropy-derived value may shift `relevanceWeight` away
+     * - Setting key of the exponent that reshapes how sharply the specificity-derived shift ramps up as
+     *   normalized specificity moves away from perfectly average (0.5).
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT = 'specificity_weight_exponent';
+
+    /**
+     * Specification:
+     * - Setting key of the maximum amount the specificity-derived value may shift `relevanceWeight` away
      *   from its configured baseline, in either direction.
      *
      * @api
      *
      * @var string
      */
-    public const SETTING_KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 'entropy_weight_shift_magnitude';
+    public const SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE = 'specificity_weight_shift_magnitude';
 
     /**
      * Specification:
@@ -104,31 +118,54 @@ class SearchRankingConfig
 
     /**
      * Specification:
-     * - Whether entropy-aware relevance weighting is active. OFF by default — enabling it makes
+     * - TEMPORARY Phase-1 safety-valve default store, used by every caller of a now-store+locale-scoped
+     *   read/write until later phases thread a real caller-supplied (admin-selected, request-current, or
+     *   run/calibration-carried) store+locale through instead. Not meant to be read directly by project
+     *   code — exists purely so this package's own internals keep behaving exactly as they did when
+     *   configuration was global, for a shop that (like this demoshop) only ever configures one store.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const DEFAULT_SCOPE_STORE_NAME = 'DE';
+
+    /**
+     * Specification:
+     * - TEMPORARY Phase-1 safety-valve default locale — see {@see DEFAULT_SCOPE_STORE_NAME}.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const DEFAULT_SCOPE_LOCALE_NAME = 'de_DE';
+
+    /**
+     * Specification:
+     * - Whether specificity-aware relevance weighting is active. OFF by default — enabling it makes
      *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
-     *   fire ONE ADDITIONAL lightweight Elasticsearch query per live catalog search to derive a per-query
+     *   fire ONE ADDITIONAL lightweight `_termvectors` probe per live catalog search to derive a per-query
      *   `relevanceWeight` instead of using the configured static one.
      * - **This class is a plain static-method holder, not a project-overridable `AbstractSharedConfig`** —
      *   there is no real way to make THIS method return `true` from a project. Do not override a
-     *   `Pyz\Shared\SearchRanking\SearchRankingConfig` expecting it to take effect here; it won't (an
-     *   earlier version of this docblock and the README both incorrectly claimed it would). The one
-     *   override point that actually works is `Pyz\Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()`
+     *   `Pyz\Shared\SearchRanking\SearchRankingConfig` expecting it to take effect here; it won't. The one
+     *   override point that actually works is `Pyz\Client\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled()`
      *   — that class IS a real, Locator-resolved `AbstractBundleConfig`, which is what
      *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
-     *   actually checks (via `$this->getFactory()->getConfig()`), and what {@see \SprykerCommunity\Client\SearchRanking\SearchRankingClientInterface::isEntropyWeightingEnabled()}
+     *   actually checks (via `$this->getFactory()->getConfig()`), and what {@see \SprykerCommunity\Client\SearchRanking\SearchRankingClientInterface::isSpecificityWeightingEnabled()}
      *   exposes for other code to ask without duplicating that resolution logic. This method's `false`
      *   return only matters as the Client config's own internal default when a project hasn't overridden it.
      * - Deliberately a code-level flag, not a Zed-editable setting: this is the one switch that decides
-     *   whether a second live Elasticsearch query fires on every catalog search at all, so flipping it
-     *   requires a project deploy, not just a Zed form save. The probe's own tuning numbers (result size,
-     *   weight exponent, shift magnitude) ARE Zed-editable — see `/search-ranking-gui/settings` — once
-     *   this flag is on.
+     *   whether a second live probe fires on every catalog search at all, so flipping it requires a
+     *   project deploy, not just a Zed form save. The probe's own tuning numbers (blend weight, weight
+     *   exponent, shift magnitude) ARE Zed-editable — see `/search-ranking-gui/settings` — once this flag
+     *   is on; the saturation point is Calibration-tunable only.
      *
      * @api
      *
      * @return bool
      */
-    public static function isEntropyWeightingEnabled(): bool
+    public static function isSpecificityWeightingEnabled(): bool
     {
         return false;
     }

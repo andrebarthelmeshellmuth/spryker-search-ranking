@@ -309,7 +309,10 @@ class SearchRankingCheckInstallationConsole extends Console
      */
     protected function checkActiveMetrics(OutputInterface $output): void
     {
-        $activeMetricCount = count($this->getFacade()->getActiveMetricCollection()->getMetrics());
+        $activeMetricCount = count($this->getFacade()->getActiveMetricCollection(
+            SearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+        )->getMetrics());
 
         if ($activeMetricCount > 0) {
             $output->writeln(sprintf('<info>✓</info> %d active metric(s) configured', $activeMetricCount));

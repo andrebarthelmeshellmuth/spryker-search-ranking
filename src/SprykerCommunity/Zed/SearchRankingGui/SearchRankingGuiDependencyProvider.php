@@ -14,8 +14,10 @@ use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery;
 use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
 use Spryker\Zed\Kernel\Container;
+use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToLocaleFacadeBridge;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeBridge;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingStorageFacadeBridge;
+use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToStoreFacadeBridge;
 
 class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvider
 {
@@ -45,6 +47,16 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
     public const PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY = 'PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY';
 
     /**
+     * @var string
+     */
+    public const FACADE_STORE = 'FACADE_STORE';
+
+    /**
+     * @var string
+     */
+    public const FACADE_LOCALE = 'FACADE_LOCALE';
+
+    /**
      * @param \Spryker\Zed\Kernel\Container $container
      *
      * @return \Spryker\Zed\Kernel\Container
@@ -58,6 +70,36 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
         $container = $this->addSearchRankingMetricPropelQuery($container);
         $container = $this->addSearchRankingProductMetricPropelQuery($container);
         $container = $this->addSearchRankingMetricHistoryPropelQuery($container);
+        $container = $this->addStoreFacade($container);
+        $container = $this->addLocaleFacade($container);
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addStoreFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_STORE, fn (Container $container) => new SearchRankingGuiToStoreFacadeBridge(
+            $container->getLocator()->store()->facade(),
+        ));
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addLocaleFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_LOCALE, fn (Container $container) => new SearchRankingGuiToLocaleFacadeBridge(
+            $container->getLocator()->locale()->facade(),
+        ));
 
         return $container;
     }

@@ -12,8 +12,10 @@ namespace SprykerCommunityTest\Zed\SearchRankingDataImport\Business\Writer\Searc
 use Codeception\Test\Unit;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeightQuery;
 use Spryker\Zed\DataImport\Business\Exception\InvalidDataException;
 use Spryker\Zed\DataImport\Business\Model\DataSet\DataSet;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingMetric\DataSet\SearchRankingMetricDataSetInterface;
 use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingMetric\SearchRankingMetricWriterStep;
 
@@ -67,6 +69,8 @@ class SearchRankingMetricWriterStepTest extends Unit
             SearchRankingMetricDataSetInterface::COL_WEIGHT => '2.5',
             SearchRankingMetricDataSetInterface::COL_FORMULA => 'x / max',
             SearchRankingMetricDataSetInterface::COL_IS_ACTIVE => '1',
+            SearchRankingMetricDataSetInterface::COL_STORE => SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SearchRankingMetricDataSetInterface::COL_LOCALE => SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
         ]);
 
         // Act
@@ -75,7 +79,7 @@ class SearchRankingMetricWriterStepTest extends Unit
         // Assert
         $metricEntity = $this->findAndTrackMetric($name);
 
-        $this->assertSame(2.5, $metricEntity->getWeight());
+        $this->assertSame(2.5, $this->findWeight($metricEntity->getIdSearchRankingMetric()));
         $this->assertSame('x / max', $metricEntity->getFormula());
         $this->assertTrue($metricEntity->getIsActive());
     }
@@ -94,6 +98,8 @@ class SearchRankingMetricWriterStepTest extends Unit
             SearchRankingMetricDataSetInterface::COL_WEIGHT => '9.0',
             SearchRankingMetricDataSetInterface::COL_FORMULA => 'x / avg',
             SearchRankingMetricDataSetInterface::COL_IS_ACTIVE => '0',
+            SearchRankingMetricDataSetInterface::COL_STORE => SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SearchRankingMetricDataSetInterface::COL_LOCALE => SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
         ]);
 
         // Act
@@ -103,7 +109,7 @@ class SearchRankingMetricWriterStepTest extends Unit
         $this->assertSame(1, SpySearchRankingMetricQuery::create()->filterByName($name)->count());
 
         $metricEntity = $this->findAndTrackMetric($name);
-        $this->assertSame(9.0, $metricEntity->getWeight());
+        $this->assertSame(9.0, $this->findWeight($metricEntity->getIdSearchRankingMetric()));
         $this->assertSame('x / avg', $metricEntity->getFormula());
         $this->assertFalse($metricEntity->getIsActive());
     }
@@ -148,10 +154,17 @@ class SearchRankingMetricWriterStepTest extends Unit
     {
         $metricEntity = new SpySearchRankingMetric();
         $metricEntity->setName($name)
-            ->setWeight($weight)
             ->setFormula($formula)
             ->setIsActive($isActive)
             ->setIsHigherBetter(true)
+            ->save();
+
+        SpySearchRankingMetricWeightQuery::create()
+            ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
+            ->filterByStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+            ->filterByLocaleName(SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)
+            ->findOneOrCreate()
+            ->setWeight($weight)
             ->save();
 
         $this->metricEntities[] = $metricEntity;
@@ -172,5 +185,23 @@ class SearchRankingMetricWriterStepTest extends Unit
         $this->metricEntities[] = $metricEntity;
 
         return $metricEntity;
+    }
+
+    /**
+     * TEMPORARY Phase-1 default scope lookup — see SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME.
+     *
+     * @param int $idSearchRankingMetric
+     *
+     * @return float|null
+     */
+    protected function findWeight(int $idSearchRankingMetric): ?float
+    {
+        $metricWeightEntity = SpySearchRankingMetricWeightQuery::create()
+            ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->filterByStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+            ->filterByLocaleName(SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)
+            ->findOne();
+
+        return $metricWeightEntity?->getWeight();
     }
 }

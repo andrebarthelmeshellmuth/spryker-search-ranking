@@ -33,6 +33,8 @@ class SearchRankingProductMetricWriterStep implements DataImportStepInterface
         $productMetricEntity = SpySearchRankingProductMetricQuery::create()
             ->filterByFkSearchRankingMetric($dataSet[SearchRankingProductMetricDataSetInterface::KEY_ID_SEARCH_RANKING_METRIC])
             ->filterByFkProductAbstract($dataSet[SearchRankingProductMetricDataSetInterface::KEY_ID_PRODUCT_ABSTRACT])
+            ->filterByStoreName((string)$dataSet[SearchRankingProductMetricDataSetInterface::COL_STORE])
+            ->filterByLocaleName((string)$dataSet[SearchRankingProductMetricDataSetInterface::COL_LOCALE])
             ->findOneOrCreate();
 
         $productMetricEntity->setRawValue(

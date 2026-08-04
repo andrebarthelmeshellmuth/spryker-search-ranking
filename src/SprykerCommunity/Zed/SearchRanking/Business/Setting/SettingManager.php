@@ -29,11 +29,18 @@ class SettingManager implements SettingManagerInterface
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getRelevanceWeight(): float
+    public function getRelevanceWeight(string $storeName, string $localeName): float
     {
-        $settingValue = $this->repository->findSettingValue(SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT);
+        $settingValue = $this->repository->findSettingValue(
+            SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT,
+            $storeName,
+            $localeName,
+        );
 
         if ($settingValue === null) {
             return $this->config->getDefaultRelevanceWeight();
@@ -43,24 +50,35 @@ class SettingManager implements SettingManagerInterface
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
      * @param float $relevanceWeight
      *
      * @return void
      */
-    public function saveRelevanceWeight(float $relevanceWeight): void
+    public function saveRelevanceWeight(string $storeName, string $localeName, float $relevanceWeight): void
     {
         $this->entityManager->saveSetting(
             SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT,
+            $storeName,
+            $localeName,
             (string)$relevanceWeight,
         );
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getRelevanceSaturationPoint(): float
+    public function getRelevanceSaturationPoint(string $storeName, string $localeName): float
     {
-        $settingValue = $this->repository->findSettingValue(SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT);
+        $settingValue = $this->repository->findSettingValue(
+            SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT,
+            $storeName,
+            $localeName,
+        );
 
         if ($settingValue === null) {
             return $this->config->getDefaultRelevanceSaturationPoint();
@@ -70,96 +88,171 @@ class SettingManager implements SettingManagerInterface
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
      * @param float $relevanceSaturationPoint
      *
      * @return void
      */
-    public function saveRelevanceSaturationPoint(float $relevanceSaturationPoint): void
+    public function saveRelevanceSaturationPoint(string $storeName, string $localeName, float $relevanceSaturationPoint): void
     {
         $this->entityManager->saveSetting(
             SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT,
+            $storeName,
+            $localeName,
             (string)$relevanceSaturationPoint,
         );
     }
 
     /**
-     * @return int
-     */
-    public function getEntropyProbeResultSize(): int
-    {
-        $settingValue = $this->repository->findSettingValue(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_PROBE_RESULT_SIZE);
-
-        if ($settingValue === null) {
-            return $this->config->getDefaultEntropyProbeResultSize();
-        }
-
-        return (int)$settingValue;
-    }
-
-    /**
-     * @param int $entropyProbeResultSize
+     * @param string $storeName
+     * @param string $localeName
      *
-     * @return void
-     */
-    public function saveEntropyProbeResultSize(int $entropyProbeResultSize): void
-    {
-        $this->entityManager->saveSetting(
-            SharedSearchRankingConfig::SETTING_KEY_ENTROPY_PROBE_RESULT_SIZE,
-            (string)$entropyProbeResultSize,
-        );
-    }
-
-    /**
      * @return float
      */
-    public function getEntropyWeightExponent(): float
+    public function getSpecificityBlendWeight(string $storeName, string $localeName): float
     {
-        $settingValue = $this->repository->findSettingValue(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_EXPONENT);
+        $settingValue = $this->repository->findSettingValue(
+            SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_BLEND_WEIGHT,
+            $storeName,
+            $localeName,
+        );
 
         if ($settingValue === null) {
-            return $this->config->getDefaultEntropyWeightExponent();
+            return $this->config->getDefaultSpecificityBlendWeight();
         }
 
         return (float)$settingValue;
     }
 
     /**
-     * @param float $entropyWeightExponent
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificityBlendWeight
      *
      * @return void
      */
-    public function saveEntropyWeightExponent(float $entropyWeightExponent): void
+    public function saveSpecificityBlendWeight(string $storeName, string $localeName, float $specificityBlendWeight): void
     {
         $this->entityManager->saveSetting(
-            SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_EXPONENT,
-            (string)$entropyWeightExponent,
+            SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_BLEND_WEIGHT,
+            $storeName,
+            $localeName,
+            (string)$specificityBlendWeight,
         );
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getEntropyWeightShiftMagnitude(): float
+    public function getSpecificitySaturationPoint(string $storeName, string $localeName): float
     {
-        $settingValue = $this->repository->findSettingValue(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE);
+        $settingValue = $this->repository->findSettingValue(
+            SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_SATURATION_POINT,
+            $storeName,
+            $localeName,
+        );
 
         if ($settingValue === null) {
-            return $this->config->getDefaultEntropyWeightShiftMagnitude();
+            return $this->config->getDefaultSpecificitySaturationPoint();
         }
 
         return (float)$settingValue;
     }
 
     /**
-     * @param float $entropyWeightShiftMagnitude
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificitySaturationPoint
      *
      * @return void
      */
-    public function saveEntropyWeightShiftMagnitude(float $entropyWeightShiftMagnitude): void
+    public function saveSpecificitySaturationPoint(string $storeName, string $localeName, float $specificitySaturationPoint): void
     {
         $this->entityManager->saveSetting(
-            SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE,
-            (string)$entropyWeightShiftMagnitude,
+            SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_SATURATION_POINT,
+            $storeName,
+            $localeName,
+            (string)$specificitySaturationPoint,
+        );
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return float
+     */
+    public function getSpecificityWeightExponent(string $storeName, string $localeName): float
+    {
+        $settingValue = $this->repository->findSettingValue(
+            SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT,
+            $storeName,
+            $localeName,
+        );
+
+        if ($settingValue === null) {
+            return $this->config->getDefaultSpecificityWeightExponent();
+        }
+
+        return (float)$settingValue;
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificityWeightExponent
+     *
+     * @return void
+     */
+    public function saveSpecificityWeightExponent(string $storeName, string $localeName, float $specificityWeightExponent): void
+    {
+        $this->entityManager->saveSetting(
+            SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT,
+            $storeName,
+            $localeName,
+            (string)$specificityWeightExponent,
+        );
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return float
+     */
+    public function getSpecificityWeightShiftMagnitude(string $storeName, string $localeName): float
+    {
+        $settingValue = $this->repository->findSettingValue(
+            SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE,
+            $storeName,
+            $localeName,
+        );
+
+        if ($settingValue === null) {
+            return $this->config->getDefaultSpecificityWeightShiftMagnitude();
+        }
+
+        return (float)$settingValue;
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificityWeightShiftMagnitude
+     *
+     * @return void
+     */
+    public function saveSpecificityWeightShiftMagnitude(string $storeName, string $localeName, float $specificityWeightShiftMagnitude): void
+    {
+        $this->entityManager->saveSetting(
+            SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE,
+            $storeName,
+            $localeName,
+            (string)$specificityWeightShiftMagnitude,
         );
     }
 }

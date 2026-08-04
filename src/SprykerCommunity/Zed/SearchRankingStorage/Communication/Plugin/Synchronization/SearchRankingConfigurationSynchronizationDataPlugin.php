@@ -42,7 +42,7 @@ class SearchRankingConfigurationSynchronizationDataPlugin extends AbstractPlugin
      */
     public function hasStore(): bool
     {
-        return false;
+        return true;
     }
 
     /**

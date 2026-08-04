@@ -4,7 +4,6 @@
     <table name="spy_search_ranking_metric" idMethod="native" identifierQuoting="true">
         <column name="id_search_ranking_metric" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="name" type="VARCHAR" size="128" required="true" description="Machine name of the business signal, e.g. pdp_impressions."/>
-        <column name="weight" type="FLOAT" required="true" defaultValue="0" description="Weight of this metric in the combined ranking score."/>
         <column name="formula" type="VARCHAR" size="512" required="true" description="Normalization expression mapping raw values into ]0;1]; variables: x, min, max, avg, count."/>
         <column name="is_active" type="BOOLEAN" required="true" defaultValue="true" description="Only active metrics are normalized and exported to the search index."/>
         <column name="is_higher_better" type="BOOLEAN" required="true" defaultValue="true" description="Whether a HIGHER raw value is the better outcome for this signal (e.g. sales) as opposed to a lower one (e.g. days since restock, return rate). Not inferrable from the data — direction is business knowledge. Used by the normalization-curve fit suggestion to pick increasing vs. decreasing candidate shapes; does not affect the formula itself."/>
@@ -18,11 +17,34 @@
         </unique>
     </table>
 
+    <table name="spy_search_ranking_metric_weight" idMethod="native" identifierQuoting="true">
+        <column name="id_search_ranking_metric_weight" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="fk_search_ranking_metric" type="INTEGER" required="true"/>
+        <column name="store_name" type="VARCHAR" size="64" required="true" description="e.g. DE — a metric's weight in the combined ranking score is store+locale scoped; its definition (formula/isActive/isHigherBetter/shape) on spy_search_ranking_metric is not."/>
+        <column name="locale_name" type="VARCHAR" size="16" required="true" description="e.g. de_DE."/>
+        <column name="weight" type="FLOAT" required="true" defaultValue="0" description="Weight of this metric in the combined ranking score, for this store+locale."/>
+
+        <behavior name="timestampable"/>
+        <id-method-parameter value="spy_search_ranking_metric_weight_pk_seq"/>
+
+        <foreign-key name="spy_srmw-fk_metric" foreignTable="spy_search_ranking_metric" phpName="SearchRankingMetric" refPhpName="SearchRankingMetricWeight" onDelete="CASCADE">
+            <reference local="fk_search_ranking_metric" foreign="id_search_ranking_metric"/>
+        </foreign-key>
+
+        <unique name="spy_srmw-unique-metric_store_locale">
+            <unique-column name="fk_search_ranking_metric"/>
+            <unique-column name="store_name"/>
+            <unique-column name="locale_name"/>
+        </unique>
+    </table>
+
     <table name="spy_search_ranking_metric_digest" idMethod="native" identifierQuoting="true">
         <column name="id_search_ranking_metric_digest" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_search_ranking_metric" type="INTEGER" required="true"/>
-        <column name="min_value" type="DOUBLE" required="true" description="Smallest raw_value across the metric's product rows, at the time this digest was computed."/>
-        <column name="max_value" type="DOUBLE" required="true" description="Largest raw_value across the metric's product rows, at the time this digest was computed."/>
+        <column name="store_name" type="VARCHAR" size="64" required="true" description="A metric's raw_value distribution is store+locale scoped (see spy_search_ranking_product_metric), so its digest must be too — a global digest would blend unrelated stores' signal distributions."/>
+        <column name="locale_name" type="VARCHAR" size="16" required="true"/>
+        <column name="min_value" type="DOUBLE" required="true" description="Smallest raw_value across the metric's product rows for this store+locale, at the time this digest was computed."/>
+        <column name="max_value" type="DOUBLE" required="true" description="Largest raw_value across the metric's product rows for this store+locale, at the time this digest was computed."/>
         <column name="mean_value" type="DOUBLE" required="true"/>
         <column name="median_value" type="DOUBLE" required="true" description="The p50 percentile point — also the default fit parameter (k) for the x/(x+k) saturating candidate, the same 0.5-crossover principle relevanceSaturationPoint already uses."/>
         <column name="sample_count" type="INTEGER" required="true" description="Number of raw_value rows the digest was computed from."/>
@@ -35,21 +57,27 @@
             <reference local="fk_search_ranking_metric" foreign="id_search_ranking_metric"/>
         </foreign-key>
 
-        <unique name="spy_srmd-unique-metric">
+        <unique name="spy_srmd-unique-metric_store_locale">
             <unique-column name="fk_search_ranking_metric"/>
+            <unique-column name="store_name"/>
+            <unique-column name="locale_name"/>
         </unique>
     </table>
 
     <table name="spy_search_ranking_setting" idMethod="native" identifierQuoting="true">
         <column name="id_search_ranking_setting" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="setting_key" type="VARCHAR" size="64" required="true" description="Machine name of the setting, e.g. relevance_weight."/>
+        <column name="store_name" type="VARCHAR" size="64" required="true" description="e.g. DE — Zed has no implicit current store, callers must pick explicitly."/>
+        <column name="locale_name" type="VARCHAR" size="16" required="true" description="e.g. de_DE."/>
         <column name="setting_value" type="VARCHAR" size="255" required="true"/>
 
         <behavior name="timestampable"/>
         <id-method-parameter value="spy_search_ranking_setting_pk_seq"/>
 
-        <unique name="spy_search_ranking_setting-setting_key">
+        <unique name="spy_search_ranking_setting-key_store_locale">
             <unique-column name="setting_key"/>
+            <unique-column name="store_name"/>
+            <unique-column name="locale_name"/>
         </unique>
     </table>
 
@@ -57,6 +85,8 @@
         <column name="id_search_ranking_product_metric" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_search_ranking_metric" type="INTEGER" required="true"/>
         <column name="fk_product_abstract" type="INTEGER" required="true"/>
+        <column name="store_name" type="VARCHAR" size="64" required="true" description="e.g. DE — a business signal like pdp_impressions is naturally store-specific (and, for some metrics, locale-specific too)."/>
+        <column name="locale_name" type="VARCHAR" size="16" required="true"/>
         <column name="raw_value" type="DOUBLE" required="true" defaultValue="0" description="Real-world signal value, e.g. number of PDP impressions."/>
         <column name="normalized_value" type="DOUBLE" required="false" description="Value in ]0;1] derived from raw_value by the metric formula; null until the normalization cron ran."/>
 
@@ -79,9 +109,16 @@
             <index-column name="fk_product_abstract"/>
         </index>
 
-        <unique name="spy_srpm-unique-metric-product">
+        <index name="index-spy_srpm-store_locale">
+            <index-column name="store_name"/>
+            <index-column name="locale_name"/>
+        </index>
+
+        <unique name="spy_srpm-unique-metric-product-store-locale">
             <unique-column name="fk_search_ranking_metric"/>
             <unique-column name="fk_product_abstract"/>
+            <unique-column name="store_name"/>
+            <unique-column name="locale_name"/>
         </unique>
     </table>
 
@@ -89,11 +126,13 @@
         <column name="id_search_ranking_metric_history" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_search_ranking_metric" type="INTEGER" required="true" description="Deliberately NOT a Propel foreign key (see below) — plain indexed column only."/>
         <column name="metric_name" type="VARCHAR" size="128" required="true" description="Denormalized: history must stay readable even if the live metric is later renamed or deleted."/>
-        <column name="weight" type="FLOAT" required="true" description="spy_search_ranking_metric.weight at the time of this snapshot."/>
+        <column name="store_name" type="VARCHAR" size="64" required="true" description="Which store+locale this snapshot's weight/digest applied to — a metric's weight and digest are store+locale scoped, its formula/isActive/isHigherBetter are not, but the whole row is still recorded per (store, locale) for a simple, complete audit trail."/>
+        <column name="locale_name" type="VARCHAR" size="16" required="true"/>
+        <column name="weight" type="FLOAT" required="true" description="spy_search_ranking_metric_weight.weight for this store+locale at the time of this snapshot."/>
         <column name="formula" type="VARCHAR" size="512" required="true" description="spy_search_ranking_metric.formula at the time of this snapshot."/>
         <column name="is_active" type="BOOLEAN" required="true"/>
         <column name="is_higher_better" type="BOOLEAN" required="true"/>
-        <column name="min_value" type="DOUBLE" required="false" description="The metric's digest at the time of this snapshot, null if no digest existed yet (e.g. a brand-new metric with no product-metric rows)."/>
+        <column name="min_value" type="DOUBLE" required="false" description="The metric's digest for this store+locale at the time of this snapshot, null if no digest existed yet (e.g. a brand-new metric with no product-metric rows)."/>
         <column name="max_value" type="DOUBLE" required="false"/>
         <column name="mean_value" type="DOUBLE" required="false"/>
         <column name="median_value" type="DOUBLE" required="false"/>
@@ -109,8 +148,10 @@
             <index-column name="fk_search_ranking_metric"/>
         </index>
 
-        <index name="index-spy_srmh-fk_metric_is_change">
+        <index name="index-spy_srmh-fk_metric_store_locale_is_change">
             <index-column name="fk_search_ranking_metric"/>
+            <index-column name="store_name"/>
+            <index-column name="locale_name"/>
             <index-column name="is_change"/>
         </index>
     </table>

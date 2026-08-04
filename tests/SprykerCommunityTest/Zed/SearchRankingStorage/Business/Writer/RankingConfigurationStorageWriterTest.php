@@ -12,8 +12,10 @@ namespace SprykerCommunityTest\Zed\SearchRankingStorage\Business\Writer;
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\StoreTransfer;
 use SprykerCommunity\Zed\SearchRankingStorage\Business\Writer\RankingConfigurationStorageWriter;
 use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface;
+use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSynchronizationFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingStorage\Persistence\SearchRankingStorageEntityManagerInterface;
 
@@ -60,9 +62,10 @@ class RankingConfigurationStorageWriterTest extends Unit
         $this->assertSame(['top_seller' => 0.5, 'pdp_impressions' => 0.5], $capturedConfiguration['metric_weights']);
         $this->assertSame(0.6, $capturedConfiguration['relevance_weight']);
         $this->assertSame(12.0, $capturedConfiguration['relevance_saturation_point']);
-        $this->assertSame(10, $capturedConfiguration['entropy_probe_result_size']);
-        $this->assertSame(1.0, $capturedConfiguration['entropy_weight_exponent']);
-        $this->assertSame(0.5, $capturedConfiguration['entropy_weight_shift_magnitude']);
+        $this->assertSame(0.7, $capturedConfiguration['specificity_blend_weight']);
+        $this->assertSame(3.0, $capturedConfiguration['specificity_saturation_point']);
+        $this->assertSame(1.0, $capturedConfiguration['specificity_weight_exponent']);
+        $this->assertSame(0.5, $capturedConfiguration['specificity_weight_shift_magnitude']);
     }
 
     /**
@@ -194,10 +197,75 @@ class RankingConfigurationStorageWriterTest extends Unit
         $synchronizationFacadeMock = $this->createMock(SearchRankingStorageToSynchronizationFacadeInterface::class);
         $synchronizationFacadeMock->expects($this->once())->method('flushSynchronizationMessagesFromBuffer');
 
-        $writer = new RankingConfigurationStorageWriter($searchRankingFacadeMock, $entityManagerMock, $synchronizationFacadeMock);
+        $writer = new RankingConfigurationStorageWriter(
+            $searchRankingFacadeMock,
+            $entityManagerMock,
+            $synchronizationFacadeMock,
+            $this->createStoreFacadeMock(),
+        );
 
         // Act
         $writer->publishRankingConfiguration();
+    }
+
+    /**
+     * Publishing must fan out over every store × that store's own available locales, saving one document
+     * per scope with the SAME scope threaded through to both `getActiveMetricCollection()`/the other
+     * getters AND `saveRankingConfiguration()` — never a cross-join against every globally available
+     * locale (mirrors `ProductMetricNormalizer`'s own fan-out shape) — and flushing the synchronization
+     * buffer exactly once at the end, not once per scope.
+     *
+     * @return void
+     */
+    public function testPublishesOneConfigurationDocumentPerStoreAndItsOwnLocales(): void
+    {
+        // Arrange
+        $searchRankingFacadeMock = $this->createMock(SearchRankingStorageToSearchRankingFacadeInterface::class);
+        $searchRankingFacadeMock->method('getActiveMetricCollection')->willReturn(new SearchRankingMetricCollectionTransfer());
+        $searchRankingFacadeMock->method('getRelevanceWeight')->willReturnMap([
+            ['DE', 'de_DE', 0.6],
+            ['AT', 'de_AT', 0.9],
+            ['AT', 'fr_FR', 0.9],
+        ]);
+        $searchRankingFacadeMock->method('getRelevanceSaturationPoint')->willReturn(12.0);
+        $searchRankingFacadeMock->method('getSpecificityBlendWeight')->willReturn(0.7);
+        $searchRankingFacadeMock->method('getSpecificitySaturationPoint')->willReturn(3.0);
+        $searchRankingFacadeMock->method('getSpecificityWeightExponent')->willReturn(1.0);
+        $searchRankingFacadeMock->method('getSpecificityWeightShiftMagnitude')->willReturn(0.5);
+
+        $capturedScopes = [];
+        $entityManagerMock = $this->createMock(SearchRankingStorageEntityManagerInterface::class);
+        $entityManagerMock->expects($this->exactly(3))
+            ->method('saveRankingConfiguration')
+            ->willReturnCallback(function (array $configurationData, string $storeName, string $localeName) use (&$capturedScopes): void {
+                $capturedScopes[] = [$storeName, $localeName, $configurationData['relevance_weight']];
+            });
+
+        $synchronizationFacadeMock = $this->createMock(SearchRankingStorageToSynchronizationFacadeInterface::class);
+        $synchronizationFacadeMock->expects($this->once())->method('flushSynchronizationMessagesFromBuffer');
+
+        $storeFacadeMock = $this->createMock(SearchRankingStorageToStoreFacadeInterface::class);
+        $storeFacadeMock->method('getAllStores')->willReturn([
+            (new StoreTransfer())->setName('DE')->setAvailableLocaleIsoCodes(['de_DE']),
+            (new StoreTransfer())->setName('AT')->setAvailableLocaleIsoCodes(['de_AT', 'fr_FR']),
+        ]);
+
+        $writer = new RankingConfigurationStorageWriter(
+            $searchRankingFacadeMock,
+            $entityManagerMock,
+            $synchronizationFacadeMock,
+            $storeFacadeMock,
+        );
+
+        // Act
+        $writer->publishRankingConfiguration();
+
+        // Assert
+        $this->assertSame([
+            ['DE', 'de_DE', 0.6],
+            ['AT', 'de_AT', 0.9],
+            ['AT', 'fr_FR', 0.9],
+        ], $capturedScopes);
     }
 
     /**
@@ -222,9 +290,10 @@ class RankingConfigurationStorageWriterTest extends Unit
         $searchRankingFacadeMock->method('getActiveMetricCollection')->willReturn($collectionTransfer);
         $searchRankingFacadeMock->method('getRelevanceWeight')->willReturn($relevanceWeight);
         $searchRankingFacadeMock->method('getRelevanceSaturationPoint')->willReturn($relevanceSaturationPoint);
-        $searchRankingFacadeMock->method('getEntropyProbeResultSize')->willReturn(10);
-        $searchRankingFacadeMock->method('getEntropyWeightExponent')->willReturn(1.0);
-        $searchRankingFacadeMock->method('getEntropyWeightShiftMagnitude')->willReturn(0.5);
+        $searchRankingFacadeMock->method('getSpecificityBlendWeight')->willReturn(0.7);
+        $searchRankingFacadeMock->method('getSpecificitySaturationPoint')->willReturn(3.0);
+        $searchRankingFacadeMock->method('getSpecificityWeightExponent')->willReturn(1.0);
+        $searchRankingFacadeMock->method('getSpecificityWeightShiftMagnitude')->willReturn(0.5);
 
         return $searchRankingFacadeMock;
     }
@@ -243,7 +312,25 @@ class RankingConfigurationStorageWriterTest extends Unit
             $searchRankingFacade,
             $entityManager,
             $this->createMock(SearchRankingStorageToSynchronizationFacadeInterface::class),
+            $this->createStoreFacadeMock(),
         );
+    }
+
+    /**
+     * A single DE/de_DE store, matching every other test in this class' fixtures — those assert on
+     * exactly one captured configuration payload, which only holds with exactly one (store, locale) pair
+     * in the fan-out.
+     *
+     * @return \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToStoreFacadeInterface
+     */
+    protected function createStoreFacadeMock(): SearchRankingStorageToStoreFacadeInterface
+    {
+        $storeFacadeMock = $this->createMock(SearchRankingStorageToStoreFacadeInterface::class);
+        $storeFacadeMock->method('getAllStores')->willReturn([
+            (new StoreTransfer())->setName('DE')->setAvailableLocaleIsoCodes(['de_DE']),
+        ]);
+
+        return $storeFacadeMock;
     }
 
     /**

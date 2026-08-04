@@ -27,50 +27,79 @@ class SearchRankingStorageToSearchRankingFacadeBridge implements SearchRankingSt
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
-    public function getActiveMetricCollection(): SearchRankingMetricCollectionTransfer
+    public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
-        return $this->searchRankingFacade->getActiveMetricCollection();
+        return $this->searchRankingFacade->getActiveMetricCollection($storeName, $localeName);
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getRelevanceWeight(): float
+    public function getRelevanceWeight(string $storeName, string $localeName): float
     {
-        return $this->searchRankingFacade->getRelevanceWeight();
+        return $this->searchRankingFacade->getRelevanceWeight($storeName, $localeName);
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getRelevanceSaturationPoint(): float
+    public function getRelevanceSaturationPoint(string $storeName, string $localeName): float
     {
-        return $this->searchRankingFacade->getRelevanceSaturationPoint();
+        return $this->searchRankingFacade->getRelevanceSaturationPoint($storeName, $localeName);
     }
 
     /**
-     * @return int
-     */
-    public function getEntropyProbeResultSize(): int
-    {
-        return $this->searchRankingFacade->getEntropyProbeResultSize();
-    }
-
-    /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getEntropyWeightExponent(): float
+    public function getSpecificityBlendWeight(string $storeName, string $localeName): float
     {
-        return $this->searchRankingFacade->getEntropyWeightExponent();
+        return $this->searchRankingFacade->getSpecificityBlendWeight($storeName, $localeName);
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getEntropyWeightShiftMagnitude(): float
+    public function getSpecificitySaturationPoint(string $storeName, string $localeName): float
     {
-        return $this->searchRankingFacade->getEntropyWeightShiftMagnitude();
+        return $this->searchRankingFacade->getSpecificitySaturationPoint($storeName, $localeName);
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return float
+     */
+    public function getSpecificityWeightExponent(string $storeName, string $localeName): float
+    {
+        return $this->searchRankingFacade->getSpecificityWeightExponent($storeName, $localeName);
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return float
+     */
+    public function getSpecificityWeightShiftMagnitude(string $storeName, string $localeName): float
+    {
+        return $this->searchRankingFacade->getSpecificityWeightShiftMagnitude($storeName, $localeName);
     }
 }

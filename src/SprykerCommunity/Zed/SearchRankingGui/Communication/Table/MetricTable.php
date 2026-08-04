@@ -12,6 +12,7 @@ namespace SprykerCommunity\Zed\SearchRankingGui\Communication\Table;
 use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingMetricTableMap;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeightQuery;
 use Spryker\Service\UtilText\Model\Url\Url;
 use Spryker\Zed\Gui\Communication\Table\AbstractTable;
 use Spryker\Zed\Gui\Communication\Table\TableConfiguration;
@@ -22,6 +23,16 @@ class MetricTable extends AbstractTable
      * @var string
      */
     public const URL_PARAM_ID_SEARCH_RANKING_METRIC = 'id-search-ranking-metric';
+
+    /**
+     * Not a real column on spy_search_ranking_metric any more (weight moved to
+     * spy_search_ranking_metric_weight, one row per store+locale) — kept as a plain array key so this
+     * column can still be displayed (looked up separately in {@see prepareData()}), just no longer
+     * sortable at the DB level via this table's own query.
+     *
+     * @var string
+     */
+    protected const COL_WEIGHT = 'weight';
 
     /**
      * @var string
@@ -35,9 +46,14 @@ class MetricTable extends AbstractTable
 
     /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery $metricQuery
+     * @param string $storeName
+     * @param string $localeName
      */
-    public function __construct(SpySearchRankingMetricQuery $metricQuery)
-    {
+    public function __construct(
+        SpySearchRankingMetricQuery $metricQuery,
+        protected string $storeName,
+        protected string $localeName,
+    ) {
         $this->metricQuery = $metricQuery;
     }
 
@@ -48,10 +64,20 @@ class MetricTable extends AbstractTable
      */
     protected function configure(TableConfiguration $config): TableConfiguration
     {
+        // The AJAX endpoint DataTables calls for every sort/page/search action is a fresh request that
+        // never sees the request this Table was originally constructed for — the selected scope has to
+        // be baked into that URL (same pattern ProductMetricGapTable already established for its own
+        // `?metric=` filter).
+        $config->setUrl(sprintf(
+            'table?storeName=%s&localeName=%s',
+            urlencode($this->storeName),
+            urlencode($this->localeName),
+        ));
+
         $config->setHeader([
             SpySearchRankingMetricTableMap::COL_ID_SEARCH_RANKING_METRIC => 'ID',
             SpySearchRankingMetricTableMap::COL_NAME => 'Name',
-            SpySearchRankingMetricTableMap::COL_WEIGHT => 'Weight',
+            static::COL_WEIGHT => 'Weight',
             SpySearchRankingMetricTableMap::COL_FORMULA => 'Formula',
             SpySearchRankingMetricTableMap::COL_IS_ACTIVE => 'Active',
             static::COL_ACTIONS => 'Actions',
@@ -60,7 +86,6 @@ class MetricTable extends AbstractTable
         $config->setSortable([
             SpySearchRankingMetricTableMap::COL_ID_SEARCH_RANKING_METRIC,
             SpySearchRankingMetricTableMap::COL_NAME,
-            SpySearchRankingMetricTableMap::COL_WEIGHT,
             SpySearchRankingMetricTableMap::COL_IS_ACTIVE,
         ]);
 
@@ -87,6 +112,7 @@ class MetricTable extends AbstractTable
     protected function prepareData(TableConfiguration $config): array
     {
         $metricEntities = $this->runQuery($this->metricQuery, $config, true);
+        $weightsById = $this->findWeightsById($metricEntities);
         $rows = [];
 
         /** @var \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric $metricEntity */
@@ -94,7 +120,7 @@ class MetricTable extends AbstractTable
             $rows[] = [
                 SpySearchRankingMetricTableMap::COL_ID_SEARCH_RANKING_METRIC => $metricEntity->getIdSearchRankingMetric(),
                 SpySearchRankingMetricTableMap::COL_NAME => $metricEntity->getName(),
-                SpySearchRankingMetricTableMap::COL_WEIGHT => $metricEntity->getWeight(),
+                static::COL_WEIGHT => $weightsById[$metricEntity->getIdSearchRankingMetric()] ?? 0.0,
                 SpySearchRankingMetricTableMap::COL_FORMULA => $metricEntity->getFormula(),
                 SpySearchRankingMetricTableMap::COL_IS_ACTIVE => $this->generateLabel(
                     $metricEntity->getIsActive() ? 'Active' : 'Inactive',
@@ -108,6 +134,38 @@ class MetricTable extends AbstractTable
     }
 
     /**
+     * @param iterable<\Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric> $metricEntities
+     *
+     * @return array<int, float>
+     */
+    protected function findWeightsById(iterable $metricEntities): array
+    {
+        $idSearchRankingMetrics = [];
+
+        foreach ($metricEntities as $metricEntity) {
+            $idSearchRankingMetrics[] = $metricEntity->getIdSearchRankingMetric();
+        }
+
+        if ($idSearchRankingMetrics === []) {
+            return [];
+        }
+
+        $weightsById = [];
+
+        foreach (
+            SpySearchRankingMetricWeightQuery::create()
+                ->filterByFkSearchRankingMetric_In($idSearchRankingMetrics)
+                ->filterByStoreName($this->storeName)
+                ->filterByLocaleName($this->localeName)
+                ->find() as $metricWeightEntity
+        ) {
+            $weightsById[$metricWeightEntity->getFkSearchRankingMetric()] = $metricWeightEntity->getWeight();
+        }
+
+        return $weightsById;
+    }
+
+    /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric $metricEntity
      *
      * @return array<string>
@@ -116,6 +174,8 @@ class MetricTable extends AbstractTable
     {
         $urlParams = [
             static::URL_PARAM_ID_SEARCH_RANKING_METRIC => $metricEntity->getIdSearchRankingMetric(),
+            'storeName' => $this->storeName,
+            'localeName' => $this->localeName,
         ];
 
         return [

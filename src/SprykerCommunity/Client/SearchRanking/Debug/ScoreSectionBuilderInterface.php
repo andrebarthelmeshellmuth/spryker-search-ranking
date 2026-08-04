@@ -10,22 +10,22 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking\Debug;
 
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
-use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult;
+use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
 
 interface ScoreSectionBuilderInterface
 {
     /**
      * Returns null when the configuration has no metric weights (nothing to explain).
      *
-     * When `$entropyWeightingResult` is given (i.e. entropy weighting actually ran for this query), the
-     * "Relevance weight (α)" line and the combination formula use its `relevanceWeight` — the value
-     * ACTUALLY applied to this query — instead of `$configurationTransfer`'s statically configured one, so
-     * the printed formula stays reproducible-by-eye against the real final score.
+     * When `$specificityWeightingResult` is given (i.e. specificity weighting actually ran for this
+     * query), the "Relevance weight (α)" line and the combination formula use its `relevanceWeight` — the
+     * value ACTUALLY applied to this query — instead of `$configurationTransfer`'s statically configured
+     * one, so the printed formula stays reproducible-by-eye against the real final score.
      *
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
      * @param array<string, float> $documentScores
      * @param float|null $queryScore
-     * @param \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null $entropyWeightingResult
+     * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null $specificityWeightingResult
      *
      * @return array<string, mixed>|null
      */
@@ -33,18 +33,19 @@ interface ScoreSectionBuilderInterface
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
         array $documentScores,
         ?float $queryScore,
-        ?EntropyWeightingResult $entropyWeightingResult = null,
+        ?SpecificityWeightingResult $specificityWeightingResult = null,
     ): ?array;
 
     /**
-     * A second, separate overlay section (title + one line per diagnostic) explaining how entropy
-     * weighting arrived at `$entropyWeightingResult`'s `relevanceWeight` — the configured baseline it
-     * started from, the normalized entropy the probe measured, the shift that entropy produced, and the
-     * resulting effective weight. Only ever called when entropy weighting actually ran for this query.
+     * A second, separate overlay section (title + one line per diagnostic) explaining how specificity
+     * weighting arrived at `$specificityWeightingResult`'s `relevanceWeight` — the configured baseline it
+     * started from, the normalized specificity the probe measured, the shift that specificity produced,
+     * and the resulting effective weight. Only ever called when specificity weighting actually ran for
+     * this query.
      *
-     * @param \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult $entropyWeightingResult
+     * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult $specificityWeightingResult
      *
      * @return array<string, mixed>
      */
-    public function buildEntropySection(EntropyWeightingResult $entropyWeightingResult): array;
+    public function buildSpecificitySection(SpecificityWeightingResult $specificityWeightingResult): array;
 }

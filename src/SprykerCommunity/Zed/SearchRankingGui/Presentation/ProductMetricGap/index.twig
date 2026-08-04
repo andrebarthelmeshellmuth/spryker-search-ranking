@@ -4,13 +4,15 @@
 {% block section_title %}{{ widget_title | trans }}{% endblock %}
 
 {% block action %}
-    {{ backActionButton('/search-ranking-gui/product-metric', 'Back to Product Values' | trans) }}
+    {{ backActionButton('/search-ranking-gui/product-metric?storeName=' ~ storeName ~ '&localeName=' ~ localeName, 'Back to Product Values' | trans) }}
 {% endblock %}
 
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Products with no value at all for a business score' } %}
         {% block widget_content %}
             <form method="get" class="form-inline" style="margin-bottom: 15px;">
+                <input type="hidden" name="storeName" value="{{ storeName }}">
+                <input type="hidden" name="localeName" value="{{ localeName }}">
                 <label for="metric">{{ 'Business score' | trans }}</label>
                 <select name="metric" id="metric" class="form-control" onchange="this.form.submit()">
                     <option value="" {% if selectedIdSearchRankingMetric is null %}selected="selected"{% endif %}>
@@ -22,6 +24,7 @@
                         </option>
                     {% endfor %}
                 </select>
+                <span style="margin-left: 15px;">{{ 'Store' | trans }}: <strong>{{ storeName }}</strong>, {{ 'Locale' | trans }}: <strong>{{ localeName }}</strong></span>
             </form>
             {{ productMetricGapTable | raw }}
         {% endblock %}

@@ -12,6 +12,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigestQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistoryQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeightQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingQuery;
 use Spryker\Zed\Kernel\Persistence\AbstractPersistenceFactory;
@@ -46,6 +47,14 @@ class SearchRankingPersistenceFactory extends AbstractPersistenceFactory
     public function createSearchRankingSettingQuery(): SpySearchRankingSettingQuery
     {
         return SpySearchRankingSettingQuery::create();
+    }
+
+    /**
+     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeightQuery
+     */
+    public function createSearchRankingMetricWeightQuery(): SpySearchRankingMetricWeightQuery
+    {
+        return SpySearchRankingMetricWeightQuery::create();
     }
 
     /**

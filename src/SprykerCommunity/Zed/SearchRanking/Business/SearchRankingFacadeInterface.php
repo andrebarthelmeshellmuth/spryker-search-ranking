@@ -23,142 +23,206 @@ interface SearchRankingFacadeInterface
 {
     /**
      * Specification:
-     * - Returns all ranking metric definitions ordered by name.
+     * - Returns all ranking metric definitions ordered by name, each carrying its weight for the given
+     *   store+locale (0.0 if no weight was ever saved for that scope).
      *
      * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
-    public function getMetricCollection(): SearchRankingMetricCollectionTransfer;
+    public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
 
     /**
      * Specification:
-     * - Returns all ACTIVE ranking metric definitions ordered by name.
+     * - Returns all ACTIVE ranking metric definitions ordered by name, with each metric's weight scoped
+     *   to the given store and locale.
      *
      * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
-    public function getActiveMetricCollection(): SearchRankingMetricCollectionTransfer;
+    public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
 
     /**
      * Specification:
-     * - Returns the blend weight for the ranking formula — the share of the final score coming from
-     *   normalized text relevance, with `(1 - relevanceWeight)` going to business signals; falls back to
-     *   the module config default when no value was saved yet.
+     * - Returns the blend weight for the ranking formula for the given store+locale — the share of the
+     *   final score coming from normalized text relevance, with `(1 - relevanceWeight)` going to business
+     *   signals; falls back to the module config default when no value was saved yet for that scope.
      *
      * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return float
      */
-    public function getRelevanceWeight(): float;
+    public function getRelevanceWeight(string $storeName, string $localeName): float;
 
     /**
      * Specification:
-     * - Persists the relevance blend-weight setting.
+     * - Persists the relevance blend-weight setting for the given store+locale.
      *
      * @api
      *
+     * @param string $storeName
+     * @param string $localeName
      * @param float $relevanceWeight
      *
      * @return void
      */
-    public function saveRelevanceWeight(float $relevanceWeight): void;
+    public function saveRelevanceWeight(string $storeName, string $localeName, float $relevanceWeight): void;
 
     /**
      * Specification:
-     * - Returns the relevance saturation point for the ranking formula — the raw Elasticsearch `_score`
-     *   at which normalized text relevance reaches 0.5; falls back to the module config default when no
-     *   value was saved yet.
+     * - Returns the relevance saturation point for the ranking formula for the given store+locale — the
+     *   raw Elasticsearch `_score` at which normalized text relevance reaches 0.5; falls back to the
+     *   module config default when no value was saved yet for that scope.
      *
      * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return float
      */
-    public function getRelevanceSaturationPoint(): float;
+    public function getRelevanceSaturationPoint(string $storeName, string $localeName): float;
 
     /**
      * Specification:
-     * - Persists the relevance saturation-point setting.
+     * - Persists the relevance saturation-point setting for the given store+locale.
      *
      * @api
      *
+     * @param string $storeName
+     * @param string $localeName
      * @param float $relevanceSaturationPoint
      *
      * @return void
      */
-    public function saveRelevanceSaturationPoint(float $relevanceSaturationPoint): void;
+    public function saveRelevanceSaturationPoint(string $storeName, string $localeName, float $relevanceSaturationPoint): void;
 
     /**
      * Specification:
-     * - Returns the number of top-ranked candidates the entropy probe samples; falls back to the module
-     *   config default when no value was saved yet. Only meaningful once entropy-aware relevance
-     *   weighting is enabled at the code level (a Client-layer bundle config flag, off by default).
+     * - Returns the blend weight (alpha) combining a query's per-term IDF values into one raw specificity
+     *   value, for the given store+locale; falls back to the module config default when no value was
+     *   saved yet for that scope. Only meaningful once specificity-aware relevance weighting is enabled
+     *   at the code level (a Client-layer bundle config flag, off by default).
      *
      * @api
      *
-     * @return int
-     */
-    public function getEntropyProbeResultSize(): int;
-
-    /**
-     * Specification:
-     * - Persists the entropy probe result-size setting.
-     *
-     * @api
-     *
-     * @param int $entropyProbeResultSize
-     *
-     * @return void
-     */
-    public function saveEntropyProbeResultSize(int $entropyProbeResultSize): void;
-
-    /**
-     * Specification:
-     * - Returns the exponent reshaping how sharply the entropy-derived shift ramps up; falls back to the
-     *   module config default when no value was saved yet.
-     *
-     * @api
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return float
      */
-    public function getEntropyWeightExponent(): float;
+    public function getSpecificityBlendWeight(string $storeName, string $localeName): float;
 
     /**
      * Specification:
-     * - Persists the entropy weight exponent setting.
+     * - Persists the specificity blend-weight setting for the given store+locale.
      *
      * @api
      *
-     * @param float $entropyWeightExponent
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificityBlendWeight
      *
      * @return void
      */
-    public function saveEntropyWeightExponent(float $entropyWeightExponent): void;
+    public function saveSpecificityBlendWeight(string $storeName, string $localeName, float $specificityBlendWeight): void;
 
     /**
      * Specification:
-     * - Returns the maximum amount the entropy-derived value may shift `relevanceWeight` away from its
-     *   configured baseline, in either direction; falls back to the module config default when no value
-     *   was saved yet.
+     * - Returns the raw specificity value at which normalized specificity reaches 0.5, for the given
+     *   store+locale; falls back to the module config default when no value was saved yet for that scope.
+     *   Calibration-tunable, not CMA-ES-tunable — see `relevanceSaturationPoint`'s own docblock for the
+     *   same split.
      *
      * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return float
      */
-    public function getEntropyWeightShiftMagnitude(): float;
+    public function getSpecificitySaturationPoint(string $storeName, string $localeName): float;
 
     /**
      * Specification:
-     * - Persists the entropy weight shift-magnitude setting.
+     * - Persists the specificity saturation-point setting for the given store+locale.
      *
      * @api
      *
-     * @param float $entropyWeightShiftMagnitude
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificitySaturationPoint
      *
      * @return void
      */
-    public function saveEntropyWeightShiftMagnitude(float $entropyWeightShiftMagnitude): void;
+    public function saveSpecificitySaturationPoint(string $storeName, string $localeName, float $specificitySaturationPoint): void;
+
+    /**
+     * Specification:
+     * - Returns the exponent reshaping how sharply the specificity-derived shift ramps up, for the given
+     *   store+locale; falls back to the module config default when no value was saved yet for that scope.
+     *
+     * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return float
+     */
+    public function getSpecificityWeightExponent(string $storeName, string $localeName): float;
+
+    /**
+     * Specification:
+     * - Persists the specificity weight exponent setting for the given store+locale.
+     *
+     * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificityWeightExponent
+     *
+     * @return void
+     */
+    public function saveSpecificityWeightExponent(string $storeName, string $localeName, float $specificityWeightExponent): void;
+
+    /**
+     * Specification:
+     * - Returns the maximum amount the specificity-derived value may shift `relevanceWeight` away from its
+     *   configured baseline, in either direction, for the given store+locale; falls back to the module
+     *   config default when no value was saved yet for that scope.
+     *
+     * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return float
+     */
+    public function getSpecificityWeightShiftMagnitude(string $storeName, string $localeName): float;
+
+    /**
+     * Specification:
+     * - Persists the specificity weight shift-magnitude setting for the given store+locale.
+     *
+     * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificityWeightShiftMagnitude
+     *
+     * @return void
+     */
+    public function saveSpecificityWeightShiftMagnitude(string $storeName, string $localeName, float $specificityWeightShiftMagnitude): void;
 
     /**
      * Specification:
@@ -172,21 +236,27 @@ interface SearchRankingFacadeInterface
      *
      * @api
      *
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return bool True when weights actually changed and were persisted; false when nothing needed to change.
      */
-    public function normalizeActiveMetricWeights(): bool;
+    public function normalizeActiveMetricWeights(string $storeName, string $localeName): bool;
 
     /**
      * Specification:
-     * - Returns the metric with the given id or null if it does not exist.
+     * - Returns the metric with the given id or null if it does not exist, its weight scoped to the given
+     *   store and locale.
      *
      * @api
      *
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
-    public function findMetricById(int $idSearchRankingMetric): ?SearchRankingMetricTransfer;
+    public function findMetricById(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricTransfer;
 
     /**
      * Specification:
@@ -214,6 +284,22 @@ interface SearchRankingFacadeInterface
      * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer
      */
     public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer;
+
+    /**
+     * Specification:
+     * - Persists a metric's weight for the given store+locale, and — if it actually changed — records a
+     *   history snapshot at that same scope.
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $weight
+     *
+     * @return void
+     */
+    public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void;
 
     /**
      * Specification:
@@ -247,12 +333,17 @@ interface SearchRankingFacadeInterface
      * - Evaluates the metric's formula per row with variables x (raw value), min, max, avg, count.
      * - Clamps results into ]0;1].
      * - Skips a metric entirely when its formula fails to evaluate and reports it in the result's errors.
+     * - `$storeName`/`$localeName` are an optional filter — `null` (the default) fans out over every
+     *   store×locale; a real value narrows to just that one scope.
      *
      * @api
      *
+     * @param string|null $storeName
+     * @param string|null $localeName
+     *
      * @return \Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer
      */
-    public function normalizeProductMetricValues(): SearchRankingNormalizationResultTransfer;
+    public function normalizeProductMetricValues(?string $storeName = null, ?string $localeName = null): SearchRankingNormalizationResultTransfer;
 
     /**
      * Specification:
@@ -287,12 +378,17 @@ interface SearchRankingFacadeInterface
      * - Recomputes the distribution digest (min/max/mean/median + a 101-point percentile backbone) of
      *   every ACTIVE metric from its current raw_value rows.
      * - A metric with no product-metric rows yet is skipped, not counted.
+     * - `$storeName`/`$localeName` are an optional filter — `null` (the default) fans out over every
+     *   store×locale; a real value narrows to just that one scope.
      *
      * @api
      *
+     * @param string|null $storeName
+     * @param string|null $localeName
+     *
      * @return int The number of metrics a digest was (re)computed for.
      */
-    public function rebuildMetricDigests(): int;
+    public function rebuildMetricDigests(?string $storeName = null, ?string $localeName = null): int;
 
     /**
      * Specification:
@@ -302,10 +398,12 @@ interface SearchRankingFacadeInterface
      * @api
      *
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer|null
      */
-    public function findMetricDigest(int $idSearchRankingMetric): ?SearchRankingMetricDigestTransfer;
+    public function findMetricDigest(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricDigestTransfer;
 
     /**
      * Specification:
@@ -320,10 +418,18 @@ interface SearchRankingFacadeInterface
      * @param int $idSearchRankingMetric
      * @param string $formula
      * @param bool $isHigherBetter
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer
      */
-    public function previewFormula(int $idSearchRankingMetric, string $formula, bool $isHigherBetter): SearchRankingFormulaPreviewTransfer;
+    public function previewFormula(
+        int $idSearchRankingMetric,
+        string $formula,
+        bool $isHigherBetter,
+        string $storeName,
+        string $localeName,
+    ): SearchRankingFormulaPreviewTransfer;
 
     /**
      * Specification:
@@ -335,12 +441,17 @@ interface SearchRankingFacadeInterface
      *   the new values reach Elasticsearch, then returns true.
      * - Intended for a nightly cron, separate from and independent of {@see normalizeProductMetricValues()}'s
      *   hourly cadence, which deliberately skips this same metric.
+     * - `$storeName`/`$localeName` are an optional filter — `null` (the default) fans out over every
+     *   store×locale; a real value narrows to just that one scope.
      *
      * @api
      *
+     * @param string|null $storeName
+     * @param string|null $localeName
+     *
      * @return bool
      */
-    public function randomizeRandomMetricIfActive(): bool;
+    public function randomizeRandomMetricIfActive(?string $storeName = null, ?string $localeName = null): bool;
 
     /**
      * Specification:
@@ -357,8 +468,8 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
-     * - Returns whether entropy-aware relevance weighting is active
-     *   ({@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()}).
+     * - Returns whether specificity-aware relevance weighting is active
+     *   ({@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled()}).
      * - Unlike every other method on this facade, this is NOT Zed-editable/persisted — it's a pure
      *   code-level project flag, read directly rather than routed through `SettingManager`, since there
      *   is nothing to read-modify-write here.
@@ -367,7 +478,7 @@ interface SearchRankingFacadeInterface
      *
      * @return bool
      */
-    public function isEntropyWeightingEnabled(): bool;
+    public function isSpecificityWeightingEnabled(): bool;
 
     /**
      * Specification:
@@ -381,10 +492,12 @@ interface SearchRankingFacadeInterface
      * @api
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return void
      */
-    public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer): void;
+    public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): void;
 
     /**
      * Specification:
@@ -410,8 +523,10 @@ interface SearchRankingFacadeInterface
      * @api
      *
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return float|null
      */
-    public function evaluateCurrentMetricFit(int $idSearchRankingMetric): ?float;
+    public function evaluateCurrentMetricFit(int $idSearchRankingMetric, string $storeName, string $localeName): ?float;
 }

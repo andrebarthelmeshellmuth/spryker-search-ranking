@@ -12,10 +12,12 @@ namespace SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricWeightTransfer;
 use Generated\Shared\Transfer\SearchRankingProductMetricTransfer;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigest;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeight;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric;
 
 class SearchRankingMapper
@@ -33,7 +35,6 @@ class SearchRankingMapper
         return $metricTransfer
             ->setIdSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
             ->setName($metricEntity->getName())
-            ->setWeight($metricEntity->getWeight())
             ->setFormula($metricEntity->getFormula())
             ->setIsActive($metricEntity->getIsActive())
             ->setIsHigherBetter($metricEntity->getIsHigherBetter())
@@ -51,13 +52,30 @@ class SearchRankingMapper
         SpySearchRankingMetric $metricEntity,
     ): SpySearchRankingMetric {
         $metricEntity->setName($metricTransfer->getNameOrFail());
-        $metricEntity->setWeight($metricTransfer->getWeightOrFail());
         $metricEntity->setFormula($metricTransfer->getFormulaOrFail());
         $metricEntity->setIsActive($metricTransfer->getIsActive() ?? true);
         $metricEntity->setIsHigherBetter($metricTransfer->getIsHigherBetter() ?? true);
         $metricEntity->setShape($metricTransfer->getShape());
 
         return $metricEntity;
+    }
+
+    /**
+     * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeight $metricWeightEntity
+     * @param \Generated\Shared\Transfer\SearchRankingMetricWeightTransfer $metricWeightTransfer
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingMetricWeightTransfer
+     */
+    public function mapMetricWeightEntityToTransfer(
+        SpySearchRankingMetricWeight $metricWeightEntity,
+        SearchRankingMetricWeightTransfer $metricWeightTransfer,
+    ): SearchRankingMetricWeightTransfer {
+        return $metricWeightTransfer
+            ->setIdSearchRankingMetricWeight($metricWeightEntity->getIdSearchRankingMetricWeight())
+            ->setFkSearchRankingMetric($metricWeightEntity->getFkSearchRankingMetric())
+            ->setStoreName($metricWeightEntity->getStoreName())
+            ->setLocaleName($metricWeightEntity->getLocaleName())
+            ->setWeight($metricWeightEntity->getWeight());
     }
 
     /**
@@ -74,6 +92,8 @@ class SearchRankingMapper
             ->setIdSearchRankingProductMetric($productMetricEntity->getIdSearchRankingProductMetric())
             ->setFkSearchRankingMetric($productMetricEntity->getFkSearchRankingMetric())
             ->setFkProductAbstract($productMetricEntity->getFkProductAbstract())
+            ->setStoreName($productMetricEntity->getStoreName())
+            ->setLocaleName($productMetricEntity->getLocaleName())
             ->setRawValue($productMetricEntity->getRawValue())
             ->setNormalizedValue($productMetricEntity->getNormalizedValue());
     }
@@ -91,6 +111,8 @@ class SearchRankingMapper
         return $digestTransfer
             ->setIdSearchRankingMetricDigest($digestEntity->getIdSearchRankingMetricDigest())
             ->setFkSearchRankingMetric($digestEntity->getFkSearchRankingMetric())
+            ->setStoreName($digestEntity->getStoreName())
+            ->setLocaleName($digestEntity->getLocaleName())
             ->setMinValue($digestEntity->getMinValue())
             ->setMaxValue($digestEntity->getMaxValue())
             ->setMeanValue($digestEntity->getMeanValue())
@@ -110,6 +132,8 @@ class SearchRankingMapper
         SpySearchRankingMetricDigest $digestEntity,
     ): SpySearchRankingMetricDigest {
         $digestEntity->setFkSearchRankingMetric($digestTransfer->getFkSearchRankingMetricOrFail());
+        $digestEntity->setStoreName($digestTransfer->getStoreNameOrFail());
+        $digestEntity->setLocaleName($digestTransfer->getLocaleNameOrFail());
         $digestEntity->setMinValue($digestTransfer->getMinValueOrFail());
         $digestEntity->setMaxValue($digestTransfer->getMaxValueOrFail());
         $digestEntity->setMeanValue($digestTransfer->getMeanValueOrFail());
@@ -158,6 +182,8 @@ class SearchRankingMapper
             ->setIdSearchRankingMetricHistory($historyEntity->getIdSearchRankingMetricHistory())
             ->setFkSearchRankingMetric($historyEntity->getFkSearchRankingMetric())
             ->setMetricName($historyEntity->getMetricName())
+            ->setStoreName($historyEntity->getStoreName())
+            ->setLocaleName($historyEntity->getLocaleName())
             ->setWeight($historyEntity->getWeight())
             ->setFormula($historyEntity->getFormula())
             ->setIsActive($historyEntity->getIsActive())
@@ -185,6 +211,8 @@ class SearchRankingMapper
     ): SpySearchRankingMetricHistory {
         $historyEntity->setFkSearchRankingMetric($historyTransfer->getFkSearchRankingMetricOrFail());
         $historyEntity->setMetricName($historyTransfer->getMetricNameOrFail());
+        $historyEntity->setStoreName($historyTransfer->getStoreNameOrFail());
+        $historyEntity->setLocaleName($historyTransfer->getLocaleNameOrFail());
         $historyEntity->setWeight($historyTransfer->getWeightOrFail());
         $historyEntity->setFormula($historyTransfer->getFormulaOrFail());
         $historyEntity->setIsActive($historyTransfer->getIsActiveOrFail());

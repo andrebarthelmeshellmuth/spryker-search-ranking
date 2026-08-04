@@ -12,11 +12,14 @@ namespace SprykerCommunityTest\Client\SearchRanking\Plugin\SearchDebug;
 use Codeception\Test\Unit;
 use Generated\Shared\Search\PageIndexMap;
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
+use Generated\Shared\Transfer\StoreTransfer;
 use SprykerCommunity\Client\SearchDebug\Explanation\ExplanationParser;
 use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilderInterface;
+use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocaleClientInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface;
+use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface;
 use SprykerCommunity\Client\SearchRanking\Plugin\SearchDebug\SearchRankingProductDebugDataExpanderPlugin;
-use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult;
+use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
 use SprykerCommunity\Client\SearchRanking\SearchRankingClient;
 use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;
 use SprykerCommunity\Shared\SearchDebug\SearchDebugConfig;
@@ -61,7 +64,7 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
     /**
      * @return void
      */
-    public function testLeavesTheDebugDataUntouchedWhenTheSectionBuilderReturnsNullAndEntropyDidNotRun(): void
+    public function testLeavesTheDebugDataUntouchedWhenTheSectionBuilderReturnsNullAndSpecificityDidNotRun(): void
     {
         // Arrange
         $configurationTransfer = new SearchRankingConfigurationStorageTransfer();
@@ -139,20 +142,20 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
     }
 
     /**
-     * The whole point of this wiring: when entropy weighting ran for this query, the SAME result the
+     * The whole point of this wiring: when specificity weighting ran for this query, the SAME result the
      * query-expander plugin remembered on the Client is what reaches `build()` — not re-derived, not a
-     * stale independent config lookup — and a second "Entropy weighting" section gets appended alongside
+     * stale independent config lookup — and a second "Specificity weighting" section gets appended alongside
      * the business-signal one.
      *
      * @return void
      */
-    public function testPassesTheRememberedEntropyWeightingResultToTheBuilderAndAppendsAnEntropySection(): void
+    public function testPassesTheRememberedSpecificityWeightingResultToTheBuilderAndAppendsASpecificitySection(): void
     {
         // Arrange
         $configurationTransfer = new SearchRankingConfigurationStorageTransfer();
-        $entropyWeightingResult = new EntropyWeightingResult(0.75, 0.9, 0.1, 0.15, 10);
+        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.9, 0.1, 0.15, 10);
         $businessSection = ['title' => 'Business signals'];
-        $entropySection = ['title' => 'Entropy weighting'];
+        $specificitySection = ['title' => 'Specificity weighting'];
 
         $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
         $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
@@ -160,35 +163,35 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
         $scoreSectionBuilderMock = $this->createMock(ScoreSectionBuilderInterface::class);
         $scoreSectionBuilderMock->expects($this->once())
             ->method('build')
-            ->with($configurationTransfer, [], null, $entropyWeightingResult)
+            ->with($configurationTransfer, [], null, $specificityWeightingResult)
             ->willReturn($businessSection);
         $scoreSectionBuilderMock->expects($this->once())
-            ->method('buildEntropySection')
-            ->with($entropyWeightingResult)
-            ->willReturn($entropySection);
+            ->method('buildSpecificitySection')
+            ->with($specificityWeightingResult)
+            ->willReturn($specificitySection);
 
-        $plugin = $this->createPlugin($storageClientMock, $scoreSectionBuilderMock, $entropyWeightingResult);
+        $plugin = $this->createPlugin($storageClientMock, $scoreSectionBuilderMock, $specificityWeightingResult);
 
         // Act
         $result = $plugin->expandProductDebugData([], []);
 
         // Assert
-        $this->assertSame([$businessSection, $entropySection], $result[SearchDebugConfig::KEY_SCORE_SECTIONS]);
+        $this->assertSame([$businessSection, $specificitySection], $result[SearchDebugConfig::KEY_SCORE_SECTIONS]);
     }
 
     /**
      * A shop with no metric weights configured at all (so `build()` returns null — nothing to explain
-     * about business signals) can still have entropy weighting enabled: the entropy section must appear
+     * about business signals) can still have specificity weighting enabled: the specificity section must appear
      * on its own, independent of whether the business-signal section exists.
      *
      * @return void
      */
-    public function testStillAppendsTheEntropySectionWhenTheBusinessSectionIsNull(): void
+    public function testStillAppendsTheSpecificitySectionWhenTheBusinessSectionIsNull(): void
     {
         // Arrange
         $configurationTransfer = new SearchRankingConfigurationStorageTransfer();
-        $entropyWeightingResult = new EntropyWeightingResult(0.75, 0.9, 0.1, 0.15, 10);
-        $entropySection = ['title' => 'Entropy weighting'];
+        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.9, 0.1, 0.15, 10);
+        $specificitySection = ['title' => 'Specificity weighting'];
 
         $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
         $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
@@ -196,37 +199,45 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
         $scoreSectionBuilderMock = $this->createMock(ScoreSectionBuilderInterface::class);
         $scoreSectionBuilderMock->method('build')->willReturn(null);
         $scoreSectionBuilderMock->expects($this->once())
-            ->method('buildEntropySection')
-            ->with($entropyWeightingResult)
-            ->willReturn($entropySection);
+            ->method('buildSpecificitySection')
+            ->with($specificityWeightingResult)
+            ->willReturn($specificitySection);
 
-        $plugin = $this->createPlugin($storageClientMock, $scoreSectionBuilderMock, $entropyWeightingResult);
+        $plugin = $this->createPlugin($storageClientMock, $scoreSectionBuilderMock, $specificityWeightingResult);
 
         // Act
         $result = $plugin->expandProductDebugData([], []);
 
         // Assert
-        $this->assertSame([$entropySection], $result[SearchDebugConfig::KEY_SCORE_SECTIONS]);
+        $this->assertSame([$specificitySection], $result[SearchDebugConfig::KEY_SCORE_SECTIONS]);
     }
 
     /**
      * @param \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface $storageClient
      * @param \SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilderInterface $scoreSectionBuilder
-     * @param \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult|null $entropyWeightingResult
+     * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null $specificityWeightingResult
      *
      * @return \SprykerCommunity\Client\SearchRanking\Plugin\SearchDebug\SearchRankingProductDebugDataExpanderPlugin
      */
     protected function createPlugin(
         SearchRankingToSearchRankingStorageClientInterface $storageClient,
         ScoreSectionBuilderInterface $scoreSectionBuilder,
-        ?EntropyWeightingResult $entropyWeightingResult = null,
+        ?SpecificityWeightingResult $specificityWeightingResult = null,
     ): SearchRankingProductDebugDataExpanderPlugin {
+        $storeClientMock = $this->createMock(SearchRankingToStoreClientInterface::class);
+        $storeClientMock->method('getCurrentStore')->willReturn((new StoreTransfer())->setName('DE'));
+
+        $localeClientMock = $this->createMock(SearchRankingToLocaleClientInterface::class);
+        $localeClientMock->method('getCurrentLocale')->willReturn('de_DE');
+
         $factoryMock = $this->createMock(SearchRankingFactory::class);
         $factoryMock->method('getSearchRankingStorageClient')->willReturn($storageClient);
         $factoryMock->method('createScoreSectionBuilder')->willReturn($scoreSectionBuilder);
+        $factoryMock->method('getStoreClient')->willReturn($storeClientMock);
+        $factoryMock->method('getLocaleClient')->willReturn($localeClientMock);
 
         $clientMock = $this->createMock(SearchRankingClient::class);
-        $clientMock->method('getLastEntropyWeightingResult')->willReturn($entropyWeightingResult);
+        $clientMock->method('getLastSpecificityWeightingResult')->willReturn($specificityWeightingResult);
 
         $plugin = new SearchRankingProductDebugDataExpanderPlugin();
         $plugin->setFactory($factoryMock);

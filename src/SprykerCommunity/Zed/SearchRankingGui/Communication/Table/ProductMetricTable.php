@@ -35,9 +35,14 @@ class ProductMetricTable extends AbstractTable
 
     /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery $productMetricQuery
+     * @param string $storeName
+     * @param string $localeName
      */
-    public function __construct(SpySearchRankingProductMetricQuery $productMetricQuery)
-    {
+    public function __construct(
+        SpySearchRankingProductMetricQuery $productMetricQuery,
+        protected string $storeName,
+        protected string $localeName,
+    ) {
         $this->productMetricQuery = $productMetricQuery;
     }
 
@@ -48,6 +53,12 @@ class ProductMetricTable extends AbstractTable
      */
     protected function configure(TableConfiguration $config): TableConfiguration
     {
+        $config->setUrl(sprintf(
+            'table?storeName=%s&localeName=%s',
+            urlencode($this->storeName),
+            urlencode($this->localeName),
+        ));
+
         $config->setHeader([
             SpySearchRankingProductMetricTableMap::COL_ID_SEARCH_RANKING_PRODUCT_METRIC => 'ID',
             static::COL_ABSTRACT_SKU => 'Abstract SKU',
@@ -82,6 +93,8 @@ class ProductMetricTable extends AbstractTable
     protected function prepareData(TableConfiguration $config): array
     {
         $query = $this->productMetricQuery
+            ->filterByStoreName($this->storeName)
+            ->filterByLocaleName($this->localeName)
             ->joinWithSearchRankingMetric()
             ->joinWithProductAbstract()
             ->withColumn(SpySearchRankingMetricTableMap::COL_NAME, static::COL_METRIC_NAME)
