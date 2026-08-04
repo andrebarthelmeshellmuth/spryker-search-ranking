@@ -22,8 +22,6 @@ interface EngineCompatibilityCheckerInterface
      *   Elasticsearch report incompatible version identifiers under the same API surface.
      * - Every probe runs cluster-wide (no store/index resolution needed): capability support is a
      *   property of the engine, not of any one store's index.
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
      */
     public function checkCompatibility(): SearchRankingEngineCompatibilityTransfer;
 }

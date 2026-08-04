@@ -39,8 +39,6 @@ class SpecificityWeightingResult
 
     /**
      * The statically configured `relevanceWeight`, before any specificity-derived shift.
-     *
-     * @return float
      */
     public function getConfiguredRelevanceWeight(): float
     {
@@ -49,25 +47,17 @@ class SpecificityWeightingResult
 
     /**
      * The `relevanceWeight` actually used to score the query this result belongs to.
-     *
-     * @return float
      */
     public function getRelevanceWeight(): float
     {
         return $this->relevanceWeight;
     }
 
-    /**
-     * @return float
-     */
     public function getNormalizedSpecificity(): float
     {
         return $this->normalizedSpecificity;
     }
 
-    /**
-     * @return float
-     */
     public function getShift(): float
     {
         return $this->shift;
@@ -77,8 +67,6 @@ class SpecificityWeightingResult
      * How many of the query's terms carried real corpus evidence (a nonzero `doc_freq` for at least one
      * probed field) and therefore contributed to the specificity calculation (`0` when none did, or the
      * probe returned no hits or failed).
-     *
-     * @return int
      */
     public function getQueryTermCount(): int
     {

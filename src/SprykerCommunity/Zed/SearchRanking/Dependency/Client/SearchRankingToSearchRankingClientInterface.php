@@ -13,8 +13,5 @@ use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 
 interface SearchRankingToSearchRankingClientInterface
 {
-    /**
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
-     */
     public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer;
 }

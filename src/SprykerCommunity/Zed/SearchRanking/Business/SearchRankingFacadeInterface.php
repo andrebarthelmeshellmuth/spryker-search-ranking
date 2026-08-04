@@ -30,8 +30,6 @@ interface SearchRankingFacadeInterface
      *
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
     public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
 
@@ -44,8 +42,6 @@ interface SearchRankingFacadeInterface
      *
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
     public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
 
@@ -59,8 +55,6 @@ interface SearchRankingFacadeInterface
      *
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float
      */
     public function getRelevanceWeight(string $storeName, string $localeName): float;
 
@@ -73,8 +67,6 @@ interface SearchRankingFacadeInterface
      * @param string $storeName
      * @param string $localeName
      * @param float $relevanceWeight
-     *
-     * @return void
      */
     public function saveRelevanceWeight(string $storeName, string $localeName, float $relevanceWeight): void;
 
@@ -88,8 +80,6 @@ interface SearchRankingFacadeInterface
      *
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float
      */
     public function getRelevanceSaturationPoint(string $storeName, string $localeName): float;
 
@@ -102,8 +92,6 @@ interface SearchRankingFacadeInterface
      * @param string $storeName
      * @param string $localeName
      * @param float $relevanceSaturationPoint
-     *
-     * @return void
      */
     public function saveRelevanceSaturationPoint(string $storeName, string $localeName, float $relevanceSaturationPoint): void;
 
@@ -118,8 +106,6 @@ interface SearchRankingFacadeInterface
      *
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float
      */
     public function getSpecificityBlendWeight(string $storeName, string $localeName): float;
 
@@ -132,8 +118,6 @@ interface SearchRankingFacadeInterface
      * @param string $storeName
      * @param string $localeName
      * @param float $specificityBlendWeight
-     *
-     * @return void
      */
     public function saveSpecificityBlendWeight(string $storeName, string $localeName, float $specificityBlendWeight): void;
 
@@ -148,8 +132,6 @@ interface SearchRankingFacadeInterface
      *
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float
      */
     public function getSpecificitySaturationPoint(string $storeName, string $localeName): float;
 
@@ -162,8 +144,6 @@ interface SearchRankingFacadeInterface
      * @param string $storeName
      * @param string $localeName
      * @param float $specificitySaturationPoint
-     *
-     * @return void
      */
     public function saveSpecificitySaturationPoint(string $storeName, string $localeName, float $specificitySaturationPoint): void;
 
@@ -176,8 +156,6 @@ interface SearchRankingFacadeInterface
      *
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float
      */
     public function getSpecificityWeightExponent(string $storeName, string $localeName): float;
 
@@ -190,8 +168,6 @@ interface SearchRankingFacadeInterface
      * @param string $storeName
      * @param string $localeName
      * @param float $specificityWeightExponent
-     *
-     * @return void
      */
     public function saveSpecificityWeightExponent(string $storeName, string $localeName, float $specificityWeightExponent): void;
 
@@ -205,8 +181,6 @@ interface SearchRankingFacadeInterface
      *
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float
      */
     public function getSpecificityWeightShiftMagnitude(string $storeName, string $localeName): float;
 
@@ -219,8 +193,6 @@ interface SearchRankingFacadeInterface
      * @param string $storeName
      * @param string $localeName
      * @param float $specificityWeightShiftMagnitude
-     *
-     * @return void
      */
     public function saveSpecificityWeightShiftMagnitude(string $storeName, string $localeName, float $specificityWeightShiftMagnitude): void;
 
@@ -253,8 +225,6 @@ interface SearchRankingFacadeInterface
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
     public function findMetricById(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricTransfer;
 
@@ -265,8 +235,6 @@ interface SearchRankingFacadeInterface
      * @api
      *
      * @param string $name
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
     public function findMetricByName(string $name): ?SearchRankingMetricTransfer;
 
@@ -280,8 +248,6 @@ interface SearchRankingFacadeInterface
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      *
      * @throws \SprykerCommunity\Zed\SearchRanking\Business\Exception\InvalidFormulaException
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer
      */
     public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer;
 
@@ -296,8 +262,6 @@ interface SearchRankingFacadeInterface
      * @param string $storeName
      * @param string $localeName
      * @param float $weight
-     *
-     * @return void
      */
     public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void;
 
@@ -309,8 +273,6 @@ interface SearchRankingFacadeInterface
      * @api
      *
      * @param int $idSearchRankingMetric
-     *
-     * @return void
      */
     public function deleteMetric(int $idSearchRankingMetric): void;
 
@@ -322,8 +284,6 @@ interface SearchRankingFacadeInterface
      * @api
      *
      * @param string $formula
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer
      */
     public function validateFormula(string $formula): SearchRankingFormulaValidationResponseTransfer;
 
@@ -340,8 +300,6 @@ interface SearchRankingFacadeInterface
      *
      * @param string|null $storeName
      * @param string|null $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer
      */
     public function normalizeProductMetricValues(?string $storeName = null, ?string $localeName = null): SearchRankingNormalizationResultTransfer;
 
@@ -355,8 +313,6 @@ interface SearchRankingFacadeInterface
      * @api
      *
      * @param \Generated\Shared\Transfer\ProductPageLoadTransfer $productPageLoadTransfer
-     *
-     * @return \Generated\Shared\Transfer\ProductPageLoadTransfer
      */
     public function expandProductPageLoadTransferWithScores(ProductPageLoadTransfer $productPageLoadTransfer): ProductPageLoadTransfer;
 
@@ -368,8 +324,6 @@ interface SearchRankingFacadeInterface
      * - Returns the number of products for which events were triggered.
      *
      * @api
-     *
-     * @return int
      */
     public function publishScoredProductAbstracts(): int;
 
@@ -400,8 +354,6 @@ interface SearchRankingFacadeInterface
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer|null
      */
     public function findMetricDigest(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricDigestTransfer;
 
@@ -420,8 +372,6 @@ interface SearchRankingFacadeInterface
      * @param bool $isHigherBetter
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer
      */
     public function previewFormula(
         int $idSearchRankingMetric,
@@ -448,8 +398,6 @@ interface SearchRankingFacadeInterface
      *
      * @param string|null $storeName
      * @param string|null $localeName
-     *
-     * @return bool
      */
     public function randomizeRandomMetricIfActive(?string $storeName = null, ?string $localeName = null): bool;
 
@@ -461,8 +409,6 @@ interface SearchRankingFacadeInterface
      * - Read-only: fires `_validate/query` and a deliberately empty `_rank_eval` request, never writes.
      *
      * @api
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
      */
     public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer;
 
@@ -475,8 +421,6 @@ interface SearchRankingFacadeInterface
      *   is nothing to read-modify-write here.
      *
      * @api
-     *
-     * @return bool
      */
     public function isSpecificityWeightingEnabled(): bool;
 
@@ -494,8 +438,6 @@ interface SearchRankingFacadeInterface
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return void
      */
     public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): void;
 
@@ -509,8 +451,6 @@ interface SearchRankingFacadeInterface
      * @api
      *
      * @param int $idSearchRankingMetric
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer|null
      */
     public function findLastMetricChangeHistoryEntry(int $idSearchRankingMetric): ?SearchRankingMetricHistoryTransfer;
 
@@ -525,8 +465,6 @@ interface SearchRankingFacadeInterface
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float|null
      */
     public function evaluateCurrentMetricFit(int $idSearchRankingMetric, string $storeName, string $localeName): ?float;
 }

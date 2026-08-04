@@ -13,7 +13,6 @@ use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
-use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
 class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToSearchRankingFacadeInterface
 {
@@ -33,8 +32,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
     public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
@@ -44,8 +41,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return bool
      */
     public function normalizeActiveMetricWeights(string $storeName, string $localeName): bool
     {
@@ -56,8 +51,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
     public function findMetricById(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricTransfer
     {
@@ -66,8 +59,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
 
     /**
      * @param string $name
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
     public function findMetricByName(string $name): ?SearchRankingMetricTransfer
     {
@@ -76,8 +67,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
 
     /**
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer
      */
     public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer
     {
@@ -89,8 +78,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
      * @param string $storeName
      * @param string $localeName
      * @param float $weight
-     *
-     * @return void
      */
     public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void
     {
@@ -99,8 +86,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
 
     /**
      * @param int $idSearchRankingMetric
-     *
-     * @return void
      */
     public function deleteMetric(int $idSearchRankingMetric): void
     {
@@ -109,8 +94,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
 
     /**
      * @param string $formula
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer
      */
     public function validateFormula(string $formula): SearchRankingFormulaValidationResponseTransfer
     {
@@ -120,8 +103,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float
      */
     public function getRelevanceWeight(string $storeName, string $localeName): float
     {
@@ -132,8 +113,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
      * @param string $storeName
      * @param string $localeName
      * @param float $relevanceWeight
-     *
-     * @return void
      */
     public function saveRelevanceWeight(string $storeName, string $localeName, float $relevanceWeight): void
     {
@@ -143,8 +122,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float
      */
     public function getRelevanceSaturationPoint(string $storeName, string $localeName): float
     {
@@ -155,8 +132,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
      * @param string $storeName
      * @param string $localeName
      * @param float $relevanceSaturationPoint
-     *
-     * @return void
      */
     public function saveRelevanceSaturationPoint(string $storeName, string $localeName, float $relevanceSaturationPoint): void
     {
@@ -166,8 +141,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float
      */
     public function getSpecificityBlendWeight(string $storeName, string $localeName): float
     {
@@ -178,8 +151,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
      * @param string $storeName
      * @param string $localeName
      * @param float $specificityBlendWeight
-     *
-     * @return void
      */
     public function saveSpecificityBlendWeight(string $storeName, string $localeName, float $specificityBlendWeight): void
     {
@@ -189,8 +160,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float
      */
     public function getSpecificitySaturationPoint(string $storeName, string $localeName): float
     {
@@ -201,8 +170,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
      * @param string $storeName
      * @param string $localeName
      * @param float $specificitySaturationPoint
-     *
-     * @return void
      */
     public function saveSpecificitySaturationPoint(string $storeName, string $localeName, float $specificitySaturationPoint): void
     {
@@ -212,8 +179,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float
      */
     public function getSpecificityWeightExponent(string $storeName, string $localeName): float
     {
@@ -224,8 +189,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
      * @param string $storeName
      * @param string $localeName
      * @param float $specificityWeightExponent
-     *
-     * @return void
      */
     public function saveSpecificityWeightExponent(string $storeName, string $localeName, float $specificityWeightExponent): void
     {
@@ -235,8 +198,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float
      */
     public function getSpecificityWeightShiftMagnitude(string $storeName, string $localeName): float
     {
@@ -247,8 +208,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
      * @param string $storeName
      * @param string $localeName
      * @param float $specificityWeightShiftMagnitude
-     *
-     * @return void
      */
     public function saveSpecificityWeightShiftMagnitude(string $storeName, string $localeName, float $specificityWeightShiftMagnitude): void
     {
@@ -261,8 +220,6 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
      * @param bool $isHigherBetter
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer
      */
     public function previewFormula(
         int $idSearchRankingMetric,

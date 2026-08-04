@@ -22,8 +22,6 @@ interface SearchRankingClientInterface
      *   full probe methodology.
      *
      * @api
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
      */
     public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer;
 
@@ -41,8 +39,6 @@ interface SearchRankingClientInterface
      *   live for this project, without duplicating the Locator-resolution logic itself.
      *
      * @api
-     *
-     * @return bool
      */
     public function isSpecificityWeightingEnabled(): bool;
 
@@ -76,8 +72,6 @@ interface SearchRankingClientInterface
      * carries a stale value over from an earlier query in the same request.
      *
      * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null $specificityWeightingResult
-     *
-     * @return void
      */
     public function rememberLastSpecificityWeightingResult(?SpecificityWeightingResult $specificityWeightingResult): void;
 
@@ -87,8 +81,6 @@ interface SearchRankingClientInterface
      * `null` means specificity weighting did not run for the current query — either it's disabled, or
      * {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin::expandQuery()}
      * hasn't run yet this request.
-     *
-     * @return \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null
      */
     public function getLastSpecificityWeightingResult(): ?SpecificityWeightingResult;
 }

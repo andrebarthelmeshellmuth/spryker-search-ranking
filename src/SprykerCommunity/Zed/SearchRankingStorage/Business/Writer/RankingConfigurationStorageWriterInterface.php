@@ -11,8 +11,5 @@ namespace SprykerCommunity\Zed\SearchRankingStorage\Business\Writer;
 
 interface RankingConfigurationStorageWriterInterface
 {
-    /**
-     * @return void
-     */
     public function publishRankingConfiguration(): void;
 }

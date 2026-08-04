@@ -25,8 +25,6 @@ interface ProductMetricNormalizerInterface
      *
      * @param string|null $storeName
      * @param string|null $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer
      */
     public function normalize(?string $storeName = null, ?string $localeName = null): SearchRankingNormalizationResultTransfer;
 
@@ -37,8 +35,6 @@ interface ProductMetricNormalizerInterface
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return int
      */
     public function normalizeMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): int;
 }

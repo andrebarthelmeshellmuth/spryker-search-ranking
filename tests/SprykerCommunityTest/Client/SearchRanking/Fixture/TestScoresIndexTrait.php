@@ -30,9 +30,6 @@ trait TestScoresIndexTrait
      */
     protected const TEST_INDEX_NAME = 'search_ranking_test_scores';
 
-    /**
-     * @return void
-     */
     protected function createTestScoresIndex(): void
     {
         $this->getTestScoresIndex()->create(
@@ -50,9 +47,6 @@ trait TestScoresIndexTrait
         );
     }
 
-    /**
-     * @return void
-     */
     protected function deleteTestScoresIndex(): void
     {
         $index = $this->getTestScoresIndex();
@@ -66,8 +60,6 @@ trait TestScoresIndexTrait
 
     /**
      * @param array<\Elastica\Document> $documents
-     *
-     * @return void
      */
     protected function indexTestDocuments(array $documents): void
     {
@@ -79,17 +71,12 @@ trait TestScoresIndexTrait
     /**
      * @param string $id
      * @param array<string, mixed> $data
-     *
-     * @return \Elastica\Document
      */
     protected function createTestDocument(string $id, array $data): Document
     {
         return new Document($id, $data);
     }
 
-    /**
-     * @return \Elastica\Index
-     */
     protected function getTestScoresIndex(): Index
     {
         return $this->getTestElasticaClient()->getIndex(static::TEST_INDEX_NAME);
@@ -98,8 +85,6 @@ trait TestScoresIndexTrait
     /**
      * Same composition `SprykerCommunity\Client\SearchRanking\SearchRankingFactory::getElasticaClient()`
      * uses — both directly-instantiable value objects, no Locator/container needed.
-     *
-     * @return \Elastica\Client
      */
     protected function getTestElasticaClient(): Client
     {

@@ -30,8 +30,6 @@ interface QuerySpecificityCalculatorInterface
      *
      * @param array<string, float> $idfByTerm
      * @param float $blendWeight
-     *
-     * @return float
      */
     public function calculateRawSpecificity(array $idfByTerm, float $blendWeight): float;
 
@@ -48,8 +46,6 @@ interface QuerySpecificityCalculatorInterface
      *
      * @param float $rawSpecificity
      * @param float $saturationPoint
-     *
-     * @return float
      */
     public function normalize(float $rawSpecificity, float $saturationPoint): float;
 }

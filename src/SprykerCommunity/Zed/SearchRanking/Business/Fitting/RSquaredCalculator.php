@@ -24,8 +24,6 @@ class RSquaredCalculator
      *
      * @param array<int, float> $actualValues
      * @param array<int, float> $predictedValues
-     *
-     * @return float|null
      */
     public function calculate(array $actualValues, array $predictedValues): ?float
     {

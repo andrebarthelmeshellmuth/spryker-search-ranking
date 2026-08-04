@@ -47,9 +47,6 @@ trait TestTermVectorIndexTrait
      */
     protected const TEST_TERM_VECTOR_FIELD_NGRAM = 'full-text-ngram';
 
-    /**
-     * @return void
-     */
     protected function createTestTermVectorIndex(): void
     {
         $this->getTestTermVectorIndex()->create(
@@ -91,9 +88,6 @@ trait TestTermVectorIndexTrait
         );
     }
 
-    /**
-     * @return void
-     */
     protected function deleteTestTermVectorIndex(): void
     {
         $index = $this->getTestTermVectorIndex();
@@ -107,8 +101,6 @@ trait TestTermVectorIndexTrait
 
     /**
      * @param array<\Elastica\Document> $documents
-     *
-     * @return void
      */
     protected function indexTestTermVectorDocuments(array $documents): void
     {
@@ -120,8 +112,6 @@ trait TestTermVectorIndexTrait
     /**
      * @param string $id
      * @param string $fullText
-     *
-     * @return \Elastica\Document
      */
     protected function createTestTermVectorDocument(string $id, string $fullText): Document
     {
@@ -131,17 +121,11 @@ trait TestTermVectorIndexTrait
         ]);
     }
 
-    /**
-     * @return \Elastica\Index
-     */
     protected function getTestTermVectorIndex(): Index
     {
         return $this->getTestElasticaClient()->getIndex(static::TEST_TERM_VECTOR_INDEX_NAME);
     }
 
-    /**
-     * @return \Elastica\Client
-     */
     protected function getTestElasticaClient(): Client
     {
         $searchElasticsearchConfig = new SearchElasticsearchConfig();

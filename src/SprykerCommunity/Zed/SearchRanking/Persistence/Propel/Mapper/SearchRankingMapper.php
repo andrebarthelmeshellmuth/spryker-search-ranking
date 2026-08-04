@@ -27,8 +27,6 @@ class SearchRankingMapper
     /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric $metricEntity
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer
      */
     public function mapMetricEntityToTransfer(
         SpySearchRankingMetric $metricEntity,
@@ -46,8 +44,6 @@ class SearchRankingMapper
     /**
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric $metricEntity
-     *
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric
      */
     public function mapMetricTransferToEntity(
         SearchRankingMetricTransfer $metricTransfer,
@@ -65,8 +61,6 @@ class SearchRankingMapper
     /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeight $metricWeightEntity
      * @param \Generated\Shared\Transfer\SearchRankingMetricWeightTransfer $metricWeightTransfer
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricWeightTransfer
      */
     public function mapMetricWeightEntityToTransfer(
         SpySearchRankingMetricWeight $metricWeightEntity,
@@ -83,8 +77,6 @@ class SearchRankingMapper
     /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric $productMetricEntity
      * @param \Generated\Shared\Transfer\SearchRankingProductMetricTransfer $productMetricTransfer
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingProductMetricTransfer
      */
     public function mapProductMetricEntityToTransfer(
         SpySearchRankingProductMetric $productMetricEntity,
@@ -103,8 +95,6 @@ class SearchRankingMapper
     /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigest $digestEntity
      * @param \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer $digestTransfer
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer
      */
     public function mapMetricDigestEntityToTransfer(
         SpySearchRankingMetricDigest $digestEntity,
@@ -126,8 +116,6 @@ class SearchRankingMapper
     /**
      * @param \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer $digestTransfer
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigest $digestEntity
-     *
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigest
      */
     public function mapMetricDigestTransferToEntity(
         SearchRankingMetricDigestTransfer $digestTransfer,
@@ -162,8 +150,6 @@ class SearchRankingMapper
 
     /**
      * @param array<float> $percentiles
-     *
-     * @return string
      */
     protected function implodePercentiles(array $percentiles): string
     {
@@ -173,8 +159,6 @@ class SearchRankingMapper
     /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory $historyEntity
      * @param \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer $historyTransfer
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer
      */
     public function mapMetricHistoryEntityToTransfer(
         SpySearchRankingMetricHistory $historyEntity,
@@ -204,8 +188,6 @@ class SearchRankingMapper
     /**
      * @param \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer $historyTransfer
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory $historyEntity
-     *
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory
      */
     public function mapMetricHistoryTransferToEntity(
         SearchRankingMetricHistoryTransfer $historyTransfer,
@@ -236,8 +218,6 @@ class SearchRankingMapper
     /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory $settingHistoryEntity
      * @param \Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer $settingHistoryTransfer
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer
      */
     public function mapSettingHistoryEntityToTransfer(
         SpySearchRankingSettingHistory $settingHistoryEntity,
@@ -255,8 +235,6 @@ class SearchRankingMapper
     /**
      * @param \Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer $settingHistoryTransfer
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory $settingHistoryEntity
-     *
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory
      */
     public function mapSettingHistoryTransferToEntity(
         SearchRankingSettingHistoryTransfer $settingHistoryTransfer,
