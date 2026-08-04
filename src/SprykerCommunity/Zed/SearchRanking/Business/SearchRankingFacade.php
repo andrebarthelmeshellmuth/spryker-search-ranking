@@ -241,10 +241,16 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @param string $storeName
      * @param string $localeName
      * @param float $weight
+     * @param string $changeSource
      */
-    public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void
-    {
-        $this->getFactory()->createMetricWriter()->saveMetricWeight($idSearchRankingMetric, $storeName, $localeName, $weight);
+    public function saveMetricWeight(
+        int $idSearchRankingMetric,
+        string $storeName,
+        string $localeName,
+        float $weight,
+        string $changeSource = SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL,
+    ): void {
+        $this->getFactory()->createMetricWriter()->saveMetricWeight($idSearchRankingMetric, $storeName, $localeName, $weight, $changeSource);
     }
 
     /**
@@ -362,6 +368,16 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     public function randomizeRandomMetricIfActive(?string $storeName = null, ?string $localeName = null): bool
     {
         return $this->getFactory()->createMetricRandomizer()->randomizeIfActive($storeName, $localeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function getRandomMetricName(): string
+    {
+        return $this->getFactory()->getConfig()->getRandomMetricName();
     }
 
     /**

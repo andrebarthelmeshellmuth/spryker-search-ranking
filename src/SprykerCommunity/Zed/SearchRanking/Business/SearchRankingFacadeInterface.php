@@ -18,6 +18,7 @@ use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
 interface SearchRankingFacadeInterface
 {
@@ -254,7 +255,7 @@ interface SearchRankingFacadeInterface
     /**
      * Specification:
      * - Persists a metric's weight for the given store+locale, and — if it actually changed — records a
-     *   history snapshot at that same scope.
+     *   history snapshot at that same scope, tagged with $changeSource.
      *
      * @api
      *
@@ -262,8 +263,15 @@ interface SearchRankingFacadeInterface
      * @param string $storeName
      * @param string $localeName
      * @param float $weight
+     * @param string $changeSource One of {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig}::CHANGE_SOURCE_*.
      */
-    public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void;
+    public function saveMetricWeight(
+        int $idSearchRankingMetric,
+        string $storeName,
+        string $localeName,
+        float $weight,
+        string $changeSource = SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL,
+    ): void;
 
     /**
      * Specification:
@@ -400,6 +408,18 @@ interface SearchRankingFacadeInterface
      * @param string|null $localeName
      */
     public function randomizeRandomMetricIfActive(?string $storeName = null, ?string $localeName = null): bool;
+
+    /**
+     * Specification:
+     * - Returns the name of the configured random-tie-breaker metric
+     *   ({@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getRandomMetricName()}) — the same
+     *   identity {@see randomizeRandomMetricIfActive()} and the hourly normalize cron already use to find
+     *   and skip this metric. Exposed so other consumers (e.g. an auto-tune settings page) can recognize
+     *   and exclude it too, without duplicating the config lookup.
+     *
+     * @api
+     */
+    public function getRandomMetricName(): string;
 
     /**
      * Specification:

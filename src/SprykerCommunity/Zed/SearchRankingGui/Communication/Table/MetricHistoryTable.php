@@ -15,6 +15,7 @@ use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistoryQuery;
 use Spryker\Service\UtilText\Model\Url\Url;
 use Spryker\Zed\Gui\Communication\Table\AbstractTable;
 use Spryker\Zed\Gui\Communication\Table\TableConfiguration;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
 /**
  * Read-only, newest-first view of every recorded metric config change — see
@@ -66,6 +67,7 @@ class MetricHistoryTable extends AbstractTable
             static::COL_DIRECTION => 'Direction',
             static::COL_FIT => 'Fit (R²)',
             SpySearchRankingMetricHistoryTableMap::COL_IS_CHANGE => 'Type',
+            SpySearchRankingMetricHistoryTableMap::COL_CHANGE_SOURCE => 'Source',
             SpySearchRankingMetricHistoryTableMap::COL_CREATED_AT => 'Recorded At',
             static::COL_ACTIONS => 'Actions',
         ]);
@@ -76,18 +78,21 @@ class MetricHistoryTable extends AbstractTable
             SpySearchRankingMetricHistoryTableMap::COL_WEIGHT,
             SpySearchRankingMetricHistoryTableMap::COL_IS_ACTIVE,
             SpySearchRankingMetricHistoryTableMap::COL_FIT_R_SQUARED,
+            SpySearchRankingMetricHistoryTableMap::COL_CHANGE_SOURCE,
             SpySearchRankingMetricHistoryTableMap::COL_CREATED_AT,
         ]);
 
         $config->setSearchable([
             SpySearchRankingMetricHistoryTableMap::COL_METRIC_NAME,
             SpySearchRankingMetricHistoryTableMap::COL_FORMULA,
+            SpySearchRankingMetricHistoryTableMap::COL_CHANGE_SOURCE,
         ]);
 
         $config->setRawColumns([
             SpySearchRankingMetricHistoryTableMap::COL_IS_ACTIVE,
             static::COL_DIRECTION,
             SpySearchRankingMetricHistoryTableMap::COL_IS_CHANGE,
+            SpySearchRankingMetricHistoryTableMap::COL_CHANGE_SOURCE,
             static::COL_ACTIONS,
         ]);
 
@@ -126,6 +131,7 @@ class MetricHistoryTable extends AbstractTable
                     $historyEntity->getIsChange() ? 'Change' : 'Check only',
                     $historyEntity->getIsChange() ? 'label-success' : 'label-default',
                 ),
+                SpySearchRankingMetricHistoryTableMap::COL_CHANGE_SOURCE => $this->formatChangeSource($historyEntity->getChangeSource()),
                 SpySearchRankingMetricHistoryTableMap::COL_CREATED_AT => $historyEntity->getCreatedAt('Y-m-d H:i:s'),
                 static::COL_ACTIONS => implode(' ', $this->createActionButtons($historyEntity)),
             ];
@@ -143,6 +149,32 @@ class MetricHistoryTable extends AbstractTable
     protected function formatFit(?float $fitRSquared): string
     {
         return $fitRSquared === null ? '—' : number_format($fitRSquared, 3);
+    }
+
+    /**
+     * Human-readable label for one of {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig}::CHANGE_SOURCE_*
+     * — a plain default-styled label for the base package's own MANUAL source (nothing to call out), and a
+     * distinct "info" style for every automated source, so an admin scanning the table can visually spot
+     * a machine-originated row at a glance rather than reading each cell. Falls back to the raw stored
+     * value for a row written before this label list existed or by a future, not-yet-known source.
+     *
+     * @param string|null $changeSource
+     */
+    protected function formatChangeSource(?string $changeSource): string
+    {
+        $labelsByChangeSource = [
+            SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL => 'Manual',
+            SharedSearchRankingConfig::CHANGE_SOURCE_AUTO_TUNE => 'Auto-Tune',
+            SharedSearchRankingConfig::CHANGE_SOURCE_OPTIMIZER_APPLY => 'Optimizer apply',
+            SharedSearchRankingConfig::CHANGE_SOURCE_CHECKPOINT_RESTORE => 'Checkpoint restore',
+        ];
+
+        $label = $labelsByChangeSource[$changeSource] ?? $changeSource ?? 'Manual';
+        $cssClass = $changeSource === SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL || $changeSource === null
+            ? 'label-default'
+            : 'label-info';
+
+        return $this->generateLabel($label, $cssClass);
     }
 
     /**
