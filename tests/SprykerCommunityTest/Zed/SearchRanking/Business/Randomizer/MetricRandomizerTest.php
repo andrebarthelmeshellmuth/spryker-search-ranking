@@ -32,9 +32,6 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  */
 class MetricRandomizerTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testReturnsFalseAndDoesNothingWhenTheMetricDoesNotExist(): void
     {
         // Arrange
@@ -56,9 +53,6 @@ class MetricRandomizerTest extends Unit
         $this->assertFalse($wasRandomized);
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsFalseAndDoesNothingWhenTheMetricIsNotActive(): void
     {
         // Arrange
@@ -85,9 +79,6 @@ class MetricRandomizerTest extends Unit
         $this->assertFalse($wasRandomized);
     }
 
-    /**
-     * @return void
-     */
     public function testRenormalizesAndRepublishesWhenTheMetricIsActive(): void
     {
         // Arrange
@@ -118,8 +109,6 @@ class MetricRandomizerTest extends Unit
      * The optional `$storeName` filter (backing `search-ranking:randomize --store=X`) must skip every
      * OTHER store entirely — not just prefer the given one — so `normalizeMetric()` is only ever called
      * for the requested scope.
-     *
-     * @return void
      */
     public function testStoreFilterRestrictsToOnlyTheGivenStore(): void
     {
@@ -153,9 +142,6 @@ class MetricRandomizerTest extends Unit
         $this->assertTrue($wasRandomized);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface
-     */
     protected function createStoreFacadeMock(): SearchRankingToStoreFacadeInterface
     {
         $storeFacadeMock = $this->createMock(SearchRankingToStoreFacadeInterface::class);

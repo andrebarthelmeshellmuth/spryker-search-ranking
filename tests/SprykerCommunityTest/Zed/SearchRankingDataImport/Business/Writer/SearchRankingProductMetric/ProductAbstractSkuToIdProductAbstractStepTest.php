@@ -41,9 +41,6 @@ class ProductAbstractSkuToIdProductAbstractStepTest extends Unit
      */
     protected array $productAbstractEntities = [];
 
-    /**
-     * @return void
-     */
     protected function _after(): void
     {
         foreach ($this->productAbstractEntities as $productAbstractEntity) {
@@ -53,9 +50,6 @@ class ProductAbstractSkuToIdProductAbstractStepTest extends Unit
         parent::_after();
     }
 
-    /**
-     * @return void
-     */
     public function testExecuteResolvesAnExistingSkuToItsRealId(): void
     {
         // Arrange
@@ -74,9 +68,6 @@ class ProductAbstractSkuToIdProductAbstractStepTest extends Unit
         );
     }
 
-    /**
-     * @return void
-     */
     public function testExecuteThrowsWhenTheSkuDoesNotExist(): void
     {
         // Arrange
@@ -92,8 +83,6 @@ class ProductAbstractSkuToIdProductAbstractStepTest extends Unit
 
     /**
      * @param string $sku
-     *
-     * @return \Orm\Zed\Product\Persistence\SpyProductAbstract
      */
     protected function createTestProductAbstract(string $sku): SpyProductAbstract
     {

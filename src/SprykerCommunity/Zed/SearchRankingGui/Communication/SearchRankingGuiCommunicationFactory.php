@@ -37,8 +37,6 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricTable
      */
     public function createMetricTable(string $storeName, string $localeName): MetricTable
     {
@@ -48,17 +46,12 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricTable
      */
     public function createProductMetricTable(string $storeName, string $localeName): ProductMetricTable
     {
         return new ProductMetricTable($this->getSearchRankingProductMetricPropelQuery(), $storeName, $localeName);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricHistoryTable
-     */
     public function createMetricHistoryTable(): MetricHistoryTable
     {
         return new MetricHistoryTable($this->getSearchRankingMetricHistoryPropelQuery());
@@ -68,8 +61,6 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
      * @param int|null $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricGapTable
      */
     public function createProductMetricGapTable(?int $idSearchRankingMetric, string $storeName, string $localeName): ProductMetricGapTable
     {
@@ -81,9 +72,6 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapFinderInterface
-     */
     public function createProductMetricGapFinder(): ProductMetricGapFinderInterface
     {
         return new ProductMetricGapFinder();
@@ -92,33 +80,22 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     /**
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer|null $metricTransfer
      * @param array<string, mixed> $options
-     *
-     * @return \Symfony\Component\Form\FormInterface
      */
     public function getMetricForm(?SearchRankingMetricTransfer $metricTransfer, array $options): FormInterface
     {
         return $this->getFormFactory()->create(MetricForm::class, $metricTransfer, $options);
     }
 
-    /**
-     * @return \Symfony\Component\Form\FormInterface
-     */
     public function createDeleteForm(): FormInterface
     {
         return $this->getFormFactory()->create(DeleteForm::class, [], ['fields' => []]);
     }
 
-    /**
-     * @return \Symfony\Component\Form\FormInterface
-     */
     public function createNormalizeWeightsForm(): FormInterface
     {
         return $this->getFormFactory()->create(NormalizeWeightsForm::class);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingGui\Communication\Form\DataProvider\MetricFormDataProvider
-     */
     public function createMetricFormDataProvider(): MetricFormDataProvider
     {
         return new MetricFormDataProvider($this->getSearchRankingFacade());
@@ -126,65 +103,42 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
 
     /**
      * @param array<string, mixed> $settingsData
-     *
-     * @return \Symfony\Component\Form\FormInterface
      */
     public function getSettingsForm(array $settingsData): FormInterface
     {
         return $this->getFormFactory()->create(SettingsForm::class, $settingsData);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeInterface
-     */
     public function getSearchRankingFacade(): SearchRankingGuiToSearchRankingFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_SEARCH_RANKING);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingStorageFacadeInterface
-     */
     public function getSearchRankingStorageFacade(): SearchRankingGuiToSearchRankingStorageFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_SEARCH_RANKING_STORAGE);
     }
 
-    /**
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery
-     */
     public function getSearchRankingMetricPropelQuery(): SpySearchRankingMetricQuery
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::PROPEL_QUERY_SEARCH_RANKING_METRIC);
     }
 
-    /**
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery
-     */
     public function getSearchRankingProductMetricPropelQuery(): SpySearchRankingProductMetricQuery
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::PROPEL_QUERY_SEARCH_RANKING_PRODUCT_METRIC);
     }
 
-    /**
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistoryQuery
-     */
     public function getSearchRankingMetricHistoryPropelQuery(): SpySearchRankingMetricHistoryQuery
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToStoreFacadeInterface
-     */
     public function getStoreFacade(): SearchRankingGuiToStoreFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_STORE);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToLocaleFacadeInterface
-     */
     public function getLocaleFacade(): SearchRankingGuiToLocaleFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_LOCALE);

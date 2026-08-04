@@ -25,9 +25,6 @@ use SprykerCommunity\Client\SearchRanking\SearchRankingConfig;
  */
 class SearchRankingConfigTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testSpecificityWeightingIsDisabledByDefault(): void
     {
         $config = new SearchRankingConfig();
@@ -38,9 +35,6 @@ class SearchRankingConfigTest extends Unit
         );
     }
 
-    /**
-     * @return void
-     */
     public function testDefaultProbeFieldSearchAnalyzersCoverBothStandardFulltextFields(): void
     {
         $config = new SearchRankingConfig();

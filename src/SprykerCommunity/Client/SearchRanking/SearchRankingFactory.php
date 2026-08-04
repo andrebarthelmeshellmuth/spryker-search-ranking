@@ -34,41 +34,26 @@ use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculatorInte
  */
 class SearchRankingFactory extends AbstractFactory
 {
-    /**
-     * @return \SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface
-     */
     public function createFunctionScoreBuilder(): FunctionScoreBuilderInterface
     {
         return new FunctionScoreBuilder();
     }
 
-    /**
-     * @return \SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilderInterface
-     */
     public function createScoreSectionBuilder(): ScoreSectionBuilderInterface
     {
         return new ScoreSectionBuilder();
     }
 
-    /**
-     * @return \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface
-     */
     public function getSearchRankingStorageClient(): SearchRankingToSearchRankingStorageClientInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::CLIENT_SEARCH_RANKING_STORAGE);
     }
 
-    /**
-     * @return \SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityCheckerInterface
-     */
     public function createEngineCompatibilityChecker(): EngineCompatibilityCheckerInterface
     {
         return new EngineCompatibilityChecker($this->getElasticaClient());
     }
 
-    /**
-     * @return \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculatorInterface
-     */
     public function createSpecificityWeightCalculator(): SpecificityWeightCalculatorInterface
     {
         return new SpecificityWeightCalculator(
@@ -78,25 +63,16 @@ class SearchRankingFactory extends AbstractFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface
-     */
     public function getStoreClient(): SearchRankingToStoreClientInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::CLIENT_STORE);
     }
 
-    /**
-     * @return \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocaleClientInterface
-     */
     public function getLocaleClient(): SearchRankingToLocaleClientInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::CLIENT_LOCALE);
     }
 
-    /**
-     * @return \SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyFetcherInterface
-     */
     public function createQueryTermFrequencyFetcher(): QueryTermFrequencyFetcherInterface
     {
         return new QueryTermFrequencyFetcher(
@@ -106,9 +82,6 @@ class SearchRankingFactory extends AbstractFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInterface
-     */
     public function createQuerySpecificityCalculator(): QuerySpecificityCalculatorInterface
     {
         return new QuerySpecificityCalculator();
@@ -117,8 +90,6 @@ class SearchRankingFactory extends AbstractFactory
     /**
      * COMPOSITION over the core SearchElasticsearch module, deliberately — same pattern (and the same
      * reasoning) as `SprykerCommunity\Client\SearchDebug\SearchDebugFactory::getElasticaClient()`.
-     *
-     * @return \Elastica\Client
      */
     public function getElasticaClient(): Client
     {
@@ -127,17 +98,11 @@ class SearchRankingFactory extends AbstractFactory
         );
     }
 
-    /**
-     * @return \Spryker\Shared\SearchElasticsearch\ElasticaClient\ElasticaClientFactory
-     */
     public function createElasticaClientFactory(): ElasticaClientFactory
     {
         return new ElasticaClientFactory();
     }
 
-    /**
-     * @return \Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig
-     */
     public function createSearchElasticsearchConfig(): SearchElasticsearchConfig
     {
         return new SearchElasticsearchConfig();

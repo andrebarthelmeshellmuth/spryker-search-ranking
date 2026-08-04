@@ -53,9 +53,6 @@ use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
  */
 class SearchRankingBusinessFactory extends AbstractBusinessFactory
 {
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface
-     */
     public function createFormulaEvaluator(): FormulaEvaluatorInterface
     {
         return new FormulaEvaluator(
@@ -64,17 +61,11 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface
-     */
     public function createMathFunctionProvider(): ExpressionFunctionProviderInterface
     {
         return new MathFunctionProvider();
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizerInterface
-     */
     public function createProductMetricNormalizer(): ProductMetricNormalizerInterface
     {
         return new ProductMetricNormalizer(
@@ -86,9 +77,6 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface
-     */
     public function createMetricWriter(): MetricWriterInterface
     {
         return new MetricWriter(
@@ -100,9 +88,6 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Metric\WeightNormalizerInterface
-     */
     public function createWeightNormalizer(): WeightNormalizerInterface
     {
         return new WeightNormalizer(
@@ -111,17 +96,11 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\PageData\ScoresPageDataLoaderInterface
-     */
     public function createScoresPageDataLoader(): ScoresPageDataLoaderInterface
     {
         return new ScoresPageDataLoader($this->getRepository());
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisherInterface
-     */
     public function createProductAbstractScorePublisher(): ProductAbstractScorePublisherInterface
     {
         return new ProductAbstractScorePublisher(
@@ -131,9 +110,6 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManagerInterface
-     */
     public function createSettingManager(): SettingManagerInterface
     {
         return new SettingManager(
@@ -143,33 +119,21 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface
-     */
     public function getEventFacade(): SearchRankingToEventFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_EVENT);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientInterface
-     */
     public function getSearchRankingClient(): SearchRankingToSearchRankingClientInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::CLIENT_SEARCH_RANKING);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityCheckerInterface
-     */
     public function createCompatibilityChecker(): CompatibilityCheckerInterface
     {
         return new CompatibilityChecker($this->getSearchRankingClient());
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilderInterface
-     */
     public function createMetricDigestBuilder(): MetricDigestBuilderInterface
     {
         return new MetricDigestBuilder(
@@ -179,25 +143,16 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface
-     */
     public function createNormalizationCurveFitter(): NormalizationCurveFitterInterface
     {
         return new NormalizationCurveFitter($this->createRSquaredCalculator());
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Fitting\RSquaredCalculator
-     */
     public function createRSquaredCalculator(): RSquaredCalculator
     {
         return new RSquaredCalculator();
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface
-     */
     public function createMetricFormulaFitEvaluator(): MetricFormulaFitEvaluatorInterface
     {
         return new MetricFormulaFitEvaluator(
@@ -206,9 +161,6 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Fitting\CurrentMetricFitEvaluatorInterface
-     */
     public function createCurrentMetricFitEvaluator(): CurrentMetricFitEvaluatorInterface
     {
         return new CurrentMetricFitEvaluator(
@@ -217,9 +169,6 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Preview\FormulaPreviewBuilderInterface
-     */
     public function createFormulaPreviewBuilder(): FormulaPreviewBuilderInterface
     {
         return new FormulaPreviewBuilder(
@@ -229,9 +178,6 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Randomizer\MetricRandomizerInterface
-     */
     public function createMetricRandomizer(): MetricRandomizerInterface
     {
         return new MetricRandomizer(
@@ -243,9 +189,6 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface
-     */
     public function getStoreFacade(): SearchRankingToStoreFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_STORE);

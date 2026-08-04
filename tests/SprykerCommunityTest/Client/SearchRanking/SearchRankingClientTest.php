@@ -28,9 +28,6 @@ use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;
  */
 class SearchRankingClientTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testHasNoRememberedSpecificityWeightingResultInitially(): void
     {
         // Act & Assert
@@ -41,8 +38,6 @@ class SearchRankingClientTest extends Unit
      * The whole point of this holder: it must stay the same across calls so two independent plugins in
      * the same request can exchange this value without knowing about each other — see
      * SearchRankingClientInterface::rememberLastSpecificityWeightingResult()'s docblock.
-     *
-     * @return void
      */
     public function testReturnsTheLastRememberedSpecificityWeightingResult(): void
     {
@@ -60,8 +55,6 @@ class SearchRankingClientTest extends Unit
     /**
      * A later query in the same request (e.g. after a category/browse page where specificity weighting
      * doesn't apply) must overwrite an earlier result rather than leave it in place.
-     *
-     * @return void
      */
     public function testOverwritesAPreviouslyRememberedResultWithNull(): void
     {
@@ -81,8 +74,6 @@ class SearchRankingClientTest extends Unit
      * `getFactory()->getConfig()` — the only place a project override of `isSpecificityWeightingEnabled()`
      * actually takes effect — rather than referencing `Shared\SearchRanking\SearchRankingConfig` directly,
      * which has no project-override path at all. See both classes' docblocks for the full history.
-     *
-     * @return void
      */
     public function testIsSpecificityWeightingEnabledDelegatesToTheLocatorResolvedClientConfig(): void
     {
@@ -100,9 +91,6 @@ class SearchRankingClientTest extends Unit
         $this->assertTrue($client->isSpecificityWeightingEnabled());
     }
 
-    /**
-     * @return void
-     */
     public function testGetSpecificityProbeFieldSearchAnalyzersDelegatesToTheLocatorResolvedClientConfig(): void
     {
         // Arrange

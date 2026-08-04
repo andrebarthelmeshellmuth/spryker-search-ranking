@@ -42,9 +42,6 @@ class MetricNameToIdSearchRankingMetricStepTest extends Unit
      */
     protected array $metricEntities = [];
 
-    /**
-     * @return void
-     */
     protected function _after(): void
     {
         foreach ($this->metricEntities as $metricEntity) {
@@ -54,9 +51,6 @@ class MetricNameToIdSearchRankingMetricStepTest extends Unit
         parent::_after();
     }
 
-    /**
-     * @return void
-     */
     public function testExecuteResolvesAnExistingMetricNameToItsRealId(): void
     {
         // Arrange
@@ -75,9 +69,6 @@ class MetricNameToIdSearchRankingMetricStepTest extends Unit
         );
     }
 
-    /**
-     * @return void
-     */
     public function testExecuteThrowsWhenTheMetricNameDoesNotExistYet(): void
     {
         // Arrange — README's own documented convention: "Import metrics first."
@@ -93,8 +84,6 @@ class MetricNameToIdSearchRankingMetricStepTest extends Unit
 
     /**
      * @param string $name
-     *
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric
      */
     protected function createTestMetric(string $name): SpySearchRankingMetric
     {

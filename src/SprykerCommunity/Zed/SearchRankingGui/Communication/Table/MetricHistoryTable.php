@@ -42,9 +42,6 @@ class MetricHistoryTable extends AbstractTable
      */
     protected const COL_ACTIONS = 'actions';
 
-    /**
-     * @var \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistoryQuery
-     */
     protected SpySearchRankingMetricHistoryQuery $historyQuery;
 
     /**
@@ -57,8 +54,6 @@ class MetricHistoryTable extends AbstractTable
 
     /**
      * @param \Spryker\Zed\Gui\Communication\Table\TableConfiguration $config
-     *
-     * @return \Spryker\Zed\Gui\Communication\Table\TableConfiguration
      */
     protected function configure(TableConfiguration $config): TableConfiguration
     {
@@ -144,8 +139,6 @@ class MetricHistoryTable extends AbstractTable
      * search-ranking:normalize had ever run for it) — shown as a plain dash rather than a misleading 0.
      *
      * @param float|null $fitRSquared
-     *
-     * @return string
      */
     protected function formatFit(?float $fitRSquared): string
     {

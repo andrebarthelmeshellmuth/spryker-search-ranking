@@ -24,9 +24,6 @@ class SearchRankingStorageToSynchronizationFacadeBridge implements SearchRanking
         $this->synchronizationFacade = $synchronizationFacade;
     }
 
-    /**
-     * @return void
-     */
     public function flushSynchronizationMessagesFromBuffer(): void
     {
         $this->synchronizationFacade->flushSynchronizationMessagesFromBuffer();

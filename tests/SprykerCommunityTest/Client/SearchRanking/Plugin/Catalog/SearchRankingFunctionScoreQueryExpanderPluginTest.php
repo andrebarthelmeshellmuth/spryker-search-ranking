@@ -45,8 +45,6 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
      * A stale result from an earlier query in the same request must never survive into a request that
      * has no search string at all (e.g. a category/browse page) — see
      * SearchRankingClientInterface::rememberLastSpecificityWeightingResult()'s docblock.
-     *
-     * @return void
      */
     public function testResetsAPreviouslyRememberedSpecificityResultWhenThereIsNoSearchString(): void
     {
@@ -65,9 +63,6 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
         $this->assertNull($client->getLastSpecificityWeightingResult());
     }
 
-    /**
-     * @return void
-     */
     public function testDoesNotRememberASpecificityResultWhenSpecificityWeightingIsDisabled(): void
     {
         // Arrange
@@ -109,8 +104,6 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
      * The core of this wiring: when specificity weighting is enabled, the calculated result is (a)
      * remembered on the Client, for the search-debug overlay to pick up later, AND (b) its
      * `relevanceWeight` is what actually reaches `FunctionScoreBuilder` — the SAME value in both places.
-     *
-     * @return void
      */
     public function testRemembersTheSpecificityWeightingResultAndUsesItsWeightForTheFunctionScore(): void
     {
@@ -168,8 +161,6 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
      * @param \SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface|null $functionScoreBuilder
      * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculatorInterface|null $specificityCalculator
      * @param bool $isSpecificityWeightingEnabled
-     *
-     * @return \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin
      */
     protected function createPlugin(
         SearchRankingClient $client,

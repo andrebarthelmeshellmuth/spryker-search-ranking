@@ -44,25 +44,16 @@ class FunctionScoreExecutionTest extends Unit
 {
     use TestScoresIndexTrait;
 
-    /**
-     * @return void
-     */
     protected function _before(): void
     {
         $this->createTestScoresIndex();
     }
 
-    /**
-     * @return void
-     */
     protected function _after(): void
     {
         $this->deleteTestScoresIndex();
     }
 
-    /**
-     * @return void
-     */
     public function testRealFunctionScoreRanksDocumentsByTheirBusinessSignalValue(): void
     {
         // Arrange

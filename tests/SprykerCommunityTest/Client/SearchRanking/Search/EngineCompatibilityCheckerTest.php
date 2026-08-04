@@ -50,9 +50,6 @@ class EngineCompatibilityCheckerTest extends Unit
      */
     protected const CAPABILITY_FUNCTION_SCORE = 'function_score + script_score (painless)';
 
-    /**
-     * @return void
-     */
     public function testRealEngineReportsFunctionScoreAndScriptScoreAsSupported(): void
     {
         // Arrange

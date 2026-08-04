@@ -30,9 +30,6 @@ use SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSearch\Se
  */
 class SearchRankingPageDataLoaderPluginTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testDelegatesToTheFacadeAndReturnsItsResult(): void
     {
         // Arrange

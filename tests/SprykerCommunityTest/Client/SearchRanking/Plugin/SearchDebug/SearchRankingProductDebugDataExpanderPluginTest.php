@@ -39,9 +39,6 @@ use SprykerCommunity\Shared\SearchDebug\SearchDebugConfig;
  */
 class SearchRankingProductDebugDataExpanderPluginTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testLeavesTheDebugDataUntouchedWhenNoRankingConfigurationIsSynchronized(): void
     {
         // Arrange
@@ -61,9 +58,6 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
         $this->assertSame($productDebugData, $result);
     }
 
-    /**
-     * @return void
-     */
     public function testLeavesTheDebugDataUntouchedWhenTheSectionBuilderReturnsNullAndSpecificityDidNotRun(): void
     {
         // Arrange
@@ -85,9 +79,6 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
         $this->assertSame($productDebugData, $result);
     }
 
-    /**
-     * @return void
-     */
     public function testAppendsTheBuiltSectionUnderTheScoreSectionsKeyUsingTheDocumentScoresAndQueryScore(): void
     {
         // Arrange
@@ -118,8 +109,6 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
     /**
      * A document without a `scores` field and debug data without a query score must still call the
      * builder — with an empty scores array and a `null` query score, not skip it.
-     *
-     * @return void
      */
     public function testPassesAnEmptyScoresArrayAndNullQueryScoreWhenBothAreMissing(): void
     {
@@ -146,8 +135,6 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
      * query-expander plugin remembered on the Client is what reaches `build()` — not re-derived, not a
      * stale independent config lookup — and a second "Specificity weighting" section gets appended alongside
      * the business-signal one.
-     *
-     * @return void
      */
     public function testPassesTheRememberedSpecificityWeightingResultToTheBuilderAndAppendsASpecificitySection(): void
     {
@@ -183,8 +170,6 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
      * A shop with no metric weights configured at all (so `build()` returns null — nothing to explain
      * about business signals) can still have specificity weighting enabled: the specificity section must appear
      * on its own, independent of whether the business-signal section exists.
-     *
-     * @return void
      */
     public function testStillAppendsTheSpecificitySectionWhenTheBusinessSectionIsNull(): void
     {
@@ -216,8 +201,6 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
      * @param \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface $storageClient
      * @param \SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilderInterface $scoreSectionBuilder
      * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null $specificityWeightingResult
-     *
-     * @return \SprykerCommunity\Client\SearchRanking\Plugin\SearchDebug\SearchRankingProductDebugDataExpanderPlugin
      */
     protected function createPlugin(
         SearchRankingToSearchRankingStorageClientInterface $storageClient,

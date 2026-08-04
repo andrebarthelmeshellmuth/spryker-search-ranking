@@ -26,9 +26,6 @@ class SearchRankingToSearchRankingClientBridge implements SearchRankingToSearchR
         $this->searchRankingClient = $searchRankingClient;
     }
 
-    /**
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
-     */
     public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer
     {
         return $this->searchRankingClient->checkEngineCompatibility();

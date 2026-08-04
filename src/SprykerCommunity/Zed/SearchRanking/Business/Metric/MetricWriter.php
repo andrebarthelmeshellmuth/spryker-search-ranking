@@ -44,8 +44,6 @@ class MetricWriter implements MetricWriterInterface
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      *
      * @throws \SprykerCommunity\Zed\SearchRanking\Business\Exception\InvalidFormulaException
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer
      */
     public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer
     {
@@ -85,8 +83,6 @@ class MetricWriter implements MetricWriterInterface
      * @param string $storeName
      * @param string $localeName
      * @param float $weight
-     *
-     * @return void
      */
     public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void
     {
@@ -119,8 +115,6 @@ class MetricWriter implements MetricWriterInterface
      * a safe, expected outcome, not an error.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
-     *
-     * @return string|null
      */
     protected function detectShape(SearchRankingMetricTransfer $metricTransfer): ?string
     {
@@ -149,8 +143,6 @@ class MetricWriter implements MetricWriterInterface
 
     /**
      * @param int $idSearchRankingMetric
-     *
-     * @return void
      */
     public function deleteMetric(int $idSearchRankingMetric): void
     {
@@ -165,8 +157,6 @@ class MetricWriter implements MetricWriterInterface
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer|null $previousMetricTransfer
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $currentMetricTransfer
-     *
-     * @return bool
      */
     protected function hasAnyTrackedFieldChanged(
         ?SearchRankingMetricTransfer $previousMetricTransfer,
@@ -190,8 +180,6 @@ class MetricWriter implements MetricWriterInterface
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return void
      */
     protected function recordHistory(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): void
     {
@@ -204,8 +192,6 @@ class MetricWriter implements MetricWriterInterface
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return void
      */
     public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): void
     {
@@ -217,8 +203,6 @@ class MetricWriter implements MetricWriterInterface
      * @param string $storeName
      * @param string $localeName
      * @param bool $isChange
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer
      */
     protected function buildHistoryTransfer(
         SearchRankingMetricTransfer $metricTransfer,

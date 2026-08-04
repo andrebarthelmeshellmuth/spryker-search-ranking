@@ -34,9 +34,6 @@ use SprykerCommunity\Zed\SearchRankingStorage\Persistence\SearchRankingStorageEn
  */
 class RankingConfigurationStorageWriterTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testNormalizesActiveMetricWeightsToSumToOneBeforePublishing(): void
     {
         // Arrange
@@ -72,8 +69,6 @@ class RankingConfigurationStorageWriterTest extends Unit
      * A single active metric must normalize to exactly 1.0 regardless of its raw weight — the safety net
      * that guarantees the business-signal term of the ranking formula never exceeds 1 must not be
      * bypassable by having only one active metric with e.g. weight 0.3 stay at 0.3.
-     *
-     * @return void
      */
     public function testNormalizesASingleActiveMetricToExactlyOneRegardlessOfItsRawWeight(): void
     {
@@ -100,8 +95,6 @@ class RankingConfigurationStorageWriterTest extends Unit
 
     /**
      * Weights already summing to 1 must come out unchanged (aside from float rounding).
-     *
-     * @return void
      */
     public function testLeavesAlreadyNormalizedWeightsUnchanged(): void
     {
@@ -130,8 +123,6 @@ class RankingConfigurationStorageWriterTest extends Unit
     /**
      * All-zero (or no) active weights must be left as-is rather than dividing by zero — FunctionScoreBuilder
      * already treats an all-zero/empty weight map as "no usable business signal".
-     *
-     * @return void
      */
     public function testLeavesAllZeroWeightsUnchangedInsteadOfDividingByZero(): void
     {
@@ -161,8 +152,6 @@ class RankingConfigurationStorageWriterTest extends Unit
      * With zero active metrics at all `$metricWeights` is `[]`, not just all-zero — `array_sum([])`
      * returns an int `0`, not a float `0.0`, so this exercises the same zero-guard through its other
      * (empty-array) branch, not only the all-zero-values branch above.
-     *
-     * @return void
      */
     public function testLeavesMetricWeightsEmptyWhenThereAreNoActiveMetricsAtAll(): void
     {
@@ -185,9 +174,6 @@ class RankingConfigurationStorageWriterTest extends Unit
         $this->assertSame([], $capturedConfiguration['metric_weights']);
     }
 
-    /**
-     * @return void
-     */
     public function testFlushesTheSynchronizationBufferAfterSaving(): void
     {
         // Arrange
@@ -214,8 +200,6 @@ class RankingConfigurationStorageWriterTest extends Unit
      * getters AND `saveRankingConfiguration()` — never a cross-join against every globally available
      * locale (mirrors `ProductMetricNormalizer`'s own fan-out shape) — and flushing the synchronization
      * buffer exactly once at the end, not once per scope.
-     *
-     * @return void
      */
     public function testPublishesOneConfigurationDocumentPerStoreAndItsOwnLocales(): void
     {
@@ -272,8 +256,6 @@ class RankingConfigurationStorageWriterTest extends Unit
      * @param array<\Generated\Shared\Transfer\SearchRankingMetricTransfer> $metricTransfers
      * @param float $relevanceWeight
      * @param float $relevanceSaturationPoint
-     *
-     * @return \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface
      */
     protected function createSearchRankingFacadeMock(
         array $metricTransfers,
@@ -301,8 +283,6 @@ class RankingConfigurationStorageWriterTest extends Unit
     /**
      * @param \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface $searchRankingFacade
      * @param \SprykerCommunity\Zed\SearchRankingStorage\Persistence\SearchRankingStorageEntityManagerInterface $entityManager
-     *
-     * @return \SprykerCommunity\Zed\SearchRankingStorage\Business\Writer\RankingConfigurationStorageWriter
      */
     protected function createWriter(
         SearchRankingStorageToSearchRankingFacadeInterface $searchRankingFacade,
@@ -320,8 +300,6 @@ class RankingConfigurationStorageWriterTest extends Unit
      * A single DE/de_DE store, matching every other test in this class' fixtures — those assert on
      * exactly one captured configuration payload, which only holds with exactly one (store, locale) pair
      * in the fan-out.
-     *
-     * @return \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToStoreFacadeInterface
      */
     protected function createStoreFacadeMock(): SearchRankingStorageToStoreFacadeInterface
     {
@@ -336,8 +314,6 @@ class RankingConfigurationStorageWriterTest extends Unit
     /**
      * @param string $name
      * @param float $weight
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer
      */
     protected function createMetricTransfer(string $name, float $weight): SearchRankingMetricTransfer
     {

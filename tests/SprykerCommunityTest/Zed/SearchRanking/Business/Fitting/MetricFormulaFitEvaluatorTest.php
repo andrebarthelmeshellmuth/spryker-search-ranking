@@ -33,8 +33,6 @@ class MetricFormulaFitEvaluatorTest extends Unit
     /**
      * `x / max` against a perfectly evenly-spaced (i.e. genuinely linear) digest must fit almost exactly —
      * this is the same synthetic-linear-digest technique NormalizationCurveFitterTest uses.
-     *
-     * @return void
      */
     public function testAGenuinelyLinearFormulaFitsAnEvenlySpacedDigestAlmostPerfectly(): void
     {
@@ -60,8 +58,6 @@ class MetricFormulaFitEvaluatorTest extends Unit
      * A formula that ignores its input entirely (constant output) explains none of the spread — this is
      * exactly what `random()`-style formulas would report, which is why they are excluded from any
      * fit-quality-based decision rather than measured by one.
-     *
-     * @return void
      */
     public function testAConstantFormulaFitsPoorly(): void
     {
@@ -83,9 +79,6 @@ class MetricFormulaFitEvaluatorTest extends Unit
         $this->assertSame(0.0, $rSquared);
     }
 
-    /**
-     * @return void
-     */
     public function testReturnsNullWhenTheFormulaFailsToEvaluate(): void
     {
         // Arrange
@@ -109,8 +102,6 @@ class MetricFormulaFitEvaluatorTest extends Unit
      * A digest with at most one percentile point (a brand-new or single-sample metric) has no spread to
      * fit a curve against at all — must report "can't evaluate" rather than a divide-by-zero or a
      * meaningless single-point "perfect" fit.
-     *
-     * @return void
      */
     public function testReturnsNullWhenTheDigestHasAtMostOnePercentilePoint(): void
     {
@@ -131,9 +122,6 @@ class MetricFormulaFitEvaluatorTest extends Unit
         $this->assertNull($rSquared);
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluator
-     */
     protected function createEvaluator(): MetricFormulaFitEvaluator
     {
         $config = new SearchRankingConfig();
@@ -146,8 +134,6 @@ class MetricFormulaFitEvaluatorTest extends Unit
 
     /**
      * @param array<float> $percentiles Ascending, exactly 101 entries (indices 0..100).
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer
      */
     protected function buildDigestTransfer(array $percentiles): SearchRankingMetricDigestTransfer
     {

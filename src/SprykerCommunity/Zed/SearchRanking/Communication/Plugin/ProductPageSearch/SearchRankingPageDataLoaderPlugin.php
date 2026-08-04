@@ -29,8 +29,6 @@ class SearchRankingPageDataLoaderPlugin extends AbstractPlugin implements Produc
      * @api
      *
      * @param \Generated\Shared\Transfer\ProductPageLoadTransfer $productPageLoadTransfer
-     *
-     * @return \Generated\Shared\Transfer\ProductPageLoadTransfer
      */
     public function expandProductPageDataTransfer(ProductPageLoadTransfer $productPageLoadTransfer): ProductPageLoadTransfer
     {

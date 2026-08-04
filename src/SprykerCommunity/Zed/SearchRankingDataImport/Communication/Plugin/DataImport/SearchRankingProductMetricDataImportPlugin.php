@@ -28,8 +28,6 @@ class SearchRankingProductMetricDataImportPlugin extends AbstractPlugin implemen
      * @api
      *
      * @param \Generated\Shared\Transfer\DataImporterConfigurationTransfer|null $dataImporterConfigurationTransfer
-     *
-     * @return \Generated\Shared\Transfer\DataImporterReportTransfer
      */
     public function import(?DataImporterConfigurationTransfer $dataImporterConfigurationTransfer = null): DataImporterReportTransfer
     {
@@ -41,8 +39,6 @@ class SearchRankingProductMetricDataImportPlugin extends AbstractPlugin implemen
      * - Returns the name of the search ranking product-metric import type.
      *
      * @api
-     *
-     * @return string
      */
     public function getImportType(): string
     {

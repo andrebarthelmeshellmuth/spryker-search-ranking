@@ -61,8 +61,6 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
     /**
      * @param \Elastica\Query\AbstractQuery $wrappedQuery
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
-     *
-     * @return \Elastica\Query\FunctionScore|null
      */
     public function build(
         AbstractQuery $wrappedQuery,
@@ -85,8 +83,6 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
 
     /**
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
-     *
-     * @return \Elastica\Script\Script|null
      */
     protected function buildScript(SearchRankingConfigurationStorageTransfer $configurationTransfer): ?Script
     {

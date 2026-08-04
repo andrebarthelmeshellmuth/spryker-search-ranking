@@ -31,9 +31,6 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  */
 class WeightNormalizerTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testDividesEachActiveWeightByTheSumOfAllOfThemAndPersists(): void
     {
         // Arrange
@@ -63,8 +60,6 @@ class WeightNormalizerTest extends Unit
     /**
      * A single active metric must normalize to exactly 1.0 regardless of its raw weight — it is 100% of
      * the active-weight sum either way.
-     *
-     * @return void
      */
     public function testNormalizesASingleActiveMetricToExactlyOneRegardlessOfItsRawWeight(): void
     {
@@ -90,9 +85,6 @@ class WeightNormalizerTest extends Unit
         $this->assertSame([5 => 1.0], $capturedWeights);
     }
 
-    /**
-     * @return void
-     */
     public function testIsANoOpWhenActiveWeightsAlreadySumToOne(): void
     {
         // Arrange
@@ -111,9 +103,6 @@ class WeightNormalizerTest extends Unit
         $this->assertFalse($wasNormalized);
     }
 
-    /**
-     * @return void
-     */
     public function testIsANoOpWhenAllActiveWeightsAreZero(): void
     {
         // Arrange
@@ -132,9 +121,6 @@ class WeightNormalizerTest extends Unit
         $this->assertFalse($wasNormalized);
     }
 
-    /**
-     * @return void
-     */
     public function testIsANoOpWhenThereAreNoActiveMetricsAtAll(): void
     {
         // Arrange
@@ -152,8 +138,6 @@ class WeightNormalizerTest extends Unit
 
     /**
      * @param array<\Generated\Shared\Transfer\SearchRankingMetricTransfer> $metricTransfers
-     *
-     * @return \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface
      */
     protected function createRepositoryMock(array $metricTransfers): SearchRankingRepositoryInterface
     {
@@ -172,8 +156,6 @@ class WeightNormalizerTest extends Unit
     /**
      * @param int $idSearchRankingMetric
      * @param float $weight
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer
      */
     protected function createMetricTransfer(int $idSearchRankingMetric, float $weight): SearchRankingMetricTransfer
     {

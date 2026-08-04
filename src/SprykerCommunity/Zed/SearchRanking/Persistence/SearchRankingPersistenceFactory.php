@@ -25,57 +25,36 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper\SearchRankingMa
  */
 class SearchRankingPersistenceFactory extends AbstractPersistenceFactory
 {
-    /**
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery
-     */
     public function createSearchRankingMetricQuery(): SpySearchRankingMetricQuery
     {
         return SpySearchRankingMetricQuery::create();
     }
 
-    /**
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery
-     */
     public function createSearchRankingProductMetricQuery(): SpySearchRankingProductMetricQuery
     {
         return SpySearchRankingProductMetricQuery::create();
     }
 
-    /**
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingQuery
-     */
     public function createSearchRankingSettingQuery(): SpySearchRankingSettingQuery
     {
         return SpySearchRankingSettingQuery::create();
     }
 
-    /**
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeightQuery
-     */
     public function createSearchRankingMetricWeightQuery(): SpySearchRankingMetricWeightQuery
     {
         return SpySearchRankingMetricWeightQuery::create();
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper\SearchRankingMapper
-     */
     public function createSearchRankingMapper(): SearchRankingMapper
     {
         return new SearchRankingMapper();
     }
 
-    /**
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigestQuery
-     */
     public function createSearchRankingMetricDigestQuery(): SpySearchRankingMetricDigestQuery
     {
         return SpySearchRankingMetricDigestQuery::create();
     }
 
-    /**
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistoryQuery
-     */
     public function createSearchRankingMetricHistoryQuery(): SpySearchRankingMetricHistoryQuery
     {
         return SpySearchRankingMetricHistoryQuery::create();

@@ -43,8 +43,6 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     #[\Override]
     public function provideBusinessLayerDependencies(Container $container): Container
@@ -62,22 +60,17 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
      * layer must stay free of it to avoid a circular module dependency with SearchRankingStorage.
      *
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     #[\Override]
     public function provideCommunicationLayerDependencies(Container $container): Container
     {
         $container = parent::provideCommunicationLayerDependencies($container);
-        $container = $this->addSearchRankingStorageFacade($container);
 
-        return $container;
+        return $this->addSearchRankingStorageFacade($container);
     }
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addSearchRankingStorageFacade(Container $container): Container
     {
@@ -90,8 +83,6 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addEventFacade(Container $container): Container
     {
@@ -108,8 +99,6 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
      * unusable from Zed in this shop).
      *
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addSearchRankingClient(Container $container): Container
     {
@@ -122,8 +111,6 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addStoreFacade(Container $container): Container
     {

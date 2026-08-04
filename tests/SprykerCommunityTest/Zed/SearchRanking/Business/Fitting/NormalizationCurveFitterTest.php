@@ -37,8 +37,6 @@ class NormalizationCurveFitterTest extends Unit
     /**
      * A perfectly evenly-spaced digest (percentiles[i] = i) IS the empirical CDF of a uniform
      * distribution, i.e. exactly linear — the winning candidate must fit it almost perfectly.
-     *
-     * @return void
      */
     public function testALinearlySpreadDigestGetsAnAlmostPerfectWinningFit(): void
     {
@@ -64,8 +62,6 @@ class NormalizationCurveFitterTest extends Unit
     /**
      * A digest generated FROM the x/(x+k) shape (k=100) must be recognized as clearly better fit by
      * SOME candidate than by the linear one — the shape-discrimination the whole feature exists for.
-     *
-     * @return void
      */
     public function testASaturatingDigestFitsClearlyBetterThanLinear(): void
     {
@@ -99,8 +95,6 @@ class NormalizationCurveFitterTest extends Unit
     /**
      * isHigherBetter=false must swap the increasing saturating-ratio candidate for the decreasing decay
      * one, per the roadmap's own example (days-since-restock, return rate) — never merely invert it.
-     *
-     * @return void
      */
     public function testDirectionFalseOffersDecayInsteadOfTheSaturatingRatioFamily(): void
     {
@@ -135,8 +129,6 @@ class NormalizationCurveFitterTest extends Unit
      * in detail for a benefit limited to 4 defensive lines already covered by 97%+ statement coverage on
      * this class; left as an honest gap rather than forced, same call as the Locator-dependent branch in
      * search-debug's SearchDebugContextEventDispatcherPluginTest.
-     *
-     * @return void
      */
     public function testAZeroVarianceDigestProducesNoCrashAndNoUsableCandidates(): void
     {
@@ -156,8 +148,6 @@ class NormalizationCurveFitterTest extends Unit
 
     /**
      * @param array<float> $percentiles Ascending, exactly 101 entries (indices 0..100).
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer
      */
     protected function buildDigestTransfer(array $percentiles): SearchRankingMetricDigestTransfer
     {
@@ -172,8 +162,6 @@ class NormalizationCurveFitterTest extends Unit
 
     /**
      * @param array<\Generated\Shared\Transfer\SearchRankingCurveFitCandidateTransfer> $candidateTransfers
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingCurveFitCandidateTransfer|null
      */
     protected function findWinner(array $candidateTransfers): ?SearchRankingCurveFitCandidateTransfer
     {
@@ -189,8 +177,6 @@ class NormalizationCurveFitterTest extends Unit
     /**
      * @param array<\Generated\Shared\Transfer\SearchRankingCurveFitCandidateTransfer> $candidateTransfers
      * @param string $name
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingCurveFitCandidateTransfer|null
      */
     protected function findCandidateByName(array $candidateTransfers, string $name): ?SearchRankingCurveFitCandidateTransfer
     {

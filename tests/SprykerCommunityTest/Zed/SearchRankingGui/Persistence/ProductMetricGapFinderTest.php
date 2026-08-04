@@ -57,9 +57,6 @@ class ProductMetricGapFinderTest extends Unit
      */
     protected array $productMetricEntities = [];
 
-    /**
-     * @return void
-     */
     protected function _after(): void
     {
         foreach ($this->productMetricEntities as $productMetricEntity) {
@@ -77,9 +74,6 @@ class ProductMetricGapFinderTest extends Unit
         parent::_after();
     }
 
-    /**
-     * @return void
-     */
     public function testFindGapsAcrossAllMetricsWhenNoMetricIsSelected(): void
     {
         // Arrange — metric names use "mtr", product SKUs use "prd": two disjoint tokens, see class docblock.
@@ -119,9 +113,6 @@ class ProductMetricGapFinderTest extends Unit
         $this->assertCount(2, $gapsBySku, 'Only the two genuine gaps against THIS test\'s own metrics should remain, not the fully-covered product.');
     }
 
-    /**
-     * @return void
-     */
     public function testFindGapsRestrictedToOneSelectedMetric(): void
     {
         // Arrange
@@ -148,9 +139,6 @@ class ProductMetricGapFinderTest extends Unit
         $this->assertNotContains($missingB->getSku(), $skus, 'missingB is missing metric B, not metric A — it must not appear when filtered to metric A.');
     }
 
-    /**
-     * @return void
-     */
     public function testSearchTermMatchesSkuOrMetricName(): void
     {
         // Arrange
@@ -174,9 +162,6 @@ class ProductMetricGapFinderTest extends Unit
         $this->assertNotContains($other->getSku(), $skus);
     }
 
-    /**
-     * @return void
-     */
     public function testCountGapsIgnoresSearchTermAndCountFilteredGapsApplies(): void
     {
         // Arrange
@@ -215,9 +200,6 @@ class ProductMetricGapFinderTest extends Unit
         ));
     }
 
-    /**
-     * @return void
-     */
     public function testSortDirectionIsRespected(): void
     {
         // Arrange
@@ -243,8 +225,6 @@ class ProductMetricGapFinderTest extends Unit
      * the queried scope must still show as a gap for the queried scope — the LEFT JOIN's ON clause must
      * filter by scope, not a WHERE clause (which would incorrectly hide it, since `product_metric.*` is
      * NULL for genuine no-match rows regardless of which scope was queried).
-     *
-     * @return void
      */
     public function testGapsAreScopedPerStoreAndLocaleNotSharedAcrossScopes(): void
     {
@@ -276,8 +256,6 @@ class ProductMetricGapFinderTest extends Unit
      * An invalid sort column must fall back to a safe default rather than ever being interpolated into
      * the SQL string directly — this is the whitelist that keeps `$sortColumn` (which ultimately traces
      * back to a DataTables request parameter) from becoming a SQL-injection vector.
-     *
-     * @return void
      */
     public function testAnUnknownSortColumnFallsBackSafelyInsteadOfBeingUsedDirectly(): void
     {
@@ -306,8 +284,6 @@ class ProductMetricGapFinderTest extends Unit
 
     /**
      * @param string $name
-     *
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric
      */
     protected function createTestMetric(string $name): SpySearchRankingMetric
     {
@@ -325,8 +301,6 @@ class ProductMetricGapFinderTest extends Unit
 
     /**
      * @param string $sku
-     *
-     * @return \Orm\Zed\Product\Persistence\SpyProductAbstract
      */
     protected function createTestProductAbstract(string $sku): SpyProductAbstract
     {
@@ -345,8 +319,6 @@ class ProductMetricGapFinderTest extends Unit
      * @param \Orm\Zed\Product\Persistence\SpyProductAbstract $productAbstractEntity
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric
      */
     protected function createTestProductMetric(
         SpySearchRankingMetric $metricEntity,

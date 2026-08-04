@@ -27,9 +27,6 @@ class MetricHistoryController extends AbstractController
         ]);
     }
 
-    /**
-     * @return \Symfony\Component\HttpFoundation\JsonResponse
-     */
     public function tableAction(): JsonResponse
     {
         return $this->jsonResponse(

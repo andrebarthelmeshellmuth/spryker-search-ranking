@@ -30,9 +30,6 @@ use SprykerCommunity\Zed\SearchRanking\SearchRankingConfig;
  */
 class FormulaEvaluatorTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testEvaluatesArcTangentNormalizationFormula(): void
     {
         // Arrange
@@ -51,9 +48,6 @@ class FormulaEvaluatorTest extends Unit
         $this->assertEqualsWithDelta(0.5, $result, 1.0E-9);
     }
 
-    /**
-     * @return void
-     */
     public function testEvaluatesMaxScalingFormula(): void
     {
         // Arrange
@@ -74,8 +68,6 @@ class FormulaEvaluatorTest extends Unit
 
     /**
      * random() must return a value in ]0;1] and must not require any variables.
-     *
-     * @return void
      */
     public function testRandomFunctionStaysWithinHalfOpenUnitInterval(): void
     {
@@ -92,9 +84,6 @@ class FormulaEvaluatorTest extends Unit
         }
     }
 
-    /**
-     * @return void
-     */
     public function testThrowsWhenFormulaDividesByZero(): void
     {
         // Arrange
@@ -113,9 +102,6 @@ class FormulaEvaluatorTest extends Unit
         ]);
     }
 
-    /**
-     * @return void
-     */
     public function testThrowsWhenFormulaUsesUnknownFunction(): void
     {
         // Arrange
@@ -131,8 +117,6 @@ class FormulaEvaluatorTest extends Unit
     /**
      * A syntactically valid expression that evaluates cleanly (no Throwable) to a non-numeric PHP value
      * must still be rejected — a metric weight downstream expects a float, not a string.
-     *
-     * @return void
      */
     public function testThrowsWhenFormulaEvaluatesToANonNumericResult(): void
     {
@@ -150,8 +134,6 @@ class FormulaEvaluatorTest extends Unit
     /**
      * Float overflow (unlike division by zero) raises no PHP warning at all — it silently produces INF —
      * so this exercises the dedicated `is_finite()` guard rather than the try/catch around evaluation.
-     *
-     * @return void
      */
     public function testThrowsWhenFormulaEvaluatesToANonFiniteResult(): void
     {
@@ -166,9 +148,6 @@ class FormulaEvaluatorTest extends Unit
         $formulaEvaluator->evaluate('1.0e308 * 10', []);
     }
 
-    /**
-     * @return void
-     */
     public function testValidateAcceptsWellFormedFormula(): void
     {
         // Arrange
@@ -182,9 +161,6 @@ class FormulaEvaluatorTest extends Unit
         $this->assertNull($responseTransfer->getErrorMessage());
     }
 
-    /**
-     * @return void
-     */
     public function testValidateReportsSyntaxErrorWithMessage(): void
     {
         // Arrange
@@ -198,9 +174,6 @@ class FormulaEvaluatorTest extends Unit
         $this->assertNotEmpty($responseTransfer->getErrorMessage());
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluator
-     */
     protected function createFormulaEvaluator(): FormulaEvaluator
     {
         return new FormulaEvaluator(new MathFunctionProvider(), new SearchRankingConfig());

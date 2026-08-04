@@ -37,8 +37,6 @@ class SearchRankingStorageDependencyProvider extends AbstractBundleDependencyPro
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     #[\Override]
     public function provideBusinessLayerDependencies(Container $container): Container
@@ -53,8 +51,6 @@ class SearchRankingStorageDependencyProvider extends AbstractBundleDependencyPro
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addStoreFacade(Container $container): Container
     {
@@ -67,8 +63,6 @@ class SearchRankingStorageDependencyProvider extends AbstractBundleDependencyPro
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addSynchronizationFacade(Container $container): Container
     {
@@ -81,8 +75,6 @@ class SearchRankingStorageDependencyProvider extends AbstractBundleDependencyPro
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addSearchRankingFacade(Container $container): Container
     {

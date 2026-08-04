@@ -25,8 +25,6 @@ class SearchRankingConfigurationSynchronizationDataPlugin extends AbstractPlugin
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return string
      */
     public function getResourceName(): string
     {
@@ -37,8 +35,6 @@ class SearchRankingConfigurationSynchronizationDataPlugin extends AbstractPlugin
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return bool
      */
     public function hasStore(): bool
     {
@@ -61,8 +57,6 @@ class SearchRankingConfigurationSynchronizationDataPlugin extends AbstractPlugin
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return string
      */
     public function getQueueName(): string
     {
@@ -73,8 +67,6 @@ class SearchRankingConfigurationSynchronizationDataPlugin extends AbstractPlugin
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return string|null
      */
     public function getSynchronizationQueuePoolName(): ?string
     {

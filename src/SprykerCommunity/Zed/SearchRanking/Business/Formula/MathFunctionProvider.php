@@ -42,8 +42,6 @@ class MathFunctionProvider implements ExpressionFunctionProviderInterface
 
     /**
      * random() returns a uniformly distributed value in ]0;1] on every call.
-     *
-     * @return \Symfony\Component\ExpressionLanguage\ExpressionFunction
      */
     protected function createRandomFunction(): ExpressionFunction
     {

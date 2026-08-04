@@ -31,8 +31,6 @@ class SearchRankingConfig extends AbstractBundleConfig
      *   itself.
      *
      * @api
-     *
-     * @return bool
      */
     public function isSpecificityWeightingEnabled(): bool
     {

@@ -28,8 +28,6 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
     public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
@@ -52,8 +50,6 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
     public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
@@ -78,8 +74,6 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
     public function findMetricById(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricTransfer
     {
@@ -102,8 +96,6 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
      * @param string $name
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
     public function findMetricByName(string $name, string $storeName, string $localeName): ?SearchRankingMetricTransfer
     {
@@ -126,8 +118,6 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer
      */
     protected function attachWeight(
         SearchRankingMetricTransfer $metricTransfer,
@@ -143,8 +133,6 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float|null
      */
     public function findMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName): ?float
     {
@@ -162,8 +150,6 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer
      */
     public function getMetricStatistics(int $idSearchRankingMetric, string $storeName, string $localeName): SearchRankingMetricStatisticsTransfer
     {
@@ -291,8 +277,6 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
      * @param string $settingKey
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return string|null
      */
     public function findSettingValue(string $settingKey, string $storeName, string $localeName): ?string
     {
@@ -332,8 +316,6 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer|null
      */
     public function findMetricDigest(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricDigestTransfer
     {
@@ -384,8 +366,6 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer|null
      */
     public function findLastMetricChangeHistoryEntry(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricHistoryTransfer
     {

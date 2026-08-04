@@ -20,9 +20,6 @@ use SprykerCommunity\Zed\SearchRanking\SearchRankingDependencyProvider;
  */
 class SearchRankingCommunicationFactory extends AbstractCommunicationFactory
 {
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToSearchRankingStorageFacadeInterface
-     */
     public function getSearchRankingStorageFacade(): SearchRankingToSearchRankingStorageFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_SEARCH_RANKING_STORAGE);

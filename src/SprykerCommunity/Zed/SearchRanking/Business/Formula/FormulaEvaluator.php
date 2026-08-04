@@ -18,9 +18,6 @@ use Throwable;
 
 class FormulaEvaluator implements FormulaEvaluatorInterface
 {
-    /**
-     * @var \Symfony\Component\ExpressionLanguage\ExpressionLanguage
-     */
     protected ExpressionLanguage $expressionLanguage;
 
     /**
@@ -37,8 +34,6 @@ class FormulaEvaluator implements FormulaEvaluatorInterface
      * @param array<string, float|int> $variables
      *
      * @throws \SprykerCommunity\Zed\SearchRanking\Business\Exception\FormulaEvaluationException
-     *
-     * @return float
      */
     public function evaluate(string $formula, array $variables): float
     {
@@ -71,8 +66,6 @@ class FormulaEvaluator implements FormulaEvaluatorInterface
 
     /**
      * @param string $formula
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer
      */
     public function validate(string $formula): SearchRankingFormulaValidationResponseTransfer
     {

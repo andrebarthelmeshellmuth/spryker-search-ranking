@@ -31,9 +31,6 @@ use SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSearch\Se
  */
 class SearchRankingScoresDataExpanderPluginTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testCopiesTheNormalizedScoresFromThePayloadOntoTheSearchTransfer(): void
     {
         // Arrange
@@ -55,8 +52,6 @@ class SearchRankingScoresDataExpanderPluginTest extends Unit
     /**
      * A product without any ranking scores must still set an (empty) scores array rather than leaving
      * the field untouched.
-     *
-     * @return void
      */
     public function testSetsAnEmptyScoresArrayWhenThePayloadHasNoScores(): void
     {

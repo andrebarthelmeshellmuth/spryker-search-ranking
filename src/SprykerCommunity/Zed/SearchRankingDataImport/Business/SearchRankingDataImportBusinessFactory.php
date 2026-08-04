@@ -24,9 +24,6 @@ use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingPr
  */
 class SearchRankingDataImportBusinessFactory extends DataImportBusinessFactory
 {
-    /**
-     * @return \Spryker\Zed\DataImport\Business\Model\DataImporterInterface
-     */
     public function getSearchRankingMetricDataImporter(): DataImporterInterface
     {
         $dataImporter = $this->getCsvDataImporterFromConfig(
@@ -41,9 +38,6 @@ class SearchRankingDataImportBusinessFactory extends DataImportBusinessFactory
         return $dataImporter;
     }
 
-    /**
-     * @return \Spryker\Zed\DataImport\Business\Model\DataImporterInterface
-     */
     public function getSearchRankingProductMetricDataImporter(): DataImporterInterface
     {
         $dataImporter = $this->getCsvDataImporterFromConfig(
@@ -61,33 +55,21 @@ class SearchRankingDataImportBusinessFactory extends DataImportBusinessFactory
         return $dataImporter;
     }
 
-    /**
-     * @return \Spryker\Zed\DataImport\Business\Model\DataImportStep\DataImportStepInterface
-     */
     public function createSearchRankingMetricWriterStep(): DataImportStepInterface
     {
         return new SearchRankingMetricWriterStep();
     }
 
-    /**
-     * @return \Spryker\Zed\DataImport\Business\Model\DataImportStep\DataImportStepInterface
-     */
     public function createMetricNameToIdSearchRankingMetricStep(): DataImportStepInterface
     {
         return new MetricNameToIdSearchRankingMetricStep();
     }
 
-    /**
-     * @return \Spryker\Zed\DataImport\Business\Model\DataImportStep\DataImportStepInterface
-     */
     public function createProductAbstractSkuToIdProductAbstractStep(): DataImportStepInterface
     {
         return new ProductAbstractSkuToIdProductAbstractStep();
     }
 
-    /**
-     * @return \Spryker\Zed\DataImport\Business\Model\DataImportStep\DataImportStepInterface
-     */
     public function createSearchRankingProductMetricWriterStep(): DataImportStepInterface
     {
         return new SearchRankingProductMetricWriterStep();

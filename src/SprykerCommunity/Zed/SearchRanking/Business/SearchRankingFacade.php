@@ -32,8 +32,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
     public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
@@ -44,8 +42,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer
      */
     public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
@@ -56,8 +52,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return float
      */
     public function getRelevanceWeight(string $storeName, string $localeName): float
     {
@@ -70,8 +64,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param float $relevanceWeight
-     *
-     * @return void
      */
     public function saveRelevanceWeight(string $storeName, string $localeName, float $relevanceWeight): void
     {
@@ -82,8 +74,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return float
      */
     public function getRelevanceSaturationPoint(string $storeName, string $localeName): float
     {
@@ -96,8 +86,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param float $relevanceSaturationPoint
-     *
-     * @return void
      */
     public function saveRelevanceSaturationPoint(string $storeName, string $localeName, float $relevanceSaturationPoint): void
     {
@@ -108,8 +96,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return float
      */
     public function getSpecificityBlendWeight(string $storeName, string $localeName): float
     {
@@ -122,8 +108,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param float $specificityBlendWeight
-     *
-     * @return void
      */
     public function saveSpecificityBlendWeight(string $storeName, string $localeName, float $specificityBlendWeight): void
     {
@@ -134,8 +118,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return float
      */
     public function getSpecificitySaturationPoint(string $storeName, string $localeName): float
     {
@@ -148,8 +130,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param float $specificitySaturationPoint
-     *
-     * @return void
      */
     public function saveSpecificitySaturationPoint(string $storeName, string $localeName, float $specificitySaturationPoint): void
     {
@@ -160,8 +140,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return float
      */
     public function getSpecificityWeightExponent(string $storeName, string $localeName): float
     {
@@ -174,8 +152,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param float $specificityWeightExponent
-     *
-     * @return void
      */
     public function saveSpecificityWeightExponent(string $storeName, string $localeName, float $specificityWeightExponent): void
     {
@@ -186,8 +162,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return float
      */
     public function getSpecificityWeightShiftMagnitude(string $storeName, string $localeName): float
     {
@@ -200,8 +174,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param float $specificityWeightShiftMagnitude
-     *
-     * @return void
      */
     public function saveSpecificityWeightShiftMagnitude(string $storeName, string $localeName, float $specificityWeightShiftMagnitude): void
     {
@@ -212,8 +184,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return bool
      */
     public function normalizeActiveMetricWeights(string $storeName, string $localeName): bool
     {
@@ -228,8 +198,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
     public function findMetricById(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricTransfer
     {
@@ -242,8 +210,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param string $name
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
     public function findMetricByName(string $name): ?SearchRankingMetricTransfer
     {
@@ -260,8 +226,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer
      */
     public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer
     {
@@ -277,8 +241,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @param string $storeName
      * @param string $localeName
      * @param float $weight
-     *
-     * @return void
      */
     public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void
     {
@@ -291,8 +253,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param int $idSearchRankingMetric
-     *
-     * @return void
      */
     public function deleteMetric(int $idSearchRankingMetric): void
     {
@@ -305,8 +265,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param string $formula
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer
      */
     public function validateFormula(string $formula): SearchRankingFormulaValidationResponseTransfer
     {
@@ -317,8 +275,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer
      */
     public function normalizeProductMetricValues(?string $storeName = null, ?string $localeName = null): SearchRankingNormalizationResultTransfer
     {
@@ -331,8 +287,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param \Generated\Shared\Transfer\ProductPageLoadTransfer $productPageLoadTransfer
-     *
-     * @return \Generated\Shared\Transfer\ProductPageLoadTransfer
      */
     public function expandProductPageLoadTransferWithScores(ProductPageLoadTransfer $productPageLoadTransfer): ProductPageLoadTransfer
     {
@@ -343,8 +297,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return int
      */
     public function publishScoredProductAbstracts(): int
     {
@@ -355,8 +307,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return int
      */
     public function rebuildMetricDigests(?string $storeName = null, ?string $localeName = null): int
     {
@@ -371,8 +321,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer|null
      */
     public function findMetricDigest(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricDigestTransfer
     {
@@ -389,8 +337,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @param bool $isHigherBetter
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer
      */
     public function previewFormula(
         int $idSearchRankingMetric,
@@ -412,8 +358,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return bool
      */
     public function randomizeRandomMetricIfActive(?string $storeName = null, ?string $localeName = null): bool
     {
@@ -424,8 +368,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer
      */
     public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer
     {
@@ -436,8 +378,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return bool
      */
     public function isSpecificityWeightingEnabled(): bool
     {
@@ -450,8 +390,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
-     *
-     * @return void
      */
     public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): void
     {
@@ -464,8 +402,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param int $idSearchRankingMetric
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer|null
      */
     public function findLastMetricChangeHistoryEntry(int $idSearchRankingMetric): ?SearchRankingMetricHistoryTransfer
     {
@@ -484,8 +420,6 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return float|null
      */
     public function evaluateCurrentMetricFit(int $idSearchRankingMetric, string $storeName, string $localeName): ?float
     {

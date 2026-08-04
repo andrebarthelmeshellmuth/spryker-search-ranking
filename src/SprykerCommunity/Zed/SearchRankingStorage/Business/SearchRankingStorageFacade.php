@@ -23,8 +23,6 @@ class SearchRankingStorageFacade extends AbstractFacade implements SearchRanking
      * {@inheritDoc}
      *
      * @api
-     *
-     * @return void
      */
     public function publishRankingConfiguration(): void
     {

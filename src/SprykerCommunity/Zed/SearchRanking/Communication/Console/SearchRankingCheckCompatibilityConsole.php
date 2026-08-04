@@ -39,9 +39,6 @@ class SearchRankingCheckCompatibilityConsole extends Console
      */
     protected const CAPABILITY_IN_PRODUCTION_USE = 'function_score + script_score (painless)';
 
-    /**
-     * @return void
-     */
     protected function configure(): void
     {
         $this->setName(static::COMMAND_NAME);
@@ -55,8 +52,6 @@ class SearchRankingCheckCompatibilityConsole extends Console
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
-     *
-     * @return int
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -113,8 +108,6 @@ class SearchRankingCheckCompatibilityConsole extends Console
     /**
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      * @param \Generated\Shared\Transfer\SearchRankingEngineCapabilityTransfer $capabilityTransfer
-     *
-     * @return void
      */
     protected function writeCapabilityLine(OutputInterface $output, SearchRankingEngineCapabilityTransfer $capabilityTransfer): void
     {

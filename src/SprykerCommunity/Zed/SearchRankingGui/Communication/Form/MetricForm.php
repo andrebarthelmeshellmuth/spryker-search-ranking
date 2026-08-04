@@ -60,8 +60,6 @@ class MetricForm extends AbstractType
 
     /**
      * @param \Symfony\Component\OptionsResolver\OptionsResolver $resolver
-     *
-     * @return void
      */
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -75,8 +73,6 @@ class MetricForm extends AbstractType
     /**
      * @param \Symfony\Component\Form\FormBuilderInterface $builder
      * @param array<string, mixed> $options
-     *
-     * @return void
      */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
@@ -227,9 +223,6 @@ class MetricForm extends AbstractType
         return $this;
     }
 
-    /**
-     * @return string
-     */
     #[\Override]
     public function getBlockPrefix(): string
     {

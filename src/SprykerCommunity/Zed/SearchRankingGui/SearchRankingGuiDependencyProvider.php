@@ -58,8 +58,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     #[\Override]
     public function provideCommunicationLayerDependencies(Container $container): Container
@@ -78,8 +76,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addStoreFacade(Container $container): Container
     {
@@ -92,8 +88,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addLocaleFacade(Container $container): Container
     {
@@ -106,8 +100,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addSearchRankingStorageFacade(Container $container): Container
     {
@@ -120,8 +112,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addSearchRankingFacade(Container $container): Container
     {
@@ -134,8 +124,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addSearchRankingMetricPropelQuery(Container $container): Container
     {
@@ -146,8 +134,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addSearchRankingProductMetricPropelQuery(Container $container): Container
     {
@@ -158,8 +144,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
 
     /**
      * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
      */
     protected function addSearchRankingMetricHistoryPropelQuery(Container $container): Container
     {

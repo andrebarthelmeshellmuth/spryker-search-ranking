@@ -383,8 +383,6 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
     /**
      * @param array{name: string, shape: string, formulaTemplate: callable, curveFunction: callable, paramLogMin: float|null, paramLogMax: float|null} $definition
      * @param array<int, array{x: float, y: float}> $points
-     *
-     * @return \Generated\Shared\Transfer\SearchRankingCurveFitCandidateTransfer|null
      */
     protected function fitCandidate(array $definition, array $points): ?SearchRankingCurveFitCandidateTransfer
     {
@@ -486,8 +484,6 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
      * @param array<int, array{x: float, y: float}> $points
      * @param callable $curveFunction fn(float $x, float $param): float
      * @param float $param
-     *
-     * @return float|null
      */
     protected function rSquared(array $points, callable $curveFunction, float $param): ?float
     {
@@ -503,8 +499,6 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
 
     /**
      * @param float $parameter
-     *
-     * @return string
      */
     protected function formatParameter(float $parameter): string
     {

@@ -123,8 +123,6 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
      * @param int|null $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return int
      */
     public function countGaps(?int $idSearchRankingMetric, string $storeName, string $localeName): int
     {
@@ -138,8 +136,6 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
      * @param string $storeName
      * @param string $localeName
      * @param string $searchTerm
-     *
-     * @return int
      */
     public function countFilteredGaps(?int $idSearchRankingMetric, string $storeName, string $localeName, string $searchTerm): int
     {
@@ -151,8 +147,6 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
      * @param string $storeName
      * @param string $localeName
      * @param string $searchTerm
-     *
-     * @return int
      */
     protected function count(?int $idSearchRankingMetric, string $storeName, string $localeName, string $searchTerm): int
     {
@@ -195,8 +189,6 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
 
     /**
      * @param string $sortColumn
-     *
-     * @return string
      */
     protected function resolveSortColumn(string $sortColumn): string
     {
@@ -205,17 +197,12 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
 
     /**
      * @param string $sortDirection
-     *
-     * @return string
      */
     protected function resolveSortDirection(string $sortDirection): string
     {
         return mb_strtolower($sortDirection) === 'desc' ? 'DESC' : 'ASC';
     }
 
-    /**
-     * @return \Propel\Runtime\Connection\ConnectionInterface
-     */
     protected function getConnection(): ConnectionInterface
     {
         return Propel::getServiceContainer()->getReadConnection(static::CONNECTION_NAME);
@@ -230,8 +217,6 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
      * @param string $sql
      *
      * @throws \RuntimeException
-     *
-     * @return \Propel\Runtime\Connection\StatementInterface|\PDOStatement
      */
     protected function prepareStatement(string $sql): StatementInterface|PDOStatement
     {
