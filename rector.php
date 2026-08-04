@@ -16,7 +16,13 @@ return RectorConfig::configure()
         __DIR__ . '/tools',
     ])
     ->withSkip([
+        // The bare directory pattern alone doesn't reliably skip the FILES inside it -- fnmatch() needs
+        // an exact string match, and a per-file path has a filename trailing the directory this pattern
+        // matches. Confirmed empirically: this let RemoveUselessReturnTagRector reach into 6 regenerated
+        // *TesterActions.php files. Both forms kept since which one actually matches depends on how the
+        // caller passes the path.
         __DIR__ . '/tests/*/_support/_generated',
+        __DIR__ . '/tests/*/_support/_generated/*',
         __DIR__ . '/tests/*/_output',
         __DIR__ . '/tests/*/_data',
         // Bridge classes are Spryker's generated dependency-glue boilerplate — real Spryker core Bridges

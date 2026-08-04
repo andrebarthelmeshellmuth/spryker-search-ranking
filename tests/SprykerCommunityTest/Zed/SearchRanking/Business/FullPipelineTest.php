@@ -104,9 +104,6 @@ class FullPipelineTest extends Unit
      */
     protected const ID_PRODUCT_ABSTRACT_KONFERENZSTUHL = 62;
 
-    /**
-     * @return void
-     */
     public function testImportedRowsFlowThroughNormalizationIntoThePageDocumentScoresFragment(): void
     {
         // Arrange — import: real DataImport writer steps, real Propel writes.
@@ -156,9 +153,6 @@ class FullPipelineTest extends Unit
         $this->assertSame(0.25, $exportedScores[static::METRIC_NAME]);
     }
 
-    /**
-     * @return int
-     */
     protected function importMetric(): int
     {
         (new SearchRankingMetricWriterStep())->execute(new DataSet([
@@ -180,8 +174,6 @@ class FullPipelineTest extends Unit
      * @param int $idMetric
      * @param int $idProductAbstract
      * @param float $rawValue
-     *
-     * @return void
      */
     protected function importProductMetric(int $idMetric, int $idProductAbstract, float $rawValue): void
     {
@@ -197,8 +189,6 @@ class FullPipelineTest extends Unit
     /**
      * @param int $idMetric
      * @param int $idProductAbstract
-     *
-     * @return float|null
      */
     protected function findNormalizedValue(int $idMetric, int $idProductAbstract): ?float
     {
@@ -213,9 +203,6 @@ class FullPipelineTest extends Unit
         return $productMetricEntity->getNormalizedValue();
     }
 
-    /**
-     * @return \SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizer
-     */
     protected function createNormalizer(): ProductMetricNormalizer
     {
         $config = new SearchRankingConfig();
