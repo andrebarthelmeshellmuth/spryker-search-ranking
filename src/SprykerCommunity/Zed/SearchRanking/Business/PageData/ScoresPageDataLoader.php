@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business\PageData;
 
 use Generated\Shared\Transfer\ProductPageLoadTransfer;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
 class ScoresPageDataLoader implements ScoresPageDataLoaderInterface
@@ -35,7 +36,11 @@ class ScoresPageDataLoader implements ScoresPageDataLoaderInterface
             return $productPageLoadTransfer;
         }
 
-        $scoresByIdProductAbstract = $this->repository->getNormalizedScoresGroupedByIdProductAbstract($productAbstractIds);
+        $scoresByIdProductAbstract = $this->repository->getNormalizedScoresGroupedByIdProductAbstract(
+            $productAbstractIds,
+            SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+        );
 
         foreach ($productPageLoadTransfer->getPayloadTransfers() as $payloadTransfer) {
             $payloadTransfer->setSearchRankingScores(

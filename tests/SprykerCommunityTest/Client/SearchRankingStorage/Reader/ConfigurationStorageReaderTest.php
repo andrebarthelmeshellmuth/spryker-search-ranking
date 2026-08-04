@@ -63,21 +63,23 @@ class ConfigurationStorageReaderTest extends Unit
             'metric_weights' => ['top_seller' => 0.5, 'pdp_impressions' => 0.3],
             'relevance_weight' => 0.6,
             'relevance_saturation_point' => 12.0,
-            'entropy_probe_result_size' => 20,
-            'entropy_weight_exponent' => 1.5,
-            'entropy_weight_shift_magnitude' => 0.3,
+            'specificity_blend_weight' => 0.8,
+            'specificity_saturation_point' => 4.0,
+            'specificity_weight_exponent' => 1.5,
+            'specificity_weight_shift_magnitude' => 0.3,
         ]);
 
         // Act
-        $configurationTransfer = $reader->findRankingConfiguration();
+        $configurationTransfer = $reader->findRankingConfiguration('DE', 'de_DE');
 
         // Assert
         $this->assertSame(['top_seller' => 0.5, 'pdp_impressions' => 0.3], $configurationTransfer->getMetricWeights());
         $this->assertSame(0.6, $configurationTransfer->getRelevanceWeight());
         $this->assertSame(12.0, $configurationTransfer->getRelevanceSaturationPoint());
-        $this->assertSame(20, $configurationTransfer->getEntropyProbeResultSize());
-        $this->assertSame(1.5, $configurationTransfer->getEntropyWeightExponent());
-        $this->assertSame(0.3, $configurationTransfer->getEntropyWeightShiftMagnitude());
+        $this->assertSame(0.8, $configurationTransfer->getSpecificityBlendWeight());
+        $this->assertSame(4.0, $configurationTransfer->getSpecificitySaturationPoint());
+        $this->assertSame(1.5, $configurationTransfer->getSpecificityWeightExponent());
+        $this->assertSame(0.3, $configurationTransfer->getSpecificityWeightShiftMagnitude());
     }
 
     /**
@@ -89,7 +91,7 @@ class ConfigurationStorageReaderTest extends Unit
         $reader = $this->createReader(null);
 
         // Act
-        $configurationTransfer = $reader->findRankingConfiguration();
+        $configurationTransfer = $reader->findRankingConfiguration('DE', 'de_DE');
 
         // Assert
         $this->assertNull($configurationTransfer);
@@ -110,15 +112,16 @@ class ConfigurationStorageReaderTest extends Unit
         $reader = $this->createReader([]);
 
         // Act
-        $configurationTransfer = $reader->findRankingConfiguration();
+        $configurationTransfer = $reader->findRankingConfiguration('DE', 'de_DE');
 
         // Assert
         $this->assertSame([], $configurationTransfer->getMetricWeights());
         $this->assertSame(0.75, $configurationTransfer->getRelevanceWeight());
         $this->assertSame(12.0, $configurationTransfer->getRelevanceSaturationPoint());
-        $this->assertSame(10, $configurationTransfer->getEntropyProbeResultSize());
-        $this->assertSame(1.0, $configurationTransfer->getEntropyWeightExponent());
-        $this->assertSame(0.25, $configurationTransfer->getEntropyWeightShiftMagnitude());
+        $this->assertSame(0.7, $configurationTransfer->getSpecificityBlendWeight());
+        $this->assertSame(3.0, $configurationTransfer->getSpecificitySaturationPoint());
+        $this->assertSame(1.0, $configurationTransfer->getSpecificityWeightExponent());
+        $this->assertSame(0.25, $configurationTransfer->getSpecificityWeightShiftMagnitude());
     }
 
     /**
@@ -138,8 +141,31 @@ class ConfigurationStorageReaderTest extends Unit
         $reader = new ConfigurationStorageReader($storageClientMock, $this->createSynchronizationServiceMock());
 
         // Act
-        $reader->findRankingConfiguration();
-        $reader->findRankingConfiguration();
+        $reader->findRankingConfiguration('DE', 'de_DE');
+        $reader->findRankingConfiguration('DE', 'de_DE');
+    }
+
+    /**
+     * Two different (store, locale) scopes must be memoized independently — a DE lookup must not be
+     * served from an AT value cached earlier in the same process, and vice versa.
+     *
+     * @return void
+     */
+    public function testMemoizesEachStoreAndLocaleScopeIndependently(): void
+    {
+        // Arrange
+        $storageClientMock = $this->createMock(SearchRankingStorageToStorageClientInterface::class);
+        $storageClientMock->expects($this->exactly(2))
+            ->method('get')
+            ->willReturn(['metric_weights' => [], 'relevance_weight' => 0.6, 'relevance_saturation_point' => 12.0]);
+
+        $reader = new ConfigurationStorageReader($storageClientMock, $this->createSynchronizationServiceMock());
+
+        // Act
+        $reader->findRankingConfiguration('DE', 'de_DE');
+        $reader->findRankingConfiguration('DE', 'de_DE');
+        $reader->findRankingConfiguration('AT', 'de_AT');
+        $reader->findRankingConfiguration('AT', 'de_AT');
     }
 
     /**
@@ -176,6 +202,6 @@ class ConfigurationStorageReaderTest extends Unit
     protected function resetMemoizedCache(): void
     {
         $cacheProperty = new ReflectionProperty(ConfigurationStorageReader::class, 'rankingConfigurationCache');
-        $cacheProperty->setValue(null, false);
+        $cacheProperty->setValue(null, []);
     }
 }

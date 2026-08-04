@@ -45,7 +45,6 @@ class SearchRankingMapperTest extends Unit
         $metricEntity = new SpySearchRankingMetric();
         $metricEntity->setIdSearchRankingMetric(7);
         $metricEntity->setName('top_seller');
-        $metricEntity->setWeight(0.5);
         $metricEntity->setFormula('x / max');
         $metricEntity->setIsActive(true);
 
@@ -55,7 +54,6 @@ class SearchRankingMapperTest extends Unit
         // Assert
         $this->assertSame(7, $metricTransfer->getIdSearchRankingMetric());
         $this->assertSame('top_seller', $metricTransfer->getName());
-        $this->assertSame(0.5, $metricTransfer->getWeight());
         $this->assertSame('x / max', $metricTransfer->getFormula());
         $this->assertTrue($metricTransfer->getIsActive());
     }
@@ -68,7 +66,6 @@ class SearchRankingMapperTest extends Unit
         // Arrange
         $metricTransfer = (new SearchRankingMetricTransfer())
             ->setName('pdp_impressions')
-            ->setWeight(0.3)
             ->setFormula('atan(x / avg) / (pi() / 2)')
             ->setIsActive(false);
 
@@ -77,7 +74,6 @@ class SearchRankingMapperTest extends Unit
 
         // Assert
         $this->assertSame('pdp_impressions', $metricEntity->getName());
-        $this->assertSame(0.3, $metricEntity->getWeight());
         $this->assertSame('atan(x / avg) / (pi() / 2)', $metricEntity->getFormula());
         $this->assertFalse($metricEntity->getIsActive());
     }
@@ -201,6 +197,8 @@ class SearchRankingMapperTest extends Unit
         $historyTransfer = (new SearchRankingMetricHistoryTransfer())
             ->setFkSearchRankingMetric(7)
             ->setMetricName('top_seller')
+            ->setStoreName('DE')
+            ->setLocaleName('de_DE')
             ->setWeight(0.5)
             ->setFormula('x / max')
             ->setIsActive(true)
@@ -239,6 +237,8 @@ class SearchRankingMapperTest extends Unit
         $historyTransfer = (new SearchRankingMetricHistoryTransfer())
             ->setFkSearchRankingMetric(7)
             ->setMetricName('brand_new_metric')
+            ->setStoreName('DE')
+            ->setLocaleName('de_DE')
             ->setWeight(0.1)
             ->setFormula('x')
             ->setIsActive(true)
@@ -288,6 +288,8 @@ class SearchRankingMapperTest extends Unit
         // Arrange
         $digestTransfer = (new SearchRankingMetricDigestTransfer())
             ->setFkSearchRankingMetric(7)
+            ->setStoreName('DE')
+            ->setLocaleName('de_DE')
             ->setMinValue(0.0)
             ->setMaxValue(100.0)
             ->setMeanValue(50.0)

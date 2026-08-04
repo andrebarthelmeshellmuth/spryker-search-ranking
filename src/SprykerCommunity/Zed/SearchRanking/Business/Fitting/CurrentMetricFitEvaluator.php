@@ -27,18 +27,20 @@ class CurrentMetricFitEvaluator implements CurrentMetricFitEvaluatorInterface
      * {@inheritDoc}
      *
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return float|null
      */
-    public function evaluate(int $idSearchRankingMetric): ?float
+    public function evaluate(int $idSearchRankingMetric, string $storeName, string $localeName): ?float
     {
-        $metricTransfer = $this->repository->findMetricById($idSearchRankingMetric);
+        $metricTransfer = $this->repository->findMetricById($idSearchRankingMetric, $storeName, $localeName);
 
         if ($metricTransfer === null) {
             return null;
         }
 
-        $digestTransfer = $this->repository->findMetricDigest($idSearchRankingMetric);
+        $digestTransfer = $this->repository->findMetricDigest($idSearchRankingMetric, $storeName, $localeName);
 
         if ($digestTransfer === null) {
             return null;

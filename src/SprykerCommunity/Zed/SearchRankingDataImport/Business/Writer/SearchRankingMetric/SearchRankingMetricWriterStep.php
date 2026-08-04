@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingMetric;
 
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeightQuery;
 use Spryker\Zed\DataImport\Business\Exception\InvalidDataException;
 use Spryker\Zed\DataImport\Business\Model\DataImportStep\DataImportStepInterface;
 use Spryker\Zed\DataImport\Business\Model\DataSet\DataSetInterface;
@@ -70,10 +71,18 @@ class SearchRankingMetricWriterStep implements DataImportStepInterface
             ->findOneOrCreate();
 
         $metricEntity
-            ->setWeight((float)$dataSet[SearchRankingMetricDataSetInterface::COL_WEIGHT])
             ->setFormula((string)$dataSet[SearchRankingMetricDataSetInterface::COL_FORMULA])
             ->setIsActive((bool)$dataSet[SearchRankingMetricDataSetInterface::COL_IS_ACTIVE]);
 
         $metricEntity->save();
+
+        $metricWeightEntity = SpySearchRankingMetricWeightQuery::create()
+            ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
+            ->filterByStoreName((string)$dataSet[SearchRankingMetricDataSetInterface::COL_STORE])
+            ->filterByLocaleName((string)$dataSet[SearchRankingMetricDataSetInterface::COL_LOCALE])
+            ->findOneOrCreate();
+
+        $metricWeightEntity->setWeight((float)$dataSet[SearchRankingMetricDataSetInterface::COL_WEIGHT]);
+        $metricWeightEntity->save();
     }
 }

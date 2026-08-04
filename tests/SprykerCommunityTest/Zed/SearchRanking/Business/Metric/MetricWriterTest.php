@@ -314,7 +314,7 @@ class MetricWriterTest extends Unit
 
         // Act
         (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
-            ->recordCheckOnly($metricTransfer);
+            ->recordCheckOnly($metricTransfer, 'DE', 'de_DE');
     }
 
     /**

@@ -35,17 +35,22 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     /**
      * @var string
      */
-    protected const KEY_ENTROPY_PROBE_RESULT_SIZE = 'entropy_probe_result_size';
+    protected const KEY_SPECIFICITY_BLEND_WEIGHT = 'specificity_blend_weight';
 
     /**
      * @var string
      */
-    protected const KEY_ENTROPY_WEIGHT_EXPONENT = 'entropy_weight_exponent';
+    protected const KEY_SPECIFICITY_SATURATION_POINT = 'specificity_saturation_point';
 
     /**
      * @var string
      */
-    protected const KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 'entropy_weight_shift_magnitude';
+    protected const KEY_SPECIFICITY_WEIGHT_EXPONENT = 'specificity_weight_exponent';
+
+    /**
+     * @var string
+     */
+    protected const KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE = 'specificity_weight_shift_magnitude';
 
     /**
      * Defaults for a KV payload published before this feature existed — matches
@@ -73,36 +78,46 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     /**
      * Defaults for a KV payload published before this feature existed — matches
      * `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig`'s own defaults, so a shop that enables
-     * entropy weighting before its first post-upgrade republish still gets the same values it would
+     * specificity weighting before its first post-upgrade republish still gets the same values it would
      * have gotten from a fresh Zed save, not an arbitrary fallback.
      *
-     * @var int
+     * @var float
      */
-    protected const DEFAULT_ENTROPY_PROBE_RESULT_SIZE = 10;
+    protected const DEFAULT_SPECIFICITY_BLEND_WEIGHT = 0.7;
+
+    /**
+     * Matches `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultSpecificitySaturationPoint()`
+     * — an unmeasured placeholder until the shop runs Calibration, same role as
+     * `DEFAULT_RELEVANCE_SATURATION_POINT` plays for `relevanceSaturationPoint`.
+     *
+     * @var float
+     */
+    protected const DEFAULT_SPECIFICITY_SATURATION_POINT = 3.0;
 
     /**
      * @var float
      */
-    protected const DEFAULT_ENTROPY_WEIGHT_EXPONENT = 1.0;
+    protected const DEFAULT_SPECIFICITY_WEIGHT_EXPONENT = 1.0;
 
     /**
-     * Matches `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultEntropyWeightShiftMagnitude()`
+     * Matches `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultSpecificityWeightShiftMagnitude()`
      * — see that method's own docblock for why 0.25 (sized to the 0.75 relevance-weight baseline), not 0.5.
      *
      * @var float
      */
-    protected const DEFAULT_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 0.25;
+    protected const DEFAULT_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE = 0.25;
 
     /**
-     * Memoized per request; false = not read yet (null is a valid "no document" result). `static`, not
-     * instance-level, matching Spryker core's own client-reader caching convention — safe under the
-     * traditional process-per-request PHP-FPM model this project runs on, but would leak stale
-     * configuration across requests under a persistent-worker runtime (RoadRunner/Swoole), since nothing
-     * ever resets it mid-process.
+     * Memoized per request, keyed by `"{$storeName}:{$localeName}"`; a missing key = not read yet for
+     * that scope (null is a valid "no document" result for a scope). `static`, not instance-level,
+     * matching Spryker core's own client-reader caching convention — safe under the traditional
+     * process-per-request PHP-FPM model this project runs on, but would leak stale configuration across
+     * requests under a persistent-worker runtime (RoadRunner/Swoole), since nothing ever resets it
+     * mid-process.
      *
-     * @var \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer|false|null
+     * @var array<string, \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer|null>
      */
-    protected static $rankingConfigurationCache = false;
+    protected static array $rankingConfigurationCache = [];
 
     /**
      * @param \SprykerCommunity\Client\SearchRankingStorage\Dependency\Client\SearchRankingStorageToStorageClientInterface $storageClient
@@ -115,27 +130,39 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer|null
      */
-    public function findRankingConfiguration(): ?SearchRankingConfigurationStorageTransfer
+    public function findRankingConfiguration(string $storeName, string $localeName): ?SearchRankingConfigurationStorageTransfer
     {
-        if (static::$rankingConfigurationCache !== false) {
-            return static::$rankingConfigurationCache;
+        $cacheKey = sprintf('%s:%s', $storeName, $localeName);
+
+        if (array_key_exists($cacheKey, static::$rankingConfigurationCache)) {
+            return static::$rankingConfigurationCache[$cacheKey];
         }
 
-        static::$rankingConfigurationCache = $this->readRankingConfiguration();
+        static::$rankingConfigurationCache[$cacheKey] = $this->readRankingConfiguration($storeName, $localeName);
 
-        return static::$rankingConfigurationCache;
+        return static::$rankingConfigurationCache[$cacheKey];
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer|null
      */
-    protected function readRankingConfiguration(): ?SearchRankingConfigurationStorageTransfer
+    protected function readRankingConfiguration(string $storeName, string $localeName): ?SearchRankingConfigurationStorageTransfer
     {
         $storageKey = $this->synchronizationService
             ->getStorageKeyBuilder(SearchRankingStorageConfig::SEARCH_RANKING_CONFIGURATION_RESOURCE_NAME)
-            ->generateKey(new SynchronizationDataTransfer());
+            ->generateKey(
+                (new SynchronizationDataTransfer())
+                    ->setStore($storeName)
+                    ->setLocale($localeName),
+            );
 
         $configurationData = $this->storageClient->get($storageKey);
 
@@ -147,8 +174,9 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
             ->setMetricWeights($configurationData[static::KEY_METRIC_WEIGHTS] ?? [])
             ->setRelevanceWeight((float)($configurationData[static::KEY_RELEVANCE_WEIGHT] ?? static::DEFAULT_RELEVANCE_WEIGHT))
             ->setRelevanceSaturationPoint((float)($configurationData[static::KEY_RELEVANCE_SATURATION_POINT] ?? static::DEFAULT_RELEVANCE_SATURATION_POINT))
-            ->setEntropyProbeResultSize((int)($configurationData[static::KEY_ENTROPY_PROBE_RESULT_SIZE] ?? static::DEFAULT_ENTROPY_PROBE_RESULT_SIZE))
-            ->setEntropyWeightExponent((float)($configurationData[static::KEY_ENTROPY_WEIGHT_EXPONENT] ?? static::DEFAULT_ENTROPY_WEIGHT_EXPONENT))
-            ->setEntropyWeightShiftMagnitude((float)($configurationData[static::KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE] ?? static::DEFAULT_ENTROPY_WEIGHT_SHIFT_MAGNITUDE));
+            ->setSpecificityBlendWeight((float)($configurationData[static::KEY_SPECIFICITY_BLEND_WEIGHT] ?? static::DEFAULT_SPECIFICITY_BLEND_WEIGHT))
+            ->setSpecificitySaturationPoint((float)($configurationData[static::KEY_SPECIFICITY_SATURATION_POINT] ?? static::DEFAULT_SPECIFICITY_SATURATION_POINT))
+            ->setSpecificityWeightExponent((float)($configurationData[static::KEY_SPECIFICITY_WEIGHT_EXPONENT] ?? static::DEFAULT_SPECIFICITY_WEIGHT_EXPONENT))
+            ->setSpecificityWeightShiftMagnitude((float)($configurationData[static::KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE] ?? static::DEFAULT_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE));
     }
 }

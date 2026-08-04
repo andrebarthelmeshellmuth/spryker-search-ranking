@@ -12,7 +12,7 @@ namespace SprykerCommunityTest\Client\SearchRanking\Debug;
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilder;
-use SprykerCommunity\Client\SearchRanking\Search\EntropyWeightingResult;
+use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
 
 /**
  * Auto-generated group annotations
@@ -59,9 +59,9 @@ class ScoreSectionBuilderTest extends Unit
         $this->assertEqualsWithDelta(0.25495 + 0.06099, $section['summaryValue'], 1.0E-9);
 
         $this->assertArrayNotHasKey('formulaCalculation', $section);
-        // Only buildEntropySection()'s section carries this flag — the search-debug overlay uses it to
-        // single out the "Entropy weighting" section for its own dedicated render position.
-        $this->assertArrayNotHasKey('isEntropySection', $section);
+        // Only buildSpecificitySection()'s section carries this flag — the search-debug overlay uses it
+        // to single out the "Specificity weighting" section for its own dedicated render position.
+        $this->assertArrayNotHasKey('isSpecificitySection', $section);
     }
 
     /**
@@ -189,12 +189,12 @@ class ScoreSectionBuilderTest extends Unit
 
     /**
      * The configured relevanceWeight (0.6) must NOT leak into the formula/relevanceWeightValue once
-     * entropy weighting actually adjusted it for this query (to 0.9 here) — otherwise the printed formula
-     * would silently disagree with the real final score entropy weighting produced.
+     * specificity weighting actually adjusted it for this query (to 0.9 here) — otherwise the printed
+     * formula would silently disagree with the real final score specificity weighting produced.
      *
      * @return void
      */
-    public function testUsesTheEntropyAdjustedRelevanceWeightInTheFormulaWhenGiven(): void
+    public function testUsesTheSpecificityAdjustedRelevanceWeightInTheFormulaWhenGiven(): void
     {
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
@@ -202,17 +202,17 @@ class ScoreSectionBuilderTest extends Unit
             ->setRelevanceWeight(0.6)
             ->setRelevanceSaturationPoint(12.0);
 
-        $entropyWeightingResult = new EntropyWeightingResult(0.6, 0.9, 0.1, 0.3, 8);
+        $specificityWeightingResult = new SpecificityWeightingResult(0.6, 0.9, 0.1, 0.3, 8);
 
         // Act
         $section = (new ScoreSectionBuilder())->build(
             $configurationTransfer,
             ['top_seller' => 0.5],
             6.9244,
-            $entropyWeightingResult,
+            $specificityWeightingResult,
         );
 
-        // Assert: normalizedRelevance is unaffected by entropy (only relevanceWeight is)
+        // Assert: normalizedRelevance is unaffected by specificity (only relevanceWeight is)
         $this->assertSame(0.9, $section['relevanceWeightValue']);
         $this->assertSame('0.900 × 0.366 + (1 - 0.900) × 0.250', $section['formulaCalculation']);
     }
@@ -220,25 +220,25 @@ class ScoreSectionBuilderTest extends Unit
     /**
      * @return void
      */
-    public function testBuildsAnEntropySectionWithOneLinePerDiagnostic(): void
+    public function testBuildsASpecificitySectionWithOneLinePerDiagnostic(): void
     {
         // Arrange
-        $entropyWeightingResult = new EntropyWeightingResult(0.75, 0.6, 0.8, -0.15, 10);
+        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.6, 0.8, -0.15, 10);
 
         // Act
-        $section = (new ScoreSectionBuilder())->buildEntropySection($entropyWeightingResult);
+        $section = (new ScoreSectionBuilder())->buildSpecificitySection($specificityWeightingResult);
 
         // Assert
-        $this->assertSame('Entropy weighting', $section['title']);
+        $this->assertSame('Specificity weighting', $section['title']);
         // The search-debug overlay reads this flag to render this section in its own dedicated spot
         // (above the relevance-weight line) instead of the default top-of-page position.
-        $this->assertTrue($section['isEntropySection']);
+        $this->assertTrue($section['isSpecificitySection']);
         $this->assertCount(4, $section['lines']);
 
         $this->assertSame('Configured relevance weight (α₀)', $section['lines'][0]['label']);
         $this->assertSame(0.75, $section['lines'][0]['value']);
 
-        $this->assertSame('Normalized entropy (H)', $section['lines'][1]['label']);
+        $this->assertSame('Normalized specificity', $section['lines'][1]['label']);
         $this->assertSame(0.8, $section['lines'][1]['value']);
 
         $this->assertSame('Shift applied to α', $section['lines'][2]['label']);

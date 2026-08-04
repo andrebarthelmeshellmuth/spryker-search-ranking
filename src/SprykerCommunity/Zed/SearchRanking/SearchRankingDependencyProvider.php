@@ -14,6 +14,7 @@ use Spryker\Zed\Kernel\Container;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToSearchRankingStorageFacadeBridge;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeBridge;
 
 /**
  * @method \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig getConfig()
@@ -36,6 +37,11 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
     public const CLIENT_SEARCH_RANKING = 'CLIENT_SEARCH_RANKING';
 
     /**
+     * @var string
+     */
+    public const FACADE_STORE = 'FACADE_STORE';
+
+    /**
      * @param \Spryker\Zed\Kernel\Container $container
      *
      * @return \Spryker\Zed\Kernel\Container
@@ -46,6 +52,7 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
         $container = parent::provideBusinessLayerDependencies($container);
         $container = $this->addEventFacade($container);
         $container = $this->addSearchRankingClient($container);
+        $container = $this->addStoreFacade($container);
 
         return $container;
     }
@@ -108,6 +115,20 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
     {
         $container->set(static::CLIENT_SEARCH_RANKING, fn (Container $container) => new SearchRankingToSearchRankingClientBridge(
             $container->getLocator()->searchRanking()->client(),
+        ));
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addStoreFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_STORE, fn (Container $container) => new SearchRankingToStoreFacadeBridge(
+            $container->getLocator()->store()->facade(),
         ));
 
         return $container;

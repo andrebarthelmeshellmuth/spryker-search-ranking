@@ -53,7 +53,8 @@
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Edit Ranking Metric' } %}
         {% block widget_content %}
-            {{ form_start(metricForm) }}
+            <p>Editing weight for store <strong>{{ storeName }}</strong>, locale <strong>{{ localeName }}</strong>.</p>
+            {{ form_start(metricForm, {'action': formAction}) }}
             {{ form_row(metricForm.name) }}
             {{ form_row(metricForm.weight) }}
             {{ form_row(metricForm.isHigherBetter) }}
@@ -65,7 +66,10 @@
                data-driven curve-fit suggestions. Absent (with an explanatory message) until the metric has
                a distribution digest, i.e. until search-ranking:normalize has run at least once after it
                has product-metric rows. #}
-            <div class="search-ranking-normalization-preview" data-id-search-ranking-metric="{{ idSearchRankingMetric }}">
+            <div class="search-ranking-normalization-preview"
+                data-id-search-ranking-metric="{{ idSearchRankingMetric }}"
+                data-store-name="{{ storeName }}"
+                data-locale-name="{{ localeName }}">
                 <p class="search-ranking-normalization-preview__message" data-role="message"></p>
                 <svg class="search-ranking-normalization-preview__plot" data-role="plot" viewBox="0 0 640 320" preserveAspectRatio="xMidYMid meet"></svg>
                 <div class="search-ranking-normalization-preview__legend" data-role="legend">
@@ -113,6 +117,8 @@
             }
 
             var idSearchRankingMetric = container.getAttribute('data-id-search-ranking-metric');
+            var storeName = container.getAttribute('data-store-name');
+            var localeName = container.getAttribute('data-locale-name');
             var formulaField = document.getElementById('search_ranking_metric_formula');
             var isHigherBetterField = document.getElementById('search_ranking_metric_isHigherBetter');
             var messageElement = container.querySelector('[data-role="message"]');
@@ -137,7 +143,9 @@
                 var url = '/search-ranking-gui/edit/preview'
                     + '?idSearchRankingMetric=' + encodeURIComponent(idSearchRankingMetric)
                     + '&formula=' + encodeURIComponent(formulaField.value)
-                    + '&isHigherBetter=' + (isHigherBetterField.checked ? '1' : '0');
+                    + '&isHigherBetter=' + (isHigherBetterField.checked ? '1' : '0')
+                    + '&storeName=' + encodeURIComponent(storeName)
+                    + '&localeName=' + encodeURIComponent(localeName);
 
                 fetch(url, { headers: { Accept: 'application/json' } })
                     .then(function (response) {

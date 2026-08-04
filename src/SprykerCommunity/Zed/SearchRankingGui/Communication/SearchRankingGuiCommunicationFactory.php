@@ -23,8 +23,10 @@ use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricHistoryTable
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricTable;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricGapTable;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricTable;
+use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToLocaleFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingStorageFacadeInterface;
+use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapFinder;
 use SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapFinderInterface;
 use SprykerCommunity\Zed\SearchRankingGui\SearchRankingGuiDependencyProvider;
@@ -33,19 +35,25 @@ use Symfony\Component\Form\FormInterface;
 class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
 {
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return \SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricTable
      */
-    public function createMetricTable(): MetricTable
+    public function createMetricTable(string $storeName, string $localeName): MetricTable
     {
-        return new MetricTable($this->getSearchRankingMetricPropelQuery());
+        return new MetricTable($this->getSearchRankingMetricPropelQuery(), $storeName, $localeName);
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return \SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricTable
      */
-    public function createProductMetricTable(): ProductMetricTable
+    public function createProductMetricTable(string $storeName, string $localeName): ProductMetricTable
     {
-        return new ProductMetricTable($this->getSearchRankingProductMetricPropelQuery());
+        return new ProductMetricTable($this->getSearchRankingProductMetricPropelQuery(), $storeName, $localeName);
     }
 
     /**
@@ -58,14 +66,18 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
 
     /**
      * @param int|null $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricGapTable
      */
-    public function createProductMetricGapTable(?int $idSearchRankingMetric): ProductMetricGapTable
+    public function createProductMetricGapTable(?int $idSearchRankingMetric, string $storeName, string $localeName): ProductMetricGapTable
     {
         return new ProductMetricGapTable(
             $this->createProductMetricGapFinder(),
             $idSearchRankingMetric,
+            $storeName,
+            $localeName,
         );
     }
 
@@ -160,5 +172,46 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     public function getSearchRankingMetricHistoryPropelQuery(): SpySearchRankingMetricHistoryQuery
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::PROPEL_QUERY_SEARCH_RANKING_METRIC_HISTORY);
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToStoreFacadeInterface
+     */
+    public function getStoreFacade(): SearchRankingGuiToStoreFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_STORE);
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToLocaleFacadeInterface
+     */
+    public function getLocaleFacade(): SearchRankingGuiToLocaleFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_LOCALE);
+    }
+
+    /**
+     * Every store name, for the Store+Locale scope selector every scoped page in this module shows.
+     *
+     * @return array<string>
+     */
+    public function getAllStoreNames(): array
+    {
+        return array_map(
+            static fn ($storeTransfer) => $storeTransfer->getNameOrFail(),
+            $this->getStoreFacade()->getAllStores(),
+        );
+    }
+
+    /**
+     * Every locale available in this shop, for the same scope selector — deliberately NOT filtered to the
+     * selected store's own locales (matches spryker-community/search-ranking-optimizer's own
+     * OptimizeRunForm/CalibrationUploadForm selector, which lists every locale independent of store too).
+     *
+     * @return array<string>
+     */
+    public function getAllLocaleNames(): array
+    {
+        return array_values($this->getLocaleFacade()->getAvailableLocales());
     }
 }

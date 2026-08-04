@@ -26,6 +26,17 @@
         <property name="metrics" type="SearchRankingMetric[]" singular="metric"/>
     </transfer>
 
+    <!-- One metric's weight for one (store, locale) — a metric's identity (name/formula/isActive/
+         isHigherBetter/shape, see SearchRankingMetric) is global; only its weight in the combined
+         ranking score is store+locale scoped. -->
+    <transfer name="SearchRankingMetricWeight" strict="true">
+        <property name="idSearchRankingMetricWeight" type="int"/>
+        <property name="fkSearchRankingMetric" type="int"/>
+        <property name="storeName" type="string"/>
+        <property name="localeName" type="string"/>
+        <property name="weight" type="float"/>
+    </transfer>
+
     <!-- One product-metric data point: the raw real-world value (e.g. 8250 PDP impressions) and the
          normalized ]0;1] value derived from it by the metric's formula. normalizedValue is null until
          the normalization cron has processed the row. -->
@@ -33,6 +44,8 @@
         <property name="idSearchRankingProductMetric" type="int"/>
         <property name="fkSearchRankingMetric" type="int"/>
         <property name="fkProductAbstract" type="int"/>
+        <property name="storeName" type="string"/>
+        <property name="localeName" type="string"/>
         <property name="rawValue" type="float"/>
         <property name="normalizedValue" type="float"/>
     </transfer>
@@ -64,6 +77,8 @@
     <transfer name="SearchRankingMetricDigest" strict="true">
         <property name="idSearchRankingMetricDigest" type="int"/>
         <property name="fkSearchRankingMetric" type="int"/>
+        <property name="storeName" type="string"/>
+        <property name="localeName" type="string"/>
         <property name="minValue" type="float"/>
         <property name="maxValue" type="float"/>
         <property name="meanValue" type="float"/>
@@ -84,6 +99,8 @@
         <property name="idSearchRankingMetricHistory" type="int"/>
         <property name="fkSearchRankingMetric" type="int"/>
         <property name="metricName" type="string"/>
+        <property name="storeName" type="string"/>
+        <property name="localeName" type="string"/>
         <property name="weight" type="float"/>
         <property name="formula" type="string"/>
         <property name="isActive" type="bool"/>
@@ -149,12 +166,15 @@
         <property name="metricWeights" type="array" singular="metricWeight" associative="true"/>
         <property name="relevanceWeight" type="float"/>
         <property name="relevanceSaturationPoint" type="float"/>
-        <!-- Entropy-aware relevance weighting settings — only read when the Client-layer code flag
-             SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled() is
-             enabled; always published regardless, same as every other setting here. -->
-        <property name="entropyProbeResultSize" type="int"/>
-        <property name="entropyWeightExponent" type="float"/>
-        <property name="entropyWeightShiftMagnitude" type="float"/>
+        <!-- Specificity-aware relevance weighting settings — only read when the Client-layer code flag
+             SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled() is
+             enabled; always published regardless, same as every other setting here. specificityBlendWeight
+             (alpha) is CMA-ES-tunable (search-ranking-optimizer); specificitySaturationPoint (k) is
+             Calibration-tunable only, same split as relevanceSaturationPoint. -->
+        <property name="specificityBlendWeight" type="float"/>
+        <property name="specificitySaturationPoint" type="float"/>
+        <property name="specificityWeightExponent" type="float"/>
+        <property name="specificityWeightShiftMagnitude" type="float"/>
     </transfer>
 
     <transfer name="ProductPayload">

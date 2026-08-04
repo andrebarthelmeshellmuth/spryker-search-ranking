@@ -14,9 +14,11 @@ use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingProductMetricTransfer;
+use Generated\Shared\Transfer\StoreTransfer;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluator;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\MathFunctionProvider;
 use SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizer;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 use SprykerCommunity\Zed\SearchRanking\SearchRankingConfig;
@@ -199,7 +201,7 @@ class ProductMetricNormalizerTest extends Unit
         );
         $repositoryMock->method('getMetricStatistics')->willReturn($statisticsTransfer);
         $repositoryMock->method('getProductMetricBatch')->willReturnCallback(
-            fn (int $idMetric, int $idLast): array => array_values(array_filter(
+            fn (int $idMetric, string $storeName, string $localeName, int $idLast): array => array_values(array_filter(
                 $productMetricTransfers,
                 fn (SearchRankingProductMetricTransfer $productMetricTransfer): bool => $productMetricTransfer->getFkSearchRankingMetric() === $idMetric
                     && $productMetricTransfer->getIdSearchRankingProductMetric() > $idLast,
@@ -226,7 +228,25 @@ class ProductMetricNormalizerTest extends Unit
             $entityManager,
             new FormulaEvaluator(new MathFunctionProvider(), $config),
             $config,
+            $this->createStoreFacadeMock(),
         );
+    }
+
+    /**
+     * A single store/locale is enough to exercise normalize()'s per-metric logic — the store×locale
+     * fan-out itself is MetricDigestBuilderTest/MetricRandomizerTest's concern (multiple stores would
+     * just multiply every assertion below by the store count for no extra coverage).
+     *
+     * @return \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface
+     */
+    protected function createStoreFacadeMock(): SearchRankingToStoreFacadeInterface
+    {
+        $storeFacadeMock = $this->createMock(SearchRankingToStoreFacadeInterface::class);
+        $storeFacadeMock->method('getAllStores')->willReturn([
+            (new StoreTransfer())->setName('DE')->setAvailableLocaleIsoCodes(['de_DE']),
+        ]);
+
+        return $storeFacadeMock;
     }
 
     /**

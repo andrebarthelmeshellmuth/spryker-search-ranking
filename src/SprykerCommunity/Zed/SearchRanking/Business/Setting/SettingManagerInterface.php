@@ -12,62 +12,104 @@ namespace SprykerCommunity\Zed\SearchRanking\Business\Setting;
 interface SettingManagerInterface
 {
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getRelevanceWeight(): float;
+    public function getRelevanceWeight(string $storeName, string $localeName): float;
 
     /**
+     * @param string $storeName
+     * @param string $localeName
      * @param float $relevanceWeight
      *
      * @return void
      */
-    public function saveRelevanceWeight(float $relevanceWeight): void;
+    public function saveRelevanceWeight(string $storeName, string $localeName, float $relevanceWeight): void;
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getRelevanceSaturationPoint(): float;
+    public function getRelevanceSaturationPoint(string $storeName, string $localeName): float;
 
     /**
+     * @param string $storeName
+     * @param string $localeName
      * @param float $relevanceSaturationPoint
      *
      * @return void
      */
-    public function saveRelevanceSaturationPoint(float $relevanceSaturationPoint): void;
+    public function saveRelevanceSaturationPoint(string $storeName, string $localeName, float $relevanceSaturationPoint): void;
 
     /**
-     * @return int
-     */
-    public function getEntropyProbeResultSize(): int;
-
-    /**
-     * @param int $entropyProbeResultSize
+     * @param string $storeName
+     * @param string $localeName
      *
-     * @return void
-     */
-    public function saveEntropyProbeResultSize(int $entropyProbeResultSize): void;
-
-    /**
      * @return float
      */
-    public function getEntropyWeightExponent(): float;
+    public function getSpecificityBlendWeight(string $storeName, string $localeName): float;
 
     /**
-     * @param float $entropyWeightExponent
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificityBlendWeight
      *
      * @return void
      */
-    public function saveEntropyWeightExponent(float $entropyWeightExponent): void;
+    public function saveSpecificityBlendWeight(string $storeName, string $localeName, float $specificityBlendWeight): void;
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return float
      */
-    public function getEntropyWeightShiftMagnitude(): float;
+    public function getSpecificitySaturationPoint(string $storeName, string $localeName): float;
 
     /**
-     * @param float $entropyWeightShiftMagnitude
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificitySaturationPoint
      *
      * @return void
      */
-    public function saveEntropyWeightShiftMagnitude(float $entropyWeightShiftMagnitude): void;
+    public function saveSpecificitySaturationPoint(string $storeName, string $localeName, float $specificitySaturationPoint): void;
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return float
+     */
+    public function getSpecificityWeightExponent(string $storeName, string $localeName): float;
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificityWeightExponent
+     *
+     * @return void
+     */
+    public function saveSpecificityWeightExponent(string $storeName, string $localeName, float $specificityWeightExponent): void;
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return float
+     */
+    public function getSpecificityWeightShiftMagnitude(string $storeName, string $localeName): float;
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificityWeightShiftMagnitude
+     *
+     * @return void
+     */
+    public function saveSpecificityWeightShiftMagnitude(string $storeName, string $localeName, float $specificityWeightShiftMagnitude): void;
 }

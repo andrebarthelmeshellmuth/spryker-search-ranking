@@ -13,6 +13,7 @@ use Codeception\Test\Unit;
 use Orm\Zed\Product\Persistence\SpyProductAbstract;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapFinder;
 
 /**
@@ -100,7 +101,7 @@ class ProductMetricGapFinderTest extends Unit
 
         // Act — scoped via the product token so only this test's own fixtures can match, regardless of
         // whatever else already exists in the real catalog.
-        $gaps = $finder->findGaps(null, $productToken, 'sku', 'asc', 100, 0);
+        $gaps = $finder->findGaps(null, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, $productToken, 'sku', 'asc', 100, 0);
 
         // Assert — further scoped to gaps against THIS test's own two metrics specifically: fullyCovered
         // is a brand-new product, so it is (correctly) still a real gap for every OTHER active metric in
@@ -138,7 +139,7 @@ class ProductMetricGapFinderTest extends Unit
         $finder = new ProductMetricGapFinder();
 
         // Act
-        $gaps = $finder->findGaps($metricA->getIdSearchRankingMetric(), $productToken, 'sku', 'asc', 100, 0);
+        $gaps = $finder->findGaps($metricA->getIdSearchRankingMetric(), SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, $productToken, 'sku', 'asc', 100, 0);
 
         // Assert
         $skus = array_column($gaps, 'sku');
@@ -164,7 +165,7 @@ class ProductMetricGapFinderTest extends Unit
         $finder = new ProductMetricGapFinder();
 
         // Act
-        $gaps = $finder->findGaps($metric->getIdSearchRankingMetric(), $productToken, 'sku', 'asc', 100, 0);
+        $gaps = $finder->findGaps($metric->getIdSearchRankingMetric(), SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, $productToken, 'sku', 'asc', 100, 0);
 
         // Assert
         $skus = array_column($gaps, 'sku');
@@ -183,7 +184,11 @@ class ProductMetricGapFinderTest extends Unit
         $productToken = 'prdcount' . uniqid();
 
         $finder = new ProductMetricGapFinder();
-        $countBeforeNewProducts = $finder->countGaps($metric->getIdSearchRankingMetric());
+        $countBeforeNewProducts = $finder->countGaps(
+            $metric->getIdSearchRankingMetric(),
+            SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+        );
 
         $this->createTestProductAbstract($productToken . '-match');
         $this->createTestProductAbstract($productToken . '-other');
@@ -194,11 +199,20 @@ class ProductMetricGapFinderTest extends Unit
         // catalog product as a gap too (zero coverage is zero coverage), independent of this test.
         $this->assertSame(
             $countBeforeNewProducts + 2,
-            $finder->countGaps($metric->getIdSearchRankingMetric()),
+            $finder->countGaps(
+                $metric->getIdSearchRankingMetric(),
+                SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+                SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+            ),
         );
         // countFilteredGaps' search term is unique to this test's own fixture, so it stays an exact,
         // catalog-size-independent assertion.
-        $this->assertSame(1, $finder->countFilteredGaps($metric->getIdSearchRankingMetric(), $productToken . '-match'));
+        $this->assertSame(1, $finder->countFilteredGaps(
+            $metric->getIdSearchRankingMetric(),
+            SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+            $productToken . '-match',
+        ));
     }
 
     /**
@@ -216,12 +230,46 @@ class ProductMetricGapFinderTest extends Unit
 
         // Act — scoped to this test's own product token so real catalog rows can't shift which items
         // land within the fetched window between the two calls.
-        $ascending = array_column($finder->findGaps($metric->getIdSearchRankingMetric(), $productToken, 'sku', 'asc', 100, 0), 'sku');
-        $descending = array_column($finder->findGaps($metric->getIdSearchRankingMetric(), $productToken, 'sku', 'desc', 100, 0), 'sku');
+        $ascending = array_column($finder->findGaps($metric->getIdSearchRankingMetric(), SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, $productToken, 'sku', 'asc', 100, 0), 'sku');
+        $descending = array_column($finder->findGaps($metric->getIdSearchRankingMetric(), SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, $productToken, 'sku', 'desc', 100, 0), 'sku');
 
         // Assert
         $this->assertCount(2, $ascending);
         $this->assertSame(array_reverse($ascending), $descending);
+    }
+
+    /**
+     * The real regression this covers: a product with a value in a DIFFERENT (store, locale) but none in
+     * the queried scope must still show as a gap for the queried scope — the LEFT JOIN's ON clause must
+     * filter by scope, not a WHERE clause (which would incorrectly hide it, since `product_metric.*` is
+     * NULL for genuine no-match rows regardless of which scope was queried).
+     *
+     * @return void
+     */
+    public function testGapsAreScopedPerStoreAndLocaleNotSharedAcrossScopes(): void
+    {
+        // Arrange
+        $metric = $this->createTestMetric('mtrscope' . uniqid());
+        $productToken = 'prdscope' . uniqid();
+        $hasAtDataOnly = $this->createTestProductAbstract($productToken . '-at-only');
+
+        $this->createTestProductMetric($metric, $hasAtDataOnly, 'AT', 'de_AT');
+
+        $finder = new ProductMetricGapFinder();
+
+        // Act
+        $deGaps = array_column(
+            $finder->findGaps($metric->getIdSearchRankingMetric(), 'DE', 'de_DE', $productToken, 'sku', 'asc', 100, 0),
+            'sku',
+        );
+        $atGaps = array_column(
+            $finder->findGaps($metric->getIdSearchRankingMetric(), 'AT', 'de_AT', $productToken, 'sku', 'asc', 100, 0),
+            'sku',
+        );
+
+        // Assert
+        $this->assertContains($hasAtDataOnly->getSku(), $deGaps, 'DE has no value for this product/metric — it must be a real gap for DE.');
+        $this->assertNotContains($hasAtDataOnly->getSku(), $atGaps, 'AT genuinely has a value for this product/metric — it must NOT show as a gap for AT.');
     }
 
     /**
@@ -243,6 +291,8 @@ class ProductMetricGapFinderTest extends Unit
         // Act
         $gaps = $finder->findGaps(
             $metric->getIdSearchRankingMetric(),
+            SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
             $productToken,
             'sku; DROP TABLE spy_search_ranking_metric; --',
             'asc; DROP TABLE spy_search_ranking_metric; --',
@@ -263,7 +313,6 @@ class ProductMetricGapFinderTest extends Unit
     {
         $metricEntity = new SpySearchRankingMetric();
         $metricEntity->setName('test_' . $name)
-            ->setWeight(1.0)
             ->setFormula('x')
             ->setIsActive(true)
             ->setIsHigherBetter(true)
@@ -294,16 +343,22 @@ class ProductMetricGapFinderTest extends Unit
     /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric $metricEntity
      * @param \Orm\Zed\Product\Persistence\SpyProductAbstract $productAbstractEntity
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric
      */
     protected function createTestProductMetric(
         SpySearchRankingMetric $metricEntity,
         SpyProductAbstract $productAbstractEntity,
+        string $storeName = SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+        string $localeName = SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
     ): SpySearchRankingProductMetric {
         $productMetricEntity = new SpySearchRankingProductMetric();
         $productMetricEntity->setFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
             ->setFkProductAbstract($productAbstractEntity->getIdProductAbstract())
+            ->setStoreName($storeName)
+            ->setLocaleName($localeName)
             ->setRawValue(5.0)
             ->setNormalizedValue(0.5)
             ->save();

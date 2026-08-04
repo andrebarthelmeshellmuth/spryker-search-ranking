@@ -24,16 +24,18 @@ class MetricFormDataProvider
 
     /**
      * @param int|null $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricTransfer|null
      */
-    public function getData(?int $idSearchRankingMetric = null): ?SearchRankingMetricTransfer
+    public function getData(?int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricTransfer
     {
         if ($idSearchRankingMetric === null) {
             return (new SearchRankingMetricTransfer())->setIsActive(true)->setIsHigherBetter(true);
         }
 
-        return $this->searchRankingFacade->findMetricById($idSearchRankingMetric);
+        return $this->searchRankingFacade->findMetricById($idSearchRankingMetric, $storeName, $localeName);
     }
 
     /**

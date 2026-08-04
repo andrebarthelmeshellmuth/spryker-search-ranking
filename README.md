@@ -23,7 +23,7 @@ closed-form curve-fit suggestions — no guessing what shape a business signal s
 - [Status](#status)
 - [What it does](#what-it-does)
 - [Ranking formula](#ranking-formula)
-- [Entropy-aware relevance weighting (opt-in)](#entropy-aware-relevance-weighting-opt-in)
+- [Specificity-aware relevance weighting (opt-in)](#specificity-aware-relevance-weighting-opt-in)
 - [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update)
 - [Why hourly batch normalization, not an immediate per-value hook](#why-hourly-batch-normalization-not-an-immediate-per-value-hook)
 - [Normalization formulas](#normalization-formulas)
@@ -103,7 +103,7 @@ data-driven curve-fitting workflow.
 
 Verified: dependency floors resolved and checked at their oldest allowed versions (`composer
 check-floors`), the ranking formula's `function_score`/`script_score` cross-validated across three
-engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 141
+engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 179
 tests, phpcs and phpstan level 8 clean.
 
 This package's own mechanism is complete: the metric/value data model, the Zed management UI, CSV data
@@ -162,6 +162,12 @@ requiring any change here.
 - **Zed UI**:
 
   ![The metrics list: ID, name, weight, formula, active/inactive status, and edit/delete actions for every configured business signal](docs/screenshots/metrics-list.png)
+
+  Every scoped page below (Metrics, Product Values, Product Value Gaps, Settings) has an explicit
+  **Store + Locale selector** at the top — a plain GET dropdown pair, not a Symfony form, since it's a
+  view filter rather than a mutating action. Whichever scope is selected carries through create/edit/
+  delete links and save actions on that page, so an admin explicitly picks which store's config they're
+  looking at rather than it being implicit from a session-level "current store."
 
   - `/search-ranking-gui` — metric list with create/edit/delete. Formulas are validated on save by
     trial evaluation; the exact parser error is shown on the form. Metric names are checked for
@@ -238,23 +244,28 @@ requiring any change here.
   importer has no such gap: there's no facade-level "save one product metric" method it bypasses, this
   direct upsert is the only path that data ever takes.
 - **Normalization cron**: `vendor/bin/console search-ranking:normalize` recalculates every
-  normalized value of every active metric **except the random tie-breaker metric** (see below) in
-  batches. A metric whose formula fails to evaluate is skipped and reported (non-zero exit code)
-  without aborting the run for the other metrics. As a byproduct, it also rebuilds each active metric's
-  **distribution digest** (`spy_search_ranking_metric_digest`): min/max/mean/median plus a 101-point
-  empirical-CDF backbone (percentiles 0, 1, 2, ..., 100), computed by sorting that metric's raw values
-  once — this is the data the normalization-authoring preview above reads, so it never has to touch the
-  raw per-product rows directly, however many there are.
+  normalized value of every active metric **except the random tie-breaker metric** (see below), for
+  **every store×locale**, in batches. A metric whose formula fails to evaluate is skipped and reported
+  (non-zero exit code) without aborting the run for the other metrics. As a byproduct, it also rebuilds
+  each active metric's **distribution digest** (`spy_search_ranking_metric_digest`) per scope:
+  min/max/mean/median plus a 101-point empirical-CDF backbone (percentiles 0, 1, 2, ..., 100), computed by
+  sorting that metric's raw values once — this is the data the normalization-authoring preview above
+  reads, so it never has to touch the raw per-product rows directly, however many there are. Optional
+  `--store=X`/`--locale=Y` restrict a run to one scope; omitting either processes every store, or every
+  locale available for the selected store(s) — the default, unfiltered behavior is unchanged from before
+  this package was store/locale-scoped at all.
 - **Random tie-breaker cron**: `vendor/bin/console search-ranking:randomize` is a separate, nightly
   command that reshuffles ONE metric — the one configured as the random tie-breaker
-  (`SearchRankingConfig::getRandomMetricName()`, `random` by default) — and republishes affected
-  products, on its own cadence, independent of the hourly normalize run above. It is a deliberate no-op
-  (exit 0, no work done) whenever that metric does not exist or is not active, so it is always safe to
-  keep scheduled regardless of whether the metric happens to be turned on. Kept separate from the hourly
-  cron because reshuffling a tie-breaker every hour would make search result order visibly churn for a
-  shopper who searches again shortly after — nightly is frequent enough to keep ties from calcifying into
-  a permanent order without looking unstable. Reuses the same full-republish path as every other score
-  update; see [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update).
+  (`SearchRankingConfig::getRandomMetricName()`, `random` by default) — for every store×locale where it
+  exists and is active, and republishes affected products once at the end, on its own cadence, independent
+  of the hourly normalize run above. It is a deliberate no-op (exit 0, no work done) for a scope where that
+  metric does not exist or is not active, so it is always safe to keep scheduled regardless of whether the
+  metric happens to be turned on everywhere. Kept separate from the hourly cron because reshuffling a
+  tie-breaker every hour would make search result order visibly churn for a shopper who searches again
+  shortly after — nightly is frequent enough to keep ties from calcifying into a permanent order without
+  looking unstable. Also accepts `--store`/`--locale`, same semantics as `:normalize` above. Reuses the
+  same full-republish path as every other score update; see
+  [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update).
 - **`search-ranking:check-compatibility`**: probes the live search engine's ACTUAL capabilities —
   never a version-string comparison, since OpenSearch and Elasticsearch report incompatible version
   identifiers under the same API surface (this stack self-reports `distribution: opensearch, 1.3.4`; a
@@ -285,13 +296,18 @@ requiring any change here.
   their ordering) and silently steps aside when no configuration is synchronized or no active metric
   has a non-zero weight.
 - **Ranking configuration in key-value storage**: active metric weights + the two blend constants
-  ([`relevanceWeight`](#relevanceweight), [`relevanceSaturationPoint`](#relevancesaturationpoint)) live in one dictionary document
-  (`kv:search_ranking_configuration`), published from Zed through a storage table with
-  synchronization behavior. Metric CRUD, the settings form, and the cron all republish it. Both blend
-  constants are Zed-editable at `/search-ranking-gui/settings`. Metric weights are **normalized to sum
-  to 1 at publish time** (`RankingConfigurationStorageWriter`) — see [Ranking formula](#ranking-formula)
-  for why. The raw values in `spy_search_ranking_metric.weight` are untouched; only this published copy
-  is normalized.
+  ([`relevanceWeight`](#relevanceweight), [`relevanceSaturationPoint`](#relevancesaturationpoint)) live
+  in **one dictionary document per (store, locale)** (`kv:search_ranking_configuration:{store}:{locale}`,
+  lowercased), published from Zed through a storage table with the `synchronization` Propel behavior's own
+  `store`/`locale` parameters. Metric CRUD, the settings form, and the cron all republish **every**
+  store×locale document in one pass (mirroring the same store-outer/locale-inner fan-out
+  `ProductMetricNormalizer` already uses) — there is no way to publish just one scope's document from the
+  Zed side, since a save on any one scope's config doesn't imply the others are stale, but republishing
+  everything is cheap enough not to bother optimizing. Both blend constants are Zed-editable at
+  `/search-ranking-gui/settings`, scoped per (store, locale) via that page's own Store+Locale selector.
+  Metric weights are **normalized to sum to 1 at publish time, independently per scope**
+  (`RankingConfigurationStorageWriter`) — see [Ranking formula](#ranking-formula) for why. The raw values
+  in `spy_search_ranking_metric_weight` are untouched; only each scope's published copy is normalized.
 - **search-debug overlay integration** (optional, needs
   [spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debugger)):
   `SearchRankingProductDebugDataExpanderPlugin` adds a "Business signals" section to the per-product SRP
@@ -337,12 +353,12 @@ That said, the old formula wasn't all bad: `sqrt(_score)` never saturates, it ke
 naturally drifted back toward text relevance instead of staying pinned to the business signals — a
 property the saturating curve below deliberately gives up, since it caps `_score`'s contribution at
 `[0;1)` no matter how large `_score` gets. Recovering that upside on purpose, rather than as a side effect
-of an otherwise unpredictable formula, needs real additional machinery — some way to read the
-distribution of scores across the result set, not just one document at a time. [Entropy-aware relevance
-weighting](#entropy-aware-relevance-weighting-opt-in) below is exactly that machinery, opt-in and off by
-default, built for a related but distinct purpose (deciding how much a query's own result set should lean
-on business signals at all, not recovering this specific upside) — the general shape of what "reading the
-distribution" looks like in this package now exists, even though it doesn't reintroduce the old formula.
+of an otherwise unpredictable formula, needs real additional machinery — some way to read how specific a
+query's own text is. [Specificity-aware relevance weighting](#specificity-aware-relevance-weighting-opt-in)
+below is exactly that machinery, opt-in and off by default, built for a related but distinct purpose
+(deciding how much a query should lean on business signals at all, not recovering this specific upside) —
+the general shape of what "reading the query" looks like in this package now exists, even though it
+doesn't reintroduce the old formula.
 
 **`relevanceWeight` and `relevanceSaturationPoint` fix that by normalizing first.**
 `_score / (_score + relevanceSaturationPoint)` is the same saturating-curve shape BM25 itself uses for
@@ -405,116 +421,136 @@ whatever raw number was typed into the Zed form. All-zero (or zero active metric
 than dividing by zero — `FunctionScoreBuilder` already treats that as "no usable business signal" and
 steps aside to pure text relevance.
 
-## Entropy-aware relevance weighting (opt-in)
+## Specificity-aware relevance weighting (opt-in)
 
 **Off by default.** A single global `relevanceWeight` is a reasonable default, but it can't tell an
-exact-SKU-style query ("SKU-12345", a query where text relevance already found one unambiguous winner)
-apart from a category-style query ("office chairs", where dozens of candidates are roughly equally
-relevant and business signals are what should actually decide the order). This feature derives
-`relevanceWeight` per query instead of using one static value for every search.
+exact-SKU-style query ("SKU-12345", a query whose own text is already unambiguous) apart from a
+category-style query ("office chairs", a query so generic that business signals are what should actually
+decide the order). This feature derives `relevanceWeight` per query instead of using one static value for
+every search.
 
-**The mechanism:** with the flag enabled,
-`SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculator` fires ONE ADDITIONAL, lightweight
-Elasticsearch query per catalog search — the same base query, before this package's own `function_score`
-wrapper, requesting only the top *N* candidates' raw `_score` values, no document bodies. From those
-scores it computes the normalized Shannon entropy of the score distribution (`Hₙₒᵣₘ = H / log(X)`,
-treating each score as a share of the total "relevance mass" — a plain ratio, not softmax, so real score
-gaps aren't artificially sharpened): a single dominant score gives `Hₙₒᵣₘ ≈ 0` (text relevance already
-discriminates well), a flat distribution gives `Hₙₒᵣₘ ≈ 1` (text relevance can't tell candidates apart).
+**An earlier version of this feature measured the SHAPE of the top-N `_score` distribution (Shannon
+entropy) instead — that approach was replaced.** Verified live against this package's own real catalog: an
+ordinary multi-term/browsy query's top-10 raw BM25 `_score`s cluster within roughly 7% of each other
+regardless of how generic the query actually is, so normalized entropy came back ≈`0.9998` — numerically
+indistinguishable from the theoretical maximum — for nearly every query tried, browsy or not. Only a
+literal single-hit query ever produced a meaningfully different reading. In other words, entropy over
+`_score` was measuring "did this query match more than one document," not "how specific is this query,"
+so it couldn't actually grade the "somewhat vs. very generic" middle ground the feature exists for.
 
-**The configured `relevanceWeight` is a baseline the entropy result shifts, never fully replaces.** A
-flat distribution shifts it down toward business signals, a dominant-score distribution shifts it up
-toward text relevance, by up to a configured maximum in either direction; a perfectly ambiguous
-distribution (`Hₙₒᵣₘ` exactly `0.5`) leaves the baseline untouched:
+**The mechanism now measures the QUERY TEXT itself, not the resulting scores.** With the flag enabled,
+`SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculator` fires ONE ADDITIONAL,
+lightweight `_termvectors` probe per catalog search — an artificial document containing the search string,
+probed against the same fields the real query searches (with `per_field_analyzer` forcing the SAME
+search-time tokenization the real query uses, since `_termvectors` otherwise defaults to a field's
+INDEX-time analyzer) — never a real catalog query at all, unlike the entropy-era probe this replaces. From
+the response it reads each query term's real corpus document frequency (`doc_freq`) and corpus size
+(`N`), derives `idf = ln(N / doc_freq)` per term (a term with zero real corpus evidence is skipped, not
+treated as maximally specific), and blends the terms into one raw specificity value:
 
 ```
-signedDeviation = 1 − 2 × Hₙₒᵣₘ                              // +1 at Hₙₒᵣₘ=0, 0 at Hₙₒᵣₘ=0.5, −1 at Hₙₒᵣₘ=1
+rawSpecificity = specificityBlendWeight × max(idf) + (1 − specificityBlendWeight) × harmonicMean(idf)
+```
+
+`max` alone would reward a single rare term even in an otherwise generic query (e.g. a SKU trailing a
+common word); `harmonicMean` alone would punish a query as soon as ANY term is common, even alongside a
+very rare one. Blending the two (default `specificityBlendWeight = 0.7`, favoring `max`) keeps a query
+with one genuinely rare term reading as specific, while still letting an all-common-words query read as
+unspecific. Real, verified idf values from this package's own catalog (`N = 1064`, `ln(N/df)`): `office`
+→ `0.68`, `office chair` → `2.33`, `chair` → `2.86`, `topstar chair` → `3.57`, `topstar` → `3.71`,
+`topstar M11480` → `5.79`, `M11480` (an exact SKU) → `6.28` — a sensible, continuously-graded ordering
+from generic to specific, unlike the old entropy signal's two-extremes-only behavior.
+
+The unbounded `rawSpecificity` is then normalized into `[0;1[` the same saturating way `relevanceWeight`'s
+own text-relevance term already is: `normalizedSpecificity = rawSpecificity / (rawSpecificity +
+specificitySaturationPoint)`.
+
+**The configured `relevanceWeight` is a baseline the specificity result shifts, never fully replaces.** A
+highly specific query shifts it up toward text relevance, an unspecific/browsy query shifts it down toward
+business signals, by up to a configured maximum in either direction; a query with average specificity
+(`normalizedSpecificity` exactly `0.5`, i.e. raw specificity exactly at the calibrated saturation point)
+leaves the baseline untouched:
+
+```
+signedDeviation = 2 × normalizedSpecificity − 1              // −1 at 0, 0 at 0.5, +1 at 1
 shapedDeviation = sign(signedDeviation) × |signedDeviation|^exponent
 relevanceWeight = clamp(configuredRelevanceWeight + shiftMagnitude × shapedDeviation, 0, 1)
 ```
 
-The exponent is applied to the deviation's magnitude, not to `Hₙₒᵣₘ` directly — that keeps `Hₙₒᵣₘ = 0.5`
-an exact neutral point regardless of the exponent's value, rather than moving it.
+The exponent is applied to the deviation's magnitude, not to `normalizedSpecificity` directly — that
+keeps `0.5` an exact neutral point regardless of the exponent's value, rather than moving it.
 
-> [!CAUTION]
-> **Verify against real score data before assuming this differentiates "somewhat specific" from "very
-> generic" queries — on a typical catalog it may only ever fire at the two extremes.** Measured live
-> against a real (if modestly sized) product catalog: an ordinary multi-term/browsy query's top-*N* raw
-> BM25 `_score`s cluster tightly — e.g. real top-10 scores for `"chair"` spanned only 16.43→15.37 (≈7%) —
-> which computes to `Hₙₒᵣₘ ≈ 0.9998`, not just "high," but numerically almost indistinguishable from the
-> mathematical maximum of `1.0`. Reaching a materially lower reading needs roughly a 10–500× gap between
-> the top score and the rest (`Hₙₒᵣₘ ≈ 0.75` at 10×, `≈ 0.03` at 1000×) — a gap ordinary `multi_match`
-> queries essentially never produce, since BM25 is log-scaled and saturating by design. In practice, on
-> data shaped like this, the reading that actually moves is the **`candidateCount < 2` guard** — an
-> exact-SKU-style query matching exactly one document (or none) collapses `Hₙₒᵣₘ` straight to exactly
-> `0.0`/leaves the baseline untouched, with no continuous middle ground between "browsy" and "singular"
-> in real, observed use.
->
-> **The exponent cannot compensate for this.** It reshapes how an ALREADY-COMPUTED `Hₙₒᵣₘ` maps to a
-> weight shift — it has no way to change what `Hₙₒᵣₘ` the probe measures for a given real score
-> distribution. Since `|signedDeviation|` for a typical browsy query is already ≈`0.9996` (i.e. `Hₙₒᵣₘ ≈
-> 0.9998`), raising it to any reasonable exponent still leaves it at ≈`1.0` — `0.9996^5 ≈ 0.998`,
-> `0.9996^0.2 ≈ 0.9999` — so the applied shift stays pinned at (or extremely close to) the full configured
-> `shiftMagnitude` regardless of which exponent you configure. The exponent only reshapes the mapping
-> *between* genuinely different `Hₙₒᵣₘ` readings — useful once your own queries actually produce a
-> meaningful spread of them, which this package cannot promise for every catalog/query-shape combination.
-> **Measure your own shop's real `Hₙₒᵣₘ` distribution (e.g. via the search-debug overlay's "Entropy
-> weighting" section across a representative sample of real queries) before tuning the exponent — don't
-> assume it will grade the "somewhat vs. very generic" middle ground your project cares about.**
+> [!NOTE]
+> **`field_statistics.doc_count` (the `N` in `ln(N/df)`) is index-wide across every locale, not
+> locale-scoped** — `_termvectors` has no way to scope it to one locale. This is an accepted approximation:
+> a shop indexing one page document per store-locale per abstract product has a uniform duplication factor
+> across every product, so the constant multiplicative inflation of both `N` and `df` cancels out in the
+> `ln(N/df)` ratio. If your shop has uneven per-product locale coverage, this approximation may not hold —
+> verify against your own catalog before relying on it.
 
-**Three Zed-editable settings, at `/search-ranking-gui/settings`** (alongside `relevanceWeight` and
+**Four Zed-editable settings, at `/search-ranking-gui/settings`** (alongside `relevanceWeight` and
 `relevanceSaturationPoint` — see [Ranking formula](#ranking-formula)) — all only take effect once the
 code-level flag below is on:
-- **Entropy probe result size** (default `10`) — *N* above.
-- **Entropy weight exponent** (default `1.0`) — how sharply the shift ramps up away from the neutral
+- **Specificity blend weight** (default `0.7`) — `specificityBlendWeight` (α) above. Also tunable via
+  `spryker-community/search-ranking-optimizer`'s CMA-ES search.
+- **Specificity saturation point** — `specificitySaturationPoint` (k) above. Calibration-tunable only
+  (like `relevanceSaturationPoint`), not CMA-ES-tunable — see
+  `spryker-community/search-ranking-optimizer`'s Calibration feature. Needs a real value sampled from your
+  own catalog before trusting the default; a placeholder chosen without that data could be wildly wrong.
+- **Specificity weight exponent** (default `1.0`) — how sharply the shift ramps up away from the neutral
   point.
-- **Entropy weight shift magnitude** (default `0.25`) — the maximum shift in either direction. Sized to
-  match the `0.75` `relevanceWeight` baseline: `shiftMagnitude = 1 - relevanceWeight`. A baseline above
+- **Specificity weight shift magnitude** (default `0.25`) — the maximum shift in either direction. Sized
+  to match the `0.75` `relevanceWeight` baseline: `shiftMagnitude = 1 - relevanceWeight`. A baseline above
   `0.5` has less headroom upward (toward `1.0`) than downward (toward `0.0`) before clamping;
   `relevanceWeight` itself cannot leave `[0;1]`, so this isn't a formula flaw, just where a bounded knob
-  sitting near its own edge runs out of room. Sizing the magnitude to the *tighter* side means a fully
-  navigational query (`Hₙₒᵣₘ = 0`) reaches exactly `1.0` — pure text relevance — with no clamped/wasted
-  resolution, while a fully browsy query (`Hₙₒᵣₘ = 1`) floors at exactly `0.75 - 0.25 = 0.5`: the OLD
-  global default, never lower. The entropy shift only ever moves a query toward more text-appropriate
-  behavior for its own shape — it never makes any query less text-favoring than the un-tuned baseline
-  used to be for every query. If you change the `relevanceWeight` baseline, re-derive this value as
-  `1 - relevanceWeight` again rather than leaving it fixed.
+  sitting near its own edge runs out of room. Sizing the magnitude to the *tighter* side means a maximally
+  specific query (`normalizedSpecificity = 1`) reaches exactly `1.0` — pure text relevance — with no
+  clamped/wasted resolution, while a maximally unspecific query (`normalizedSpecificity = 0`) floors at
+  exactly `0.75 - 0.25 = 0.5`: the OLD global default, never lower. If you change the `relevanceWeight`
+  baseline, re-derive this value as `1 - relevanceWeight` again rather than leaving it fixed.
 
-**Why the ON/OFF switch is code-level, not one of the three settings above:** it's the one control that
-decides whether a second live Elasticsearch query fires on every catalog search at all — flipping it
-should take a project deploy, not just a Zed form save. Enable it in your project's
-`Pyz\Client\SearchRanking\SearchRankingConfig` by overriding `isEntropyWeightingEnabled(): bool` to return
-`true`; the three tuning settings become meaningful once that's done. **This is the only override point
-that actually works** — `Shared\SearchRanking\SearchRankingConfig::isEntropyWeightingEnabled()` is a plain
-hardcoded `return false;`, not a project-overridable `AbstractSharedConfig`, so overriding a
-`Pyz\Shared\SearchRanking\SearchRankingConfig` class (an earlier version of this README claimed this
-worked — it doesn't) has no effect. Other code that needs to ask whether entropy weighting is live for
-this project — e.g. a different package reimplementing this formula for its own evaluation tooling —
-should call `SearchRankingClientInterface::isEntropyWeightingEnabled()` rather than referencing either
-config class directly; it resolves through this same, genuinely project-override-aware Client config.
+**Why the ON/OFF switch is code-level, not one of the settings above:** it's the one control that decides
+whether a second live `_termvectors` probe fires on every catalog search at all — flipping it should take
+a project deploy, not just a Zed form save. Enable it in your project's
+`Pyz\Client\SearchRanking\SearchRankingConfig` by overriding `isSpecificityWeightingEnabled(): bool` to
+return `true`; the tuning settings become meaningful once that's done. **This is the only override point
+that actually works** — `Shared\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled()` is a
+plain hardcoded `return false;`, not a project-overridable `AbstractSharedConfig`, so overriding a
+`Pyz\Shared\SearchRanking\SearchRankingConfig` class has no effect. Other code that needs to ask whether
+specificity weighting is live for this project — e.g. a different package reimplementing this formula for
+its own evaluation tooling — should call `SearchRankingClientInterface::isSpecificityWeightingEnabled()`
+rather than referencing either config class directly; it resolves through this same, genuinely
+project-override-aware Client config.
 
-**Why it's opt-in at all:** it doubles the number of Elasticsearch round trips per catalog search. That's
-a real, permanent cost — worth it once you have a mixed catalog with both exact-match and browsy query
-patterns, not worth paying on every search by default.
+**Also override `getSpecificityProbeFieldSearchAnalyzers(): array`** on the same Client config class if
+your project's own `page.json` schema declares a custom search-time analyzer for its fulltext fields (this
+package's own demo shop does, for synonym handling). The package's own default maps the two standard
+Spryker fulltext fields to Elasticsearch/OpenSearch's built-in `standard` analyzer — safe on a vanilla
+install, but almost certainly wrong once a project adds its own custom search-time analyzer, since
+`_termvectors` would then tokenize differently than the real query does.
 
-**Safety:** a failing or empty probe (zero hits, a transient engine hiccup) is caught and falls back to
-the configured static `relevanceWeight` unchanged — this feature can degrade to "as if it were off" but
-never breaks or blocks the real search it's attached to. The same fallback covers a KV-storage payload
-published before this feature existed: a project that enables the flag before its first post-upgrade
-Zed save still gets sane defaults, not an exception.
+**Why it's opt-in at all:** it doubles the number of Elasticsearch/OpenSearch round trips per catalog
+search. That's a real, permanent cost — worth it once you have a mixed catalog with both exact-match and
+browsy query patterns, not worth paying on every search by default.
+
+**Safety:** a failing or empty probe (no query term with real corpus evidence, a transient engine hiccup)
+is caught and falls back to the configured static `relevanceWeight` unchanged — this feature can degrade
+to "as if it were off" but never breaks or blocks the real search it's attached to. The same fallback
+covers a KV-storage payload published before this feature existed: a project that enables the flag before
+its first post-upgrade Zed save still gets sane defaults, not an exception.
 
 **Visible in the search-debug overlay.** `SearchRankingFunctionScoreQueryExpanderPlugin` hands its
-`EntropyWeightingResult` off to `SearchRankingClient` (the one instance the Locator guarantees stays the
-same across this package's plugins for the whole request), so
+`SpecificityWeightingResult` off to `SearchRankingClient` (the one instance the Locator guarantees stays
+the same across this package's plugins for the whole request), so
 `SearchRankingProductDebugDataExpanderPlugin` can read the SAME result back later, when building the
 overlay — not an independent, stale config lookup. Two effects:
 
 - The overlay's "Relevance weight (α)" line and the closing combination formula use the per-query
-  effective weight entropy actually applied, not the static configured one — the formula stays
-  reproducible-by-eye against the real final score even with entropy weighting on.
-- A second "Entropy weighting" section appears (only when the feature actually ran for that query),
+  effective weight specificity weighting actually applied, not the static configured one — the formula
+  stays reproducible-by-eye against the real final score even with specificity weighting on.
+- A second "Specificity weighting" section appears (only when the feature actually ran for that query),
   directly above the "Relevance weight (α)" line it explains the shift for, listing the configured
-  baseline, the measured normalized entropy, the shift, and the resulting effective weight — so the
+  baseline, the measured normalized specificity, the shift, and the resulting effective weight — so the
   debug overlay explains *why* `relevanceWeight` moved, right next to its new value, not just the value
   itself elsewhere on the page.
 
@@ -947,23 +983,31 @@ needs", this one asks "is this installation wired up correctly."
 
 ## Import file formats
 
-`search_ranking_metric.csv`:
+`search_ranking_metric.csv` — `store`/`locale` scope which store×locale this row's `weight` applies to;
+`name`/`formula`/`is_active` are global identity fields shared across every scope, so a metric imported
+for two stores appears as two rows with the same `name` but different `weight`/`store`/`locale`:
 
 ```csv
-name,weight,formula,is_active
-pdp_impressions,0.3,atan(x / avg) / (pi() / 2),1
-top_seller,0.5,x / max,1
-random,0.2,random(),1
+name,weight,formula,is_active,store,locale
+pdp_impressions,0.3,atan(x / avg) / (pi() / 2),1,DE,de_DE
+top_seller,0.5,x / max,1,DE,de_DE
+random,0.2,random(),1,DE,de_DE
 ```
 
-`search_ranking_product_metric.csv` (raw values only — normalized values are computed by the cron):
+`search_ranking_product_metric.csv` (raw values only — normalized values are computed by the cron;
+`store`/`locale` scope the raw value itself, same convention as above):
 
 ```csv
-abstract_sku,metric_name,raw_value
-001,pdp_impressions,8250
-001,top_seller,132
-001,random,0
+abstract_sku,metric_name,raw_value,store,locale
+001,pdp_impressions,8250,DE,de_DE
+001,top_seller,132,DE,de_DE
+001,random,0,DE,de_DE
 ```
+
+> **Breaking change (since the store/locale scoping migration):** both CSVs now require `store`/`locale`
+> columns. A pre-migration CSV without them fails at import time — `is_active`/`weight` were always
+> required columns too, so a missing `store`/`locale` column surfaces the same way any other missing
+> required column always has.
 
 Example files ship in this package under `data/import/`, formatted correctly but **populated with this
 package's own development shop's real catalog SKUs and metric values** — they exist to prove the import
@@ -980,8 +1024,13 @@ SKUs at all, or coincidentally-matching SKUs get some other shop's numbers.
   concrete-product search use pure text relevance.
 - Re-publishing of product documents happens **only via the normalize cron** (or manually) —
   importing raw values alone does not refresh the search documents until the next run.
-- Values are per abstract product and global — no per-store or per-locale signals; the ranking
-  configuration document is also global (one key for all stores).
+- Settings, metric weights, raw/normalized product-metric values, and the published
+  ranking-configuration key-value document are all scoped **per (store, locale)** end to end — one
+  document per store×locale in key-value storage, one row per scope in every underlying table — and the
+  Zed GUI (Metrics, Product Values, Product Value Gaps, Settings) has an explicit Store+Locale selector on
+  every page that needs one, matching `spryker-community/search-ranking-optimizer`'s own selector UX.
+  `search-ranking:normalize`/`:randomize` accept optional `--store`/`--locale` options to restrict a run
+  to one scope; omitting them processes every store×locale, same as before this was scoped at all.
 - With Spryker's **direct synchronization** enabled, core only flushes the sync buffer on console
   termination; this package flushes explicitly after publishing so Zed web saves reach key-value
   storage immediately.
@@ -1064,11 +1113,12 @@ Client suite lives at
 Several tests in that Client suite are real integration tests, not unit tests: `FunctionScoreExecutionTest`
 builds a real `function_score` and executes it against real documents in a test-owned index,
 `EngineCompatibilityCheckerTest` runs `EngineCompatibilityChecker`'s real `_validate/query` probes against
-the actual cluster, and `EntropyWeightCalculatorTest` fires real BM25 queries against a test-owned index
-to prove the entropy-derived weight actually moves in the right direction for a uniform vs. a skewed
-score distribution — all three need a reachable search engine, though still no database.
-`ShannonEntropyCalculator`'s own entropy formula is covered separately as a plain unit test (plain arrays,
-no engine needed) in `ShannonEntropyCalculatorTest`.
+the actual cluster, and `QueryTermFrequencyFetcherTest` fires real `_termvectors` probes against a
+test-owned index (including one deliberately using a mismatched index-time analyzer, to prove
+`per_field_analyzer` actually overrides it) — all three need a reachable search engine, though still no
+database. `QuerySpecificityCalculator`'s own blend/normalize formula and `SpecificityWeightCalculator`'s
+own shift/fallback orchestration are covered separately as plain unit tests (plain arrays/stubbed IO, no
+engine needed) in `QuerySpecificityCalculatorTest`/`SpecificityWeightCalculatorTest`.
 
 `Zed/SearchRankingGui` (`ProductMetricGapFinderTest`) is the mirror case on the database side: real raw
 SQL (the `CROSS JOIN` + `LEFT JOIN` + `IS NULL` — see [What it does](#what-it-does) for why this one query

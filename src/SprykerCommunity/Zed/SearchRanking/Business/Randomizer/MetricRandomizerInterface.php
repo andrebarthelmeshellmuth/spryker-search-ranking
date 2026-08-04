@@ -13,16 +13,22 @@ interface MetricRandomizerInterface
 {
     /**
      * Specification:
-     * - Does nothing and returns false when no metric with the configured name (bound at construction)
-     *   exists, or it exists but is not active — a deliberate no-op, not an error: whoever schedules this
-     *   (typically a nightly cron) should not need to know or care whether the metric happens to be
-     *   turned on right now.
-     * - Otherwise re-normalizes every product-metric row of that metric (re-evaluating its formula per
-     *   row — a formula like `random()` that ignores its `x` input therefore produces fresh values every
-     *   call) and republishes every scored product so the new values reach Elasticsearch, then returns
-     *   true.
+     * - Iterates every store×locale; a scope is skipped (a deliberate no-op, not an error) when no metric
+     *   with the configured name (bound at construction) exists for it, or it exists but is not active —
+     *   whoever schedules this (typically a nightly cron) should not need to know or care whether the
+     *   metric happens to be turned on for every store right now.
+     * - For every scope where it IS active, re-normalizes every product-metric row of that metric
+     *   (re-evaluating its formula per row — a formula like `random()` that ignores its `x` input
+     *   therefore produces fresh values every call). Republishes every scored product exactly once, after
+     *   all scopes have been re-normalized, so the new values reach Elasticsearch.
+     * - `$storeName`/`$localeName` are an optional filter — `null` (the default) fans out over every
+     *   store×locale; a real value narrows to just that one scope.
      *
-     * @return bool True when the metric was found, active, and refreshed; false on the no-op path.
+     * @param string|null $storeName
+     * @param string|null $localeName
+     *
+     * @return bool True when at least one scope was found, active, and refreshed; false when every scope
+     * was a no-op.
      */
-    public function randomizeIfActive(): bool;
+    public function randomizeIfActive(?string $storeName = null, ?string $localeName = null): bool;
 }

@@ -42,6 +42,7 @@ use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManager;
 use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\SearchRankingDependencyProvider;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
 
@@ -81,6 +82,7 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
             $this->getEntityManager(),
             $this->createFormulaEvaluator(),
             $this->getConfig(),
+            $this->getStoreFacade(),
         );
     }
 
@@ -173,6 +175,7 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         return new MetricDigestBuilder(
             $this->getRepository(),
             $this->getEntityManager(),
+            $this->getStoreFacade(),
         );
     }
 
@@ -235,7 +238,16 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
             $this->getRepository(),
             $this->createProductMetricNormalizer(),
             $this->createProductAbstractScorePublisher(),
+            $this->getStoreFacade(),
             $this->getConfig()->getRandomMetricName(),
         );
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface
+     */
+    public function getStoreFacade(): SearchRankingToStoreFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_STORE);
     }
 }

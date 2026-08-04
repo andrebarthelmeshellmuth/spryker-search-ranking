@@ -13,6 +13,7 @@ use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
 use SprykerCommunity\Zed\SearchRankingStorage\Business\Writer\RankingConfigurationStorageWriter;
 use SprykerCommunity\Zed\SearchRankingStorage\Business\Writer\RankingConfigurationStorageWriterInterface;
 use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface;
+use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSynchronizationFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingStorage\SearchRankingStorageDependencyProvider;
 
@@ -32,6 +33,7 @@ class SearchRankingStorageBusinessFactory extends AbstractBusinessFactory
             $this->getSearchRankingFacade(),
             $this->getEntityManager(),
             $this->getSynchronizationFacade(),
+            $this->getStoreFacade(),
         );
     }
 
@@ -49,5 +51,13 @@ class SearchRankingStorageBusinessFactory extends AbstractBusinessFactory
     public function getSynchronizationFacade(): SearchRankingStorageToSynchronizationFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingStorageDependencyProvider::FACADE_SYNCHRONIZATION);
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToStoreFacadeInterface
+     */
+    public function getStoreFacade(): SearchRankingStorageToStoreFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingStorageDependencyProvider::FACADE_STORE);
     }
 }

@@ -11,6 +11,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Business\Metric;
 
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRanking\Business\Exception\InvalidFormulaException;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface;
@@ -37,6 +38,9 @@ class MetricWriter implements MetricWriterInterface
     }
 
     /**
+     * Writes only the metric's IDENTITY fields — see this method's own interface docblock. The incoming
+     * transfer's `weight` (if any) is deliberately ignored here; use {@see saveMetricWeight()} instead.
+     *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      *
      * @throws \SprykerCommunity\Zed\SearchRanking\Business\Exception\InvalidFormulaException
@@ -52,7 +56,11 @@ class MetricWriter implements MetricWriterInterface
         }
 
         $previousMetricTransfer = $metricTransfer->getIdSearchRankingMetric() !== null
-            ? $this->repository->findMetricById($metricTransfer->getIdSearchRankingMetric())
+            ? $this->repository->findMetricById(
+                $metricTransfer->getIdSearchRankingMetric(),
+                SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+                SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+            )
             : null;
 
         $metricTransfer->setShape($this->detectShape($metricTransfer));
@@ -60,10 +68,43 @@ class MetricWriter implements MetricWriterInterface
         $savedMetricTransfer = $this->entityManager->saveMetric($metricTransfer);
 
         if ($this->hasAnyTrackedFieldChanged($previousMetricTransfer, $savedMetricTransfer)) {
-            $this->recordHistory($savedMetricTransfer);
+            $this->recordHistory(
+                $savedMetricTransfer,
+                SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+                SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+            );
         }
 
         return $savedMetricTransfer;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $weight
+     *
+     * @return void
+     */
+    public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void
+    {
+        $previousWeight = $this->repository->findMetricWeight($idSearchRankingMetric, $storeName, $localeName);
+
+        $this->entityManager->saveMetricWeight($idSearchRankingMetric, $storeName, $localeName, $weight);
+
+        if ($previousWeight === $weight) {
+            return;
+        }
+
+        $metricTransfer = $this->repository->findMetricById($idSearchRankingMetric, $storeName, $localeName);
+
+        if ($metricTransfer === null) {
+            return;
+        }
+
+        $this->recordHistory($metricTransfer, $storeName, $localeName);
     }
 
     /**
@@ -87,7 +128,11 @@ class MetricWriter implements MetricWriterInterface
             return null;
         }
 
-        $digestTransfer = $this->repository->findMetricDigest($metricTransfer->getIdSearchRankingMetric());
+        $digestTransfer = $this->repository->findMetricDigest(
+            $metricTransfer->getIdSearchRankingMetric(),
+            SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+        );
 
         if ($digestTransfer === null) {
             return null;
@@ -114,7 +159,9 @@ class MetricWriter implements MetricWriterInterface
 
     /**
      * Null $previousMetricTransfer means a brand-new metric — always worth an initial history row, since
-     * there is nothing to compare it against yet.
+     * there is nothing to compare it against yet. Weight is deliberately NOT part of this comparison —
+     * {@see saveMetricWeight()} tracks its own changes independently, at whatever (store, locale) it was
+     * called with.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer|null $previousMetricTransfer
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $currentMetricTransfer
@@ -130,56 +177,73 @@ class MetricWriter implements MetricWriterInterface
         }
 
         return $previousMetricTransfer->getFormula() !== $currentMetricTransfer->getFormula()
-            || $previousMetricTransfer->getWeight() !== $currentMetricTransfer->getWeight()
             || $previousMetricTransfer->getIsActive() !== $currentMetricTransfer->getIsActive()
             || $previousMetricTransfer->getIsHigherBetter() !== $currentMetricTransfer->getIsHigherBetter();
     }
 
     /**
-     * Snapshots the metric's now-current config alongside its digest (if one exists yet — a brand-new
-     * metric has none until the normalize cron has run at least once) and the fit quality of the new
-     * formula against that digest, so a later drift-detection read can compare against exactly what was
-     * true at the moment this change was made.
+     * Snapshots the metric's now-current config, weight (at the given store+locale), and digest (if one
+     * exists yet — a brand-new metric has none until the normalize cron has run at least once), so a
+     * later drift-detection read can compare against exactly what was true at the moment this change was
+     * made.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return void
      */
-    protected function recordHistory(SearchRankingMetricTransfer $metricTransfer): void
+    protected function recordHistory(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): void
     {
-        $this->entityManager->recordMetricHistory($this->buildHistoryTransfer($metricTransfer, true));
+        $this->entityManager->recordMetricHistory($this->buildHistoryTransfer($metricTransfer, $storeName, $localeName, true));
     }
 
     /**
      * {@inheritDoc}
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return void
      */
-    public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer): void
+    public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): void
     {
-        $this->entityManager->recordMetricHistory($this->buildHistoryTransfer($metricTransfer, false));
+        $this->entityManager->recordMetricHistory($this->buildHistoryTransfer($metricTransfer, $storeName, $localeName, false));
     }
 
     /**
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
      * @param bool $isChange
      *
      * @return \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer
      */
-    protected function buildHistoryTransfer(SearchRankingMetricTransfer $metricTransfer, bool $isChange): SearchRankingMetricHistoryTransfer
-    {
+    protected function buildHistoryTransfer(
+        SearchRankingMetricTransfer $metricTransfer,
+        string $storeName,
+        string $localeName,
+        bool $isChange,
+    ): SearchRankingMetricHistoryTransfer {
+        $weight = $this->repository->findMetricWeight($metricTransfer->getIdSearchRankingMetricOrFail(), $storeName, $localeName) ?? 0.0;
+
         $historyTransfer = (new SearchRankingMetricHistoryTransfer())
             ->setFkSearchRankingMetric($metricTransfer->getIdSearchRankingMetricOrFail())
             ->setMetricName($metricTransfer->getNameOrFail())
-            ->setWeight($metricTransfer->getWeightOrFail())
+            ->setStoreName($storeName)
+            ->setLocaleName($localeName)
+            ->setWeight($weight)
             ->setFormula($metricTransfer->getFormulaOrFail())
             ->setIsActive($metricTransfer->getIsActive() ?? true)
             ->setIsHigherBetter($metricTransfer->getIsHigherBetter() ?? true)
             ->setIsChange($isChange);
 
-        $digestTransfer = $this->repository->findMetricDigest($metricTransfer->getIdSearchRankingMetricOrFail());
+        $digestTransfer = $this->repository->findMetricDigest(
+            $metricTransfer->getIdSearchRankingMetricOrFail(),
+            $storeName,
+            $localeName,
+        );
 
         if ($digestTransfer !== null) {
             $historyTransfer

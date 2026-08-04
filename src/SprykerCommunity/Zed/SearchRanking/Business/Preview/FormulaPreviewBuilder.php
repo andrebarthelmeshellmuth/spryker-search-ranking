@@ -39,13 +39,20 @@ class FormulaPreviewBuilder implements FormulaPreviewBuilderInterface
      * @param int $idSearchRankingMetric
      * @param string $formula
      * @param bool $isHigherBetter
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer
      */
-    public function buildPreview(int $idSearchRankingMetric, string $formula, bool $isHigherBetter): SearchRankingFormulaPreviewTransfer
-    {
+    public function buildPreview(
+        int $idSearchRankingMetric,
+        string $formula,
+        bool $isHigherBetter,
+        string $storeName,
+        string $localeName,
+    ): SearchRankingFormulaPreviewTransfer {
         $previewTransfer = new SearchRankingFormulaPreviewTransfer();
-        $digestTransfer = $this->repository->findMetricDigest($idSearchRankingMetric);
+        $digestTransfer = $this->repository->findMetricDigest($idSearchRankingMetric, $storeName, $localeName);
 
         if ($digestTransfer === null) {
             return $previewTransfer->setErrorMessage(

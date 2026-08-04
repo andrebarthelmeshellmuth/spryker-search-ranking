@@ -37,23 +37,43 @@ interface SearchRankingEntityManagerInterface
     public function updateNormalizedValues(array $normalizedValuesByIdProductMetric): void;
 
     /**
-     * @param array<int, float> $weightsByIdSearchRankingMetric
+     * Upserts one metric's weight for one (store, locale) — deliberately bypasses `saveMetric()`'s
+     * mandatory formula re-validation, which is unnecessary work and an unnecessary failure surface here
+     * since the formula itself never changes. Same "narrow, single-field write" shape as
+     * {@see updateNormalizedValues()}.
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $weight
      *
      * @return void
      */
-    public function updateMetricWeights(array $weightsByIdSearchRankingMetric): void;
+    public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void;
+
+    /**
+     * @param array<int, float> $weightsByIdSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return void
+     */
+    public function updateMetricWeights(array $weightsByIdSearchRankingMetric, string $storeName, string $localeName): void;
 
     /**
      * @param string $settingKey
+     * @param string $storeName
+     * @param string $localeName
      * @param string $settingValue
      *
      * @return void
      */
-    public function saveSetting(string $settingKey, string $settingValue): void;
+    public function saveSetting(string $settingKey, string $storeName, string $localeName, string $settingValue): void;
 
     /**
-     * Upserts by `fkSearchRankingMetric` — one digest row per metric, overwritten wholesale on every
-     * rebuild rather than versioned, since only the CURRENT distribution is ever meaningful.
+     * Upserts by `(fkSearchRankingMetric, storeName, localeName)` — one digest row per metric per scope,
+     * overwritten wholesale on every rebuild rather than versioned, since only the CURRENT distribution
+     * is ever meaningful.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricDigestTransfer $digestTransfer
      *

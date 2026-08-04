@@ -41,15 +41,18 @@ class WeightNormalizer implements WeightNormalizerInterface
     }
 
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return bool
      *   True when any weight actually changed (and was persisted); false when there were no active
      *   metrics, all active weights were 0, or the active weights already summed to 1 — in every one of
      *   those cases nothing is written, so pressing this repeatedly is a genuine no-op once weights are
      *   normalized, not just a fresh write of the same numbers.
      */
-    public function normalizeActiveWeights(): bool
+    public function normalizeActiveWeights(string $storeName, string $localeName): bool
     {
-        $metricTransfers = $this->repository->getActiveMetricCollection()->getMetrics();
+        $metricTransfers = $this->repository->getActiveMetricCollection($storeName, $localeName)->getMetrics();
 
         $weightSum = 0.0;
 
@@ -67,7 +70,7 @@ class WeightNormalizer implements WeightNormalizerInterface
             $normalizedWeightsById[$metricTransfer->getIdSearchRankingMetricOrFail()] = $metricTransfer->getWeightOrFail() / $weightSum;
         }
 
-        $this->entityManager->updateMetricWeights($normalizedWeightsById);
+        $this->entityManager->updateMetricWeights($normalizedWeightsById, $storeName, $localeName);
 
         return true;
     }

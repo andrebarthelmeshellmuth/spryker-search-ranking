@@ -43,7 +43,9 @@ class SearchRankingStorageRepository extends AbstractRepository implements Searc
         foreach ($storageQuery->find() as $storageEntity) {
             $synchronizationDataTransfers[] = (new SynchronizationDataTransfer())
                 ->setData($storageEntity->getData())
-                ->setKey($storageEntity->getKey());
+                ->setKey($storageEntity->getKey())
+                ->setStore($storageEntity->getStore())
+                ->setLocale($storageEntity->getLocale());
         }
 
         return $synchronizationDataTransfers;

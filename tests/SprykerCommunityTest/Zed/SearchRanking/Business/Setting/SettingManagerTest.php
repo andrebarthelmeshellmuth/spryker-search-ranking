@@ -45,7 +45,7 @@ class SettingManagerTest extends Unit
         $settingManager = $this->createSettingManager($repositoryMock);
 
         // Act
-        $relevanceWeight = $settingManager->getRelevanceWeight();
+        $relevanceWeight = $settingManager->getRelevanceWeight('DE', 'de_DE');
 
         // Assert
         $this->assertSame(0.75, $relevanceWeight);
@@ -65,7 +65,7 @@ class SettingManagerTest extends Unit
         $settingManager = $this->createSettingManager($repositoryMock);
 
         // Act
-        $relevanceWeight = $settingManager->getRelevanceWeight();
+        $relevanceWeight = $settingManager->getRelevanceWeight('DE', 'de_DE');
 
         // Assert
         $this->assertSame((new SearchRankingConfig())->getDefaultRelevanceWeight(), $relevanceWeight);
@@ -81,12 +81,12 @@ class SettingManagerTest extends Unit
         $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManagerMock->expects($this->once())
             ->method('saveSetting')
-            ->with(SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT, '0.42');
+            ->with(SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '0.42');
 
         $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
 
         // Act
-        $settingManager->saveRelevanceWeight(0.42);
+        $settingManager->saveRelevanceWeight('DE', 'de_DE', 0.42);
     }
 
     /**
@@ -103,7 +103,7 @@ class SettingManagerTest extends Unit
         $settingManager = $this->createSettingManager($repositoryMock);
 
         // Act
-        $relevanceSaturationPoint = $settingManager->getRelevanceSaturationPoint();
+        $relevanceSaturationPoint = $settingManager->getRelevanceSaturationPoint('DE', 'de_DE');
 
         // Assert
         $this->assertSame(20.5, $relevanceSaturationPoint);
@@ -123,7 +123,7 @@ class SettingManagerTest extends Unit
         $settingManager = $this->createSettingManager($repositoryMock);
 
         // Act
-        $relevanceSaturationPoint = $settingManager->getRelevanceSaturationPoint();
+        $relevanceSaturationPoint = $settingManager->getRelevanceSaturationPoint('DE', 'de_DE');
 
         // Assert
         $this->assertSame((new SearchRankingConfig())->getDefaultRelevanceSaturationPoint(), $relevanceSaturationPoint);
@@ -139,186 +139,244 @@ class SettingManagerTest extends Unit
         $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManagerMock->expects($this->once())
             ->method('saveSetting')
-            ->with(SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT, '15');
+            ->with(SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '15');
 
         $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
 
         // Act
-        $settingManager->saveRelevanceSaturationPoint(15.0);
+        $settingManager->saveRelevanceSaturationPoint('DE', 'de_DE', 15.0);
     }
 
     /**
      * @return void
      */
-    public function testReturnsTheSavedEntropyProbeResultSizeWhenOneExists(): void
+    public function testReturnsTheSavedSpecificityBlendWeightWhenOneExists(): void
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $repositoryMock->method('findSettingValue')
-            ->with(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_PROBE_RESULT_SIZE)
-            ->willReturn('20');
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_BLEND_WEIGHT)
+            ->willReturn('0.8');
 
         $settingManager = $this->createSettingManager($repositoryMock);
 
         // Act
-        $entropyProbeResultSize = $settingManager->getEntropyProbeResultSize();
+        $specificityBlendWeight = $settingManager->getSpecificityBlendWeight('DE', 'de_DE');
 
         // Assert
-        $this->assertSame(20, $entropyProbeResultSize);
+        $this->assertSame(0.8, $specificityBlendWeight);
     }
 
     /**
      * @return void
      */
-    public function testFallsBackToTheConfigDefaultWhenNoEntropyProbeResultSizeIsSaved(): void
+    public function testFallsBackToTheConfigDefaultWhenNoSpecificityBlendWeightIsSaved(): void
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $repositoryMock->method('findSettingValue')
-            ->with(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_PROBE_RESULT_SIZE)
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_BLEND_WEIGHT)
             ->willReturn(null);
 
         $settingManager = $this->createSettingManager($repositoryMock);
 
         // Act
-        $entropyProbeResultSize = $settingManager->getEntropyProbeResultSize();
+        $specificityBlendWeight = $settingManager->getSpecificityBlendWeight('DE', 'de_DE');
 
         // Assert
-        $this->assertSame((new SearchRankingConfig())->getDefaultEntropyProbeResultSize(), $entropyProbeResultSize);
+        $this->assertSame((new SearchRankingConfig())->getDefaultSpecificityBlendWeight(), $specificityBlendWeight);
     }
 
     /**
      * @return void
      */
-    public function testSavesTheEntropyProbeResultSizeAsAStringUnderItsSettingKey(): void
+    public function testSavesTheSpecificityBlendWeightAsAStringUnderItsSettingKey(): void
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManagerMock->expects($this->once())
             ->method('saveSetting')
-            ->with(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_PROBE_RESULT_SIZE, '20');
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_BLEND_WEIGHT, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '0.8');
 
         $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
 
         // Act
-        $settingManager->saveEntropyProbeResultSize(20);
+        $settingManager->saveSpecificityBlendWeight('DE', 'de_DE', 0.8);
     }
 
     /**
      * @return void
      */
-    public function testReturnsTheSavedEntropyWeightExponentWhenOneExists(): void
+    public function testReturnsTheSavedSpecificitySaturationPointWhenOneExists(): void
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $repositoryMock->method('findSettingValue')
-            ->with(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_EXPONENT)
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_SATURATION_POINT)
+            ->willReturn('4.0');
+
+        $settingManager = $this->createSettingManager($repositoryMock);
+
+        // Act
+        $specificitySaturationPoint = $settingManager->getSpecificitySaturationPoint('DE', 'de_DE');
+
+        // Assert
+        $this->assertSame(4.0, $specificitySaturationPoint);
+    }
+
+    /**
+     * @return void
+     */
+    public function testFallsBackToTheConfigDefaultWhenNoSpecificitySaturationPointIsSaved(): void
+    {
+        // Arrange
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_SATURATION_POINT)
+            ->willReturn(null);
+
+        $settingManager = $this->createSettingManager($repositoryMock);
+
+        // Act
+        $specificitySaturationPoint = $settingManager->getSpecificitySaturationPoint('DE', 'de_DE');
+
+        // Assert
+        $this->assertSame((new SearchRankingConfig())->getDefaultSpecificitySaturationPoint(), $specificitySaturationPoint);
+    }
+
+    /**
+     * @return void
+     */
+    public function testSavesTheSpecificitySaturationPointAsAStringUnderItsSettingKey(): void
+    {
+        // Arrange
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->expects($this->once())
+            ->method('saveSetting')
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_SATURATION_POINT, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '4');
+
+        $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
+
+        // Act
+        $settingManager->saveSpecificitySaturationPoint('DE', 'de_DE', 4.0);
+    }
+
+    /**
+     * @return void
+     */
+    public function testReturnsTheSavedSpecificityWeightExponentWhenOneExists(): void
+    {
+        // Arrange
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT)
             ->willReturn('1.5');
 
         $settingManager = $this->createSettingManager($repositoryMock);
 
         // Act
-        $entropyWeightExponent = $settingManager->getEntropyWeightExponent();
+        $specificityWeightExponent = $settingManager->getSpecificityWeightExponent('DE', 'de_DE');
 
         // Assert
-        $this->assertSame(1.5, $entropyWeightExponent);
+        $this->assertSame(1.5, $specificityWeightExponent);
     }
 
     /**
      * @return void
      */
-    public function testFallsBackToTheConfigDefaultWhenNoEntropyWeightExponentIsSaved(): void
+    public function testFallsBackToTheConfigDefaultWhenNoSpecificityWeightExponentIsSaved(): void
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $repositoryMock->method('findSettingValue')
-            ->with(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_EXPONENT)
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT)
             ->willReturn(null);
 
         $settingManager = $this->createSettingManager($repositoryMock);
 
         // Act
-        $entropyWeightExponent = $settingManager->getEntropyWeightExponent();
+        $specificityWeightExponent = $settingManager->getSpecificityWeightExponent('DE', 'de_DE');
 
         // Assert
-        $this->assertSame((new SearchRankingConfig())->getDefaultEntropyWeightExponent(), $entropyWeightExponent);
+        $this->assertSame((new SearchRankingConfig())->getDefaultSpecificityWeightExponent(), $specificityWeightExponent);
     }
 
     /**
      * @return void
      */
-    public function testSavesTheEntropyWeightExponentAsAStringUnderItsSettingKey(): void
+    public function testSavesTheSpecificityWeightExponentAsAStringUnderItsSettingKey(): void
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManagerMock->expects($this->once())
             ->method('saveSetting')
-            ->with(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_EXPONENT, '1.5');
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '1.5');
 
         $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
 
         // Act
-        $settingManager->saveEntropyWeightExponent(1.5);
+        $settingManager->saveSpecificityWeightExponent('DE', 'de_DE', 1.5);
     }
 
     /**
      * @return void
      */
-    public function testReturnsTheSavedEntropyWeightShiftMagnitudeWhenOneExists(): void
+    public function testReturnsTheSavedSpecificityWeightShiftMagnitudeWhenOneExists(): void
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $repositoryMock->method('findSettingValue')
-            ->with(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE)
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE)
             ->willReturn('0.3');
 
         $settingManager = $this->createSettingManager($repositoryMock);
 
         // Act
-        $entropyWeightShiftMagnitude = $settingManager->getEntropyWeightShiftMagnitude();
+        $specificityWeightShiftMagnitude = $settingManager->getSpecificityWeightShiftMagnitude('DE', 'de_DE');
 
         // Assert
-        $this->assertSame(0.3, $entropyWeightShiftMagnitude);
+        $this->assertSame(0.3, $specificityWeightShiftMagnitude);
     }
 
     /**
      * @return void
      */
-    public function testFallsBackToTheConfigDefaultWhenNoEntropyWeightShiftMagnitudeIsSaved(): void
+    public function testFallsBackToTheConfigDefaultWhenNoSpecificityWeightShiftMagnitudeIsSaved(): void
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $repositoryMock->method('findSettingValue')
-            ->with(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE)
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE)
             ->willReturn(null);
 
         $settingManager = $this->createSettingManager($repositoryMock);
 
         // Act
-        $entropyWeightShiftMagnitude = $settingManager->getEntropyWeightShiftMagnitude();
+        $specificityWeightShiftMagnitude = $settingManager->getSpecificityWeightShiftMagnitude('DE', 'de_DE');
 
         // Assert
-        $this->assertSame((new SearchRankingConfig())->getDefaultEntropyWeightShiftMagnitude(), $entropyWeightShiftMagnitude);
+        $this->assertSame((new SearchRankingConfig())->getDefaultSpecificityWeightShiftMagnitude(), $specificityWeightShiftMagnitude);
     }
 
     /**
      * @return void
      */
-    public function testSavesTheEntropyWeightShiftMagnitudeAsAStringUnderItsSettingKey(): void
+    public function testSavesTheSpecificityWeightShiftMagnitudeAsAStringUnderItsSettingKey(): void
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManagerMock->expects($this->once())
             ->method('saveSetting')
-            ->with(SharedSearchRankingConfig::SETTING_KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE, '0.3');
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '0.3');
 
         $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
 
         // Act
-        $settingManager->saveEntropyWeightShiftMagnitude(0.3);
+        $settingManager->saveSpecificityWeightShiftMagnitude('DE', 'de_DE', 0.3);
     }
 
     /**

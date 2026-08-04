@@ -11,6 +11,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Business\Randomizer;
 
 use SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizerInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisherInterface;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
 /**
@@ -27,12 +28,14 @@ class MetricRandomizer implements MetricRandomizerInterface
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizerInterface $normalizer
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisherInterface $publisher
+     * @param \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface $storeFacade
      * @param string $metricName
      */
     public function __construct(
         protected SearchRankingRepositoryInterface $repository,
         protected ProductMetricNormalizerInterface $normalizer,
         protected ProductAbstractScorePublisherInterface $publisher,
+        protected SearchRankingToStoreFacadeInterface $storeFacade,
         /**
          * Baked in at construction (from {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getRandomMetricName()},
          * resolved by the business factory) rather than taken per-call — `AbstractFacade` has no `getConfig()`
@@ -44,19 +47,46 @@ class MetricRandomizer implements MetricRandomizerInterface
     }
 
     /**
+     * Fans out over every store×locale (mirroring {@see \SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizer::normalize()}'s
+     * own fan-out) but republishes only once at the end — a full catalog republish is expensive enough that
+     * doing it once after every scope has been re-randomized is worth the extra bookkeeping.
+     *
+     * @param string|null $filterStoreName
+     * @param string|null $filterLocaleName
+     *
      * @return bool
      */
-    public function randomizeIfActive(): bool
+    public function randomizeIfActive(?string $filterStoreName = null, ?string $filterLocaleName = null): bool
     {
-        $metricTransfer = $this->repository->findMetricByName($this->metricName);
+        $wasAnyScopeRandomized = false;
 
-        if ($metricTransfer === null || !$metricTransfer->getIsActive()) {
-            return false;
+        foreach ($this->storeFacade->getAllStores() as $storeTransfer) {
+            $storeName = $storeTransfer->getNameOrFail();
+
+            if ($filterStoreName !== null && $storeName !== $filterStoreName) {
+                continue;
+            }
+
+            foreach ($storeTransfer->getAvailableLocaleIsoCodes() as $localeName) {
+                if ($filterLocaleName !== null && $localeName !== $filterLocaleName) {
+                    continue;
+                }
+
+                $metricTransfer = $this->repository->findMetricByName($this->metricName, $storeName, $localeName);
+
+                if ($metricTransfer === null || !$metricTransfer->getIsActive()) {
+                    continue;
+                }
+
+                $this->normalizer->normalizeMetric($metricTransfer, $storeName, $localeName);
+                $wasAnyScopeRandomized = true;
+            }
         }
 
-        $this->normalizer->normalizeMetric($metricTransfer);
-        $this->publisher->publishScoredProductAbstracts();
+        if ($wasAnyScopeRandomized) {
+            $this->publisher->publishScoredProductAbstracts();
+        }
 
-        return true;
+        return $wasAnyScopeRandomized;
     }
 }

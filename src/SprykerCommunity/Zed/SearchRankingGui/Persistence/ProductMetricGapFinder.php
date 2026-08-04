@@ -46,6 +46,13 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
     protected const DEFAULT_SORT_COLUMN = 'product_abstract.sku';
 
     /**
+     * The store/locale filter lives in the LEFT JOIN's own ON clause, not the WHERE clause: a WHERE
+     * filter on `product_metric.store_name`/`locale_name` would incorrectly drop every genuine gap row
+     * too, since those columns are NULL there (no matching `product_metric` row at all). Filtering in the
+     * ON clause instead means "only join a `product_metric` row from THIS scope" — a product with data in
+     * a different (store, locale) but none in this one still LEFT JOINs to NULL here, correctly flagged
+     * as a gap for the queried scope.
+     *
      * @var string
      */
     protected const BASE_SQL = <<<SQL
@@ -54,6 +61,8 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
         LEFT JOIN spy_search_ranking_product_metric product_metric
             ON product_metric.fk_product_abstract = product_abstract.id_product_abstract
             AND product_metric.fk_search_ranking_metric = metric.id_search_ranking_metric
+            AND product_metric.store_name = ?
+            AND product_metric.locale_name = ?
         WHERE metric.is_active = 1
             AND product_metric.id_search_ranking_product_metric IS NULL
         SQL;
@@ -62,6 +71,8 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
      * {@inheritDoc}
      *
      * @param int|null $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      * @param string $searchTerm
      * @param string $sortColumn
      * @param string $sortDirection
@@ -72,13 +83,16 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
      */
     public function findGaps(
         ?int $idSearchRankingMetric,
+        string $storeName,
+        string $localeName,
         string $searchTerm,
         string $sortColumn,
         string $sortDirection,
         int $limit,
         int $offset,
     ): array {
-        [$whereSql, $params] = $this->buildWhereClause($idSearchRankingMetric, $searchTerm);
+        [$whereSql, $whereParams] = $this->buildWhereClause($idSearchRankingMetric, $searchTerm);
+        $params = [$storeName, $localeName, ...$whereParams];
 
         // LIMIT/OFFSET deliberately interpolated, not bound as `?` params: PDOStatement::execute()'s array
         // form binds every value as PARAM_STR, and MariaDB rejects a quoted string literal in LIMIT/OFFSET
@@ -107,36 +121,43 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
      * {@inheritDoc}
      *
      * @param int|null $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return int
      */
-    public function countGaps(?int $idSearchRankingMetric): int
+    public function countGaps(?int $idSearchRankingMetric, string $storeName, string $localeName): int
     {
-        return $this->count($idSearchRankingMetric, '');
+        return $this->count($idSearchRankingMetric, $storeName, $localeName, '');
     }
 
     /**
      * {@inheritDoc}
      *
      * @param int|null $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      * @param string $searchTerm
      *
      * @return int
      */
-    public function countFilteredGaps(?int $idSearchRankingMetric, string $searchTerm): int
+    public function countFilteredGaps(?int $idSearchRankingMetric, string $storeName, string $localeName, string $searchTerm): int
     {
-        return $this->count($idSearchRankingMetric, $searchTerm);
+        return $this->count($idSearchRankingMetric, $storeName, $localeName, $searchTerm);
     }
 
     /**
      * @param int|null $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
      * @param string $searchTerm
      *
      * @return int
      */
-    protected function count(?int $idSearchRankingMetric, string $searchTerm): int
+    protected function count(?int $idSearchRankingMetric, string $storeName, string $localeName, string $searchTerm): int
     {
-        [$whereSql, $params] = $this->buildWhereClause($idSearchRankingMetric, $searchTerm);
+        [$whereSql, $whereParams] = $this->buildWhereClause($idSearchRankingMetric, $searchTerm);
+        $params = [$storeName, $localeName, ...$whereParams];
 
         $sql = sprintf('SELECT COUNT(*) %s %s', static::BASE_SQL, $whereSql);
 

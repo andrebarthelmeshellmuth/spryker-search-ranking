@@ -10,7 +10,9 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRankingGui\Communication\Controller;
 
 use Spryker\Zed\Kernel\Communication\Controller\AbstractController;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * @method \SprykerCommunity\Zed\SearchRankingGui\Communication\SearchRankingGuiCommunicationFactory getFactory()
@@ -18,23 +20,64 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 class IndexController extends AbstractController
 {
     /**
+     * @var string
+     */
+    protected const PARAM_STORE_NAME = 'storeName';
+
+    /**
+     * @var string
+     */
+    protected const PARAM_LOCALE_NAME = 'localeName';
+
+    /**
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     *
      * @return array<string, mixed>
      */
-    public function indexAction(): array
+    public function indexAction(Request $request): array
     {
+        $storeName = $this->resolveStoreName($request);
+        $localeName = $this->resolveLocaleName($request);
+
         return $this->viewResponse([
-            'metricTable' => $this->getFactory()->createMetricTable()->render(),
+            'metricTable' => $this->getFactory()->createMetricTable($storeName, $localeName)->render(),
             'normalizeWeightsForm' => $this->getFactory()->createNormalizeWeightsForm()->createView(),
+            'stores' => $this->getFactory()->getAllStoreNames(),
+            'locales' => $this->getFactory()->getAllLocaleNames(),
+            'selectedStoreName' => $storeName,
+            'selectedLocaleName' => $localeName,
         ]);
     }
 
     /**
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     *
      * @return \Symfony\Component\HttpFoundation\JsonResponse
      */
-    public function tableAction(): JsonResponse
+    public function tableAction(Request $request): JsonResponse
     {
         return $this->jsonResponse(
-            $this->getFactory()->createMetricTable()->fetchData(),
+            $this->getFactory()->createMetricTable($this->resolveStoreName($request), $this->resolveLocaleName($request))->fetchData(),
         );
+    }
+
+    /**
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     *
+     * @return string
+     */
+    protected function resolveStoreName(Request $request): string
+    {
+        return (string)$request->query->get(static::PARAM_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
+    }
+
+    /**
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     *
+     * @return string
+     */
+    protected function resolveLocaleName(Request $request): string
+    {
+        return (string)$request->query->get(static::PARAM_LOCALE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME;
     }
 }

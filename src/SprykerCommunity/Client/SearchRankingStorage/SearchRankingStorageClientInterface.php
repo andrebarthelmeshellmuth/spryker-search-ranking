@@ -16,13 +16,16 @@ interface SearchRankingStorageClientInterface
     /**
      * Specification:
      * - Reads the ranking configuration document (active metric weights + relevanceWeight +
-     *   relevanceSaturationPoint) from key-value storage.
+     *   relevanceSaturationPoint) for the given store and locale from key-value storage.
      * - Returns null when the document was never synchronized.
-     * - Memoizes the result for the rest of the request.
+     * - Memoizes the result per (store, locale) for the rest of the request.
      *
      * @api
      *
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer|null
      */
-    public function findRankingConfiguration(): ?SearchRankingConfigurationStorageTransfer;
+    public function findRankingConfiguration(string $storeName, string $localeName): ?SearchRankingConfigurationStorageTransfer;
 }

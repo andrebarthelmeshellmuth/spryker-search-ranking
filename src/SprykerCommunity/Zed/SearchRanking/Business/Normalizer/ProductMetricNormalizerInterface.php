@@ -19,18 +19,26 @@ interface ProductMetricNormalizerInterface
      * {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getRandomMetricName()}) — that one is
      * refreshed on its own nightly cadence by
      * {@see \SprykerCommunity\Zed\SearchRanking\Business\Randomizer\MetricRandomizerInterface} instead.
+     * `$storeName`/`$localeName` are an optional filter — `null` (the default) fans out over every
+     * store×locale, matching every store's own available locales; a real value narrows to just that one
+     * scope.
+     *
+     * @param string|null $storeName
+     * @param string|null $localeName
      *
      * @return \Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer
      */
-    public function normalize(): SearchRankingNormalizationResultTransfer;
+    public function normalize(?string $storeName = null, ?string $localeName = null): SearchRankingNormalizationResultTransfer;
 
     /**
      * Normalizes every product-metric row of the given metric, regardless of whether it is the random
      * tie-breaker metric normalize() itself skips.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return int
      */
-    public function normalizeMetric(SearchRankingMetricTransfer $metricTransfer): int;
+    public function normalizeMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): int;
 }

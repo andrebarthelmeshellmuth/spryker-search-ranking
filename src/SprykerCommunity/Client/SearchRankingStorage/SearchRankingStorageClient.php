@@ -24,8 +24,8 @@ class SearchRankingStorageClient extends AbstractClient implements SearchRanking
      *
      * @return \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer|null
      */
-    public function findRankingConfiguration(): ?SearchRankingConfigurationStorageTransfer
+    public function findRankingConfiguration(string $storeName, string $localeName): ?SearchRankingConfigurationStorageTransfer
     {
-        return $this->getFactory()->createConfigurationStorageReader()->findRankingConfiguration();
+        return $this->getFactory()->createConfigurationStorageReader()->findRankingConfiguration($storeName, $localeName);
     }
 }

@@ -12,6 +12,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Business\Normalizer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 use SprykerCommunity\Zed\SearchRanking\SearchRankingConfig;
@@ -24,41 +25,66 @@ class ProductMetricNormalizer implements ProductMetricNormalizerInterface
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface $entityManager
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface $formulaEvaluator
      * @param \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig $config
+     * @param \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface $storeFacade
      */
     public function __construct(
         protected SearchRankingRepositoryInterface $repository,
         protected SearchRankingEntityManagerInterface $entityManager,
         protected FormulaEvaluatorInterface $formulaEvaluator,
         protected SearchRankingConfig $config,
+        protected SearchRankingToStoreFacadeInterface $storeFacade,
     ) {
     }
 
     /**
+     * @param string|null $filterStoreName
+     * @param string|null $filterLocaleName
+     *
      * @return \Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer
      */
-    public function normalize(): SearchRankingNormalizationResultTransfer
+    public function normalize(?string $filterStoreName = null, ?string $filterLocaleName = null): SearchRankingNormalizationResultTransfer
     {
         $resultTransfer = (new SearchRankingNormalizationResultTransfer())
             ->setProcessedMetricCount(0)
             ->setUpdatedRowCount(0);
 
-        foreach ($this->repository->getActiveMetricCollection()->getMetrics() as $metricTransfer) {
-            if ($metricTransfer->getName() === $this->config->getRandomMetricName()) {
+        foreach ($this->storeFacade->getAllStores() as $storeTransfer) {
+            $storeName = $storeTransfer->getNameOrFail();
+
+            if ($filterStoreName !== null && $storeName !== $filterStoreName) {
                 continue;
             }
 
-            try {
-                $updatedRowCount = $this->normalizeMetric($metricTransfer);
-            } catch (Throwable $throwable) {
-                $resultTransfer->addError(
-                    sprintf('Metric "%s" skipped: %s', $metricTransfer->getName(), $throwable->getMessage()),
-                );
+            foreach ($storeTransfer->getAvailableLocaleIsoCodes() as $localeName) {
+                if ($filterLocaleName !== null && $localeName !== $filterLocaleName) {
+                    continue;
+                }
 
-                continue;
+                foreach ($this->repository->getActiveMetricCollection($storeName, $localeName)->getMetrics() as $metricTransfer) {
+                    if ($metricTransfer->getName() === $this->config->getRandomMetricName()) {
+                        continue;
+                    }
+
+                    try {
+                        $updatedRowCount = $this->normalizeMetric($metricTransfer, $storeName, $localeName);
+                    } catch (Throwable $throwable) {
+                        $resultTransfer->addError(
+                            sprintf(
+                                'Metric "%s" skipped for %s/%s: %s',
+                                $metricTransfer->getName(),
+                                $storeName,
+                                $localeName,
+                                $throwable->getMessage(),
+                            ),
+                        );
+
+                        continue;
+                    }
+
+                    $resultTransfer->setProcessedMetricCount($resultTransfer->getProcessedMetricCount() + 1);
+                    $resultTransfer->setUpdatedRowCount($resultTransfer->getUpdatedRowCount() + $updatedRowCount);
+                }
             }
-
-            $resultTransfer->setProcessedMetricCount($resultTransfer->getProcessedMetricCount() + 1);
-            $resultTransfer->setUpdatedRowCount($resultTransfer->getUpdatedRowCount() + $updatedRowCount);
         }
 
         return $resultTransfer;
@@ -71,13 +97,15 @@ class ProductMetricNormalizer implements ProductMetricNormalizerInterface
      * per-active-metric loop, which deliberately skips it (see {@see SearchRankingConfig::getRandomMetricName()}).
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
      *
      * @return int
      */
-    public function normalizeMetric(SearchRankingMetricTransfer $metricTransfer): int
+    public function normalizeMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): int
     {
         $idMetric = $metricTransfer->getIdSearchRankingMetricOrFail();
-        $statisticsTransfer = $this->repository->getMetricStatistics($idMetric);
+        $statisticsTransfer = $this->repository->getMetricStatistics($idMetric, $storeName, $localeName);
 
         if (!$statisticsTransfer->getCount()) {
             return 0;
@@ -96,7 +124,13 @@ class ProductMetricNormalizer implements ProductMetricNormalizerInterface
         $idLastProductMetric = 0;
 
         while (true) {
-            $productMetricTransfers = $this->repository->getProductMetricBatch($idMetric, $idLastProductMetric, $batchSize);
+            $productMetricTransfers = $this->repository->getProductMetricBatch(
+                $idMetric,
+                $storeName,
+                $localeName,
+                $idLastProductMetric,
+                $batchSize,
+            );
 
             if ($productMetricTransfers === []) {
                 break;

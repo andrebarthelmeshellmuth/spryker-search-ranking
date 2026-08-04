@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRankingStorage\Business\Writer;
 
 use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface;
+use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSynchronizationFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingStorage\Persistence\SearchRankingStorageEntityManagerInterface;
 
@@ -42,55 +43,85 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
     /**
      * @var string
      */
-    protected const KEY_ENTROPY_PROBE_RESULT_SIZE = 'entropy_probe_result_size';
+    protected const KEY_SPECIFICITY_BLEND_WEIGHT = 'specificity_blend_weight';
 
     /**
      * @var string
      */
-    protected const KEY_ENTROPY_WEIGHT_EXPONENT = 'entropy_weight_exponent';
+    protected const KEY_SPECIFICITY_SATURATION_POINT = 'specificity_saturation_point';
 
     /**
      * @var string
      */
-    protected const KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 'entropy_weight_shift_magnitude';
+    protected const KEY_SPECIFICITY_WEIGHT_EXPONENT = 'specificity_weight_exponent';
+
+    /**
+     * @var string
+     */
+    protected const KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE = 'specificity_weight_shift_magnitude';
 
     /**
      * @param \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface $searchRankingFacade
      * @param \SprykerCommunity\Zed\SearchRankingStorage\Persistence\SearchRankingStorageEntityManagerInterface $entityManager
      * @param \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSynchronizationFacadeInterface $synchronizationFacade
+     * @param \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToStoreFacadeInterface $storeFacade
      */
     public function __construct(
         protected SearchRankingStorageToSearchRankingFacadeInterface $searchRankingFacade,
         protected SearchRankingStorageEntityManagerInterface $entityManager,
         protected SearchRankingStorageToSynchronizationFacadeInterface $synchronizationFacade,
+        protected SearchRankingStorageToStoreFacadeInterface $storeFacade,
     ) {
     }
 
     /**
+     * Publishes one configuration document per (store, locale) — mirrors core's
+     * `CategoryNodeStorageWriter` nested-loop shape (all stores outer, that store's own available
+     * locales inner), never a cross-join against every globally available locale.
+     *
      * @return void
      */
     public function publishRankingConfiguration(): void
     {
+        foreach ($this->storeFacade->getAllStores() as $storeTransfer) {
+            $storeName = $storeTransfer->getNameOrFail();
+
+            foreach ($storeTransfer->getAvailableLocaleIsoCodes() as $localeName) {
+                $this->publishRankingConfigurationForStoreAndLocale($storeName, $localeName);
+            }
+        }
+
+        // With direct synchronization the behavior only BUFFERS the write; core flushes the buffer
+        // solely on console termination, so a save inside a Zed web request (settings form, metric
+        // CRUD) would never reach key-value storage without this explicit flush. Harmless when the
+        // buffer is empty or in console context. One flush after all scopes, not per scope, matches
+        // the existing single-flush-per-call contract this method already had.
+        $this->synchronizationFacade->flushSynchronizationMessagesFromBuffer();
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return void
+     */
+    protected function publishRankingConfigurationForStoreAndLocale(string $storeName, string $localeName): void
+    {
         $metricWeights = [];
 
-        foreach ($this->searchRankingFacade->getActiveMetricCollection()->getMetrics() as $metricTransfer) {
+        foreach ($this->searchRankingFacade->getActiveMetricCollection($storeName, $localeName)->getMetrics() as $metricTransfer) {
             $metricWeights[$metricTransfer->getNameOrFail()] = $metricTransfer->getWeightOrFail();
         }
 
         $this->entityManager->saveRankingConfiguration([
             static::KEY_METRIC_WEIGHTS => $this->normalizeMetricWeights($metricWeights),
-            static::KEY_RELEVANCE_WEIGHT => $this->searchRankingFacade->getRelevanceWeight(),
-            static::KEY_RELEVANCE_SATURATION_POINT => $this->searchRankingFacade->getRelevanceSaturationPoint(),
-            static::KEY_ENTROPY_PROBE_RESULT_SIZE => $this->searchRankingFacade->getEntropyProbeResultSize(),
-            static::KEY_ENTROPY_WEIGHT_EXPONENT => $this->searchRankingFacade->getEntropyWeightExponent(),
-            static::KEY_ENTROPY_WEIGHT_SHIFT_MAGNITUDE => $this->searchRankingFacade->getEntropyWeightShiftMagnitude(),
-        ]);
-
-        // With direct synchronization the behavior only BUFFERS the write; core flushes the buffer
-        // solely on console termination, so a save inside a Zed web request (settings form, metric
-        // CRUD) would never reach key-value storage without this explicit flush. Harmless when the
-        // buffer is empty or in console context.
-        $this->synchronizationFacade->flushSynchronizationMessagesFromBuffer();
+            static::KEY_RELEVANCE_WEIGHT => $this->searchRankingFacade->getRelevanceWeight($storeName, $localeName),
+            static::KEY_RELEVANCE_SATURATION_POINT => $this->searchRankingFacade->getRelevanceSaturationPoint($storeName, $localeName),
+            static::KEY_SPECIFICITY_BLEND_WEIGHT => $this->searchRankingFacade->getSpecificityBlendWeight($storeName, $localeName),
+            static::KEY_SPECIFICITY_SATURATION_POINT => $this->searchRankingFacade->getSpecificitySaturationPoint($storeName, $localeName),
+            static::KEY_SPECIFICITY_WEIGHT_EXPONENT => $this->searchRankingFacade->getSpecificityWeightExponent($storeName, $localeName),
+            static::KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE => $this->searchRankingFacade->getSpecificityWeightShiftMagnitude($storeName, $localeName),
+        ], $storeName, $localeName);
     }
 
     /**

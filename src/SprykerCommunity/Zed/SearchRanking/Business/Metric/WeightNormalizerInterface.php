@@ -12,7 +12,10 @@ namespace SprykerCommunity\Zed\SearchRanking\Business\Metric;
 interface WeightNormalizerInterface
 {
     /**
+     * @param string $storeName
+     * @param string $localeName
+     *
      * @return bool
      */
-    public function normalizeActiveWeights(): bool;
+    public function normalizeActiveWeights(string $storeName, string $localeName): bool;
 }

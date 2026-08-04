@@ -10,7 +10,6 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRankingGui\Communication\Form;
 
 use Spryker\Zed\Kernel\Communication\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints\GreaterThan;
@@ -35,17 +34,22 @@ class SettingsForm extends AbstractType
     /**
      * @var string
      */
-    public const FIELD_ENTROPY_PROBE_RESULT_SIZE = 'entropyProbeResultSize';
+    public const FIELD_SPECIFICITY_BLEND_WEIGHT = 'specificityBlendWeight';
 
     /**
      * @var string
      */
-    public const FIELD_ENTROPY_WEIGHT_EXPONENT = 'entropyWeightExponent';
+    public const FIELD_SPECIFICITY_SATURATION_POINT = 'specificitySaturationPoint';
 
     /**
      * @var string
      */
-    public const FIELD_ENTROPY_WEIGHT_SHIFT_MAGNITUDE = 'entropyWeightShiftMagnitude';
+    public const FIELD_SPECIFICITY_WEIGHT_EXPONENT = 'specificityWeightExponent';
+
+    /**
+     * @var string
+     */
+    public const FIELD_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE = 'specificityWeightShiftMagnitude';
 
     /**
      * @param \Symfony\Component\Form\FormBuilderInterface $builder
@@ -82,41 +86,56 @@ class SettingsForm extends AbstractType
             ],
         ]);
 
-        $builder->add(static::FIELD_ENTROPY_PROBE_RESULT_SIZE, IntegerType::class, [
-            'label' => 'Entropy probe result size',
-            'help' => 'Only takes effect if entropy-aware relevance weighting is enabled in code '
-                . '(SearchRankingConfig::isEntropyWeightingEnabled(), off by default). Number of '
-                . 'top-ranked candidates the entropy probe samples per search to measure how flat or '
-                . 'peaked the text-relevance score distribution is. Must be at least 2 — entropy needs '
-                . 'more than one candidate to measure a distribution at all.',
+        $builder->add(static::FIELD_SPECIFICITY_BLEND_WEIGHT, NumberType::class, [
+            'label' => 'Specificity blend weight',
+            'help' => 'Only takes effect if specificity-aware relevance weighting is enabled in code '
+                . '(SearchRankingConfig::isSpecificityWeightingEnabled(), off by default). Share of the '
+                . 'raw specificity value coming from the query\'s single rarest term (max idf), vs. '
+                . '(1 - this) coming from the harmonic mean of every term\'s idf. Higher favors a query '
+                . 'with one very rare term (e.g. a SKU) even if its other words are common; lower '
+                . 'penalizes a query as soon as any one term is common. Must be between 0 and 1. Also '
+                . 'tunable via spryker-community/search-ranking-optimizer.',
             'constraints' => [
                 new NotBlank(),
-                new Range(['min' => 2]),
+                new Range(['min' => 0, 'max' => 1]),
             ],
         ]);
 
-        $builder->add(static::FIELD_ENTROPY_WEIGHT_EXPONENT, NumberType::class, [
-            'label' => 'Entropy weight exponent',
-            'help' => 'Only takes effect if entropy-aware relevance weighting is enabled in code. '
-                . 'Reshapes how sharply the entropy-derived shift ramps up as the probe\'s score '
-                . 'distribution moves away from perfectly ambiguous. 1.0 applies the shift linearly; '
-                . 'above 1.0 the shift only grows meaningful once the distribution is quite flat or '
-                . 'quite peaked; below 1.0 even a mild tilt already produces a fairly large shift. Must '
-                . 'be greater than 0.',
+        $builder->add(static::FIELD_SPECIFICITY_SATURATION_POINT, NumberType::class, [
+            'label' => 'Specificity saturation point',
+            'help' => 'Only takes effect if specificity-aware relevance weighting is enabled in code. '
+                . 'The raw specificity value at which normalized specificity reaches 0.5 — this has no '
+                . 'universal correct value, since it depends entirely on this shop\'s own catalog size '
+                . 'and vocabulary: use Calibration to sample real values and tune from there. Must be '
+                . 'greater than 0.',
             'constraints' => [
                 new NotBlank(),
                 new GreaterThan(0),
             ],
         ]);
 
-        $builder->add(static::FIELD_ENTROPY_WEIGHT_SHIFT_MAGNITUDE, NumberType::class, [
-            'label' => 'Entropy weight shift magnitude',
-            'help' => 'Only takes effect if entropy-aware relevance weighting is enabled in code. The '
-                . 'maximum amount the entropy-derived value may shift relevanceWeight away from its '
+        $builder->add(static::FIELD_SPECIFICITY_WEIGHT_EXPONENT, NumberType::class, [
+            'label' => 'Specificity weight exponent',
+            'help' => 'Only takes effect if specificity-aware relevance weighting is enabled in code. '
+                . 'Reshapes how sharply the specificity-derived shift ramps up as normalized specificity '
+                . 'moves away from perfectly average (0.5). 1.0 applies the shift linearly; above 1.0 '
+                . 'the shift only grows meaningful once a query is quite unspecific or quite specific; '
+                . 'below 1.0 even a mild deviation already produces a fairly large shift. Must be '
+                . 'greater than 0.',
+            'constraints' => [
+                new NotBlank(),
+                new GreaterThan(0),
+            ],
+        ]);
+
+        $builder->add(static::FIELD_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE, NumberType::class, [
+            'label' => 'Specificity weight shift magnitude',
+            'help' => 'Only takes effect if specificity-aware relevance weighting is enabled in code. The '
+                . 'maximum amount the specificity-derived value may shift relevanceWeight away from its '
                 . 'configured baseline above, in either direction — a relevanceWeight baseline of exactly '
                 . '0.5 reaches the full [0;1] range at 0.5; a baseline nearer either edge reaches '
                 . 'correspondingly less on the side nearer that edge, since relevanceWeight itself cannot '
-                . 'leave [0;1]. Must be between 0 (entropy has no effect at all) and 1.',
+                . 'leave [0;1]. Must be between 0 (specificity has no effect at all) and 1.',
             'constraints' => [
                 new NotBlank(),
                 new Range(['min' => 0, 'max' => 1]),

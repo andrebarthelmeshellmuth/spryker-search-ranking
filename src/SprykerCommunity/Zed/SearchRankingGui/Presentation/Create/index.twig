@@ -10,7 +10,7 @@
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Create Ranking Metric' } %}
         {% block widget_content %}
-            {{ form_start(metricForm) }}
+            {{ form_start(metricForm, {'action': formAction}) }}
             {{ form_widget(metricForm) }}
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">{{ 'Save' | trans }}</button>

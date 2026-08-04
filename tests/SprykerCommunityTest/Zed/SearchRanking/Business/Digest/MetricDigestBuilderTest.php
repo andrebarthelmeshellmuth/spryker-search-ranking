@@ -13,7 +13,10 @@ use Codeception\Test\Unit;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\StoreTransfer;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilder;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
@@ -150,15 +153,17 @@ class MetricDigestBuilderTest extends Unit
     {
         // Arrange
         $repository = $this->createMock(SearchRankingRepositoryInterface::class);
-        $repository->method('getRawValues')->with(7)->willReturn([]);
+        $repository->method('getRawValues')
+            ->with(7, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)
+            ->willReturn([]);
 
         $entityManager = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManager->expects($this->never())->method('saveMetricDigest');
 
-        $builder = new MetricDigestBuilder($repository, $entityManager);
+        $builder = new MetricDigestBuilder($repository, $entityManager, $this->createStoreFacadeMock());
 
         // Act
-        $result = $builder->rebuildDigest(7);
+        $result = $builder->rebuildDigest(7, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
 
         // Assert
         $this->assertFalse($result);
@@ -171,7 +176,9 @@ class MetricDigestBuilderTest extends Unit
     {
         // Arrange
         $repository = $this->createMock(SearchRankingRepositoryInterface::class);
-        $repository->method('getRawValues')->with(7)->willReturn([10.0, 20.0, 30.0]);
+        $repository->method('getRawValues')
+            ->with(7, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)
+            ->willReturn([10.0, 20.0, 30.0]);
 
         $savedDigestTransfer = null;
 
@@ -184,10 +191,10 @@ class MetricDigestBuilderTest extends Unit
                 return $digestTransfer;
             });
 
-        $builder = new MetricDigestBuilder($repository, $entityManager);
+        $builder = new MetricDigestBuilder($repository, $entityManager, $this->createStoreFacadeMock());
 
         // Act
-        $result = $builder->rebuildDigest(7);
+        $result = $builder->rebuildDigest(7, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
 
         // Assert
         $this->assertTrue($result);
@@ -209,14 +216,14 @@ class MetricDigestBuilderTest extends Unit
             (new SearchRankingMetricCollectionTransfer())->addMetric($metricWithData)->addMetric($metricWithoutData),
         );
         $repository->method('getRawValues')->willReturnMap([
-            [1, [5.0, 15.0]],
-            [2, []],
+            [1, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, [5.0, 15.0]],
+            [2, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, []],
         ]);
 
         $entityManager = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManager->expects($this->once())->method('saveMetricDigest');
 
-        $builder = new MetricDigestBuilder($repository, $entityManager);
+        $builder = new MetricDigestBuilder($repository, $entityManager, $this->createStoreFacadeMock());
 
         // Act
         $processedCount = $builder->rebuildDigests();
@@ -233,6 +240,22 @@ class MetricDigestBuilderTest extends Unit
         return new MetricDigestBuilder(
             $this->createMock(SearchRankingRepositoryInterface::class),
             $this->createMock(SearchRankingEntityManagerInterface::class),
+            $this->createStoreFacadeMock(),
         );
+    }
+
+    /**
+     * @return \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface
+     */
+    protected function createStoreFacadeMock(): SearchRankingToStoreFacadeInterface
+    {
+        $storeFacadeMock = $this->createMock(SearchRankingToStoreFacadeInterface::class);
+        $storeFacadeMock->method('getAllStores')->willReturn([
+            (new StoreTransfer())
+                ->setName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+                ->setAvailableLocaleIsoCodes([SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME]),
+        ]);
+
+        return $storeFacadeMock;
     }
 }

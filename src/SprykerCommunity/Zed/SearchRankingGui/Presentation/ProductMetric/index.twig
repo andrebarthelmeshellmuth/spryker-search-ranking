@@ -5,12 +5,30 @@
 
 {% block action %}
     {{ backActionButton('/search-ranking-gui', 'Back to Metrics' | trans) }}
-    {{ viewActionButton('/search-ranking-gui/product-metric-gap', 'View Gaps' | trans) }}
+    {{ viewActionButton('/search-ranking-gui/product-metric-gap?storeName=' ~ selectedStoreName ~ '&localeName=' ~ selectedLocaleName, 'View Gaps' | trans) }}
 {% endblock %}
 
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Raw and Normalized Values per Product' } %}
         {% block widget_content %}
+            <form method="get" class="form-inline" style="margin-bottom: 15px;">
+                <label for="storeName">{{ 'Store' | trans }}</label>
+                <select name="storeName" id="storeName" class="form-control" onchange="this.form.submit()">
+                    {% for store in stores %}
+                        <option value="{{ store }}" {% if store == selectedStoreName %}selected="selected"{% endif %}>
+                            {{ store }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <label for="localeName" style="margin-left: 10px;">{{ 'Locale' | trans }}</label>
+                <select name="localeName" id="localeName" class="form-control" onchange="this.form.submit()">
+                    {% for locale in locales %}
+                        <option value="{{ locale }}" {% if locale == selectedLocaleName %}selected="selected"{% endif %}>
+                            {{ locale }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
             {{ productMetricTable | raw }}
         {% endblock %}
     {% endembed %}

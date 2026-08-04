@@ -37,6 +37,16 @@ class SearchRankingNormalizeConsole extends Console
     public const OPTION_SKIP_PUBLISH = 'skip-publish';
 
     /**
+     * @var string
+     */
+    public const OPTION_STORE = 'store';
+
+    /**
+     * @var string
+     */
+    public const OPTION_LOCALE = 'locale';
+
+    /**
      * @return void
      */
     protected function configure(): void
@@ -48,6 +58,18 @@ class SearchRankingNormalizeConsole extends Console
             null,
             InputOption::VALUE_NONE,
             'Only recalculate normalized values; do not trigger product abstract publish events.',
+        );
+        $this->addOption(
+            static::OPTION_STORE,
+            null,
+            InputOption::VALUE_REQUIRED,
+            'Restrict to this store only. Omit to process every store.',
+        );
+        $this->addOption(
+            static::OPTION_LOCALE,
+            null,
+            InputOption::VALUE_REQUIRED,
+            'Restrict to this locale only. Omit to process every locale available for the selected store(s).',
         );
 
         parent::configure();
@@ -61,7 +83,10 @@ class SearchRankingNormalizeConsole extends Console
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $resultTransfer = $this->getFacade()->normalizeProductMetricValues();
+        $storeName = $input->getOption(static::OPTION_STORE);
+        $localeName = $input->getOption(static::OPTION_LOCALE);
+
+        $resultTransfer = $this->getFacade()->normalizeProductMetricValues($storeName, $localeName);
 
         $output->writeln(sprintf(
             'Normalized %d row(s) across %d metric(s).',
@@ -73,7 +98,7 @@ class SearchRankingNormalizeConsole extends Console
             $output->writeln(sprintf('<error>%s</error>', $error));
         }
 
-        $digestCount = $this->getFacade()->rebuildMetricDigests();
+        $digestCount = $this->getFacade()->rebuildMetricDigests($storeName, $localeName);
         $output->writeln(sprintf('Rebuilt distribution digest for %d metric(s).', $digestCount));
 
         if (!$input->getOption(static::OPTION_SKIP_PUBLISH)) {
