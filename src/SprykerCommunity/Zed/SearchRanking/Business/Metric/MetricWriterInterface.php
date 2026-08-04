@@ -10,13 +10,15 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business\Metric;
 
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
 interface MetricWriterInterface
 {
     /**
      * Writes only the metric's IDENTITY fields (name/formula/isActive/isHigherBetter/shape) — global,
      * not store/locale scoped. See {@see saveMetricWeight()} for the metric's (store, locale)-scoped
-     * weight.
+     * weight. $metricTransfer->getChangeSource() (one of SharedSearchRankingConfig::CHANGE_SOURCE_*) is
+     * recorded on the resulting history row if one is written; null means CHANGE_SOURCE_MANUAL.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      *
@@ -26,14 +28,21 @@ interface MetricWriterInterface
 
     /**
      * Writes a metric's weight for one (store, locale) and, if it actually changed, records a history
-     * snapshot at that same scope.
+     * snapshot at that same scope, tagged with $changeSource.
      *
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
      * @param float $weight
+     * @param string $changeSource One of {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig}::CHANGE_SOURCE_*.
      */
-    public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void;
+    public function saveMetricWeight(
+        int $idSearchRankingMetric,
+        string $storeName,
+        string $localeName,
+        float $weight,
+        string $changeSource = SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL,
+    ): void;
 
     /**
      * @param int $idSearchRankingMetric

@@ -142,6 +142,54 @@ class SearchRankingConfig
 
     /**
      * Specification:
+     * - `spy_search_ranking_metric_history.change_source` value for a formula/weight/isActive/isHigherBetter
+     *   change made by a human directly editing a metric on this package's own Zed Edit page.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const CHANGE_SOURCE_MANUAL = 'manual';
+
+    /**
+     * Specification:
+     * - `spy_search_ranking_metric_history.change_source` value for a formula change applied automatically
+     *   by `spryker-community/search-ranking-optimizer`'s Auto-Tune runner (no human review of the specific
+     *   new formula before it was written).
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const CHANGE_SOURCE_AUTO_TUNE = 'auto_tune';
+
+    /**
+     * Specification:
+     * - `spy_search_ranking_metric_history.change_source` value for a weight change applied when a human
+     *   clicks "Apply" on a `spryker-community/search-ranking-optimizer` optimizer run's winning candidate —
+     *   the click is manual, but the weight value itself is machine-computed (CMA-ES/DE/ES search result),
+     *   not hand-typed.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const CHANGE_SOURCE_OPTIMIZER_APPLY = 'optimizer_apply';
+
+    /**
+     * Specification:
+     * - `spy_search_ranking_metric_history.change_source` value for a weight change applied when a human
+     *   restores a prior `spryker-community/search-ranking-optimizer` weight checkpoint — same "manual
+     *   click, machine-originated value" reasoning as {@see CHANGE_SOURCE_OPTIMIZER_APPLY}.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const CHANGE_SOURCE_CHECKPOINT_RESTORE = 'checkpoint_restore';
+
+    /**
+     * Specification:
      * - Whether specificity-aware relevance weighting is active. OFF by default — enabling it makes
      *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
      *   fire ONE ADDITIONAL lightweight `_termvectors` probe per live catalog search to derive a per-query

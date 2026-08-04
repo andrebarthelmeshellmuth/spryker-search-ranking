@@ -20,6 +20,12 @@
         <property name="isActive" type="bool"/>
         <property name="isHigherBetter" type="bool"/>
         <property name="shape" type="string"/>
+        <!-- Optional input to saveMetric(): which SearchRankingConfig::CHANGE_SOURCE_* produced this
+             save, recorded on the resulting history row. Null (the default, used by this package's own
+             Zed Edit page) means CHANGE_SOURCE_MANUAL — only an automated writer (e.g.
+             search-ranking-optimizer's Auto-Tune runner) needs to set this explicitly. Never populated on
+             a read; this is a write-only hint, not a persisted field of the metric's own identity. -->
+        <property name="changeSource" type="string"/>
     </transfer>
 
     <transfer name="SearchRankingMetricCollection" strict="true">
@@ -113,6 +119,13 @@
         <property name="percentiles" type="float[]" singular="percentile"/>
         <property name="fitRSquared" type="float"/>
         <property name="isChange" type="bool"/>
+        <!-- One of SearchRankingConfig::CHANGE_SOURCE_* - who/what actually produced this row: a human
+             editing the metric directly (MANUAL), search-ranking-optimizer's Auto-Tune runner picking a
+             new formula on its own (AUTO_TUNE), a human applying an optimizer run's machine-computed
+             weight (OPTIMIZER_APPLY), or a human restoring a prior weight checkpoint (CHECKPOINT_RESTORE).
+             Always MANUAL for every row this package can write on its own - the other three values only
+             ever appear once search-ranking-optimizer is installed and writing through it. -->
+        <property name="changeSource" type="string"/>
         <property name="createdAt" type="string"/>
     </transfer>
 

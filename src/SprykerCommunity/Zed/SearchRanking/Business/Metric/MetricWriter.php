@@ -70,6 +70,7 @@ class MetricWriter implements MetricWriterInterface
                 $savedMetricTransfer,
                 SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
                 SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+                $metricTransfer->getChangeSource() ?? SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL,
             );
         }
 
@@ -83,9 +84,15 @@ class MetricWriter implements MetricWriterInterface
      * @param string $storeName
      * @param string $localeName
      * @param float $weight
+     * @param string $changeSource One of {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig}::CHANGE_SOURCE_* — defaults to CHANGE_SOURCE_MANUAL, correct for every caller inside this package; only an automated writer elsewhere (e.g. search-ranking-optimizer applying an optimizer run or restoring a checkpoint) needs to pass a different one.
      */
-    public function saveMetricWeight(int $idSearchRankingMetric, string $storeName, string $localeName, float $weight): void
-    {
+    public function saveMetricWeight(
+        int $idSearchRankingMetric,
+        string $storeName,
+        string $localeName,
+        float $weight,
+        string $changeSource = SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL,
+    ): void {
         $previousWeight = $this->repository->findMetricWeight($idSearchRankingMetric, $storeName, $localeName);
 
         $this->entityManager->saveMetricWeight($idSearchRankingMetric, $storeName, $localeName, $weight);
@@ -100,7 +107,7 @@ class MetricWriter implements MetricWriterInterface
             return;
         }
 
-        $this->recordHistory($metricTransfer, $storeName, $localeName);
+        $this->recordHistory($metricTransfer, $storeName, $localeName, $changeSource);
     }
 
     /**
@@ -180,10 +187,11 @@ class MetricWriter implements MetricWriterInterface
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
      * @param string $localeName
+     * @param string $changeSource
      */
-    protected function recordHistory(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): void
+    protected function recordHistory(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName, string $changeSource): void
     {
-        $this->entityManager->recordMetricHistory($this->buildHistoryTransfer($metricTransfer, $storeName, $localeName, true));
+        $this->entityManager->recordMetricHistory($this->buildHistoryTransfer($metricTransfer, $storeName, $localeName, true, $changeSource));
     }
 
     /**
@@ -195,7 +203,13 @@ class MetricWriter implements MetricWriterInterface
      */
     public function recordCheckOnly(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): void
     {
-        $this->entityManager->recordMetricHistory($this->buildHistoryTransfer($metricTransfer, $storeName, $localeName, false));
+        // recordCheckOnly() has no caller inside this package's own Zed pages -- today the only writer is
+        // search-ranking-optimizer's Auto-Tune runner, checking a metric's fit without necessarily
+        // updating it. Hardcoded rather than threaded as a parameter until a second, differently-sourced
+        // check-only caller actually exists.
+        $this->entityManager->recordMetricHistory(
+            $this->buildHistoryTransfer($metricTransfer, $storeName, $localeName, false, SharedSearchRankingConfig::CHANGE_SOURCE_AUTO_TUNE),
+        );
     }
 
     /**
@@ -203,12 +217,14 @@ class MetricWriter implements MetricWriterInterface
      * @param string $storeName
      * @param string $localeName
      * @param bool $isChange
+     * @param string $changeSource
      */
     protected function buildHistoryTransfer(
         SearchRankingMetricTransfer $metricTransfer,
         string $storeName,
         string $localeName,
         bool $isChange,
+        string $changeSource,
     ): SearchRankingMetricHistoryTransfer {
         $weight = $this->repository->findMetricWeight($metricTransfer->getIdSearchRankingMetricOrFail(), $storeName, $localeName) ?? 0.0;
 
@@ -221,7 +237,8 @@ class MetricWriter implements MetricWriterInterface
             ->setFormula($metricTransfer->getFormulaOrFail())
             ->setIsActive($metricTransfer->getIsActive() ?? true)
             ->setIsHigherBetter($metricTransfer->getIsHigherBetter() ?? true)
-            ->setIsChange($isChange);
+            ->setIsChange($isChange)
+            ->setChangeSource($changeSource);
 
         $digestTransfer = $this->repository->findMetricDigest(
             $metricTransfer->getIdSearchRankingMetricOrFail(),

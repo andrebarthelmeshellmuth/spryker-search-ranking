@@ -172,6 +172,83 @@ class MetricWriterTest extends Unit
             ->saveMetric($metricTransfer);
     }
 
+    public function testDefaultsChangeSourceToManualWhenTheSubmittedMetricDoesNotSetOne(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())
+            ->setName('pdp_impressions')
+            ->setWeight(0.3)
+            ->setFormula('x / max')
+            ->setIsActive(true)
+            ->setIsHigherBetter(true);
+
+        $savedMetricTransfer = (clone $metricTransfer)->setIdSearchRankingMetric(11);
+
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $formulaEvaluatorMock->method('validate')->willReturn((new SearchRankingFormulaValidationResponseTransfer())->setIsSuccess(true));
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->method('saveMetric')->willReturn($savedMetricTransfer);
+        $entityManagerMock->expects($this->once())
+            ->method('recordMetricHistory')
+            ->with($this->callback(fn (SearchRankingMetricHistoryTransfer $historyTransfer): bool => $historyTransfer->getChangeSource() === 'manual'))
+            ->willReturnArgument(0);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricById')->willReturn(null);
+        $repositoryMock->method('findMetricDigest')->willReturn(null);
+
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+        $curveFitterMock->method('fit')->willReturn([]);
+
+        // Act
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+            ->saveMetric($metricTransfer);
+    }
+
+    /**
+     * An automated caller (e.g. search-ranking-optimizer's Auto-Tune runner) sets changeSource explicitly
+     * on the submitted transfer -- that value, not the manual default, must reach the history row.
+     */
+    public function testRecordsAnExplicitlySubmittedChangeSource(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())
+            ->setName('pdp_impressions')
+            ->setWeight(0.3)
+            ->setFormula('x / max')
+            ->setIsActive(true)
+            ->setIsHigherBetter(true)
+            ->setChangeSource('auto_tune');
+
+        $savedMetricTransfer = (clone $metricTransfer)->setIdSearchRankingMetric(11);
+
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $formulaEvaluatorMock->method('validate')->willReturn((new SearchRankingFormulaValidationResponseTransfer())->setIsSuccess(true));
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->method('saveMetric')->willReturn($savedMetricTransfer);
+        $entityManagerMock->expects($this->once())
+            ->method('recordMetricHistory')
+            ->with($this->callback(fn (SearchRankingMetricHistoryTransfer $historyTransfer): bool => $historyTransfer->getChangeSource() === 'auto_tune'))
+            ->willReturnArgument(0);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricById')->willReturn(null);
+        $repositoryMock->method('findMetricDigest')->willReturn(null);
+
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+        $curveFitterMock->method('fit')->willReturn([]);
+
+        // Act
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+            ->saveMetric($metricTransfer);
+    }
+
     /**
      * Saving a metric with NOTHING tracked actually changed (same formula/weight/isActive/isHigherBetter
      * as before) must not write a redundant history row.

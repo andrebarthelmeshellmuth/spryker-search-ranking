@@ -21,6 +21,7 @@ use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeight;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
 class SearchRankingMapper
 {
@@ -182,6 +183,7 @@ class SearchRankingMapper
             ->setPercentiles($this->explodePercentiles($historyEntity->getPercentiles()))
             ->setFitRSquared($historyEntity->getFitRSquared())
             ->setIsChange($historyEntity->getIsChange())
+            ->setChangeSource($historyEntity->getChangeSource())
             ->setCreatedAt($historyEntity->getCreatedAt()?->format(DATE_ATOM));
     }
 
@@ -211,6 +213,7 @@ class SearchRankingMapper
         );
         $historyEntity->setFitRSquared($historyTransfer->getFitRSquared());
         $historyEntity->setIsChange($historyTransfer->getIsChange() ?? true);
+        $historyEntity->setChangeSource($historyTransfer->getChangeSource() ?? SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL);
 
         return $historyEntity;
     }
