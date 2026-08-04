@@ -12,8 +12,10 @@ namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory;
 use Spryker\Zed\Kernel\Persistence\AbstractEntityManager;
 
 /**
@@ -147,6 +149,25 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
 
         $settingEntity->setSettingValue($settingValue);
         $settingEntity->save();
+    }
+
+    /**
+     * Always inserts a new row — history is append-only, never updated or upserted, unlike every other
+     * write in this class.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer $settingHistoryTransfer
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer
+     */
+    public function recordSettingHistory(SearchRankingSettingHistoryTransfer $settingHistoryTransfer): SearchRankingSettingHistoryTransfer
+    {
+        $settingHistoryEntity = new SpySearchRankingSettingHistory();
+
+        $mapper = $this->getFactory()->createSearchRankingMapper();
+        $settingHistoryEntity = $mapper->mapSettingHistoryTransferToEntity($settingHistoryTransfer, $settingHistoryEntity);
+        $settingHistoryEntity->save();
+
+        return $mapper->mapSettingHistoryEntityToTransfer($settingHistoryEntity, $settingHistoryTransfer);
     }
 
     /**
