@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Rector\CodeQuality\Rector\Identical\FlipTypeControlToUseExclusiveTypeRector;
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\Php80\Rector\Class_\ClassPropertyAssignToConstructorPromotionRector;
@@ -36,11 +37,18 @@ return RectorConfig::configure()
         // (Generic.NamingConventions.UpperCaseConstantName misreads the type as the constant name).
         // Same bug already documented and skipped for this exact rule in the sibling search-debug package.
         AddTypeToConstRector::class,
+        // Rewrites plain `=== null` / `!== null` checks on a nullable single-class type into
+        // `instanceof \Fully\Qualified\ClassName` — strictly more verbose for a simple null check
+        // (no added type-safety over the null check it replaces), breaks this codebase's consistent
+        // === null idiom used everywhere else, and writes an inline FQCN instead of a use import,
+        // which trips Spryker.Namespaces.UseStatement. Same rule, same reasoning, already skipped
+        // in the sibling search-debug package.
+        FlipTypeControlToUseExclusiveTypeRector::class,
     ])
     // Picks up the PHP floor (>=8.3) from composer.json.
     ->withPhpSets()
     // Gradual levels (0 = safest rules only). Raising in batches; stop at the first hit that
     // conflicts with established Spryker style rather than applying it automatically.
-    ->withDeadCodeLevel(55)
-    ->withCodeQualityLevel(55)
+    ->withDeadCodeLevel(60)
+    ->withCodeQualityLevel(60)
     ->withoutParallel();
