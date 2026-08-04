@@ -81,6 +81,23 @@
         </unique>
     </table>
 
+    <table name="spy_search_ranking_setting_history" idMethod="native" identifierQuoting="true">
+        <column name="id_search_ranking_setting_history" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="setting_key" type="VARCHAR" size="64" required="true" description="Same machine name as spy_search_ranking_setting.setting_key, e.g. relevance_weight."/>
+        <column name="store_name" type="VARCHAR" size="64" required="true"/>
+        <column name="locale_name" type="VARCHAR" size="16" required="true"/>
+        <column name="setting_value" type="VARCHAR" size="255" required="true" description="spy_search_ranking_setting.setting_value for this key/store/locale at the time of this snapshot."/>
+
+        <behavior name="timestampable"/>
+        <id-method-parameter value="spy_search_ranking_setting_history_pk_seq"/>
+
+        <index name="index-spy_srsh-key_store_locale">
+            <index-column name="setting_key"/>
+            <index-column name="store_name"/>
+            <index-column name="locale_name"/>
+        </index>
+    </table>
+
     <table name="spy_search_ranking_product_metric" idMethod="native" identifierQuoting="true">
         <column name="id_search_ranking_product_metric" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_search_ranking_metric" type="INTEGER" required="true"/>

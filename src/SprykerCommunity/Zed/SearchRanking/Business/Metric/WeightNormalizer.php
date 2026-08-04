@@ -9,7 +9,6 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Business\Metric;
 
-use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
 /**
@@ -34,9 +33,9 @@ class WeightNormalizer implements WeightNormalizerInterface
 
     /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
-     * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface $entityManager
+     * @param \SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface $metricWriter
      */
-    public function __construct(protected SearchRankingRepositoryInterface $repository, protected SearchRankingEntityManagerInterface $entityManager)
+    public function __construct(protected SearchRankingRepositoryInterface $repository, protected MetricWriterInterface $metricWriter)
     {
     }
 
@@ -64,13 +63,14 @@ class WeightNormalizer implements WeightNormalizerInterface
             return false;
         }
 
-        $normalizedWeightsById = [];
-
         foreach ($metricTransfers as $metricTransfer) {
-            $normalizedWeightsById[$metricTransfer->getIdSearchRankingMetricOrFail()] = $metricTransfer->getWeightOrFail() / $weightSum;
+            $this->metricWriter->saveMetricWeight(
+                $metricTransfer->getIdSearchRankingMetricOrFail(),
+                $storeName,
+                $localeName,
+                $metricTransfer->getWeightOrFail() / $weightSum,
+            );
         }
-
-        $this->entityManager->updateMetricWeights($normalizedWeightsById, $storeName, $localeName);
 
         return true;
     }

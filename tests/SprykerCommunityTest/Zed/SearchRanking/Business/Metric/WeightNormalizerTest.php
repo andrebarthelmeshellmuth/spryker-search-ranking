@@ -12,8 +12,8 @@ namespace SprykerCommunityTest\Zed\SearchRanking\Business\Metric;
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Metric\WeightNormalizer;
-use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
 /**
@@ -42,16 +42,18 @@ class WeightNormalizerTest extends Unit
             $this->createMetricTransfer(2, 2.0),
         ]);
 
-        $capturedWeights = null;
-        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
-        $entityManagerMock->expects($this->once())
-            ->method('updateMetricWeights')
-            ->willReturnCallback(function (array $weightsById) use (&$capturedWeights): void {
-                $capturedWeights = $weightsById;
+        $capturedWeights = [];
+        $metricWriterMock = $this->createMock(MetricWriterInterface::class);
+        $metricWriterMock->expects($this->exactly(2))
+            ->method('saveMetricWeight')
+            ->willReturnCallback(function (int $idSearchRankingMetric, string $storeName, string $localeName, float $weight) use (&$capturedWeights): void {
+                $this->assertSame('DE', $storeName);
+                $this->assertSame('de_DE', $localeName);
+                $capturedWeights[$idSearchRankingMetric] = $weight;
             });
 
         // Act
-        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights('DE', 'de_DE');
+        $wasNormalized = (new WeightNormalizer($repositoryMock, $metricWriterMock))->normalizeActiveWeights('DE', 'de_DE');
 
         // Assert
         $this->assertTrue($wasNormalized);
@@ -71,15 +73,17 @@ class WeightNormalizerTest extends Unit
             $this->createMetricTransfer(5, 0.3),
         ]);
 
-        $capturedWeights = null;
-        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
-        $entityManagerMock->method('updateMetricWeights')
-            ->willReturnCallback(function (array $weightsById) use (&$capturedWeights): void {
-                $capturedWeights = $weightsById;
+        $capturedWeights = [];
+        $metricWriterMock = $this->createMock(MetricWriterInterface::class);
+        $metricWriterMock->method('saveMetricWeight')
+            ->willReturnCallback(function (int $idSearchRankingMetric, string $storeName, string $localeName, float $weight) use (&$capturedWeights): void {
+                $this->assertSame('DE', $storeName);
+                $this->assertSame('de_DE', $localeName);
+                $capturedWeights[$idSearchRankingMetric] = $weight;
             });
 
         // Act
-        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights('DE', 'de_DE');
+        $wasNormalized = (new WeightNormalizer($repositoryMock, $metricWriterMock))->normalizeActiveWeights('DE', 'de_DE');
 
         // Assert
         $this->assertTrue($wasNormalized);
@@ -97,11 +101,11 @@ class WeightNormalizerTest extends Unit
             $this->createMetricTransfer(2, 0.5),
         ]);
 
-        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
-        $entityManagerMock->expects($this->never())->method('updateMetricWeights');
+        $metricWriterMock = $this->createMock(MetricWriterInterface::class);
+        $metricWriterMock->expects($this->never())->method('saveMetricWeight');
 
         // Act
-        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights('DE', 'de_DE');
+        $wasNormalized = (new WeightNormalizer($repositoryMock, $metricWriterMock))->normalizeActiveWeights('DE', 'de_DE');
 
         // Assert
         $this->assertFalse($wasNormalized);
@@ -118,11 +122,11 @@ class WeightNormalizerTest extends Unit
             $this->createMetricTransfer(2, 0.0),
         ]);
 
-        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
-        $entityManagerMock->expects($this->never())->method('updateMetricWeights');
+        $metricWriterMock = $this->createMock(MetricWriterInterface::class);
+        $metricWriterMock->expects($this->never())->method('saveMetricWeight');
 
         // Act
-        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights('DE', 'de_DE');
+        $wasNormalized = (new WeightNormalizer($repositoryMock, $metricWriterMock))->normalizeActiveWeights('DE', 'de_DE');
 
         // Assert
         $this->assertFalse($wasNormalized);
@@ -136,11 +140,11 @@ class WeightNormalizerTest extends Unit
         // Arrange
         $repositoryMock = $this->createRepositoryMock([]);
 
-        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
-        $entityManagerMock->expects($this->never())->method('updateMetricWeights');
+        $metricWriterMock = $this->createMock(MetricWriterInterface::class);
+        $metricWriterMock->expects($this->never())->method('saveMetricWeight');
 
         // Act
-        $wasNormalized = (new WeightNormalizer($repositoryMock, $entityManagerMock))->normalizeActiveWeights('DE', 'de_DE');
+        $wasNormalized = (new WeightNormalizer($repositoryMock, $metricWriterMock))->normalizeActiveWeights('DE', 'de_DE');
 
         // Assert
         $this->assertFalse($wasNormalized);

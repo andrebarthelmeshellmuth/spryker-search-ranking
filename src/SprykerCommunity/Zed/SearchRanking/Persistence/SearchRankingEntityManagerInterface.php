@@ -12,6 +12,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer;
 
 interface SearchRankingEntityManagerInterface
 {
@@ -69,6 +70,15 @@ interface SearchRankingEntityManagerInterface
      * @return void
      */
     public function saveSetting(string $settingKey, string $storeName, string $localeName, string $settingValue): void;
+
+    /**
+     * Always inserts a new row — history is append-only, never updated or upserted.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer $settingHistoryTransfer
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer
+     */
+    public function recordSettingHistory(SearchRankingSettingHistoryTransfer $settingHistoryTransfer): SearchRankingSettingHistoryTransfer;
 
     /**
      * Upserts by `(fkSearchRankingMetric, storeName, localeName)` — one digest row per metric per scope,

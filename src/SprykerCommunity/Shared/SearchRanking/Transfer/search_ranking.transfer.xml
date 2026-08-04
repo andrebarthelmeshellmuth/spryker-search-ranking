@@ -116,6 +116,15 @@
         <property name="createdAt" type="string"/>
     </transfer>
 
+    <transfer name="SearchRankingSettingHistory" strict="true">
+        <property name="idSearchRankingSettingHistory" type="int"/>
+        <property name="settingKey" type="string"/>
+        <property name="storeName" type="string"/>
+        <property name="localeName" type="string"/>
+        <property name="settingValue" type="string"/>
+        <property name="createdAt" type="string"/>
+    </transfer>
+
     <!-- One (x, y) point of a formula preview curve or the empirical-CDF reference line. xValue is the
          real raw value at that digest percentile; yValue is the normalized result at that point (either
          the typed formula's output, or the percentile fraction itself for the CDF reference line). -->

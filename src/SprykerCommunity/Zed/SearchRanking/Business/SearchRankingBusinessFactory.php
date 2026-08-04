@@ -107,7 +107,7 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
     {
         return new WeightNormalizer(
             $this->getRepository(),
-            $this->getEntityManager(),
+            $this->createMetricWriter(),
         );
     }
 

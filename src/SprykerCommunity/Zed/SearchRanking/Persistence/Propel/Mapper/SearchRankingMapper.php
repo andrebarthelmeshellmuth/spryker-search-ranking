@@ -14,11 +14,13 @@ use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricWeightTransfer;
 use Generated\Shared\Transfer\SearchRankingProductMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigest;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeight;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory;
 
 class SearchRankingMapper
 {
@@ -229,5 +231,42 @@ class SearchRankingMapper
         $historyEntity->setIsChange($historyTransfer->getIsChange() ?? true);
 
         return $historyEntity;
+    }
+
+    /**
+     * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory $settingHistoryEntity
+     * @param \Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer $settingHistoryTransfer
+     *
+     * @return \Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer
+     */
+    public function mapSettingHistoryEntityToTransfer(
+        SpySearchRankingSettingHistory $settingHistoryEntity,
+        SearchRankingSettingHistoryTransfer $settingHistoryTransfer,
+    ): SearchRankingSettingHistoryTransfer {
+        return $settingHistoryTransfer
+            ->setIdSearchRankingSettingHistory($settingHistoryEntity->getIdSearchRankingSettingHistory())
+            ->setSettingKey($settingHistoryEntity->getSettingKey())
+            ->setStoreName($settingHistoryEntity->getStoreName())
+            ->setLocaleName($settingHistoryEntity->getLocaleName())
+            ->setSettingValue($settingHistoryEntity->getSettingValue())
+            ->setCreatedAt($settingHistoryEntity->getCreatedAt()?->format(DATE_ATOM));
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer $settingHistoryTransfer
+     * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory $settingHistoryEntity
+     *
+     * @return \Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory
+     */
+    public function mapSettingHistoryTransferToEntity(
+        SearchRankingSettingHistoryTransfer $settingHistoryTransfer,
+        SpySearchRankingSettingHistory $settingHistoryEntity,
+    ): SpySearchRankingSettingHistory {
+        $settingHistoryEntity->setSettingKey($settingHistoryTransfer->getSettingKeyOrFail());
+        $settingHistoryEntity->setStoreName($settingHistoryTransfer->getStoreNameOrFail());
+        $settingHistoryEntity->setLocaleName($settingHistoryTransfer->getLocaleNameOrFail());
+        $settingHistoryEntity->setSettingValue($settingHistoryTransfer->getSettingValueOrFail());
+
+        return $settingHistoryEntity;
     }
 }

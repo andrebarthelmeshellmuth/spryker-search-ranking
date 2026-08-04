@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Business\Setting;
 
+use Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
@@ -58,7 +59,7 @@ class SettingManager implements SettingManagerInterface
      */
     public function saveRelevanceWeight(string $storeName, string $localeName, float $relevanceWeight): void
     {
-        $this->entityManager->saveSetting(
+        $this->saveSettingWithHistory(
             SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT,
             $storeName,
             $localeName,
@@ -96,7 +97,7 @@ class SettingManager implements SettingManagerInterface
      */
     public function saveRelevanceSaturationPoint(string $storeName, string $localeName, float $relevanceSaturationPoint): void
     {
-        $this->entityManager->saveSetting(
+        $this->saveSettingWithHistory(
             SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT,
             $storeName,
             $localeName,
@@ -134,7 +135,7 @@ class SettingManager implements SettingManagerInterface
      */
     public function saveSpecificityBlendWeight(string $storeName, string $localeName, float $specificityBlendWeight): void
     {
-        $this->entityManager->saveSetting(
+        $this->saveSettingWithHistory(
             SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_BLEND_WEIGHT,
             $storeName,
             $localeName,
@@ -172,7 +173,7 @@ class SettingManager implements SettingManagerInterface
      */
     public function saveSpecificitySaturationPoint(string $storeName, string $localeName, float $specificitySaturationPoint): void
     {
-        $this->entityManager->saveSetting(
+        $this->saveSettingWithHistory(
             SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_SATURATION_POINT,
             $storeName,
             $localeName,
@@ -210,7 +211,7 @@ class SettingManager implements SettingManagerInterface
      */
     public function saveSpecificityWeightExponent(string $storeName, string $localeName, float $specificityWeightExponent): void
     {
-        $this->entityManager->saveSetting(
+        $this->saveSettingWithHistory(
             SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT,
             $storeName,
             $localeName,
@@ -248,11 +249,43 @@ class SettingManager implements SettingManagerInterface
      */
     public function saveSpecificityWeightShiftMagnitude(string $storeName, string $localeName, float $specificityWeightShiftMagnitude): void
     {
-        $this->entityManager->saveSetting(
+        $this->saveSettingWithHistory(
             SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE,
             $storeName,
             $localeName,
             (string)$specificityWeightShiftMagnitude,
+        );
+    }
+
+    /**
+     * Writes the setting and, if its value actually changed, records a history snapshot at the same
+     * (settingKey, store, locale) scope — the same "diff, then write, then record" shape
+     * {@see \SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriter::saveMetricWeight()} uses for
+     * per-metric weights.
+     *
+     * @param string $settingKey
+     * @param string $storeName
+     * @param string $localeName
+     * @param string $settingValue
+     *
+     * @return void
+     */
+    protected function saveSettingWithHistory(string $settingKey, string $storeName, string $localeName, string $settingValue): void
+    {
+        $previousSettingValue = $this->repository->findSettingValue($settingKey, $storeName, $localeName);
+
+        $this->entityManager->saveSetting($settingKey, $storeName, $localeName, $settingValue);
+
+        if ($previousSettingValue === $settingValue) {
+            return;
+        }
+
+        $this->entityManager->recordSettingHistory(
+            (new SearchRankingSettingHistoryTransfer())
+                ->setSettingKey($settingKey)
+                ->setStoreName($storeName)
+                ->setLocaleName($localeName)
+                ->setSettingValue($settingValue),
         );
     }
 }

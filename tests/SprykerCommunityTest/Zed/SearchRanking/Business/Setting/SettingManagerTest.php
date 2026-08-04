@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunityTest\Zed\SearchRanking\Business\Setting;
 
 use Codeception\Test\Unit;
+use Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManager;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
@@ -78,10 +79,39 @@ class SettingManagerTest extends Unit
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')->willReturn('0.3');
+
         $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManagerMock->expects($this->once())
             ->method('saveSetting')
             ->with(SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '0.42');
+        $entityManagerMock->expects($this->once())
+            ->method('recordSettingHistory')
+            ->with($this->equalTo(
+                (new SearchRankingSettingHistoryTransfer())
+                    ->setSettingKey(SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT)
+                    ->setStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+                    ->setLocaleName(SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)
+                    ->setSettingValue('0.42'),
+            ));
+
+        $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
+
+        // Act
+        $settingManager->saveRelevanceWeight('DE', 'de_DE', 0.42);
+    }
+
+    /**
+     * @return void
+     */
+    public function testDoesNotRecordHistoryWhenTheSavedRelevanceWeightIsUnchanged(): void
+    {
+        // Arrange
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')->willReturn('0.42');
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->expects($this->never())->method('recordSettingHistory');
 
         $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
 
@@ -136,10 +166,21 @@ class SettingManagerTest extends Unit
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')->willReturn('20.5');
+
         $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManagerMock->expects($this->once())
             ->method('saveSetting')
             ->with(SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '15');
+        $entityManagerMock->expects($this->once())
+            ->method('recordSettingHistory')
+            ->with($this->equalTo(
+                (new SearchRankingSettingHistoryTransfer())
+                    ->setSettingKey(SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT)
+                    ->setStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+                    ->setLocaleName(SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)
+                    ->setSettingValue('15'),
+            ));
 
         $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
 
@@ -194,10 +235,21 @@ class SettingManagerTest extends Unit
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')->willReturn('0.5');
+
         $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManagerMock->expects($this->once())
             ->method('saveSetting')
             ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_BLEND_WEIGHT, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '0.8');
+        $entityManagerMock->expects($this->once())
+            ->method('recordSettingHistory')
+            ->with($this->equalTo(
+                (new SearchRankingSettingHistoryTransfer())
+                    ->setSettingKey(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_BLEND_WEIGHT)
+                    ->setStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+                    ->setLocaleName(SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)
+                    ->setSettingValue('0.8'),
+            ));
 
         $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
 
@@ -252,10 +304,21 @@ class SettingManagerTest extends Unit
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')->willReturn('3');
+
         $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManagerMock->expects($this->once())
             ->method('saveSetting')
             ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_SATURATION_POINT, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '4');
+        $entityManagerMock->expects($this->once())
+            ->method('recordSettingHistory')
+            ->with($this->equalTo(
+                (new SearchRankingSettingHistoryTransfer())
+                    ->setSettingKey(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_SATURATION_POINT)
+                    ->setStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+                    ->setLocaleName(SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)
+                    ->setSettingValue('4'),
+            ));
 
         $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
 
@@ -310,10 +373,21 @@ class SettingManagerTest extends Unit
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')->willReturn('1.0');
+
         $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManagerMock->expects($this->once())
             ->method('saveSetting')
             ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '1.5');
+        $entityManagerMock->expects($this->once())
+            ->method('recordSettingHistory')
+            ->with($this->equalTo(
+                (new SearchRankingSettingHistoryTransfer())
+                    ->setSettingKey(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT)
+                    ->setStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+                    ->setLocaleName(SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)
+                    ->setSettingValue('1.5'),
+            ));
 
         $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
 
@@ -368,10 +442,21 @@ class SettingManagerTest extends Unit
     {
         // Arrange
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')->willReturn('0.2');
+
         $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
         $entityManagerMock->expects($this->once())
             ->method('saveSetting')
             ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '0.3');
+        $entityManagerMock->expects($this->once())
+            ->method('recordSettingHistory')
+            ->with($this->equalTo(
+                (new SearchRankingSettingHistoryTransfer())
+                    ->setSettingKey(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE)
+                    ->setStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+                    ->setLocaleName(SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)
+                    ->setSettingValue('0.3'),
+            ));
 
         $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
 
