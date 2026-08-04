@@ -11,6 +11,8 @@ namespace SprykerCommunity\Client\SearchRanking;
 
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Spryker\Client\Kernel\AbstractClient;
+use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
+use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInterface;
 use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
 
 /**
@@ -52,6 +54,26 @@ class SearchRankingClient extends AbstractClient implements SearchRankingClientI
     public function getSpecificityProbeFieldSearchAnalyzers(): array
     {
         return $this->getFactory()->getConfig()->getSpecificityProbeFieldSearchAnalyzers();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function createFunctionScoreBuilder(): FunctionScoreBuilderInterface
+    {
+        return $this->getFactory()->createFunctionScoreBuilder();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function createQuerySpecificityCalculator(): QuerySpecificityCalculatorInterface
+    {
+        return $this->getFactory()->createQuerySpecificityCalculator();
     }
 
     /**

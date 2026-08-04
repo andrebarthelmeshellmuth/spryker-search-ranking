@@ -10,6 +10,8 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking;
 
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
+use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
+use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInterface;
 use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
 
 interface SearchRankingClientInterface
@@ -57,6 +59,32 @@ interface SearchRankingClientInterface
      * @return array<string, string>
      */
     public function getSpecificityProbeFieldSearchAnalyzers(): array;
+
+    /**
+     * Specification:
+     * - Returns this package's own function_score query builder — the same one
+     *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
+     *   uses to build the real production query.
+     * - The one correct way for code OUTSIDE this package (e.g. spryker-community/search-ranking-optimizer's
+     *   own evaluation tooling, which re-executes the same ranking formula against live search results) to
+     *   get a builder instance, without depending on this package's concrete `Query\FunctionScoreBuilder`
+     *   class directly.
+     *
+     * @api
+     */
+    public function createFunctionScoreBuilder(): FunctionScoreBuilderInterface;
+
+    /**
+     * Specification:
+     * - Returns this package's own query-specificity calculator — the same one
+     *   {@see \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculator} uses internally.
+     * - The one correct way for code OUTSIDE this package (e.g. spryker-community/search-ranking-optimizer's
+     *   own evaluation tooling) to get a calculator instance, without depending on this package's concrete
+     *   `Search\QuerySpecificityCalculator` class directly.
+     *
+     * @api
+     */
+    public function createQuerySpecificityCalculator(): QuerySpecificityCalculatorInterface;
 
     /**
      * NOT @api — internal plumbing only. This Client instance is the one object the Locator guarantees
