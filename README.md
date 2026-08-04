@@ -103,7 +103,7 @@ data-driven curve-fitting workflow.
 
 Verified: dependency floors resolved and checked at their oldest allowed versions (`composer
 check-floors`), the ranking formula's `function_score`/`script_score` cross-validated across three
-engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 179
+engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 196
 tests, phpcs and phpstan level 8 clean.
 
 This package's own mechanism is complete: the metric/value data model, the Zed management UI, CSV data
@@ -1079,7 +1079,7 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-**160 tests, 1075 assertions** across six Codeception suites (`Zed/SearchRanking`,
+**196 tests, 1210 assertions** across six Codeception suites (`Zed/SearchRanking`,
 `Zed/SearchRankingStorage`, `Zed/SearchRankingGui`, `Zed/SearchRankingDataImport`, `Client/SearchRanking`,
 `Client/SearchRankingStorage`). From a shop that has the package installed:
 
