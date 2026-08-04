@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business\Digest;
 
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
+use InvalidArgumentException;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
@@ -107,9 +108,18 @@ class MetricDigestBuilder implements MetricDigestBuilderInterface
      * linear interpolation between closest ranks — the same method `numpy.percentile()` defaults to.
      *
      * @param array<float> $rawValues
+     *
+     * @throws \InvalidArgumentException
      */
     public function buildDigest(array $rawValues): SearchRankingMetricDigestTransfer
     {
+        // rebuildDigest() already guards this before calling in, but this method is deliberately public
+        // for direct unit-testability -- an empty array here would otherwise silently produce a digest
+        // with min/max null and a NAN mean (0/0) instead of failing loudly.
+        if ($rawValues === []) {
+            throw new InvalidArgumentException('$rawValues must not be empty.');
+        }
+
         sort($rawValues);
         $count = count($rawValues);
 

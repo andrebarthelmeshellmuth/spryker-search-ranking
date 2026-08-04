@@ -173,6 +173,53 @@ class ScoreSectionBuilderTest extends Unit
     }
 
     /**
+     * A metric whose name fails FunctionScoreBuilder::METRIC_NAME_PATTERN (reachable via CSV data import,
+     * which -- unlike the Zed form -- doesn't validate the name) is invisible to the real function_score
+     * script: FunctionScoreBuilder skips it entirely. This overlay must skip it too, rather than showing
+     * a nonzero contribution for a metric that never actually influenced the real score.
+     */
+    public function testExcludesAMetricWhoseNameFailsTheLiveScriptsNamingPattern(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
+            ->setMetricWeights(['top_seller' => 0.5, 'Invalid-Name' => 0.5])
+            ->setRelevanceWeight(0.6)
+            ->setRelevanceSaturationPoint(12.0);
+
+        // Act
+        $section = (new ScoreSectionBuilder())->build($configurationTransfer, [
+            'top_seller' => 0.5,
+            'Invalid-Name' => 0.9,
+        ], null);
+
+        // Assert
+        $this->assertCount(1, $section['lines']);
+        $this->assertSame('top_seller', $section['lines'][0]['label']);
+        $this->assertEqualsWithDelta(0.25, $section['summaryValue'], 1.0E-9);
+    }
+
+    /**
+     * If EVERY configured metric fails the naming pattern, FunctionScoreBuilder::build() returns null and
+     * the real query is never blended at all -- the raw ES _score stands unchanged. This overlay must
+     * return null too (no section, no fabricated "here's how the score was computed" formula), the same
+     * way it already does for an empty metric-weights map.
+     */
+    public function testReturnsNullWhenEveryConfiguredMetricFailsTheLiveScriptsNamingPattern(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
+            ->setMetricWeights(['Invalid-Name' => 0.5])
+            ->setRelevanceWeight(0.6)
+            ->setRelevanceSaturationPoint(12.0);
+
+        // Act
+        $section = (new ScoreSectionBuilder())->build($configurationTransfer, ['Invalid-Name' => 0.9], 1.0);
+
+        // Assert
+        $this->assertNull($section);
+    }
+
+    /**
      * The configured relevanceWeight (0.6) must NOT leak into the formula/relevanceWeightValue once
      * specificity weighting actually adjusted it for this query (to 0.9 here) — otherwise the printed
      * formula would silently disagree with the real final score specificity weighting produced.

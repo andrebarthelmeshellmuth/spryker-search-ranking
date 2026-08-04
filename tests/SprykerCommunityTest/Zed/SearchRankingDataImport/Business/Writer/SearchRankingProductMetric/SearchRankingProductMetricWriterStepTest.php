@@ -14,6 +14,7 @@ use Orm\Zed\Product\Persistence\SpyProductAbstract;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery;
+use Spryker\Zed\DataImport\Business\Exception\InvalidDataException;
 use Spryker\Zed\DataImport\Business\Model\DataSet\DataSet;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingProductMetric\DataSet\SearchRankingProductMetricDataSetInterface;
@@ -136,6 +137,57 @@ class SearchRankingProductMetricWriterStepTest extends Unit
         $updatedEntity = $this->findAndTrackProductMetric($metricEntity, $productAbstractEntity);
         $this->assertSame(99.0, $updatedEntity->getRawValue());
         $this->assertSame(0.75, $updatedEntity->getNormalizedValue());
+    }
+
+    /**
+     * @dataProvider provideNonNumericRawValues
+     *
+     * @param string $rawValue
+     */
+    public function testExecuteThrowsForANonNumericRawValueRatherThanSilentlyCoercingItToZero(string $rawValue): void
+    {
+        // Arrange — a blank cell, stray whitespace, or a value with a thousands separator all cast
+        // silently to 0.0/1.0 under a plain (float) cast, indistinguishable from a legitimately-low
+        // signal. This must fail the row instead.
+        $metricEntity = $this->createTestMetric('test_nonnumeric_pm_metric_' . uniqid());
+        $productAbstractEntity = $this->createTestProductAbstract('test-nonnumeric-pm-sku-' . uniqid());
+
+        $dataSet = new DataSet([
+            SearchRankingProductMetricDataSetInterface::KEY_ID_SEARCH_RANKING_METRIC => $metricEntity->getIdSearchRankingMetric(),
+            SearchRankingProductMetricDataSetInterface::KEY_ID_PRODUCT_ABSTRACT => $productAbstractEntity->getIdProductAbstract(),
+            SearchRankingProductMetricDataSetInterface::COL_RAW_VALUE => $rawValue,
+            SearchRankingProductMetricDataSetInterface::COL_STORE => SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SearchRankingProductMetricDataSetInterface::COL_LOCALE => SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+        ]);
+
+        // Act
+        try {
+            (new SearchRankingProductMetricWriterStep())->execute($dataSet);
+            $this->fail('Expected InvalidDataException was not thrown.');
+        } catch (InvalidDataException $exception) {
+            // Assert
+            $this->assertStringContainsString((string)$productAbstractEntity->getIdProductAbstract(), $exception->getMessage());
+        }
+
+        $this->assertSame(
+            0,
+            SpySearchRankingProductMetricQuery::create()
+                ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
+                ->filterByFkProductAbstract($productAbstractEntity->getIdProductAbstract())
+                ->count(),
+        );
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public function provideNonNumericRawValues(): array
+    {
+        return [
+            'empty string' => [''],
+            'non-numeric text' => ['N/A'],
+            'thousands separator' => ['1,196'],
+        ];
     }
 
     /**

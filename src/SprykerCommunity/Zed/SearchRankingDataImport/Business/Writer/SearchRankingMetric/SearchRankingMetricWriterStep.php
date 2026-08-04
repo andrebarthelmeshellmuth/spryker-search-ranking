@@ -74,13 +74,31 @@ class SearchRankingMetricWriterStep implements DataImportStepInterface
 
         $metricEntity->save();
 
+        $weight = (float)$dataSet[SearchRankingMetricDataSetInterface::COL_WEIGHT];
+
+        // Mirrors MetricForm's GreaterThanOrEqual(0) constraint -- a negative weight here doesn't just
+        // skip this one metric (like a bad formula does), it corrupts every OTHER active metric's
+        // published weight too: RankingConfigurationStorageWriter::normalizeMetricWeights() divides by
+        // the sum of all active weights, and a negative value can shrink that sum toward zero (or flip
+        // its sign) without ever hitting the sum's own exact-zero guard, silently pushing normalized
+        // weights outside [0;1] for the whole store/locale.
+        if ($weight < 0) {
+            throw new InvalidDataException(
+                sprintf(
+                    'Failed to import search ranking metric "%s": weight must be greater than or equal to 0, got "%s".',
+                    $name,
+                    $dataSet[SearchRankingMetricDataSetInterface::COL_WEIGHT],
+                ),
+            );
+        }
+
         $metricWeightEntity = SpySearchRankingMetricWeightQuery::create()
             ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
             ->filterByStoreName((string)$dataSet[SearchRankingMetricDataSetInterface::COL_STORE])
             ->filterByLocaleName((string)$dataSet[SearchRankingMetricDataSetInterface::COL_LOCALE])
             ->findOneOrCreate();
 
-        $metricWeightEntity->setWeight((float)$dataSet[SearchRankingMetricDataSetInterface::COL_WEIGHT]);
+        $metricWeightEntity->setWeight($weight);
         $metricWeightEntity->save();
     }
 }

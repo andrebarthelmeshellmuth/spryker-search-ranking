@@ -53,6 +53,15 @@ class NormalizationCurveFitter implements NormalizationCurveFitterInterface
      */
     public function fit(SearchRankingMetricDigestTransfer $digestTransfer, bool $isHigherBetter): array
     {
+        // buildFitPoints() divides each percentile's index by count($percentiles) - 1; a digest with at
+        // most one percentile entry (never produced by this package's own MetricDigestBuilder, which
+        // always emits exactly 101, but reachable from a corrupted/legacy row) would divide by zero,
+        // silently NaN-poisoning every candidate's R² instead of failing cleanly. Same guard
+        // MetricFormulaFitEvaluator::evaluateFit() already applies to the identical computation.
+        if (count($digestTransfer->getPercentiles()) <= 1) {
+            return [];
+        }
+
         $points = $this->buildFitPoints($digestTransfer);
         $candidateTransfers = [];
 
