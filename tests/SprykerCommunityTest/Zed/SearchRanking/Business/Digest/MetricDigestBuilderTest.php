@@ -14,6 +14,7 @@ use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\StoreTransfer;
+use InvalidArgumentException;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilder;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
@@ -130,6 +131,21 @@ class MetricDigestBuilderTest extends Unit
         $this->assertSame($sortedResult->getMaxValue(), $scrambledResult->getMaxValue());
         $this->assertSame($sortedResult->getMedianValue(), $scrambledResult->getMedianValue());
         $this->assertSame($sortedResult->getPercentiles(), $scrambledResult->getPercentiles());
+    }
+
+    /**
+     * buildDigest() is deliberately public for direct unit-testability (see this class's own docblock),
+     * so an empty array reaching it directly -- bypassing rebuildDigest()'s own guard -- must fail
+     * loudly rather than silently produce a digest with null min/max and a NAN mean (0/0).
+     */
+    public function testBuildDigestThrowsForAnEmptyArrayRatherThanProducingANanMean(): void
+    {
+        // Arrange
+        $builder = $this->createDigestBuilder();
+
+        // Act & Assert
+        $this->expectException(InvalidArgumentException::class);
+        $builder->buildDigest([]);
     }
 
     /**

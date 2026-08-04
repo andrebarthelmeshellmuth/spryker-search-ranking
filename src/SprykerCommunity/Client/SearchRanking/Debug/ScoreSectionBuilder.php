@@ -61,6 +61,20 @@ use SprykerCommunity\Shared\SearchDebug\SearchDebugConfig;
 class ScoreSectionBuilder implements ScoreSectionBuilderInterface
 {
     /**
+     * Mirrors {@see \SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder::METRIC_NAME_PATTERN}
+     * exactly — duplicated, not imported, to keep this Debug-layer class from reaching into the
+     * Query-layer class for a single regex literal (same layering rationale as the DataImport writer's
+     * own duplicate of this pattern). A metric whose name fails this check is invisible to the real
+     * `function_score` script (FunctionScoreBuilder skips it entirely), so this overlay must skip it too
+     * -- otherwise a data-import-bypassed metric (validated by the Zed form, not by import) shows a
+     * nonzero contribution and a "this is how the real score was computed" formula here that never
+     * actually ran against the live query.
+     *
+     * @var string
+     */
+    protected const METRIC_NAME_PATTERN = '/^[a-z][a-z0-9_]*$/';
+
+    /**
      * "random" is a deliberately non-business-driven metric (a noise baseline for comparison, see
      * fixtures) — kept last in the display order so the metrics that actually explain *why* a product
      * ranked where it did read first, with the noise metric trailing rather than interleaved among them.
@@ -143,6 +157,10 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
         $decimalFormat = '%.' . SearchDebugConfig::SCORE_DECIMAL_PLACES . 'f';
 
         foreach ($configurationTransfer->getMetricWeights() as $metricName => $weight) {
+            if (!is_string($metricName) || !preg_match(static::METRIC_NAME_PATTERN, $metricName)) {
+                continue;
+            }
+
             $weight = (float)$weight;
             $signal = (float)($documentScores[$metricName] ?? 0.0);
             $contribution = $signal * $weight;

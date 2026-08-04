@@ -130,6 +130,45 @@ class SearchRankingMetricWriterStepTest extends Unit
         $this->assertSame(0, SpySearchRankingMetricQuery::create()->filterByName($name)->count());
     }
 
+    public function testExecuteThrowsForANegativeWeightAndPersistsNeitherTheMetricNorItsWeight(): void
+    {
+        // Arrange — a negative weight doesn't just fail to contribute (like an unrecognized formula
+        // does), it corrupts every OTHER active metric's normalized weight too: normalizeMetricWeights()
+        // divides by the sum of all active weights, and a negative value can shrink that sum toward zero
+        // without ever tripping its exact-zero guard. See MetricForm's own GreaterThanOrEqual(0)
+        // constraint, which this CSV path must match.
+        $name = 'test_negative_weight_metric_' . uniqid();
+        $dataSet = new DataSet([
+            SearchRankingMetricDataSetInterface::COL_NAME => $name,
+            SearchRankingMetricDataSetInterface::COL_WEIGHT => '-0.4',
+            SearchRankingMetricDataSetInterface::COL_FORMULA => 'x / max',
+            SearchRankingMetricDataSetInterface::COL_IS_ACTIVE => '1',
+            SearchRankingMetricDataSetInterface::COL_STORE => SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SearchRankingMetricDataSetInterface::COL_LOCALE => SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+        ]);
+
+        // Act
+        try {
+            (new SearchRankingMetricWriterStep())->execute($dataSet);
+            $this->fail('Expected InvalidDataException was not thrown.');
+        } catch (InvalidDataException $exception) {
+            // Assert
+            $this->assertStringContainsString('-0.4', $exception->getMessage());
+        }
+
+        // The metric row itself is created before the weight is validated (mirroring how the formula is
+        // saved before the weight-scoped row is touched) -- track it for cleanup, but the important
+        // assertion is that no weight row was ever persisted for it.
+        $metricEntity = SpySearchRankingMetricQuery::create()->findOneByName($name);
+
+        if ($metricEntity === null) {
+            return;
+        }
+
+        $this->metricEntities[] = $metricEntity;
+        $this->assertNull($this->findWeight($metricEntity->getIdSearchRankingMetric()));
+    }
+
     /**
      * @param string $name
      * @param float $weight

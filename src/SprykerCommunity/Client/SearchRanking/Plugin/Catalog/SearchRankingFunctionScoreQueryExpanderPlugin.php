@@ -159,7 +159,16 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
             return;
         }
 
-        $source = (array)$query->getParam(static::QUERY_PARAM_SOURCE);
+        $source = $query->getParam(static::QUERY_PARAM_SOURCE);
+
+        // Elastica's own setSource() legally accepts a bool too: `true` already means "return the full
+        // _source" (nothing to whitelist), and `false` means the caller explicitly disabled _source --
+        // neither should be blindly cast to array. (array)false silently becomes [] (which this method
+        // would then populate with just 'scores', re-enabling a source the caller explicitly turned off)
+        // and (array)true becomes [true], which setSource() would reject alongside a string field name.
+        if (is_bool($source)) {
+            return;
+        }
 
         if (in_array(PageIndexMap::SCORES, $source, true)) {
             return;

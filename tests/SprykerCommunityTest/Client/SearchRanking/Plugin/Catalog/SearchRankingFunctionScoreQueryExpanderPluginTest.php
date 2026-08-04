@@ -11,6 +11,7 @@ namespace SprykerCommunityTest\Client\SearchRanking\Plugin\Catalog;
 
 use Codeception\Test\Unit;
 use Elastica\Query;
+use Elastica\Query\FunctionScore;
 use Elastica\Query\MatchAll;
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 use Generated\Shared\Transfer\StoreTransfer;
@@ -153,6 +154,40 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
         // The original configuration transfer passed into findRankingConfiguration() must stay untouched
         // (a clone carries the adjusted weight, per applySpecificityWeighting()'s docblock).
         $this->assertSame(0.75, $configurationTransfer->getRelevanceWeight());
+    }
+
+    /**
+     * Elastica's own Query::setSource() legally accepts `false` (explicitly disable _source) alongside an
+     * array whitelist. A naive `(array)$query->getParam('_source')` would silently turn that `false` into
+     * `[]`, then this method would populate it with just 'scores' -- re-enabling a source the caller
+     * explicitly turned off. Must leave a boolean `_source` param untouched instead.
+     */
+    public function testLeavesABooleanSourceParamUntouchedInsteadOfCorruptingItIntoAnArray(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())->setRelevanceWeight(0.75);
+
+        $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
+        $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
+
+        $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
+        $functionScoreBuilderMock->method('build')->willReturn(new FunctionScore());
+
+        $client = new SearchRankingClient();
+
+        $plugin = $this->createPlugin($client, $storageClientMock, $functionScoreBuilderMock);
+
+        $query = new Query(new MatchAll());
+        $query->setSource(false);
+
+        $searchQueryMock = $this->createMock(QueryInterface::class);
+        $searchQueryMock->method('getSearchQuery')->willReturn($query);
+
+        // Act
+        $plugin->expandQuery($searchQueryMock, ['q' => 'gadget']);
+
+        // Assert
+        $this->assertFalse($query->getParam('_source'));
     }
 
     /**

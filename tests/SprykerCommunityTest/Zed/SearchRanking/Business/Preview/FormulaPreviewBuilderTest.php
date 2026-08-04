@@ -106,6 +106,40 @@ class FormulaPreviewBuilderTest extends Unit
         $this->assertSame([$candidateTransfer], $previewTransfer->getCandidates()->getArrayCopy());
     }
 
+    /**
+     * A digest with at most one percentile entry (never produced by this package's own digest builder,
+     * which always emits exactly 101, but reachable from a corrupted/legacy row) would otherwise divide
+     * by zero (index / $lastIndex) while building the CDF points, NaN-poisoning the preview instead of
+     * failing cleanly.
+     */
+    public function testReturnsAnErrorMessageWhenTheDigestHasAtMostOnePercentileEntry(): void
+    {
+        // Arrange
+        $digestTransfer = $this->buildDigestTransfer([5.0]);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricDigest')->with(5)->willReturn($digestTransfer);
+
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $formulaEvaluatorMock->expects($this->never())->method('evaluate');
+
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+        $curveFitterMock->expects($this->never())->method('fit');
+
+        $builder = new FormulaPreviewBuilder($repositoryMock, $formulaEvaluatorMock, $curveFitterMock);
+
+        // Act
+        $previewTransfer = $builder->buildPreview(5, 'x / max', true, 'DE', 'de_DE');
+
+        // Assert
+        $this->assertSame(
+            'This metric\'s distribution digest is too small to preview — re-run search-ranking:normalize.',
+            $previewTransfer->getErrorMessage(),
+        );
+        $this->assertCount(0, $previewTransfer->getPoints());
+        $this->assertCount(0, $previewTransfer->getCdfPoints());
+    }
+
     public function testReturnsAFreshErrorTransferWhenFormulaEvaluationFailsPartway(): void
     {
         // Arrange

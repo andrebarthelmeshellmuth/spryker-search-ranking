@@ -68,6 +68,15 @@ class FormulaPreviewBuilder implements FormulaPreviewBuilderInterface
         $percentiles = $digestTransfer->getPercentiles();
         $lastIndex = count($percentiles) - 1;
 
+        // At most one percentile entry (never produced by this package's own digest builder, which
+        // always emits exactly 101, but reachable from a corrupted/legacy row) would divide by zero
+        // below, silently NaN-poisoning every CDF/preview point instead of failing cleanly.
+        if ($lastIndex <= 0) {
+            return $previewTransfer->setErrorMessage(
+                'This metric\'s distribution digest is too small to preview — re-run search-ranking:normalize.',
+            );
+        }
+
         foreach ($percentiles as $index => $x) {
             $previewTransfer->addCdfPoint(
                 (new SearchRankingFormulaPreviewPointTransfer())->setXValue($x)->setYValue($index / $lastIndex),

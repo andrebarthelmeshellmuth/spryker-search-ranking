@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingProductMetric;
 
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery;
+use Spryker\Zed\DataImport\Business\Exception\InvalidDataException;
 use Spryker\Zed\DataImport\Business\Model\DataImportStep\DataImportStepInterface;
 use Spryker\Zed\DataImport\Business\Model\DataSet\DataSetInterface;
 use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingProductMetric\DataSet\SearchRankingProductMetricDataSetInterface;
@@ -25,9 +26,27 @@ class SearchRankingProductMetricWriterStep implements DataImportStepInterface
 {
     /**
      * @param \Spryker\Zed\DataImport\Business\Model\DataSet\DataSetInterface $dataSet
+     *
+     * @throws \Spryker\Zed\DataImport\Business\Exception\InvalidDataException
      */
     public function execute(DataSetInterface $dataSet): void
     {
+        $rawValue = $dataSet[SearchRankingProductMetricDataSetInterface::COL_RAW_VALUE];
+
+        // A blank cell, stray whitespace, or a non-numeric string (e.g. "N/A", or "1,196" with a
+        // thousands separator) casts silently to 0.0 under a plain (float) cast -- indistinguishable
+        // from a legitimately-zero signal. Fail the row instead, same as the sibling metric writer does
+        // for a malformed name.
+        if (!is_numeric($rawValue)) {
+            throw new InvalidDataException(
+                sprintf(
+                    'Failed to import search ranking product metric for product abstract "%s": raw value "%s" is not numeric.',
+                    $dataSet[SearchRankingProductMetricDataSetInterface::KEY_ID_PRODUCT_ABSTRACT],
+                    $rawValue,
+                ),
+            );
+        }
+
         $productMetricEntity = SpySearchRankingProductMetricQuery::create()
             ->filterByFkSearchRankingMetric($dataSet[SearchRankingProductMetricDataSetInterface::KEY_ID_SEARCH_RANKING_METRIC])
             ->filterByFkProductAbstract($dataSet[SearchRankingProductMetricDataSetInterface::KEY_ID_PRODUCT_ABSTRACT])
@@ -35,9 +54,7 @@ class SearchRankingProductMetricWriterStep implements DataImportStepInterface
             ->filterByLocaleName((string)$dataSet[SearchRankingProductMetricDataSetInterface::COL_LOCALE])
             ->findOneOrCreate();
 
-        $productMetricEntity->setRawValue(
-            (float)$dataSet[SearchRankingProductMetricDataSetInterface::COL_RAW_VALUE],
-        );
+        $productMetricEntity->setRawValue((float)$rawValue);
 
         $productMetricEntity->save();
     }

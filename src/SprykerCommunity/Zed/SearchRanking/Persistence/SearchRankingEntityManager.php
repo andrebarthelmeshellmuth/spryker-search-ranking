@@ -17,12 +17,15 @@ use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory;
 use Spryker\Zed\Kernel\Persistence\AbstractEntityManager;
+use Spryker\Zed\Kernel\Persistence\EntityManager\TransactionTrait;
 
 /**
  * @method \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingPersistenceFactory getFactory()
  */
 class SearchRankingEntityManager extends AbstractEntityManager implements SearchRankingEntityManagerInterface
 {
+    use TransactionTrait;
+
     /**
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      */
@@ -81,12 +84,17 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
             ->filterByIdSearchRankingProductMetric_In(array_keys($normalizedValuesByIdProductMetric))
             ->find();
 
-        foreach ($productMetricEntities as $productMetricEntity) {
-            $productMetricEntity->setNormalizedValue(
-                $normalizedValuesByIdProductMetric[$productMetricEntity->getIdSearchRankingProductMetric()],
-            );
-            $productMetricEntity->save();
-        }
+        // A batch can run to thousands of rows; wrapped in one transaction so a mid-batch DB error or
+        // connection drop can't leave earlier rows in the batch committed and later ones unwritten --
+        // same convention search-ranking-optimizer's entity manager uses for its own multi-row writes.
+        $this->getTransactionHandler()->handleTransaction(function () use ($productMetricEntities, $normalizedValuesByIdProductMetric): void {
+            foreach ($productMetricEntities as $productMetricEntity) {
+                $productMetricEntity->setNormalizedValue(
+                    $normalizedValuesByIdProductMetric[$productMetricEntity->getIdSearchRankingProductMetric()],
+                );
+                $productMetricEntity->save();
+            }
+        });
     }
 
     /**

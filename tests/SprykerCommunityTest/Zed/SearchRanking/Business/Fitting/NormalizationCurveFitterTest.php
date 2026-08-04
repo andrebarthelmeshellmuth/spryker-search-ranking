@@ -147,6 +147,31 @@ class NormalizationCurveFitterTest extends Unit
     }
 
     /**
+     * A digest with at most one percentile entry (never produced by this package's own digest builder,
+     * which always emits exactly 101, but reachable from a corrupted/legacy row -- see
+     * SearchRankingMapper::explodePercentiles()) would otherwise divide by zero (count($percentiles) - 1)
+     * inside buildFitPoints(), NaN-poisoning every candidate's R² instead of returning cleanly.
+     */
+    public function testADigestWithAtMostOnePercentileEntryReturnsNoCandidatesRatherThanDividingByZero(): void
+    {
+        // Arrange
+        $fitter = new NormalizationCurveFitter(new RSquaredCalculator());
+        $digestTransfer = (new SearchRankingMetricDigestTransfer())
+            ->setMinValue(5.0)
+            ->setMaxValue(5.0)
+            ->setMeanValue(5.0)
+            ->setMedianValue(5.0)
+            ->setSampleCount(1)
+            ->setPercentiles([5.0]);
+
+        // Act
+        $candidateTransfers = $fitter->fit($digestTransfer, true);
+
+        // Assert
+        $this->assertSame([], $candidateTransfers);
+    }
+
+    /**
      * @param array<float> $percentiles Ascending, exactly 101 entries (indices 0..100).
      */
     protected function buildDigestTransfer(array $percentiles): SearchRankingMetricDigestTransfer
