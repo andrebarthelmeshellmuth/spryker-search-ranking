@@ -154,6 +154,16 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
     ): ?array {
         $lines = [];
         $signalTotal = 0.0;
+        // Mirrors FunctionScoreBuilder::buildScript()'s OWN "$weight === 0.0 → skip" guard — duplicated
+        // for the same layering reason METRIC_NAME_PATTERN already is (see this class's own docblock):
+        // FunctionScoreBuilder wraps the query in a real function_score IF AND ONLY IF at least one
+        // metric has a non-zero weight, so this flag reliably answers "did that wrapping actually happen
+        // for this query" without this Debug-layer class needing to inspect the explain tree itself. It
+        // gates ONLY {@see formulaCalculation} below — the one field that actively CLAIMS to reproduce
+        // the real final `_score`; every other field here (business-signal lines/total, saturation point,
+        // normalized relevance, relevance weight) stays a true statement about the CONFIGURED values and
+        // the query's own real text-relevance score either way, function_score or not.
+        $hasActiveWeight = false;
         $decimalFormat = '%.' . SearchDebugConfig::SCORE_DECIMAL_PLACES . 'f';
 
         foreach ($configurationTransfer->getMetricWeights() as $metricName => $weight) {
@@ -162,6 +172,11 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
             }
 
             $weight = (float)$weight;
+
+            if ($weight !== 0.0) {
+                $hasActiveWeight = true;
+            }
+
             $signal = (float)($documentScores[$metricName] ?? 0.0);
             $contribution = $signal * $weight;
             $signalTotal += $contribution;
@@ -206,20 +221,29 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
             $section['relevanceWeightLabel'] = static::RELEVANCE_WEIGHT_LABEL;
             $section['relevanceWeightValue'] = $relevanceWeight;
 
-            // Plugs in $normalizedRelevance directly (already shown on its own line above) instead of
-            // repeating "queryScore / (queryScore + relevanceSaturationPoint)" inline, and spells out
-            // "(1 - relevanceWeight)" literally rather than pre-subtracting it into a single number — so
-            // the second term stays visibly tied to the relevanceWeight value shown just above. Stops at
-            // "=" rather than also computing/showing the result — the search-debug overlay already shows
-            // that same number right below, as the final score; repeating it here would just be
-            // redundant.
-            $section['formulaCalculation'] = sprintf(
-                $decimalFormat . ' × ' . $decimalFormat . ' + (1 - ' . $decimalFormat . ') × ' . $decimalFormat,
-                $relevanceWeight,
-                $normalizedRelevance,
-                $relevanceWeight,
-                $signalTotal,
-            );
+            // Only shown when function_score actually ran (see $hasActiveWeight above): with every
+            // metric weighted at 0, FunctionScoreBuilder never wraps the query at all, so the real final
+            // `_score` is untouched plain text relevance — this formula's own arithmetic (relevanceWeight
+            // × normalizedRelevance + ...) would then NOT equal the final score shown right below it,
+            // silently contradicting the one number the overlay is supposed to make reproducible-by-eye.
+            // Every other field above stays visible regardless — they're true configured/computed values
+            // either way — only this line actively claims to explain how the final score was produced.
+            if ($hasActiveWeight) {
+                // Plugs in $normalizedRelevance directly (already shown on its own line above) instead of
+                // repeating "queryScore / (queryScore + relevanceSaturationPoint)" inline, and spells out
+                // "(1 - relevanceWeight)" literally rather than pre-subtracting it into a single number —
+                // so the second term stays visibly tied to the relevanceWeight value shown just above.
+                // Stops at "=" rather than also computing/showing the result — the search-debug overlay
+                // already shows that same number right below, as the final score; repeating it here would
+                // just be redundant.
+                $section['formulaCalculation'] = sprintf(
+                    $decimalFormat . ' × ' . $decimalFormat . ' + (1 - ' . $decimalFormat . ') × ' . $decimalFormat,
+                    $relevanceWeight,
+                    $normalizedRelevance,
+                    $relevanceWeight,
+                    $signalTotal,
+                );
+            }
         }
 
         return $section;
