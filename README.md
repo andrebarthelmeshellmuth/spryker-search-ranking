@@ -1173,6 +1173,31 @@ For that reason the suites are **not** part of CI: a clean runner has neither a 
 cluster, and standing both up per build would cost far more than it returns. CI therefore covers the
 static guarantees; the test suite is run against a real shop before a release.
 
+### Browser (Presentation) suite
+
+> **This suite is a development tool for this package's own reference demoshop — it is not something
+> to install or run against YOUR shop.** It logs in as `admin@spryker.com`, drives the real Zed GUI
+> through a store/locale scope this demoshop seeds (`DE`/`de_DE`), and asserts against an existing
+> metric (id `1`) that already has a distribution digest for the normalization-preview check. Point it
+> at a different shop and most of it will simply fail on missing data, not on a real defect. It exists to
+> catch UI regressions while developing this package, not as something adopters are expected to run.
+
+`tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation/` is a real WebDriver click-through suite
+covering the Zed GUI: the metric list (scoped by store/locale, plus a full create → edit → delete round
+trip through the real forms), the "Normalize active weights" action, the Edit form's live normalization
+preview (smoke-level only — the curve-fit math itself is already covered by the unit suite above), the
+Settings form, the Product Values table and its Gaps view, and the Metric History table. It is kept as
+its own module directory rather than nested under `Zed/SearchRankingGui/` because that module's `Zed`
+suite scans its whole directory tree recursively — a nested WebDriver suite there would break it.
+
+```bash
+vendor/bin/codecept build -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation
+vendor/bin/codecept run -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation
+```
+
+Like the rest of the test suite, this is not part of CI — it needs a real running shop plus the Selenium/
+chromedriver service already provisioned in this demoshop's `docker-compose.yml`.
+
 Static analysis (`phpstan`, level 8, config in [`phpstan.neon`](phpstan.neon)) is likewise run from a host
 shop rather than in CI: it needs the generated `Generated\Shared\Transfer\*` classes, which only exist once
 a project has run `transfer:generate`, and it needs the shop's `Ide/AutoCompletion` stub freshly

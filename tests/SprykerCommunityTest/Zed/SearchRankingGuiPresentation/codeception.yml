@@ -1,0 +1,37 @@
+namespace: SprykerCommunityTest\Zed\SearchRankingGuiPresentation
+
+paths:
+    tests: .
+    data: _data
+    support: _support
+    output: _output
+
+coverage:
+    enabled: true
+    remote: false
+    include:
+        - 'packages/spryker-community/search-ranking/src/*'
+
+# Kept as its own module directory, sibling to Zed/SearchRankingGui, rather than a Presentation/
+# subfolder of it: that module's existing `Zed` suite has `path: .`, which recursively picks up every
+# file under it regardless of suite boundaries in codeception.yml — nesting a WebDriver suite in there
+# would make that suite try (and fail) to load these Cests too. A sibling directory has its own scan
+# root and never overlaps.
+suites:
+    Presentation:
+        path: Presentation
+        actor: SearchRankingGuiPresentationTester
+        modules:
+            enabled:
+                - Asserts
+                - \PyzTest\Shared\Testify\Helper\Environment
+                - \SprykerTest\Shared\Application\Helper\ZedHelper
+                - \SprykerTest\Shared\Config\Helper\ConfigInit
+                - \SprykerTest\Shared\Testify\Helper\LocatorHelper:
+                    projectNamespaces: ['Pyz']
+                - WebDriver:
+                    url: ''
+                    browser: chrome
+                    window_size: 1920x1080
+                    host: 0.0.0.0
+                    restart: false
