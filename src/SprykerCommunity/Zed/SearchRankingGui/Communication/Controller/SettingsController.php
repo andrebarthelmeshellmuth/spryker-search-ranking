@@ -69,7 +69,6 @@ class SettingsController extends AbstractController
             $searchRankingFacade->saveSpecificitySaturationPoint($storeName, $localeName, (float)$settingsData[SettingsForm::FIELD_SPECIFICITY_SATURATION_POINT]);
             $searchRankingFacade->saveSpecificityWeightExponent($storeName, $localeName, (float)$settingsData[SettingsForm::FIELD_SPECIFICITY_WEIGHT_EXPONENT]);
             $searchRankingFacade->saveSpecificityWeightShiftMagnitude($storeName, $localeName, (float)$settingsData[SettingsForm::FIELD_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE]);
-            $this->getFactory()->getSearchRankingStorageFacade()->publishRankingConfiguration();
             $this->addSuccessMessage('Ranking settings were saved.');
 
             return $this->redirectResponse(sprintf(

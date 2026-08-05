@@ -9,6 +9,8 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Dependency\Facade;
 
+use Spryker\Shared\Kernel\Transfer\TransferInterface;
+
 class SearchRankingToEventFacadeBridge implements SearchRankingToEventFacadeInterface
 {
     /**
@@ -31,5 +33,14 @@ class SearchRankingToEventFacadeBridge implements SearchRankingToEventFacadeInte
     public function triggerBulk(string $eventName, array $eventEntityTransfers): void
     {
         $this->eventFacade->triggerBulk($eventName, $eventEntityTransfers);
+    }
+
+    /**
+     * @param string $eventName
+     * @param \Spryker\Shared\Kernel\Transfer\TransferInterface $transfer
+     */
+    public function trigger(string $eventName, TransferInterface $transfer): void
+    {
+        $this->eventFacade->trigger($eventName, $transfer);
     }
 }

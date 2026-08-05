@@ -61,7 +61,6 @@ class CreateController extends AbstractController
                 );
             }
 
-            $this->getFactory()->getSearchRankingStorageFacade()->publishRankingConfiguration();
             $this->addSuccessMessage(sprintf('Metric "%s" was created.', $metricTransfer->getName()));
 
             return $this->redirectResponse(sprintf(

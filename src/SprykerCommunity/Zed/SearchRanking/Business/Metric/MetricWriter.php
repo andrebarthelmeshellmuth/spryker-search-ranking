@@ -9,13 +9,16 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Business\Metric;
 
+use Generated\Shared\Transfer\EventEntityTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingEvents;
 use SprykerCommunity\Zed\SearchRanking\Business\Exception\InvalidFormulaException;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
@@ -27,6 +30,7 @@ class MetricWriter implements MetricWriterInterface
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface $formulaEvaluator
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface $fitEvaluator
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface $curveFitter
+     * @param \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface $eventFacade
      */
     public function __construct(
         protected SearchRankingRepositoryInterface $repository,
@@ -34,6 +38,7 @@ class MetricWriter implements MetricWriterInterface
         protected FormulaEvaluatorInterface $formulaEvaluator,
         protected MetricFormulaFitEvaluatorInterface $fitEvaluator,
         protected NormalizationCurveFitterInterface $curveFitter,
+        protected SearchRankingToEventFacadeInterface $eventFacade,
     ) {
     }
 
@@ -64,6 +69,7 @@ class MetricWriter implements MetricWriterInterface
         $metricTransfer->setShape($this->detectShape($metricTransfer));
 
         $savedMetricTransfer = $this->entityManager->saveMetric($metricTransfer);
+        $this->eventFacade->trigger(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE, new EventEntityTransfer());
 
         if ($this->hasAnyTrackedFieldChanged($previousMetricTransfer, $savedMetricTransfer)) {
             $this->recordHistory(
@@ -96,6 +102,7 @@ class MetricWriter implements MetricWriterInterface
         $previousWeight = $this->repository->findMetricWeight($idSearchRankingMetric, $storeName, $localeName);
 
         $this->entityManager->saveMetricWeight($idSearchRankingMetric, $storeName, $localeName, $weight);
+        $this->eventFacade->trigger(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE, new EventEntityTransfer());
 
         if ($previousWeight === $weight) {
             return;
@@ -154,6 +161,7 @@ class MetricWriter implements MetricWriterInterface
     public function deleteMetric(int $idSearchRankingMetric): void
     {
         $this->entityManager->deleteMetric($idSearchRankingMetric);
+        $this->eventFacade->trigger(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE, new EventEntityTransfer());
     }
 
     /**

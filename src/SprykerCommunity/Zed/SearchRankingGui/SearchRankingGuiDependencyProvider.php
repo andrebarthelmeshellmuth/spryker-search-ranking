@@ -16,7 +16,6 @@ use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
 use Spryker\Zed\Kernel\Container;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToLocaleFacadeBridge;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeBridge;
-use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingStorageFacadeBridge;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToStoreFacadeBridge;
 
 class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvider
@@ -25,11 +24,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
      * @var string
      */
     public const FACADE_SEARCH_RANKING = 'FACADE_SEARCH_RANKING';
-
-    /**
-     * @var string
-     */
-    public const FACADE_SEARCH_RANKING_STORAGE = 'FACADE_SEARCH_RANKING_STORAGE';
 
     /**
      * @var string
@@ -64,7 +58,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
     {
         $container = parent::provideCommunicationLayerDependencies($container);
         $container = $this->addSearchRankingFacade($container);
-        $container = $this->addSearchRankingStorageFacade($container);
         $container = $this->addSearchRankingMetricPropelQuery($container);
         $container = $this->addSearchRankingProductMetricPropelQuery($container);
         $container = $this->addSearchRankingMetricHistoryPropelQuery($container);
@@ -93,18 +86,6 @@ class SearchRankingGuiDependencyProvider extends AbstractBundleDependencyProvide
     {
         $container->set(static::FACADE_LOCALE, fn (Container $container) => new SearchRankingGuiToLocaleFacadeBridge(
             $container->getLocator()->locale()->facade(),
-        ));
-
-        return $container;
-    }
-
-    /**
-     * @param \Spryker\Zed\Kernel\Container $container
-     */
-    protected function addSearchRankingStorageFacade(Container $container): Container
-    {
-        $container->set(static::FACADE_SEARCH_RANKING_STORAGE, fn (Container $container) => new SearchRankingGuiToSearchRankingStorageFacadeBridge(
-            $container->getLocator()->searchRankingStorage()->facade(),
         ));
 
         return $container;

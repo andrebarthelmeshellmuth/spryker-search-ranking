@@ -85,6 +85,7 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
             $this->createFormulaEvaluator(),
             $this->createMetricFormulaFitEvaluator(),
             $this->createNormalizationCurveFitter(),
+            $this->getEventFacade(),
         );
     }
 
@@ -116,6 +117,7 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
             $this->getRepository(),
             $this->getEntityManager(),
             $this->getConfig(),
+            $this->getEventFacade(),
         );
     }
 
