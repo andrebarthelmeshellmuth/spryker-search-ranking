@@ -70,13 +70,10 @@ class MetricRandomizer implements MetricRandomizerInterface
                     continue;
                 }
 
-                $metricTransfer = $this->repository->findMetricByName($this->metricName, $storeName, $localeName);
-
-                if ($metricTransfer === null || !$metricTransfer->getIsActive()) {
+                if (!$this->randomizeScopeIfActive($storeName, $localeName)) {
                     continue;
                 }
 
-                $this->normalizer->normalizeMetric($metricTransfer, $storeName, $localeName);
                 $wasAnyScopeRandomized = true;
             }
         }
@@ -86,5 +83,22 @@ class MetricRandomizer implements MetricRandomizerInterface
         }
 
         return $wasAnyScopeRandomized;
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     */
+    protected function randomizeScopeIfActive(string $storeName, string $localeName): bool
+    {
+        $metricTransfer = $this->repository->findMetricByName($this->metricName, $storeName, $localeName);
+
+        if ($metricTransfer === null || !$metricTransfer->getIsActive()) {
+            return false;
+        }
+
+        $this->normalizer->normalizeMetric($metricTransfer, $storeName, $localeName);
+
+        return true;
     }
 }
