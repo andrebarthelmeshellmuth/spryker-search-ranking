@@ -58,34 +58,47 @@ class ProductMetricNormalizer implements ProductMetricNormalizerInterface
                     continue;
                 }
 
-                foreach ($this->repository->getActiveMetricCollection($storeName, $localeName)->getMetrics() as $metricTransfer) {
-                    if ($metricTransfer->getName() === $this->config->getRandomMetricName()) {
-                        continue;
-                    }
-
-                    try {
-                        $updatedRowCount = $this->normalizeMetric($metricTransfer, $storeName, $localeName);
-                    } catch (Throwable $throwable) {
-                        $resultTransfer->addError(
-                            sprintf(
-                                'Metric "%s" skipped for %s/%s: %s',
-                                $metricTransfer->getName(),
-                                $storeName,
-                                $localeName,
-                                $throwable->getMessage(),
-                            ),
-                        );
-
-                        continue;
-                    }
-
-                    $resultTransfer->setProcessedMetricCount($resultTransfer->getProcessedMetricCount() + 1);
-                    $resultTransfer->setUpdatedRowCount($resultTransfer->getUpdatedRowCount() + $updatedRowCount);
-                }
+                $this->normalizeStoreLocale($resultTransfer, $storeName, $localeName);
             }
         }
 
         return $resultTransfer;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer $resultTransfer
+     * @param string $storeName
+     * @param string $localeName
+     */
+    protected function normalizeStoreLocale(
+        SearchRankingNormalizationResultTransfer $resultTransfer,
+        string $storeName,
+        string $localeName,
+    ): void {
+        foreach ($this->repository->getActiveMetricCollection($storeName, $localeName)->getMetrics() as $metricTransfer) {
+            if ($metricTransfer->getName() === $this->config->getRandomMetricName()) {
+                continue;
+            }
+
+            try {
+                $updatedRowCount = $this->normalizeMetric($metricTransfer, $storeName, $localeName);
+            } catch (Throwable $throwable) {
+                $resultTransfer->addError(
+                    sprintf(
+                        'Metric "%s" skipped for %s/%s: %s',
+                        $metricTransfer->getName(),
+                        $storeName,
+                        $localeName,
+                        $throwable->getMessage(),
+                    ),
+                );
+
+                continue;
+            }
+
+            $resultTransfer->setProcessedMetricCount($resultTransfer->getProcessedMetricCount() + 1);
+            $resultTransfer->setUpdatedRowCount($resultTransfer->getUpdatedRowCount() + $updatedRowCount);
+        }
     }
 
     /**
