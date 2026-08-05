@@ -99,10 +99,8 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
     protected const RELEVANCE_SATURATION_POINT_LABEL = 'Saturation point (k)';
 
     /**
-     * Deliberately no longer a "|--> Normalized (...)" nested-arrow label: that visual nesting made sense
-     * only while this line rendered directly under "Saturation point (k)" — now that the saturation point
-     * moved inside the "Text signals" box and this line stays outside it (see this class's own docblock),
-     * an arrow implying "follows from the line above" would point at nothing.
+     * Renders as its own standalone line, not nested under "Saturation point (k)" — see this class's own
+     * docblock for where each field in this section actually renders.
      *
      * @var string
      */

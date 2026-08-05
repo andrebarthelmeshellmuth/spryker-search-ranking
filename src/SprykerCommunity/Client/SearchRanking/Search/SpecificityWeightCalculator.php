@@ -87,12 +87,9 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
      * from the neutral point (normalized specificity exactly 0.5 — i.e. raw specificity exactly at the
      * calibrated saturation point — → deviation 0): positive when the query is MORE specific than typical
      * (shift toward text relevance), negative when it's LESS specific than typical (shift toward business
-     * signals). This is the mirror image of the old entropy shift's `1 - 2 * normalizedEntropy` — entropy
-     * was highest exactly when a query was LEAST specific (a flat score distribution), so the two signals
-     * point in opposite directions over the same `[0;1]` domain. The exponent is applied to the
-     * deviation's MAGNITUDE only, sign preserved separately, for the same reason the entropy version did
-     * this: applying it to `normalizedSpecificity` directly (before centering) would move the neutral
-     * point away from 0.5 whenever the exponent isn't exactly 1.0.
+     * signals). The exponent is applied to the deviation's MAGNITUDE only, sign preserved separately —
+     * applying it to `normalizedSpecificity` directly (before centering) would move the neutral point
+     * away from 0.5 whenever the exponent isn't exactly 1.0.
      *
      * @param float $normalizedSpecificity
      * @param float $exponent

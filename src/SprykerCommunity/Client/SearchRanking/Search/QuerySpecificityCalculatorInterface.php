@@ -22,7 +22,7 @@ interface QuerySpecificityCalculatorInterface
      *   rare term at all) read as unspecific.
      * - Zero terms returns `0.0` (nothing to measure). Exactly one term returns that term's own idf
      *   directly — `max` and `harmonicMean` are trivially identical for a single value, so `$blendWeight`
-     *   has no effect in this case, same graceful single-value degeneracy the old entropy calculation had.
+     *   has no effect in this case.
      * - Any idf value of `0.0` (a term present in literally every document) collapses the harmonic mean to
      *   `0.0` too — the correct mathematical limit, not a special case to guard against.
      *

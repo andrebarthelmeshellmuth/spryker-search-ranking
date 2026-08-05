@@ -42,7 +42,7 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
      *   business signals from the product documents' `scores` field, via a saturating blend:
      *   relevanceWeight * (_score / (_score + relevanceSaturationPoint))
      *     + (1 - relevanceWeight) * (sum of weight * signal) — see `FunctionScoreBuilder` for the full
-     *   rationale (including why an older, unbounded `(1 + sqrt(_score)) * (...)` formula was replaced).
+     *   rationale.
      * - Metric weights, relevanceWeight, and relevanceSaturationPoint all come from the ranking
      *   configuration in key-value storage (synced from Zed).
      * - **Specificity-aware relevance weighting (opt-in, OFF by default)**: when

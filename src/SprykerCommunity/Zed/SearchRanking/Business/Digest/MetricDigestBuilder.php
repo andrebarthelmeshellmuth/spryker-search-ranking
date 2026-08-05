@@ -18,11 +18,11 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
 /**
  * Precomputes a fixed-size distribution digest of each metric's raw_value column — a 101-point
  * empirical-CDF backbone (percentiles 0,1,2,...,100) plus min/max/mean/median — so the
- * normalization-authoring GUI (phase 4.5) never touches the raw per-product rows directly, however many
- * there are. Runs as a byproduct of the same `search-ranking:normalize` cron invocation that already
- * normalizes every row, on its own schedule rather than sharing that scan: percentile computation needs
- * every value sorted in memory, a different access pattern from the normalizer's keyset-paginated batch
- * stream, so keeping the two decoupled is simpler than threading digest state through that loop.
+ * normalization-authoring GUI never touches the raw per-product rows directly, however many there are.
+ * Runs as a byproduct of the same `search-ranking:normalize` cron invocation that already normalizes
+ * every row, on its own schedule rather than sharing that scan: percentile computation needs every value
+ * sorted in memory, a different access pattern from the normalizer's keyset-paginated batch stream, so
+ * keeping the two decoupled is simpler than threading digest state through that loop.
  */
 class MetricDigestBuilder implements MetricDigestBuilderInterface
 {

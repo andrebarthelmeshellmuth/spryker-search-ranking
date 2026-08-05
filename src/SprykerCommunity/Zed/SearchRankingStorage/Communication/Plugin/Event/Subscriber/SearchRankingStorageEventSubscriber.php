@@ -42,8 +42,8 @@ class SearchRankingStorageEventSubscriber extends AbstractPlugin implements Even
 
     /**
      * Handled directly (NOT queued) — the ranking configuration is a single, cheap-to-republish
-     * per-store/locale resource, not a bulk entity collection, and this project runs no queue worker by
-     * default. See the package README's Publish & Synchronize note for the full reasoning.
+     * per-store/locale resource, not a bulk entity collection. See the package README's Publish &
+     * Synchronize note for the full reasoning.
      *
      * @param \Spryker\Zed\Event\Dependency\EventCollectionInterface $eventCollection
      */

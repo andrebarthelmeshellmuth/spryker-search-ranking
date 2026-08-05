@@ -76,10 +76,10 @@
     </transfer>
 
     <!-- A fixed-size distribution digest of one metric's raw_value column, computed as a byproduct of
-         the normalize cron (MetricDigestBuilder) so the normalization-authoring GUI (phase 4.5) never
-         has to touch the raw per-product rows: percentiles is the empirical CDF backbone (101 points,
-         at percentiles 0,1,2,...,100), medianValue doubles as the default fit parameter for the
-         x/(x+k) saturating candidate. -->
+         the normalize cron (MetricDigestBuilder) so the normalization-authoring GUI never has to touch
+         the raw per-product rows: percentiles is the empirical CDF backbone (101 points, at percentiles
+         0,1,2,...,100), medianValue doubles as the default fit parameter for the x/(x+k) saturating
+         candidate. -->
     <transfer name="SearchRankingMetricDigest" strict="true">
         <property name="idSearchRankingMetricDigest" type="int"/>
         <property name="fkSearchRankingMetric" type="int"/>
