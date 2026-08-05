@@ -17,9 +17,7 @@ use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRan
 use Throwable;
 
 /**
- * Resolves the index name the same way {@see \SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityChecker}'s
- * predecessor ({@see \SprykerCommunity\Client\SearchRanking\Search\EntropyWeightCalculator}, now removed) did —
- * via the injected {@see \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface}
+ * Resolves the index name via the injected {@see \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface}
  * rather than {@see \Spryker\Shared\Kernel\Store::getInstance()}, which throws on dynamic store mode.
  */
 class QueryTermFrequencyFetcher implements QueryTermFrequencyFetcherInterface

@@ -49,8 +49,8 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
 
         $savedMetricTransfer = $mapper->mapMetricEntityToTransfer($metricEntity, $metricTransfer);
 
-        // mapMetricEntityToTransfer() no longer sets weight (it's not an entity column anymore) — carry
-        // the incoming transfer's own weight through unchanged, since this method never touches it.
+        // weight isn't a column on SpySearchRankingMetric — carry the incoming transfer's own weight
+        // through unchanged, since mapMetricEntityToTransfer() never touches it.
         return $savedMetricTransfer->setWeight($metricTransfer->getWeight());
     }
 

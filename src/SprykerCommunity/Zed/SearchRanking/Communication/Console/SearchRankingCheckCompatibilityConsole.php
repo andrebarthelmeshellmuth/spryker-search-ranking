@@ -30,10 +30,9 @@ class SearchRankingCheckCompatibilityConsole extends Console
     public const COMMAND_DESCRIPTION = 'Probes the live search engine\'s actual capabilities (never a version-string comparison) for the constructs this package uses today or could use in a future phase.';
 
     /**
-     * The construct this package's live `function_score` ranking (phase 3) actually depends on today —
-     * if the engine fails THIS one, the shop's ranking feature is currently broken, so the command exits
-     * non-zero. Every other probed capability is purely forward-looking (future roadmap phases) and never
-     * affects the exit code.
+     * The construct this package's live `function_score` ranking actually depends on today — if the
+     * engine fails THIS one, the shop's ranking feature is currently broken, so the command exits
+     * non-zero. Every other probed capability is purely forward-looking and never affects the exit code.
      *
      * @var string
      */
@@ -95,7 +94,7 @@ class SearchRankingCheckCompatibilityConsole extends Console
         if ($isProductionCapabilityBroken) {
             $output->writeln('');
             $output->writeln(sprintf(
-                '<error>"%s" is NOT supported by this engine — the live function_score ranking (phase 3) is broken.</error>',
+                '<error>"%s" is NOT supported by this engine — the live function_score ranking is broken.</error>',
                 static::CAPABILITY_IN_PRODUCTION_USE,
             ));
 

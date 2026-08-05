@@ -118,11 +118,11 @@ class SearchRankingConfig
 
     /**
      * Specification:
-     * - TEMPORARY Phase-1 safety-valve default store, used by every caller of a now-store+locale-scoped
-     *   read/write until later phases thread a real caller-supplied (admin-selected, request-current, or
-     *   run/calibration-carried) store+locale through instead. Not meant to be read directly by project
-     *   code — exists purely so this package's own internals keep behaving exactly as they did when
-     *   configuration was global, for a shop that (like this demoshop) only ever configures one store.
+     * - TEMPORARY safety-valve default store, used by every caller of a store+locale-scoped read/write
+     *   until a real caller-supplied (admin-selected, request-current, or run/calibration-carried)
+     *   store+locale is threaded through instead. Not meant to be read directly by project code — exists
+     *   purely so this package's own internals keep behaving exactly as they did when configuration was
+     *   global, for a shop that (like this demoshop) only ever configures one store.
      *
      * @api
      *
@@ -132,7 +132,7 @@ class SearchRankingConfig
 
     /**
      * Specification:
-     * - TEMPORARY Phase-1 safety-valve default locale — see {@see DEFAULT_SCOPE_STORE_NAME}.
+     * - TEMPORARY safety-valve default locale — see {@see DEFAULT_SCOPE_STORE_NAME}.
      *
      * @api
      *

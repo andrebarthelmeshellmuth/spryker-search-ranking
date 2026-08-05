@@ -13,7 +13,7 @@ use Generated\Shared\Transfer\SearchRankingCurveFitCandidateTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 
 /**
- * The "interesting part" of the normalization-authoring GUI (phase 4.5): a normalization formula's job is
+ * The "interesting part" of the normalization-authoring GUI: a normalization formula's job is
  * to DISCRIMINATE — spread products across ]0;1] — not merely map into range. The empirical CDF (map each
  * raw value to the fraction of products below it) is the theoretical max-discrimination normalizer, so it
  * is the reference every candidate is scored against: whichever closed-form curve tracks that CDF most

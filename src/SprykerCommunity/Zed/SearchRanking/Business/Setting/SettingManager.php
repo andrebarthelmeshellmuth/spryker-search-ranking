@@ -245,9 +245,8 @@ class SettingManager implements SettingManagerInterface
      * per-metric weights.
      *
      * Triggers {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingEvents::RANKING_CONFIGURATION_CHANGE}
-     * unconditionally (even when the value is unchanged) — every caller of a `save*` method on this class
-     * used to be responsible for explicitly republishing to key-value storage afterward; centralizing the
-     * trigger here means that obligation can no longer be forgotten by a new caller.
+     * unconditionally (even when the value is unchanged) — centralizing the trigger here means no caller
+     * of a `save*` method on this class needs to remember to republish to key-value storage itself.
      *
      * @param string $settingKey
      * @param string $storeName
