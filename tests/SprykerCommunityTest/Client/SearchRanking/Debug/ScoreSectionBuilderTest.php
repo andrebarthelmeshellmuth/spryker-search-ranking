@@ -135,6 +135,47 @@ class ScoreSectionBuilderTest extends Unit
     }
 
     /**
+     * Regression test: confirmed live against this shop's own DE/en_US ranking configuration, whose
+     * metric weights were all 0 — FunctionScoreBuilder's OWN identical "$weight === 0.0 → skip" guard
+     * (mirrored here as $hasActiveWeight) means it never wraps the query in that case, so the real final
+     * `_score` is untouched plain text relevance. Before this fix, `formulaCalculation` was still added
+     * whenever queryScore was merely known/non-negative — printing a formula whose OWN arithmetic
+     * (relevanceWeight × normalizedRelevance + (1 - relevanceWeight) × 0.000) does NOT equal the real
+     * final score sitting right below it in the overlay, silently contradicting the one number the
+     * formula exists to make reproducible-by-eye. Every other field (the business-signal lines/total,
+     * saturation point, normalized text relevance, relevance weight) is still a true statement about the
+     * configured values and the query's own real text score either way, so only `formulaCalculation`
+     * itself must disappear — not the whole section.
+     */
+    public function testOmitsOnlyTheCombinationFormulaWhenNoMetricHasAnActiveWeight(): void
+    {
+        // Arrange — two metrics configured (so $lines isn't empty, same as this shop's real config), both
+        // weighted at 0.
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
+            ->setMetricWeights(['top_seller' => 0.0, 'pdp_impressions' => 0.0])
+            ->setRelevanceWeight(0.744)
+            ->setRelevanceSaturationPoint(12.0);
+
+        // Act
+        $section = (new ScoreSectionBuilder())->build($configurationTransfer, [
+            'top_seller' => 0.51,
+            'pdp_impressions' => 0.20,
+        ], 17.29);
+
+        // Assert — everything else about the query's own real text relevance still shows...
+        $this->assertCount(2, $section['lines']);
+        $this->assertSame(0.0, $section['summaryValue']);
+        $this->assertSame('Saturation point (k)', $section['relevanceSaturationPointLabel']);
+        $this->assertSame('Text Signal total', $section['normalizedRelevanceLabel']);
+        $this->assertEqualsWithDelta(17.29 / (17.29 + 12.0), $section['normalizedRelevanceValue'], 1.0E-9);
+        $this->assertSame('Relevance weight (α)', $section['relevanceWeightLabel']);
+        $this->assertSame(0.744, $section['relevanceWeightValue']);
+
+        // ... except the formula, which would misrepresent how the real final score was produced.
+        $this->assertArrayNotHasKey('formulaCalculation', $section);
+    }
+
+    /**
      * "random" is a noise-comparison metric, not a real business signal — kept last in the display order
      * regardless of where it was configured, so the metrics that actually explain the ranking read first.
      */
