@@ -31,8 +31,6 @@ class MetricListCest
 {
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function _before(SearchRankingGuiPresentationTester $i): void
     {
@@ -42,8 +40,6 @@ class MetricListCest
 
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function listOfMetricsLoadsScopedByStoreAndLocale(SearchRankingGuiPresentationTester $i): void
     {
@@ -56,8 +52,6 @@ class MetricListCest
 
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function createEditAndDeleteMetricRoundTrip(SearchRankingGuiPresentationTester $i): void
     {
@@ -85,8 +79,6 @@ class MetricListCest
 
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function normalizeActiveWeightsButtonWorks(SearchRankingGuiPresentationTester $i): void
     {

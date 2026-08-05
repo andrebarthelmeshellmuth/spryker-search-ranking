@@ -28,8 +28,6 @@ class MetricHistoryCest
 {
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function _before(SearchRankingGuiPresentationTester $i): void
     {
@@ -39,8 +37,6 @@ class MetricHistoryCest
 
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function historyTableLoads(SearchRankingGuiPresentationTester $i): void
     {

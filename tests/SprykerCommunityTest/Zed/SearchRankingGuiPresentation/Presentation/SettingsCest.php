@@ -28,8 +28,6 @@ class SettingsCest
 {
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function _before(SearchRankingGuiPresentationTester $i): void
     {
@@ -40,8 +38,6 @@ class SettingsCest
 
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function everyConfiguredFieldIsPresent(SearchRankingGuiPresentationTester $i): void
     {
@@ -59,8 +55,6 @@ class SettingsCest
      * works without actually changing the configured behavior.
      *
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function savingTheFormShowsTheSuccessMessage(SearchRankingGuiPresentationTester $i): void
     {

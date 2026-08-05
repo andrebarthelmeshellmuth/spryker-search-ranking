@@ -34,8 +34,6 @@ class SearchRankingStorageEventSubscriber extends AbstractPlugin implements Even
      * @api
      *
      * @param \Spryker\Zed\Event\Dependency\EventCollectionInterface $eventCollection
-     *
-     * @return \Spryker\Zed\Event\Dependency\EventCollectionInterface
      */
     public function getSubscribedEvents(EventCollectionInterface $eventCollection): EventCollectionInterface
     {
@@ -48,8 +46,6 @@ class SearchRankingStorageEventSubscriber extends AbstractPlugin implements Even
      * default. See the package README's Publish & Synchronize note for the full reasoning.
      *
      * @param \Spryker\Zed\Event\Dependency\EventCollectionInterface $eventCollection
-     *
-     * @return \Spryker\Zed\Event\Dependency\EventCollectionInterface
      */
     protected function addRankingConfigurationPublishListener(EventCollectionInterface $eventCollection): EventCollectionInterface
     {
