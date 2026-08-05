@@ -29,8 +29,6 @@ class ProductMetricCest
 {
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function _before(SearchRankingGuiPresentationTester $i): void
     {
@@ -40,8 +38,6 @@ class ProductMetricCest
 
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function productValuesTableLoads(SearchRankingGuiPresentationTester $i): void
     {
@@ -52,8 +48,6 @@ class ProductMetricCest
 
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function viewGapsLinkOpensTheGapsPageWithTheSameScope(SearchRankingGuiPresentationTester $i): void
     {
@@ -68,8 +62,6 @@ class ProductMetricCest
 
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function gapsPageFiltersByMetric(SearchRankingGuiPresentationTester $i): void
     {

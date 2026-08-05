@@ -46,8 +46,6 @@ class SearchRankingGuiPresentationTester extends Actor
 
     /**
      * @param string $selector
-     *
-     * @return bool
      */
     public function tryToSeeElement(string $selector): bool
     {
@@ -55,7 +53,7 @@ class SearchRankingGuiPresentationTester extends Actor
             $this->seeElement($selector);
 
             return true;
-        } catch (Exception $exception) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -63,8 +61,6 @@ class SearchRankingGuiPresentationTester extends Actor
     /**
      * @param string $storeName
      * @param string $localeName
-     *
-     * @return string
      */
     public function scopedListUrl(string $storeName = self::DEFAULT_STORE_NAME, string $localeName = self::DEFAULT_LOCALE_NAME): string
     {
@@ -78,8 +74,6 @@ class SearchRankingGuiPresentationTester extends Actor
      * @param string $name
      * @param float $weight
      * @param string $formula
-     *
-     * @return int
      */
     public function createMetric(string $name, float $weight, string $formula): int
     {
@@ -101,8 +95,6 @@ class SearchRankingGuiPresentationTester extends Actor
 
     /**
      * @param string $name
-     *
-     * @return int
      */
     protected function grabIdFromEditLinkByName(string $name): int
     {
@@ -117,8 +109,6 @@ class SearchRankingGuiPresentationTester extends Actor
 
     /**
      * @param int $idSearchRankingMetric
-     *
-     * @return void
      */
     public function deleteMetric(int $idSearchRankingMetric): void
     {

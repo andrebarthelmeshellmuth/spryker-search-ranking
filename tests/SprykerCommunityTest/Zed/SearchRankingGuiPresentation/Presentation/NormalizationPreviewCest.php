@@ -38,8 +38,6 @@ class NormalizationPreviewCest
 
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function _before(SearchRankingGuiPresentationTester $i): void
     {
@@ -49,8 +47,6 @@ class NormalizationPreviewCest
 
     /**
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function previewRendersForAMetricWithADistributionDigest(SearchRankingGuiPresentationTester $i): void
     {
@@ -76,8 +72,6 @@ class NormalizationPreviewCest
      * proves works on load - this test is specifically about the debounced input listener existing.
      *
      * @param \SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresentationTester $i
-     *
-     * @return void
      */
     public function editingTheFormulaRefreshesThePreview(SearchRankingGuiPresentationTester $i): void
     {
