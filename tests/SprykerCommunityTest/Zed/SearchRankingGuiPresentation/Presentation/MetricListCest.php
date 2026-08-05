@@ -74,8 +74,8 @@ class MetricListCest
             $i::DEFAULT_STORE_NAME,
             $i::DEFAULT_LOCALE_NAME,
         ));
-        $i->seeInField(MetricFormPage::FIELD_NAME, $name);
-        $i->fillField(MetricFormPage::FIELD_WEIGHT, '0.2');
+        $i->seeInField('#' . MetricFormPage::FIELD_NAME, $name);
+        $i->fillField('#' . MetricFormPage::FIELD_WEIGHT, '0.2');
         $i->click(MetricFormPage::SELECTOR_SUBMIT);
         $i->see(sprintf(MetricFormPage::FLASH_MESSAGE_UPDATED_FORMAT, $name));
 

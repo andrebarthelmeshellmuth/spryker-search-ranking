@@ -90,7 +90,7 @@ class NormalizationPreviewCest
         ));
         $i->wait(2);
 
-        $i->fillField(MetricFormPage::FIELD_FORMULA, 'atan(x / avg) / (pi() / 2)');
+        $i->fillField('#' . MetricFormPage::FIELD_FORMULA, 'atan(x / avg) / (pi() / 2)');
         $i->wait(2);
 
         $i->assertEmpty(trim($i->grabTextFrom(MetricFormPage::SELECTOR_PREVIEW_MESSAGE)));

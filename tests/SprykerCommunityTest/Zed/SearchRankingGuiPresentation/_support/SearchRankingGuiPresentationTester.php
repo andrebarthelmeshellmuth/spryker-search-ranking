@@ -86,9 +86,9 @@ class SearchRankingGuiPresentationTester extends Actor
         $this->amOnPage($this->scopedListUrl());
         $this->click(MetricListPage::CREATE_METRIC_LINK_TEXT);
 
-        $this->fillField(MetricFormPage::FIELD_NAME, $name);
-        $this->fillField(MetricFormPage::FIELD_WEIGHT, (string)$weight);
-        $this->fillField(MetricFormPage::FIELD_FORMULA, $formula);
+        $this->fillField('#' . MetricFormPage::FIELD_NAME, $name);
+        $this->fillField('#' . MetricFormPage::FIELD_WEIGHT, (string)$weight);
+        $this->fillField('#' . MetricFormPage::FIELD_FORMULA, $formula);
         $this->click(MetricFormPage::SELECTOR_SUBMIT);
 
         $this->seeInCurrentUrl(MetricListPage::URL);
@@ -123,9 +123,10 @@ class SearchRankingGuiPresentationTester extends Actor
     public function deleteMetric(int $idSearchRankingMetric): void
     {
         $this->amOnPage($this->scopedListUrl());
-        $this->click(
-            "//tr[.//a[contains(@href, 'id-search-ranking-metric=" . $idSearchRankingMetric . "')]]//button[@data-qa='delete-button']",
-        );
+        $this->waitForElementVisible(MetricListPage::SELECTOR_TABLE, 10);
+        $deleteButtonXpath = "//tr[.//a[contains(@href, 'id-search-ranking-metric=" . $idSearchRankingMetric . "')]]//button[@data-qa='delete-button']";
+        $this->waitForElementVisible($deleteButtonXpath, 10);
+        $this->click($deleteButtonXpath);
         $this->see('Metric was deleted.');
     }
 }
