@@ -920,7 +920,35 @@ store-less synchronization resource must have a queue pool or message creation f
 specify either store column or SynchronizationQueuePoolName"). If your project's pool has a different
 name, override that method in a project-level `SearchRankingStorageConfig`.
 
-### 12. Register the function_score query expander
+### 12. Register the ranking-configuration publish event listener
+
+Every write that changes ranking configuration (a relevance/specificity setting, or a metric's
+identity/weight/deletion) triggers `SearchRankingEvents::RANKING_CONFIGURATION_CHANGE` from the Business
+layer — but Spryker resolves event listeners at the project level, not automatically per-module, so a
+consuming project must register the subscriber itself in `Pyz\Zed\Event\EventDependencyProvider`:
+
+```php
+use SprykerCommunity\Zed\SearchRankingStorage\Communication\Plugin\Event\Subscriber\SearchRankingStorageEventSubscriber;
+
+public function getEventSubscriberCollection(): EventSubscriberCollectionInterface
+{
+    $eventSubscriberCollection = parent::getEventSubscriberCollection();
+
+    $eventSubscriberCollection->add(new SearchRankingStorageEventSubscriber());
+
+    return $eventSubscriberCollection;
+}
+```
+
+Without this, saving a metric or a setting in the Zed GUI (or via search-ranking-optimizer applying a
+run/checkpoint/calibration) still succeeds and persists correctly — it just never reaches the synced
+key-value storage the live storefront query reads, the same silent-drift failure mode step 11's queue
+registration guards against. The listener is registered non-queued (handled synchronously, in the same
+request) rather than via `addListenerQueued()`: the ranking configuration is a single, cheap-to-republish
+per-store/locale resource, not a bulk entity collection, and a from-scratch project may not run a queue
+worker at all.
+
+### 13. Register the function_score query expander
 
 In `Pyz\Client\Catalog\CatalogDependencyProvider::createCatalogSearchQueryExpanderPlugins()`,
 **after `FacetQueryExpanderPlugin`** — earlier expanders require the root query to still be a
@@ -933,7 +961,7 @@ new FacetQueryExpanderPlugin(),
 new SearchRankingFunctionScoreQueryExpanderPlugin(),
 ```
 
-### 13. Optional: register the search-debug overlay section
+### 14. Optional: register the search-debug overlay section
 
 With spryker-community/search-debug installed, extend its client dependency provider on project
 level (`Pyz\Client\SearchDebug\SearchDebugDependencyProvider`):
@@ -949,7 +977,7 @@ protected function getProductDebugDataExpanderPlugins(): array
 }
 ```
 
-### 14. Build
+### 15. Build
 
 ```bash
 vendor/bin/console transfer:generate
@@ -962,7 +990,7 @@ vendor/bin/console search:setup:sources      # merges the scores field into the 
 The "Search Ranking" section then appears in the Back Office navigation, and after the next
 normalize run + queue processing the page documents carry `scores`.
 
-### 15. Verify the installation
+### 16. Verify the installation
 
 ```bash
 vendor/bin/console search-ranking:check-installation
@@ -976,7 +1004,7 @@ plugins add, and that at least one active metric is configured. It exits non-zer
 whatever is wrong.
 
 It is explicit about its own blind spots: running in Zed, it cannot confirm the Yves-side `function_score`
-query expander (step 12) is registered, or that a live search result order actually reflects the
+query expander (step 13) is registered, or that a live search result order actually reflects the
 configured weights — those need a real storefront search request, not a CLI probe. Distinct from
 `search-ranking:check-compatibility`: that command asks "does this engine support what the package
 needs", this one asks "is this installation wired up correctly."

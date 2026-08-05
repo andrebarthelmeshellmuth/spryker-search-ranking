@@ -25,7 +25,6 @@ use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricGapTa
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricTable;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToLocaleFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingFacadeInterface;
-use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToSearchRankingStorageFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade\SearchRankingGuiToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapFinder;
 use SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapFinderInterface;
@@ -112,11 +111,6 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     public function getSearchRankingFacade(): SearchRankingGuiToSearchRankingFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_SEARCH_RANKING);
-    }
-
-    public function getSearchRankingStorageFacade(): SearchRankingGuiToSearchRankingStorageFacadeInterface
-    {
-        return $this->getProvidedDependency(SearchRankingGuiDependencyProvider::FACADE_SEARCH_RANKING_STORAGE);
     }
 
     public function getSearchRankingMetricPropelQuery(): SpySearchRankingMetricQuery

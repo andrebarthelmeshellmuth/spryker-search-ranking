@@ -90,7 +90,6 @@ class EditController extends AbstractController
                 );
             }
 
-            $this->getFactory()->getSearchRankingStorageFacade()->publishRankingConfiguration();
             $this->addSuccessMessage(sprintf('Metric "%s" was updated.', $metricTransfer->getName()));
 
             return $this->redirectResponse($redirectUrl);

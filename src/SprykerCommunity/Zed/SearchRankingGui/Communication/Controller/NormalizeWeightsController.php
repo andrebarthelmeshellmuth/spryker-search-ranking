@@ -54,7 +54,6 @@ class NormalizeWeightsController extends AbstractController
         $wereWeightsChanged = $this->getFactory()->getSearchRankingFacade()->normalizeActiveMetricWeights($storeName, $localeName);
 
         if ($wereWeightsChanged) {
-            $this->getFactory()->getSearchRankingStorageFacade()->publishRankingConfiguration();
             $this->addSuccessMessage('Active metric weights were normalized to sum to 1.');
         } else {
             $this->addSuccessMessage('Active metric weights already sum to 1 — nothing to normalize.');

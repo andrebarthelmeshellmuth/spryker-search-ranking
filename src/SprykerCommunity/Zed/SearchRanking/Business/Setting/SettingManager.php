@@ -9,8 +9,11 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Business\Setting;
 
+use Generated\Shared\Transfer\EventEntityTransfer;
 use Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingEvents;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 use SprykerCommunity\Zed\SearchRanking\SearchRankingConfig;
@@ -21,11 +24,13 @@ class SettingManager implements SettingManagerInterface
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface $entityManager
      * @param \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig $config
+     * @param \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface $eventFacade
      */
     public function __construct(
         protected SearchRankingRepositoryInterface $repository,
         protected SearchRankingEntityManagerInterface $entityManager,
         protected SearchRankingConfig $config,
+        protected SearchRankingToEventFacadeInterface $eventFacade,
     ) {
     }
 
@@ -239,6 +244,11 @@ class SettingManager implements SettingManagerInterface
      * {@see \SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriter::saveMetricWeight()} uses for
      * per-metric weights.
      *
+     * Triggers {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingEvents::RANKING_CONFIGURATION_CHANGE}
+     * unconditionally (even when the value is unchanged) — every caller of a `save*` method on this class
+     * used to be responsible for explicitly republishing to key-value storage afterward; centralizing the
+     * trigger here means that obligation can no longer be forgotten by a new caller.
+     *
      * @param string $settingKey
      * @param string $storeName
      * @param string $localeName
@@ -249,6 +259,7 @@ class SettingManager implements SettingManagerInterface
         $previousSettingValue = $this->repository->findSettingValue($settingKey, $storeName, $localeName);
 
         $this->entityManager->saveSetting($settingKey, $storeName, $localeName, $settingValue);
+        $this->eventFacade->trigger(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE, new EventEntityTransfer());
 
         if ($previousSettingValue === $settingValue) {
             return;

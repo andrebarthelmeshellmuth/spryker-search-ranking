@@ -12,7 +12,9 @@ namespace SprykerCommunityTest\Zed\SearchRanking\Business\Setting;
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingEvents;
 use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManager;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 use SprykerCommunity\Zed\SearchRanking\SearchRankingConfig;
@@ -407,18 +409,56 @@ class SettingManagerTest extends Unit
         $settingManager->saveSpecificityWeightShiftMagnitude('DE', 'de_DE', 0.3);
     }
 
+    public function testTriggersRankingConfigurationChangeEventWhenASettingIsSaved(): void
+    {
+        // Arrange
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')->willReturn('0.3');
+
+        $eventFacadeMock = $this->createMock(SearchRankingToEventFacadeInterface::class);
+        $eventFacadeMock->expects($this->once())->method('trigger')->with(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE);
+
+        $settingManager = $this->createSettingManager($repositoryMock, null, $eventFacadeMock);
+
+        // Act
+        $settingManager->saveRelevanceWeight('DE', 'de_DE', 0.42);
+    }
+
+    /**
+     * The event fires even when resubmitting the same value — republishing an unchanged value is
+     * harmless, and gating the event on "did it change" would reintroduce exactly the kind of easy-to-get-
+     * wrong conditional this centralization is meant to eliminate.
+     */
+    public function testTriggersRankingConfigurationChangeEventEvenWhenTheValueIsUnchanged(): void
+    {
+        // Arrange
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')->willReturn('0.42');
+
+        $eventFacadeMock = $this->createMock(SearchRankingToEventFacadeInterface::class);
+        $eventFacadeMock->expects($this->once())->method('trigger')->with(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE);
+
+        $settingManager = $this->createSettingManager($repositoryMock, null, $eventFacadeMock);
+
+        // Act
+        $settingManager->saveRelevanceWeight('DE', 'de_DE', 0.42);
+    }
+
     /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface|null $entityManager
+     * @param \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface|null $eventFacade
      */
     protected function createSettingManager(
         SearchRankingRepositoryInterface $repository,
         ?SearchRankingEntityManagerInterface $entityManager = null,
+        ?SearchRankingToEventFacadeInterface $eventFacade = null,
     ): SettingManager {
         return new SettingManager(
             $repository,
             $entityManager ?? $this->createMock(SearchRankingEntityManagerInterface::class),
             new SearchRankingConfig(),
+            $eventFacade ?? $this->createMock(SearchRankingToEventFacadeInterface::class),
         );
     }
 }

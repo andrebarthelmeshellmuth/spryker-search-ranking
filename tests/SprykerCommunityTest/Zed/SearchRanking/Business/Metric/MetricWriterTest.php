@@ -15,11 +15,13 @@ use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingEvents;
 use SprykerCommunity\Zed\SearchRanking\Business\Exception\InvalidFormulaException;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriter;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
@@ -67,7 +69,7 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        $resultTransfer = (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+        $resultTransfer = (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
             ->saveMetric($metricTransfer);
 
         // Assert
@@ -107,7 +109,7 @@ class MetricWriterTest extends Unit
         $this->expectExceptionMessage('Unexpected end of expression');
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
             ->saveMetric($metricTransfer);
     }
 
@@ -125,7 +127,7 @@ class MetricWriterTest extends Unit
         $entityManagerMock->expects($this->once())->method('deleteMetric')->with(9);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
             ->deleteMetric(9);
     }
 
@@ -168,7 +170,7 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
             ->saveMetric($metricTransfer);
     }
 
@@ -204,7 +206,7 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
             ->saveMetric($metricTransfer);
     }
 
@@ -245,7 +247,7 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
             ->saveMetric($metricTransfer);
     }
 
@@ -282,7 +284,7 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
             ->saveMetric($resubmittedMetricTransfer);
     }
 
@@ -336,7 +338,7 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
             ->saveMetric($updatedMetricTransfer);
     }
 
@@ -373,7 +375,7 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
             ->recordCheckOnly($metricTransfer, 'DE', 'de_DE');
     }
 
@@ -436,7 +438,7 @@ class MetricWriterTest extends Unit
         ]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
             ->saveMetric($metricTransfer);
     }
 
@@ -492,7 +494,7 @@ class MetricWriterTest extends Unit
         ]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
             ->saveMetric($metricTransfer);
     }
 
@@ -533,7 +535,109 @@ class MetricWriterTest extends Unit
         $curveFitterMock->expects($this->never())->method('fit');
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
             ->saveMetric($metricTransfer);
+    }
+
+    public function testTriggersRankingConfigurationChangeEventWhenAMetricIsSaved(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())
+            ->setName('top_seller')
+            ->setWeight(0.5)
+            ->setFormula('x / max')
+            ->setIsActive(true);
+
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $formulaEvaluatorMock->method('validate')->willReturn((new SearchRankingFormulaValidationResponseTransfer())->setIsSuccess(true));
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->method('saveMetric')->willReturn((clone $metricTransfer)->setIdSearchRankingMetric(7));
+        $entityManagerMock->method('recordMetricHistory')->willReturnArgument(0);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricById')->willReturn(null);
+        $repositoryMock->method('findMetricDigest')->willReturn(null);
+
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+        $curveFitterMock->method('fit')->willReturn([]);
+
+        $eventFacadeMock = $this->createMock(SearchRankingToEventFacadeInterface::class);
+        $eventFacadeMock->expects($this->once())->method('trigger')->with(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE);
+
+        // Act
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock))
+            ->saveMetric($metricTransfer);
+    }
+
+    public function testTriggersRankingConfigurationChangeEventWhenAMetricWeightIsSaved(): void
+    {
+        // Arrange
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricWeight')->willReturn(0.3);
+        $repositoryMock->method('findMetricById')->willReturn(null);
+
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+        $curveFitterMock->method('fit')->willReturn([]);
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+
+        $eventFacadeMock = $this->createMock(SearchRankingToEventFacadeInterface::class);
+        $eventFacadeMock->expects($this->once())->method('trigger')->with(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE);
+
+        // Act
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock))
+            ->saveMetricWeight(7, 'DE', 'de_DE', 0.5);
+    }
+
+    public function testTriggersRankingConfigurationChangeEventWhenAMetricIsDeleted(): void
+    {
+        // Arrange
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+
+        $eventFacadeMock = $this->createMock(SearchRankingToEventFacadeInterface::class);
+        $eventFacadeMock->expects($this->once())->method('trigger')->with(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE);
+
+        // Act
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock))
+            ->deleteMetric(9);
+    }
+
+    /**
+     * recordCheckOnly() doesn't change any config value — it's a monitoring-only audit row (the auto-tune
+     * job checking a metric's fit without updating it) — so it must never trigger a republish.
+     */
+    public function testDoesNotTriggerRankingConfigurationChangeEventOnRecordCheckOnly(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())
+            ->setIdSearchRankingMetric(7)
+            ->setName('top_seller')
+            ->setWeight(0.5)
+            ->setFormula('x / max')
+            ->setIsActive(true)
+            ->setIsHigherBetter(true);
+
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricDigest')->willReturn(null);
+
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+
+        $eventFacadeMock = $this->createMock(SearchRankingToEventFacadeInterface::class);
+        $eventFacadeMock->expects($this->never())->method('trigger');
+
+        // Act
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock))
+            ->recordCheckOnly($metricTransfer, 'DE', 'de_DE');
     }
 }
