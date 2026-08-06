@@ -39,9 +39,10 @@ interface ScoreSectionBuilderInterface
     /**
      * A second, separate overlay section (title + one line per diagnostic) explaining how specificity
      * weighting arrived at `$specificityWeightingResult`'s `relevanceWeight` — the configured baseline it
-     * started from, the normalized specificity the probe measured, the shift that specificity produced,
-     * and the resulting effective weight. Only ever called when specificity weighting actually ran for
-     * this query.
+     * started from, the normalized specificity the probe measured, that value's signed deviation from the
+     * neutral point, the shift magnitude it gets scaled by, the shift that specificity produced (with the
+     * full shiftMagnitude/deviation/exponent calculation that produced it), and the resulting effective
+     * weight. Only ever called when specificity weighting actually ran for this query.
      *
      * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult $specificityWeightingResult
      *

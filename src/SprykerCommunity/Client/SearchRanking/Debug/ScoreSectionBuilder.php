@@ -127,6 +127,32 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
     protected const SPECIFICITY_NORMALIZED_LABEL = 'Normalized specificity';
 
     /**
+     * The centering step between "Normalized specificity" and "Shift applied to α": maps the `[0;1[`
+     * normalized specificity onto a signed `[-1;1]` deviation from the neutral point (0.5 → 0), which is
+     * what {@see \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculator::calculateShift()}
+     * actually shapes/scales into the shift — without this line, a reader has no way to see how e.g.
+     * `0.463` becomes `-0.018` two lines below. Deliberately doesn't spell out "(2 × specificity − 1)" in
+     * the label itself — the overlay's `.search-debug-score-line__label` is a fixed-width, single-line,
+     * ellipsis-truncated span (see search-debug's own SCSS), and that formula pushed this label well past
+     * every sibling label's length, truncating mid-word. The formula lives in this docblock and in the
+     * shift line's own `calculation` string below instead, where there's room for it.
+     *
+     * @var string
+     */
+    protected const SPECIFICITY_SIGNED_DEVIATION_LABEL = 'Signed deviation';
+
+    /**
+     * Gives `shiftMagnitude` its own labeled line, directly above the "Shift applied to α" line whose
+     * `calculation` string uses it as a bare number — same reasoning `build()`'s own relevanceWeight/
+     * relevanceSaturationPoint lines already follow (see this class's own top docblock): a constant that
+     * feeds a formula gets shown labeled once, immediately before the formula that consumes it, rather
+     * than only ever appearing unexplained inside that formula.
+     *
+     * @var string
+     */
+    protected const SPECIFICITY_SHIFT_MAGNITUDE_LABEL = 'Shift magnitude';
+
+    /**
      * @var string
      */
     protected const SPECIFICITY_SHIFT_LABEL = 'Shift applied to α';
@@ -256,6 +282,13 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
      */
     public function buildSpecificitySection(SpecificityWeightingResult $specificityWeightingResult): array
     {
+        $decimalFormat = '%.' . SearchDebugConfig::SCORE_DECIMAL_PLACES . 'f';
+
+        // Same centering `calculateShift()` itself does — see that method's own docblock. Computed here,
+        // not carried on SpecificityWeightingResult, since it's trivially re-derivable from
+        // normalizedSpecificity alone and doesn't need its own snapshot field.
+        $signedDeviation = (2 * $specificityWeightingResult->getNormalizedSpecificity()) - 1;
+
         return [
             'title' => static::SPECIFICITY_SECTION_TITLE,
             // Tells the search-debug overlay template to render this section in its own dedicated spot
@@ -273,7 +306,30 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
                     'value' => $specificityWeightingResult->getNormalizedSpecificity(),
                 ],
                 [
+                    'label' => static::SPECIFICITY_SIGNED_DEVIATION_LABEL,
+                    'value' => $signedDeviation,
+                ],
+                [
+                    'label' => static::SPECIFICITY_SHIFT_MAGNITUDE_LABEL,
+                    'value' => $specificityWeightingResult->getSpecificityWeightShiftMagnitude(),
+                ],
+                [
                     'label' => static::SPECIFICITY_SHIFT_LABEL,
+                    // Plugs in the two ALREADY-shown values (signed deviation, shift magnitude) directly
+                    // rather than repeating "2 × specificity − 1" inline — same convention
+                    // build()'s own formulaCalculation uses for normalizedRelevance (see this class's own
+                    // top docblock). Exponent is shown only via the `^` notation, not its own line — it's
+                    // reasonably self-labeling (unlike the bare shiftMagnitude number before it), and
+                    // giving every one of 3 inputs its own line would make this section longer than the
+                    // hover overlay comfortably fits. Always shown, even at its default 1.0, since it can
+                    // genuinely differ per store/locale and a reader shouldn't have to guess whether it
+                    // was applied.
+                    'calculation' => sprintf(
+                        $decimalFormat . ' × (' . $decimalFormat . ')^' . $decimalFormat,
+                        $specificityWeightingResult->getSpecificityWeightShiftMagnitude(),
+                        $signedDeviation,
+                        $specificityWeightingResult->getSpecificityWeightExponent(),
+                    ),
                     'value' => $specificityWeightingResult->getShift(),
                 ],
                 [
