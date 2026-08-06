@@ -38,6 +38,13 @@ class CurrentMetricFitEvaluator implements CurrentMetricFitEvaluatorInterface
             return null;
         }
 
+        // Since the store-scoped-formula migration's Phase 2 (see project memory): a metric that exists
+        // globally but has no store-config row for THIS store (never configured there yet) comes back
+        // with a null formula — same "nothing to fit against" absence as no digest yet, not an error.
+        if ($metricTransfer->getFormula() === null) {
+            return null;
+        }
+
         $digestTransfer = $this->repository->findMetricDigest($idSearchRankingMetric, $storeName, $localeName);
 
         if ($digestTransfer === null) {

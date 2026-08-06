@@ -60,6 +60,13 @@
                 <action>index</action>
                 <visible>0</visible>
             </search-ranking-edit-metric>
+            <search-ranking-scope-copy>
+                <label>Scope Copy</label>
+                <title>Scope Copy</title>
+                <bundle>search-ranking-gui</bundle>
+                <controller>scope-copy</controller>
+                <action>index</action>
+            </search-ranking-scope-copy>
         </pages>
     </search-ranking-gui>
 </config>

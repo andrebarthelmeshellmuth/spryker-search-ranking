@@ -19,6 +19,7 @@ use SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluato
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
@@ -31,6 +32,7 @@ class MetricWriter implements MetricWriterInterface
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface $fitEvaluator
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitterInterface $curveFitter
      * @param \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface $eventFacade
+     * @param \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface $storeFacade
      */
     public function __construct(
         protected SearchRankingRepositoryInterface $repository,
@@ -39,18 +41,33 @@ class MetricWriter implements MetricWriterInterface
         protected MetricFormulaFitEvaluatorInterface $fitEvaluator,
         protected NormalizationCurveFitterInterface $curveFitter,
         protected SearchRankingToEventFacadeInterface $eventFacade,
+        protected SearchRankingToStoreFacadeInterface $storeFacade,
     ) {
     }
 
     /**
-     * Writes only the metric's IDENTITY fields — see this method's own interface docblock. The incoming
+     * Writes the metric's identity fields — see this method's own interface docblock. The incoming
      * transfer's `weight` (if any) is deliberately ignored here; use {@see saveMetricWeight()} instead.
      *
+     * $storeName is real since Phase 2 of the store-scoped-formula migration (see project memory) —
+     * formula/isActive/shape are saved for THIS store specifically, not locale-scoped at all. $localeName
+     * is real since Phase 4 too, but is used ONLY as a lens: which (store, locale) digest to fit the
+     * formula's shape against ({@see detectShape()}) and to snapshot in the history row
+     * ({@see recordHistory()}) — never persisted as part of the metric's own scope. Threaded through as
+     * the caller's real, currently-viewed locale (not a hardcoded default) specifically so the shape
+     * saved here matches what the admin already saw in the live formula-preview endpoint, which has
+     * always used the real request locale — before this phase, save silently used
+     * DEFAULT_SCOPE_LOCALE_NAME regardless of which locale the admin was actually viewing, a real
+     * preview/save mismatch. Digest granularity itself is unchanged (still (store, locale)): if the
+     * viewed locale has no digest yet, shape/fit simply comes back null/absent, same as always.
+     *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
      *
      * @throws \SprykerCommunity\Zed\SearchRanking\Business\Exception\InvalidFormulaException
      */
-    public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer
+    public function saveMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): SearchRankingMetricTransfer
     {
         $validationResponseTransfer = $this->formulaEvaluator->validate($metricTransfer->getFormulaOrFail());
 
@@ -61,26 +78,54 @@ class MetricWriter implements MetricWriterInterface
         $previousMetricTransfer = $metricTransfer->getIdSearchRankingMetric() !== null
             ? $this->repository->findMetricById(
                 $metricTransfer->getIdSearchRankingMetric(),
-                SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
-                SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+                $storeName,
+                $localeName,
             )
             : null;
 
-        $metricTransfer->setShape($this->detectShape($metricTransfer));
+        $metricTransfer->setShape($this->detectShape($metricTransfer, $storeName, $localeName));
 
-        $savedMetricTransfer = $this->entityManager->saveMetric($metricTransfer);
+        $savedMetricTransfer = $this->entityManager->saveMetric($metricTransfer, $storeName);
         $this->eventFacade->trigger(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE, new EventEntityTransfer());
 
         if ($this->hasAnyTrackedFieldChanged($previousMetricTransfer, $savedMetricTransfer)) {
-            $this->recordHistory(
-                $savedMetricTransfer,
-                SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
-                SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
-                $metricTransfer->getChangeSource() ?? SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL,
-            );
+            // Since Phase 5 of the store-scoped-formula migration (see project memory): formula/isActive
+            // are store-wide now, not locale-scoped — a single history row keyed to whichever locale the
+            // admin happened to be viewing would under-represent the change (it reads as if the change
+            // only applied to that one locale). Fan out one row per REAL locale of this store instead, so
+            // every locale the change actually affects gets its own honest snapshot (with that locale's
+            // own real weight/digest/fit — never a duplicate/fake one). $localeName (the viewed locale) is
+            // the fallback if the store can't be resolved, and is always itself one of the real locales
+            // looped over below, so it's never skipped.
+            $changeSource = $metricTransfer->getChangeSource() ?? SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL;
+
+            foreach ($this->resolveLocaleNamesForStore($storeName, $localeName) as $historyLocaleName) {
+                $this->recordHistory($savedMetricTransfer, $storeName, $historyLocaleName, $changeSource);
+            }
         }
 
         return $savedMetricTransfer;
+    }
+
+    /**
+     * Every real locale of $storeName, per the Store facade — falls back to just `[$fallbackLocaleName]`
+     * if the store can't be found (shouldn't happen in practice, but a missing store is not a reason to
+     * lose the history write entirely).
+     *
+     * @param string $storeName
+     * @param string $fallbackLocaleName
+     *
+     * @return array<string>
+     */
+    protected function resolveLocaleNamesForStore(string $storeName, string $fallbackLocaleName): array
+    {
+        foreach ($this->storeFacade->getAllStores() as $storeTransfer) {
+            if ($storeTransfer->getNameOrFail() === $storeName) {
+                return $storeTransfer->getAvailableLocaleIsoCodes();
+            }
+        }
+
+        return [$fallbackLocaleName];
     }
 
     /**
@@ -129,8 +174,10 @@ class MetricWriter implements MetricWriterInterface
      * a safe, expected outcome, not an error.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
      */
-    protected function detectShape(SearchRankingMetricTransfer $metricTransfer): ?string
+    protected function detectShape(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): ?string
     {
         if ($metricTransfer->getIdSearchRankingMetric() === null) {
             return null;
@@ -138,8 +185,8 @@ class MetricWriter implements MetricWriterInterface
 
         $digestTransfer = $this->repository->findMetricDigest(
             $metricTransfer->getIdSearchRankingMetric(),
-            SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
-            SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+            $storeName,
+            $localeName,
         );
 
         if ($digestTransfer === null) {

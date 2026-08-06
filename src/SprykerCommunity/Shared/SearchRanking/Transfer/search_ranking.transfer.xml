@@ -93,6 +93,21 @@
         <property name="percentiles" type="float[]" singular="percentile"/>
     </transfer>
 
+    <!-- One store's own formula/active-flag/shape for a metric — the store-scoped counterpart to
+         SearchRankingMetric's identity fields (name, isHigherBetter stay global). Bootstrapped from the
+         metric's then-global formula/isActive/shape at Phase 1 of the store-scoping migration; each
+         store's own row is independently re-fit and toggled from then on. See
+         spy_search_ranking_metric_store_config's own schema column docs for the store-vs-locale
+         reasoning. -->
+    <transfer name="SearchRankingMetricStoreConfig" strict="true">
+        <property name="idSearchRankingMetricStoreConfig" type="int"/>
+        <property name="fkSearchRankingMetric" type="int"/>
+        <property name="storeName" type="string"/>
+        <property name="formula" type="string"/>
+        <property name="isActive" type="bool"/>
+        <property name="shape" type="string"/>
+    </transfer>
+
     <!-- One historical snapshot of a metric's config + digest + computed fit quality, written whenever
          its formula/weight/isActive/isHigherBetter actually changes (isChange=true), and reserved for a
          future periodic check-only snapshot (isChange=false) that recorded no change — see the schema
@@ -127,6 +142,54 @@
              ever appear once search-ranking-optimizer is installed and writing through it. -->
         <property name="changeSource" type="string"/>
         <property name="createdAt" type="string"/>
+    </transfer>
+
+    <!-- One persistent scope-copy lock: the target scope's metric weights + the 5 tunable settings get
+         re-synced from the source scope daily by the scope-copy sync cron, in addition to running once
+         immediately when the lock is created. isActive false means an unlocked (soft-deleted) episode -
+         rows are never hard-deleted, so the active-locks page can show lock history. A scope's
+         eligibility as source/target for a NEW lock is a point-in-time check against isActive=true rows
+         only: a target may have at most one active lock, a source may have many, and a scope can never
+         be source and target at once - but once unlocked it is fully free again for either role. -->
+    <transfer name="SearchRankingScopeCopyLock" strict="true">
+        <property name="idSearchRankingScopeCopyLock" type="int"/>
+        <property name="sourceStoreName" type="string"/>
+        <property name="sourceLocaleName" type="string"/>
+        <property name="targetStoreName" type="string"/>
+        <property name="targetLocaleName" type="string"/>
+        <property name="isActive" type="bool"/>
+        <property name="createdAt" type="string"/>
+        <property name="deactivatedAt" type="string"/>
+    </transfer>
+
+    <transfer name="SearchRankingScopeCopyLockCollection" strict="true">
+        <property name="scopeCopyLocks" type="SearchRankingScopeCopyLock[]" singular="scopeCopyLock"/>
+    </transfer>
+
+    <!-- Result of a one-off "Copy now" or a lock-creation's immediate copy. isBlockedByExistingData is
+         the "block by default, allow via confirm checkbox" overwrite guard - true means the target scope
+         already has non-default weights/settings and nothing was written; the caller must resubmit with
+         confirmOverwrite to proceed. isSuccess false + errorMessage covers real validation failures
+         (source == target, or - for a lock - the source/target role-exclusivity rule). -->
+    <transfer name="SearchRankingScopeCopyResult" strict="true">
+        <property name="isSuccess" type="bool"/>
+        <property name="isBlockedByExistingData" type="bool"/>
+        <property name="errorMessage" type="string"/>
+        <property name="metricWeightCopiedCount" type="int"/>
+        <property name="settingCopiedCount" type="int"/>
+    </transfer>
+
+    <!-- Result of a one-off store-config sync (formula/isActive/shape, store-only — see
+         SearchRankingMetricStoreConfig). Same isBlockedByExistingData/isSuccess+errorMessage shape as
+         SearchRankingScopeCopyResult, but store-only (no locale in the block/error semantics) and with a
+         skippedCount: in MODE_COPY_ONLY_OVERLAP a metric the target hasn't already independently adopted
+         is deliberately left alone rather than copied, and skippedCount says how many were. -->
+    <transfer name="SearchRankingStoreConfigCopyResult" strict="true">
+        <property name="isSuccess" type="bool"/>
+        <property name="isBlockedByExistingData" type="bool"/>
+        <property name="errorMessage" type="string"/>
+        <property name="copiedCount" type="int"/>
+        <property name="skippedCount" type="int"/>
     </transfer>
 
     <transfer name="SearchRankingSettingHistory" strict="true">

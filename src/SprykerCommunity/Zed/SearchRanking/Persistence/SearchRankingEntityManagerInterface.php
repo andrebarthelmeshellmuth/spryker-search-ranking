@@ -11,15 +11,22 @@ namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer;
 use Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer;
 
 interface SearchRankingEntityManagerInterface
 {
     /**
+     * Writes the metric's global identity (name/isHigherBetter), then its formula/isActive/shape
+     * separately to `spy_search_ranking_metric_store_config` for `$storeName` — see the implementation's
+     * own docblock for why (store-scoped-formula migration Phase 2, project memory).
+     *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
      */
-    public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer;
+    public function saveMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName): SearchRankingMetricTransfer;
 
     /**
      * @param int $idSearchRankingMetric
@@ -81,4 +88,31 @@ interface SearchRankingEntityManagerInterface
      * @param \Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer $historyTransfer
      */
     public function recordMetricHistory(SearchRankingMetricHistoryTransfer $historyTransfer): SearchRankingMetricHistoryTransfer;
+
+    /**
+     * Always inserts a new row — lock episodes are append-only, never updated or upserted; unlocking
+     * a pair later deactivates that same row rather than creating a new one, but relocking after that
+     * creates a fresh row, it never reactivates the old one.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer $scopeCopyLockTransfer
+     */
+    public function createScopeCopyLock(SearchRankingScopeCopyLockTransfer $scopeCopyLockTransfer): SearchRankingScopeCopyLockTransfer;
+
+    /**
+     * Sets isActive to false and deactivatedAt to now. Does nothing (no error) if the row doesn't exist
+     * or is already inactive — safe to call repeatedly.
+     *
+     * @param int $idSearchRankingScopeCopyLock
+     */
+    public function deactivateScopeCopyLock(int $idSearchRankingScopeCopyLock): void;
+
+    /**
+     * Upserts by (fkSearchRankingMetric, storeName) — one store-config row per metric per store,
+     * overwritten wholesale rather than versioned (mirrors {@see saveMetricDigest()}'s own upsert shape).
+     * Phase 1 of the store-scoped-formula migration (see project memory) — persistence plumbing only,
+     * not yet consumed by any business logic.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer $metricStoreConfigTransfer
+     */
+    public function saveMetricStoreConfig(SearchRankingMetricStoreConfigTransfer $metricStoreConfigTransfer): SearchRankingMetricStoreConfigTransfer;
 }

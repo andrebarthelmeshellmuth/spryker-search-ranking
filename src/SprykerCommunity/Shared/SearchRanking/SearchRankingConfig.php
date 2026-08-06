@@ -190,6 +190,20 @@ class SearchRankingConfig
 
     /**
      * Specification:
+     * - `spy_search_ranking_metric_history.change_source` value for a weight change applied by the scope
+     *   copy/lock feature — either a one-off "Copy now", or the daily sync cron for an active
+     *   `spy_search_ranking_scope_copy_lock` row — carrying another store+locale's weight/setting values
+     *   into this one verbatim. Never applies to `spy_search_ranking_product_metric`/`_metric_digest`,
+     *   which stay scope-local real behavioral data and are deliberately never copied.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const CHANGE_SOURCE_SCOPE_COPY = 'scope_copy';
+
+    /**
+     * Specification:
      * - Whether specificity-aware relevance weighting is active. OFF by default — enabling it makes
      *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
      *   fire ONE ADDITIONAL lightweight `_termvectors` probe per live catalog search to derive a per-query

@@ -18,7 +18,10 @@ use Spryker\Zed\Kernel\Communication\AbstractCommunicationFactory;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\DataProvider\MetricFormDataProvider;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\MetricForm;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\NormalizeWeightsForm;
+use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\ScopeCopyActionForm;
+use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\ScopeCopyUnlockForm;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\SettingsForm;
+use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\StoreConfigSyncActionForm;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricHistoryTable;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\MetricTable;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Table\ProductMetricGapTable;
@@ -93,6 +96,21 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
     public function createNormalizeWeightsForm(): FormInterface
     {
         return $this->getFormFactory()->create(NormalizeWeightsForm::class);
+    }
+
+    public function createScopeCopyActionForm(): FormInterface
+    {
+        return $this->getFormFactory()->create(ScopeCopyActionForm::class);
+    }
+
+    public function createScopeCopyUnlockForm(): FormInterface
+    {
+        return $this->getFormFactory()->create(ScopeCopyUnlockForm::class);
+    }
+
+    public function createStoreConfigSyncActionForm(): FormInterface
+    {
+        return $this->getFormFactory()->create(StoreConfigSyncActionForm::class);
     }
 
     public function createMetricFormDataProvider(): MetricFormDataProvider

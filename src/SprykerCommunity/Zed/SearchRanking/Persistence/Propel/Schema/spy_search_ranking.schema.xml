@@ -4,16 +4,34 @@
     <table name="spy_search_ranking_metric" idMethod="native" identifierQuoting="true">
         <column name="id_search_ranking_metric" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="name" type="VARCHAR" size="128" required="true" description="Machine name of the business signal, e.g. pdp_impressions."/>
-        <column name="formula" type="VARCHAR" size="512" required="true" description="Normalization expression mapping raw values into ]0;1]; variables: x, min, max, avg, count."/>
-        <column name="is_active" type="BOOLEAN" required="true" defaultValue="true" description="Only active metrics are normalized and exported to the search index."/>
         <column name="is_higher_better" type="BOOLEAN" required="true" defaultValue="true" description="Whether a HIGHER raw value is the better outcome for this signal (e.g. sales) as opposed to a lower one (e.g. days since restock, return rate). Not inferrable from the data — direction is business knowledge. Used by the normalization-curve fit suggestion to pick increasing vs. decreasing candidate shapes; does not affect the formula itself."/>
-        <column name="shape" type="VARCHAR" size="32" required="false" description="Stable curve-family slug (e.g. atan, sigmoid, hyperbolic) derived automatically at save time by matching the formula against a fresh NormalizationCurveFitter pass; NULL for a freeform/custom formula that matches no known candidate shape."/>
 
         <behavior name="timestampable"/>
         <id-method-parameter value="spy_search_ranking_metric_pk_seq"/>
 
         <unique name="spy_search_ranking_metric-name">
             <unique-column name="name"/>
+        </unique>
+    </table>
+
+    <table name="spy_search_ranking_metric_store_config" idMethod="native" identifierQuoting="true">
+        <column name="id_search_ranking_metric_store_config" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="fk_search_ranking_metric" type="INTEGER" required="true"/>
+        <column name="store_name" type="VARCHAR" size="64" required="true" description="e.g. DE — a business-behavior metric's formula/active flag/curve shape is a store-level fact (conversion, stock, warehouse reality), not a language preference; deliberately NOT locale-scoped, unlike weight and the specificity/relevance settings, which genuinely are locale-sensitive (tokenization/decompounding). See spy_search_ranking_metric.is_higher_better for the one identity field that stays global instead of moving here — direction is a semantic property of what the metric MEANS, not a per-store fact."/>
+        <column name="formula" type="VARCHAR" size="512" required="true" description="This store's own normalization expression mapping raw values into ]0;1]; variables: x, min, max, avg, count. The only source of a metric's formula since Phase 8 of the store-scoping migration dropped the vestigial global column this table's own rows were originally bootstrapped from (see project memory) — a brand-new store gets its rows via Scope Copy's Sync Store Config action instead (Phase 7), then diverges per store as each is independently re-fit against its own digest."/>
+        <column name="is_active" type="BOOLEAN" required="true" defaultValue="true" description="Only active metrics are normalized and exported to the search index, for THIS store."/>
+        <column name="shape" type="VARCHAR" size="32" required="false" description="Stable curve-family slug (e.g. atan, sigmoid, hyperbolic) for this store's own formula; NULL for a freeform/custom formula that matches no known candidate shape. Same derivation as spy_search_ranking_metric.shape had, now per store."/>
+
+        <behavior name="timestampable"/>
+        <id-method-parameter value="spy_search_ranking_metric_store_config_pk_seq"/>
+
+        <foreign-key name="spy_srmsc-fk_metric" foreignTable="spy_search_ranking_metric" phpName="SearchRankingMetric" refPhpName="SearchRankingMetricStoreConfig" onDelete="CASCADE">
+            <reference local="fk_search_ranking_metric" foreign="id_search_ranking_metric"/>
+        </foreign-key>
+
+        <unique name="spy_srmsc-unique-metric_store">
+            <unique-column name="fk_search_ranking_metric"/>
+            <unique-column name="store_name"/>
         </unique>
     </table>
 
@@ -137,6 +155,33 @@
             <unique-column name="store_name"/>
             <unique-column name="locale_name"/>
         </unique>
+    </table>
+
+    <table name="spy_search_ranking_scope_copy_lock" idMethod="native" identifierQuoting="true">
+        <column name="id_search_ranking_scope_copy_lock" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="source_store_name" type="VARCHAR" size="64" required="true" description="e.g. DE — the scope whose weights/settings are copied FROM, once immediately on lock creation and then daily by the sync cron. A scope may be the source of several active locks at once (fan-out to multiple new markets) but never simultaneously a target of any active lock."/>
+        <column name="source_locale_name" type="VARCHAR" size="16" required="true" description="e.g. de_DE."/>
+        <column name="target_store_name" type="VARCHAR" size="64" required="true" description="e.g. AT — the scope whose weights/settings are copied INTO. May be the target of at most one active lock at a time (unambiguous which source feeds it), and never simultaneously a source of any active lock."/>
+        <column name="target_locale_name" type="VARCHAR" size="16" required="true"/>
+        <column name="is_active" type="BOOLEAN" required="true" defaultValue="true" description="False once unlocked. Rows are never deleted, only deactivated — an append-only log of lock episodes, so the active-locks page can show history. A scope's eligibility as source/target for a NEW lock is a point-in-time check against is_active=true rows only: once unlocked, a scope is fully free again for either role, there is no permanent lifetime tag."/>
+        <column name="deactivated_at" type="TIMESTAMP" required="false" description="When this lock was unlocked; null while is_active is true."/>
+
+        <behavior name="timestampable"/>
+        <id-method-parameter value="spy_search_ranking_scope_copy_lock_pk_seq"/>
+
+        <index name="index-spy_srscl-is_active">
+            <index-column name="is_active"/>
+        </index>
+
+        <index name="index-spy_srscl-source_scope">
+            <index-column name="source_store_name"/>
+            <index-column name="source_locale_name"/>
+        </index>
+
+        <index name="index-spy_srscl-target_scope">
+            <index-column name="target_store_name"/>
+            <index-column name="target_locale_name"/>
+        </index>
     </table>
 
     <table name="spy_search_ranking_metric_history" idMethod="native" identifierQuoting="true">

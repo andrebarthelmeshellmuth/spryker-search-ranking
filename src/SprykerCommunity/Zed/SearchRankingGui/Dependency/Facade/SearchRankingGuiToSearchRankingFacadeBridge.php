@@ -13,6 +13,8 @@ use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
+use Generated\Shared\Transfer\SearchRankingStoreConfigCopyResultTransfer;
 
 class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToSearchRankingFacadeInterface
 {
@@ -67,10 +69,12 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
 
     /**
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
      */
-    public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer
+    public function saveMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): SearchRankingMetricTransfer
     {
-        return $this->searchRankingFacade->saveMetric($metricTransfer);
+        return $this->searchRankingFacade->saveMetric($metricTransfer, $storeName, $localeName);
     }
 
     /**
@@ -234,5 +238,110 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
         string $localeName,
     ): SearchRankingFormulaPreviewTransfer {
         return $this->searchRankingFacade->previewFormula($idSearchRankingMetric, $formula, $isHigherBetter, $storeName, $localeName);
+    }
+
+    /**
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     * @param bool $confirmOverwrite
+     */
+    public function copyScopeConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+        bool $confirmOverwrite,
+    ): SearchRankingScopeCopyResultTransfer {
+        return $this->searchRankingFacade->copyScopeConfiguration(
+            $sourceStoreName,
+            $sourceLocaleName,
+            $targetStoreName,
+            $targetLocaleName,
+            $confirmOverwrite,
+        );
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     */
+    public function hasScopeConfiguration(string $storeName, string $localeName): bool
+    {
+        return $this->searchRankingFacade->hasScopeConfiguration($storeName, $localeName);
+    }
+
+    /**
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     * @param string $mode
+     * @param bool $confirmOverwrite
+     */
+    public function copyStoreConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+        string $mode,
+        bool $confirmOverwrite,
+    ): SearchRankingStoreConfigCopyResultTransfer {
+        return $this->searchRankingFacade->copyStoreConfiguration(
+            $sourceStoreName,
+            $sourceLocaleName,
+            $targetStoreName,
+            $targetLocaleName,
+            $mode,
+            $confirmOverwrite,
+        );
+    }
+
+    /**
+     * @param string $storeName
+     */
+    public function hasStoreConfiguration(string $storeName): bool
+    {
+        return $this->searchRankingFacade->hasStoreConfiguration($storeName);
+    }
+
+    /**
+     * @return array<\Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer>
+     */
+    public function getActiveScopeCopyLocks(): array
+    {
+        return $this->searchRankingFacade->getActiveScopeCopyLocks();
+    }
+
+    /**
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     * @param bool $confirmOverwrite
+     */
+    public function createScopeCopyLock(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+        bool $confirmOverwrite,
+    ): SearchRankingScopeCopyResultTransfer {
+        return $this->searchRankingFacade->createScopeCopyLock(
+            $sourceStoreName,
+            $sourceLocaleName,
+            $targetStoreName,
+            $targetLocaleName,
+            $confirmOverwrite,
+        );
+    }
+
+    /**
+     * @param int $idSearchRankingScopeCopyLock
+     */
+    public function deactivateScopeCopyLock(int $idSearchRankingScopeCopyLock): void
+    {
+        $this->searchRankingFacade->deactivateScopeCopyLock($idSearchRankingScopeCopyLock);
     }
 }

@@ -53,7 +53,13 @@
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Edit Ranking Metric' } %}
         {% block widget_content %}
-            <p>Editing weight for store <strong>{{ storeName }}</strong>, locale <strong>{{ localeName }}</strong>.</p>
+            <p>
+                Name, formula, active status, and direction apply to store <strong>{{ storeName }}</strong>
+                across every locale. Weight applies specifically to store <strong>{{ storeName }}</strong>,
+                locale <strong>{{ localeName }}</strong> — switch locale from the metrics list to edit a
+                different locale's weight, or to preview the formula against a different locale's own
+                data distribution below.
+            </p>
             {{ form_start(metricForm, {'action': formAction}) }}
             {{ form_row(metricForm.name) }}
             {{ form_row(metricForm.weight) }}

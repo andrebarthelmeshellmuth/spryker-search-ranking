@@ -9,12 +9,16 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 
+use DateTime;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer;
 use Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingScopeCopyLock;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory;
 use Spryker\Zed\Kernel\Persistence\AbstractEntityManager;
 use Spryker\Zed\Kernel\Persistence\EntityManager\TransactionTrait;
@@ -27,9 +31,16 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
     use TransactionTrait;
 
     /**
+     * Since Phase 2 of the store-scoped-formula migration (see project memory): writes the metric's
+     * global identity (name/isHigherBetter) here, then its formula/isActive/shape separately to
+     * `spy_search_ranking_metric_store_config` for `$storeName` via {@see saveMetricStoreConfig()} — a
+     * brand-new metric's identity row is created first so a real id exists for the store-config row's
+     * foreign key.
+     *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
      */
-    public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer
+    public function saveMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName): SearchRankingMetricTransfer
     {
         $metricEntity = null;
 
@@ -49,8 +60,19 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
 
         $savedMetricTransfer = $mapper->mapMetricEntityToTransfer($metricEntity, $metricTransfer);
 
+        $this->saveMetricStoreConfig(
+            (new SearchRankingMetricStoreConfigTransfer())
+                ->setFkSearchRankingMetric($savedMetricTransfer->getIdSearchRankingMetricOrFail())
+                ->setStoreName($storeName)
+                ->setFormula($metricTransfer->getFormulaOrFail())
+                ->setIsActive($metricTransfer->getIsActive() ?? true)
+                ->setShape($metricTransfer->getShape()),
+        );
+
         // weight isn't a column on SpySearchRankingMetric — carry the incoming transfer's own weight
-        // through unchanged, since mapMetricEntityToTransfer() never touches it.
+        // through unchanged, since mapMetricEntityToTransfer() never touches it. formula/isActive/shape
+        // are similarly untouched by that call now (see its own docblock) — $savedMetricTransfer is the
+        // SAME object as $metricTransfer, so they already carry exactly what was just persisted above.
         return $savedMetricTransfer->setWeight($metricTransfer->getWeight());
     }
 
@@ -198,5 +220,58 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
         $historyEntity->save();
 
         return $mapper->mapMetricHistoryEntityToTransfer($historyEntity, $historyTransfer);
+    }
+
+    /**
+     * Always inserts a new row — history is append-only, never updated or upserted, unlike every other
+     * write in this class.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer $scopeCopyLockTransfer
+     */
+    public function createScopeCopyLock(SearchRankingScopeCopyLockTransfer $scopeCopyLockTransfer): SearchRankingScopeCopyLockTransfer
+    {
+        $scopeCopyLockEntity = new SpySearchRankingScopeCopyLock();
+
+        $mapper = $this->getFactory()->createSearchRankingMapper();
+        $scopeCopyLockEntity = $mapper->mapScopeCopyLockTransferToEntity($scopeCopyLockTransfer, $scopeCopyLockEntity);
+        $scopeCopyLockEntity->save();
+
+        return $mapper->mapScopeCopyLockEntityToTransfer($scopeCopyLockEntity, $scopeCopyLockTransfer);
+    }
+
+    /**
+     * @param int $idSearchRankingScopeCopyLock
+     */
+    public function deactivateScopeCopyLock(int $idSearchRankingScopeCopyLock): void
+    {
+        $scopeCopyLockEntity = $this->getFactory()
+            ->createSearchRankingScopeCopyLockQuery()
+            ->findOneByIdSearchRankingScopeCopyLock($idSearchRankingScopeCopyLock);
+
+        if ($scopeCopyLockEntity === null || !$scopeCopyLockEntity->getIsActive()) {
+            return;
+        }
+
+        $scopeCopyLockEntity->setIsActive(false);
+        $scopeCopyLockEntity->setDeactivatedAt(new DateTime());
+        $scopeCopyLockEntity->save();
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer $metricStoreConfigTransfer
+     */
+    public function saveMetricStoreConfig(SearchRankingMetricStoreConfigTransfer $metricStoreConfigTransfer): SearchRankingMetricStoreConfigTransfer
+    {
+        $metricStoreConfigEntity = $this->getFactory()
+            ->createSearchRankingMetricStoreConfigQuery()
+            ->filterByFkSearchRankingMetric($metricStoreConfigTransfer->getFkSearchRankingMetricOrFail())
+            ->filterByStoreName($metricStoreConfigTransfer->getStoreNameOrFail())
+            ->findOneOrCreate();
+
+        $mapper = $this->getFactory()->createSearchRankingMapper();
+        $metricStoreConfigEntity = $mapper->mapMetricStoreConfigTransferToEntity($metricStoreConfigTransfer, $metricStoreConfigEntity);
+        $metricStoreConfigEntity->save();
+
+        return $mapper->mapMetricStoreConfigEntityToTransfer($metricStoreConfigEntity, $metricStoreConfigTransfer);
     }
 }

@@ -11,21 +11,33 @@ namespace SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper;
 
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricWeightTransfer;
 use Generated\Shared\Transfer\SearchRankingProductMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer;
 use Generated\Shared\Transfer\SearchRankingSettingHistoryTransfer;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigest;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricStoreConfig;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeight;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingScopeCopyLock;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
 class SearchRankingMapper
 {
     /**
+     * Since the store-scoped-formula migration's Phase 2 (see project memory): formula/isActive/shape are
+     * NOT read from the entity here any more — they moved to `spy_search_ranking_metric_store_config`,
+     * store-scoped. This method only maps what's still genuinely global: id, name, isHigherBetter. Callers
+     * that need formula/isActive/shape overlay them via {@see SearchRankingRepository::attachStoreConfig()},
+     * the same composable-overlay shape {@see SearchRankingRepository::attachWeight()} already established.
+     * The entity's own formula/isActive/shape columns still physically exist (frozen at whatever Phase 1's
+     * backfill last wrote) until Phase 8 drops them — deliberately never read from again after this phase.
+     *
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric $metricEntity
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      */
@@ -36,13 +48,14 @@ class SearchRankingMapper
         return $metricTransfer
             ->setIdSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
             ->setName($metricEntity->getName())
-            ->setFormula($metricEntity->getFormula())
-            ->setIsActive($metricEntity->getIsActive())
-            ->setIsHigherBetter($metricEntity->getIsHigherBetter())
-            ->setShape($metricEntity->getShape());
+            ->setIsHigherBetter($metricEntity->getIsHigherBetter());
     }
 
     /**
+     * Since Phase 2 (see project memory): only writes name/isHigherBetter — formula/isActive/shape are
+     * saved separately, to `spy_search_ranking_metric_store_config`, by
+     * {@see SearchRankingEntityManager::saveMetricStoreConfig()}.
+     *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric $metricEntity
      */
@@ -51,10 +64,7 @@ class SearchRankingMapper
         SpySearchRankingMetric $metricEntity,
     ): SpySearchRankingMetric {
         $metricEntity->setName($metricTransfer->getNameOrFail());
-        $metricEntity->setFormula($metricTransfer->getFormulaOrFail());
-        $metricEntity->setIsActive($metricTransfer->getIsActive() ?? true);
         $metricEntity->setIsHigherBetter($metricTransfer->getIsHigherBetter() ?? true);
-        $metricEntity->setShape($metricTransfer->getShape());
 
         return $metricEntity;
     }
@@ -73,6 +83,40 @@ class SearchRankingMapper
             ->setStoreName($metricWeightEntity->getStoreName())
             ->setLocaleName($metricWeightEntity->getLocaleName())
             ->setWeight($metricWeightEntity->getWeight());
+    }
+
+    /**
+     * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricStoreConfig $metricStoreConfigEntity
+     * @param \Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer $metricStoreConfigTransfer
+     */
+    public function mapMetricStoreConfigEntityToTransfer(
+        SpySearchRankingMetricStoreConfig $metricStoreConfigEntity,
+        SearchRankingMetricStoreConfigTransfer $metricStoreConfigTransfer,
+    ): SearchRankingMetricStoreConfigTransfer {
+        return $metricStoreConfigTransfer
+            ->setIdSearchRankingMetricStoreConfig($metricStoreConfigEntity->getIdSearchRankingMetricStoreConfig())
+            ->setFkSearchRankingMetric($metricStoreConfigEntity->getFkSearchRankingMetric())
+            ->setStoreName($metricStoreConfigEntity->getStoreName())
+            ->setFormula($metricStoreConfigEntity->getFormula())
+            ->setIsActive($metricStoreConfigEntity->getIsActive())
+            ->setShape($metricStoreConfigEntity->getShape());
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer $metricStoreConfigTransfer
+     * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricStoreConfig $metricStoreConfigEntity
+     */
+    public function mapMetricStoreConfigTransferToEntity(
+        SearchRankingMetricStoreConfigTransfer $metricStoreConfigTransfer,
+        SpySearchRankingMetricStoreConfig $metricStoreConfigEntity,
+    ): SpySearchRankingMetricStoreConfig {
+        $metricStoreConfigEntity->setFkSearchRankingMetric($metricStoreConfigTransfer->getFkSearchRankingMetricOrFail());
+        $metricStoreConfigEntity->setStoreName($metricStoreConfigTransfer->getStoreNameOrFail());
+        $metricStoreConfigEntity->setFormula($metricStoreConfigTransfer->getFormulaOrFail());
+        $metricStoreConfigEntity->setIsActive($metricStoreConfigTransfer->getIsActive() ?? true);
+        $metricStoreConfigEntity->setShape($metricStoreConfigTransfer->getShape());
+
+        return $metricStoreConfigEntity;
     }
 
     /**
@@ -249,5 +293,41 @@ class SearchRankingMapper
         $settingHistoryEntity->setSettingValue($settingHistoryTransfer->getSettingValueOrFail());
 
         return $settingHistoryEntity;
+    }
+
+    /**
+     * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingScopeCopyLock $scopeCopyLockEntity
+     * @param \Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer $scopeCopyLockTransfer
+     */
+    public function mapScopeCopyLockEntityToTransfer(
+        SpySearchRankingScopeCopyLock $scopeCopyLockEntity,
+        SearchRankingScopeCopyLockTransfer $scopeCopyLockTransfer,
+    ): SearchRankingScopeCopyLockTransfer {
+        return $scopeCopyLockTransfer
+            ->setIdSearchRankingScopeCopyLock($scopeCopyLockEntity->getIdSearchRankingScopeCopyLock())
+            ->setSourceStoreName($scopeCopyLockEntity->getSourceStoreName())
+            ->setSourceLocaleName($scopeCopyLockEntity->getSourceLocaleName())
+            ->setTargetStoreName($scopeCopyLockEntity->getTargetStoreName())
+            ->setTargetLocaleName($scopeCopyLockEntity->getTargetLocaleName())
+            ->setIsActive($scopeCopyLockEntity->getIsActive())
+            ->setCreatedAt($scopeCopyLockEntity->getCreatedAt()?->format(DATE_ATOM))
+            ->setDeactivatedAt($scopeCopyLockEntity->getDeactivatedAt()?->format(DATE_ATOM));
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer $scopeCopyLockTransfer
+     * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingScopeCopyLock $scopeCopyLockEntity
+     */
+    public function mapScopeCopyLockTransferToEntity(
+        SearchRankingScopeCopyLockTransfer $scopeCopyLockTransfer,
+        SpySearchRankingScopeCopyLock $scopeCopyLockEntity,
+    ): SpySearchRankingScopeCopyLock {
+        $scopeCopyLockEntity->setSourceStoreName($scopeCopyLockTransfer->getSourceStoreNameOrFail());
+        $scopeCopyLockEntity->setSourceLocaleName($scopeCopyLockTransfer->getSourceLocaleNameOrFail());
+        $scopeCopyLockEntity->setTargetStoreName($scopeCopyLockTransfer->getTargetStoreNameOrFail());
+        $scopeCopyLockEntity->setTargetLocaleName($scopeCopyLockTransfer->getTargetLocaleNameOrFail());
+        $scopeCopyLockEntity->setIsActive($scopeCopyLockTransfer->getIsActive() ?? true);
+
+        return $scopeCopyLockEntity;
     }
 }

@@ -12,6 +12,7 @@ namespace SprykerCommunityTest\Zed\SearchRankingGui\Persistence;
 use Codeception\Test\Unit;
 use Orm\Zed\Product\Persistence\SpyProductAbstract;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricStoreConfigQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapFinder;
@@ -289,10 +290,23 @@ class ProductMetricGapFinderTest extends Unit
     {
         $metricEntity = new SpySearchRankingMetric();
         $metricEntity->setName('test_' . $name)
-            ->setFormula('x')
-            ->setIsActive(true)
             ->setIsHigherBetter(true)
             ->save();
+
+        // "active for the queried scope" now requires a real spy_search_ranking_metric_store_config row
+        // (see ProductMetricGapFinder's own Phase-8 docblock note) — seeded for both real stores this
+        // file's tests query against (DE by default, AT for the store/locale-scoping regression test)
+        // so cascade-delete on the tracked metric entity in _after() cleans these up too, no separate
+        // tracking needed.
+        foreach (['DE', 'AT'] as $storeName) {
+            SpySearchRankingMetricStoreConfigQuery::create()
+                ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
+                ->filterByStoreName($storeName)
+                ->findOneOrCreate()
+                ->setFormula('x')
+                ->setIsActive(true)
+                ->save();
+        }
 
         $this->metricEntities[] = $metricEntity;
 

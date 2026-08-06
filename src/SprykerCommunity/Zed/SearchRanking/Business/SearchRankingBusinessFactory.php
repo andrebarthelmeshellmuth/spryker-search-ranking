@@ -38,6 +38,14 @@ use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePu
 use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisherInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Randomizer\MetricRandomizer;
 use SprykerCommunity\Zed\SearchRanking\Business\Randomizer\MetricRandomizerInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeConfigCopier;
+use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeConfigCopierInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeCopyLockManager;
+use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeCopyLockManagerInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeCopyLockValidator;
+use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeCopyLockValidatorInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\StoreConfigCopier;
+use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\StoreConfigCopierInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManager;
 use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientInterface;
@@ -86,6 +94,7 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
             $this->createMetricFormulaFitEvaluator(),
             $this->createNormalizationCurveFitter(),
             $this->getEventFacade(),
+            $this->getStoreFacade(),
         );
     }
 
@@ -194,5 +203,37 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
     public function getStoreFacade(): SearchRankingToStoreFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_STORE);
+    }
+
+    public function createScopeConfigCopier(): ScopeConfigCopierInterface
+    {
+        return new ScopeConfigCopier(
+            $this->getRepository(),
+            $this->createMetricWriter(),
+            $this->createSettingManager(),
+        );
+    }
+
+    public function createScopeCopyLockValidator(): ScopeCopyLockValidatorInterface
+    {
+        return new ScopeCopyLockValidator($this->getRepository());
+    }
+
+    public function createScopeCopyLockManager(): ScopeCopyLockManagerInterface
+    {
+        return new ScopeCopyLockManager(
+            $this->getRepository(),
+            $this->getEntityManager(),
+            $this->createScopeCopyLockValidator(),
+            $this->createScopeConfigCopier(),
+        );
+    }
+
+    public function createStoreConfigCopier(): StoreConfigCopierInterface
+    {
+        return new StoreConfigCopier(
+            $this->getRepository(),
+            $this->createMetricWriter(),
+        );
     }
 }

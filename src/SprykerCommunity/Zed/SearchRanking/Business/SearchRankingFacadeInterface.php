@@ -18,6 +18,8 @@ use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer;
+use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
+use Generated\Shared\Transfer\SearchRankingStoreConfigCopyResultTransfer;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
 interface SearchRankingFacadeInterface
@@ -243,14 +245,19 @@ interface SearchRankingFacadeInterface
      * Specification:
      * - Persists the given metric; creates it when idSearchRankingMetric is empty, updates it otherwise.
      * - Validates the normalization formula and throws InvalidFormulaException when it does not evaluate.
+     * - name/isHigherBetter are global; formula/isActive/shape are saved for $storeName specifically (see
+     *   project memory, store-scoped-formula migration Phase 2). $localeName is used only as a lens for
+     *   which digest to fit the saved shape against (Phase 4), never persisted as part of the scope.
      *
      * @api
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
      *
      * @throws \SprykerCommunity\Zed\SearchRanking\Business\Exception\InvalidFormulaException
      */
-    public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer;
+    public function saveMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): SearchRankingMetricTransfer;
 
     /**
      * Specification:
@@ -487,4 +494,152 @@ interface SearchRankingFacadeInterface
      * @param string $localeName
      */
     public function evaluateCurrentMetricFit(int $idSearchRankingMetric, string $storeName, string $localeName): ?float;
+
+    /**
+     * Specification:
+     * - Copies every metric weight and setting explicitly saved for the source scope onto the target
+     *   scope, tagged {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY}.
+     *   Never touches `spy_search_ranking_product_metric`/`_metric_digest` — real, scope-local behavioral
+     *   data is deliberately never copied.
+     * - Blocked when the target scope already has any explicitly-saved weight/setting
+     *   (`isBlockedByExistingData=true`, nothing written) unless `$confirmOverwrite` is true.
+     * - Fails (`isSuccess=false`) when source and target scope are the same.
+     * - A one-off action — does not create a lock. See {@see createScopeCopyLock()} for a persistent,
+     *   daily-resynced pairing.
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     * @param bool $confirmOverwrite
+     */
+    public function copyScopeConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+        bool $confirmOverwrite,
+    ): SearchRankingScopeCopyResultTransfer;
+
+    /**
+     * Specification:
+     * - True if the given scope has any explicitly-saved metric weight or setting — what
+     *   {@see copyScopeConfiguration()}'s overwrite guard checks; exposed so the Zed page can warn
+     *   before a first submit too, not only after a blocked one.
+     *
+     * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
+     */
+    public function hasScopeConfiguration(string $storeName, string $localeName): bool;
+
+    /**
+     * Specification:
+     * - Copies formula/isActive/shape for every metric explicitly configured in the source STORE onto
+     *   the target store — store-only, not (store,locale)-scoped like {@see copyScopeConfiguration()},
+     *   since formula/isActive/shape are themselves store-scoped (see the store-scoped-formula migration,
+     *   project memory). Tagged {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY}.
+     * - `MODE_MIRROR` (default) copies every metric the source has configured, creating a target row for
+     *   one the target never had. `MODE_COPY_ONLY_OVERLAP` only overwrites a metric the target has
+     *   ALREADY independently configured, leaving one it hasn't touched alone (`skippedCount`).
+     * - Blocked when the target store already has any explicitly-saved store-config row
+     *   (`isBlockedByExistingData=true`, nothing written) unless `$confirmOverwrite` is true.
+     * - Fails (`isSuccess=false`) when source and target store are the same.
+     * - One-off only — unlike weight/settings, there is no lockable/cron-synced variant of this action
+     *   (a deliberate Phase 7 decision: formula/k tuning changes far less often than weight).
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     * @param string $mode One of {@see \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\StoreConfigCopierInterface}::MODE_*.
+     * @param bool $confirmOverwrite
+     */
+    public function copyStoreConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+        string $mode,
+        bool $confirmOverwrite,
+    ): SearchRankingStoreConfigCopyResultTransfer;
+
+    /**
+     * Specification:
+     * - True if the given store has any explicitly-saved metric store-config row — what
+     *   {@see copyStoreConfiguration()}'s overwrite guard checks; exposed so the Zed page can warn before
+     *   a first submit too, not only after a blocked one.
+     *
+     * @api
+     *
+     * @param string $storeName
+     */
+    public function hasStoreConfiguration(string $storeName): bool;
+
+    /**
+     * Specification:
+     * - Returns every currently active scope copy lock, newest first.
+     *
+     * @api
+     *
+     * @return array<\Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer>
+     */
+    public function getActiveScopeCopyLocks(): array;
+
+    /**
+     * Specification:
+     * - Validates the source/target role-exclusivity rule (a scope may be the target of at most one
+     *   active lock at a time, source of many, and never simultaneously source and target) — a real
+     *   validation failure returns `isSuccess=false` with `errorMessage` set and creates nothing.
+     * - If valid, runs the same overwrite-guarded copy {@see copyScopeConfiguration()} does; the lock row
+     *   is only created once that copy actually succeeds, so a blocked/failed copy never leaves an
+     *   orphaned lock with no data behind it.
+     * - On success, the daily scope-copy-sync cron re-runs this same copy for this pair going forward,
+     *   until it's unlocked.
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     * @param bool $confirmOverwrite
+     */
+    public function createScopeCopyLock(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+        bool $confirmOverwrite,
+    ): SearchRankingScopeCopyResultTransfer;
+
+    /**
+     * Specification:
+     * - Deactivates the lock (soft-delete, never removed — the active-locks page can still show lock
+     *   history, and both scopes become free to take on either role again in a future lock).
+     * - Does nothing when the lock does not exist or is already inactive.
+     *
+     * @api
+     *
+     * @param int $idSearchRankingScopeCopyLock
+     */
+    public function deactivateScopeCopyLock(int $idSearchRankingScopeCopyLock): void;
+
+    /**
+     * Specification:
+     * - Re-copies every active lock's source scope onto its target scope, always overwriting (this is
+     *   the ongoing authoritative sync, not a first bootstrap — there is no confirmation step to gate a
+     *   cron on).
+     * - Intended for the scope-copy-sync console command's daily cron.
+     *
+     * @api
+     *
+     * @return int Number of locks synced.
+     */
+    public function runScopeCopyDailySync(): int;
 }

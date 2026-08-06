@@ -38,6 +38,9 @@
                     {% endfor %}
                 </select>
             </form>
+            <p class="text-muted" style="margin-bottom: 15px;">
+                {{ 'Formula and Active apply per store, across every locale. Weight applies to this exact store+locale — switch Locale above to see/edit a different one.' | trans }}
+            </p>
             {{ metricTable | raw }}
         {% endblock %}
     {% endembed %}

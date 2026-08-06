@@ -167,6 +167,7 @@ class MetricHistoryTable extends AbstractTable
             SharedSearchRankingConfig::CHANGE_SOURCE_AUTO_TUNE => 'Auto-Tune',
             SharedSearchRankingConfig::CHANGE_SOURCE_OPTIMIZER_APPLY => 'Optimizer apply',
             SharedSearchRankingConfig::CHANGE_SOURCE_CHECKPOINT_RESTORE => 'Checkpoint restore',
+            SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY => 'Scope copy',
         ];
 
         $label = $labelsByChangeSource[$changeSource] ?? $changeSource ?? 'Manual';
