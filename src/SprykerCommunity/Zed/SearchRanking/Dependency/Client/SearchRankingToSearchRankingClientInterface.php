@@ -14,4 +14,6 @@ use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 interface SearchRankingToSearchRankingClientInterface
 {
     public function checkEngineCompatibility(): SearchRankingEngineCompatibilityTransfer;
+
+    public function isSpecificityWeightingEnabled(): bool;
 }

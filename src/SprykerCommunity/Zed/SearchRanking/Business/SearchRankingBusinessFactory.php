@@ -48,6 +48,8 @@ use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\StoreConfigCopier;
 use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\StoreConfigCopierInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManager;
 use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManagerInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Specificity\SpecificityWeightingStatusChecker;
+use SprykerCommunity\Zed\SearchRanking\Business\Specificity\SpecificityWeightingStatusCheckerInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
@@ -143,6 +145,11 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
     public function createCompatibilityChecker(): CompatibilityCheckerInterface
     {
         return new CompatibilityChecker($this->getSearchRankingClient());
+    }
+
+    public function createSpecificityWeightingStatusChecker(): SpecificityWeightingStatusCheckerInterface
+    {
+        return new SpecificityWeightingStatusChecker($this->getSearchRankingClient());
     }
 
     public function createMetricDigestBuilder(): MetricDigestBuilderInterface

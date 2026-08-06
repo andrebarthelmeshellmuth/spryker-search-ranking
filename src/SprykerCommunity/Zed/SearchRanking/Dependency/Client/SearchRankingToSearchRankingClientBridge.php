@@ -30,4 +30,9 @@ class SearchRankingToSearchRankingClientBridge implements SearchRankingToSearchR
     {
         return $this->searchRankingClient->checkEngineCompatibility();
     }
+
+    public function isSpecificityWeightingEnabled(): bool
+    {
+        return $this->searchRankingClient->isSpecificityWeightingEnabled();
+    }
 }
