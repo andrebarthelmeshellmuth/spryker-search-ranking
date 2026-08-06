@@ -21,7 +21,7 @@ interface SearchRankingEntityManagerInterface
     /**
      * Writes the metric's global identity (name/isHigherBetter), then its formula/isActive/shape
      * separately to `spy_search_ranking_metric_store_config` for `$storeName` — see the implementation's
-     * own docblock for why (store-scoped-formula migration Phase 2, project memory).
+     * own docblock for the full reasoning.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
@@ -109,8 +109,7 @@ interface SearchRankingEntityManagerInterface
     /**
      * Upserts by (fkSearchRankingMetric, storeName) — one store-config row per metric per store,
      * overwritten wholesale rather than versioned (mirrors {@see saveMetricDigest()}'s own upsert shape).
-     * Phase 1 of the store-scoped-formula migration (see project memory) — persistence plumbing only,
-     * not yet consumed by any business logic.
+     * Called by {@see \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManager::saveMetric()}.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer $metricStoreConfigTransfer
      */

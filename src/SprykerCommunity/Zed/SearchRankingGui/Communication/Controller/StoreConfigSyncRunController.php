@@ -18,8 +18,8 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * One-off "Sync now" for the store-config (formula/isActive/shape) copy action — store-only, unlike
  * {@see ScopeCopyRunController}'s (store,locale)-scoped weight/setting copy. No lockable/cron-synced
- * variant exists for this action (a deliberate Phase 7 decision, see project memory: formula/k tuning
- * changes far less often than weight).
+ * variant exists for this action — a deliberate choice: formula/k tuning changes far less often than
+ * weight, so a recurring sync would mostly re-copy an unchanged value.
  *
  * @method \SprykerCommunity\Zed\SearchRankingGui\Communication\SearchRankingGuiCommunicationFactory getFactory()
  */

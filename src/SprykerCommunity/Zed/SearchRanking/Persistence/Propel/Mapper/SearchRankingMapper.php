@@ -30,13 +30,13 @@ use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRan
 class SearchRankingMapper
 {
     /**
-     * Since the store-scoped-formula migration's Phase 2 (see project memory): formula/isActive/shape are
-     * NOT read from the entity here any more — they moved to `spy_search_ranking_metric_store_config`,
-     * store-scoped. This method only maps what's still genuinely global: id, name, isHigherBetter. Callers
-     * that need formula/isActive/shape overlay them via {@see SearchRankingRepository::attachStoreConfig()},
-     * the same composable-overlay shape {@see SearchRankingRepository::attachWeight()} already established.
-     * The entity's own formula/isActive/shape columns still physically exist (frozen at whatever Phase 1's
-     * backfill last wrote) until Phase 8 drops them — deliberately never read from again after this phase.
+     * formula/isActive/shape are NOT read from the entity here — `spy_search_ranking_metric` itself only
+     * carries id/name/isHigherBetter any more; formula/isActive/shape moved to
+     * `spy_search_ranking_metric_store_config`, store-scoped (a breaking change; see CHANGELOG.md for the
+     * release that shipped it — no live installs meant no backfill migration was needed). This method
+     * only maps what's still genuinely global. Callers that need formula/isActive/shape overlay them via
+     * {@see SearchRankingRepository::attachStoreConfig()}, the same composable-overlay shape
+     * {@see SearchRankingRepository::attachWeight()} already established.
      *
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric $metricEntity
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
@@ -52,8 +52,8 @@ class SearchRankingMapper
     }
 
     /**
-     * Since Phase 2 (see project memory): only writes name/isHigherBetter — formula/isActive/shape are
-     * saved separately, to `spy_search_ranking_metric_store_config`, by
+     * Only writes name/isHigherBetter — formula/isActive/shape are saved separately, to
+     * `spy_search_ranking_metric_store_config`, by
      * {@see SearchRankingEntityManager::saveMetricStoreConfig()}.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer

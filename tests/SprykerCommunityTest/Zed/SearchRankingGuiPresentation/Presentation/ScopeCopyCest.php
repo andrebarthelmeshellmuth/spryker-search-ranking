@@ -14,9 +14,7 @@ use SprykerCommunityTest\Zed\SearchRankingGuiPresentation\SearchRankingGuiPresen
 
 /**
  * The Scope Copy page: both the original (store,locale)-scoped weight/settings copy/lock actions, and
- * Phase 7 of the store-scoped-formula migration's own store-only "Sync store configuration" action (see
- * project memory) — the one part of that whole migration that had never gotten Presentation coverage,
- * only manual chrome-devtools MCP verification at build time.
+ * the store-only "Sync store configuration" action for formula/isActive/shape.
  *
  * Auto-generated group annotations
  *
@@ -52,8 +50,9 @@ class ScopeCopyCest
         $i->see(ScopeCopyPage::COPY_NOW_BUTTON_TEXT);
         $i->see(ScopeCopyPage::LOCK_BUTTON_TEXT);
 
-        // Phase 7's own addition to this page — store-only, no locale, deliberately no lock counterpart
-        // (see that phase's own README/Facade docblock note for why).
+        // Store-only, no locale, deliberately no lock counterpart — formula/k tuning changes far less
+        // often than weight, so a recurring sync would mostly re-copy an unchanged value (see the
+        // Facade's own docblock).
         $i->see(ScopeCopyPage::SYNC_STORE_CONFIG_HEADING_TEXT);
         $i->seeElement(ScopeCopyPage::SELECTOR_SYNC_MODE_MIRROR);
         $i->seeElement(ScopeCopyPage::SELECTOR_SYNC_MODE_COPY_ONLY_OVERLAP);

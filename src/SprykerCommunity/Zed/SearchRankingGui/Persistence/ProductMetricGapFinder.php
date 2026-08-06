@@ -53,11 +53,11 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
      * a different (store, locale) but none in this one still LEFT JOINs to NULL here, correctly flagged
      * as a gap for the queried scope.
      *
-     * `metric.is_active` was dropped in Phase 8 of the store-scoped-formula migration (see project
-     * memory) — "active" is a per-store fact now, on `spy_search_ranking_metric_store_config`, so an
-     * INNER JOIN against it (scoped to the same `$storeName` this whole query is already scoped to) is
-     * what "active for the queried scope" now means; a metric with no store-config row at all for this
-     * store (never configured here) is correctly excluded, same as an explicitly inactive one.
+     * `metric.is_active` does not exist — "active" is a per-store fact, on
+     * `spy_search_ranking_metric_store_config`, so an INNER JOIN against it (scoped to the same
+     * `$storeName` this whole query is already scoped to) is what "active for the queried scope" means;
+     * a metric with no store-config row at all for this store (never configured here) is correctly
+     * excluded, same as an explicitly inactive one.
      *
      * @var string
      */

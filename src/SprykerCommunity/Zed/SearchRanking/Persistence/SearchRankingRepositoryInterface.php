@@ -182,8 +182,10 @@ interface SearchRankingRepositoryInterface
     public function findScopeCopyLockById(int $idSearchRankingScopeCopyLock): ?SearchRankingScopeCopyLockTransfer;
 
     /**
-     * Phase 1 of the store-scoped-formula migration (see project memory) — persistence plumbing only,
-     * not yet consumed by any business logic. Null when no row exists yet for this (metric, store).
+     * The store-scoped `formula`/`isActive`/`shape` row for one metric — used by
+     * {@see \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\StoreConfigCopier} to check whether
+     * the target store already has an explicit config for a given metric before copying/overwriting.
+     * Null when no row exists yet for this (metric, store).
      *
      * @param int $idSearchRankingMetric
      * @param string $storeName

@@ -36,10 +36,10 @@ class MetricTable extends AbstractTable
     protected const COL_WEIGHT = 'weight';
 
     /**
-     * Not real columns on spy_search_ranking_metric since Phase 8 of the store-scoped-formula migration
-     * dropped them entirely (see project memory) — moved to spy_search_ranking_metric_store_config, one
-     * row per store, looked up separately in {@see prepareData()}. Same "plain array key, not a real
-     * column" shape {@see COL_WEIGHT} already established.
+     * Not real columns on spy_search_ranking_metric any more — moved to
+     * spy_search_ranking_metric_store_config, one row per store, looked up separately in
+     * {@see prepareData()}. Same "plain array key, not a real column" shape {@see COL_WEIGHT} already
+     * established.
      *
      * @var string
      */
@@ -94,12 +94,10 @@ class MetricTable extends AbstractTable
             static::COL_ACTIONS => 'Actions',
         ]);
 
-        // is_active/formula dropped from sortable/searchable since the store-scoped-formula migration's
-        // Phase 2 (see project memory) — they're no longer real columns on THIS table's own query (moved
-        // to spy_search_ranking_metric_store_config, looked up separately below; Phase 8 dropped the
-        // vestigial columns these constants used to reference entirely, so they're plain array keys now,
-        // same as COL_WEIGHT's own comment already explains for weight), so DB-level sort/search against
-        // them would silently operate on stale, frozen data instead of this store's real values.
+        // is_active/formula are not real columns on THIS table's own query any more — moved to
+        // spy_search_ranking_metric_store_config, looked up separately below, same plain-array-key shape
+        // COL_WEIGHT's own comment already explains for weight — so dropped from sortable/searchable
+        // here rather than letting DB-level sort/search silently operate on stale, frozen data.
         $config->setSortable([
             SpySearchRankingMetricTableMap::COL_ID_SEARCH_RANKING_METRIC,
             SpySearchRankingMetricTableMap::COL_NAME,
@@ -186,9 +184,8 @@ class MetricTable extends AbstractTable
     }
 
     /**
-     * formula/isActive live here since the store-scoped-formula migration's Phase 2 (see project
-     * memory) — same "looked up separately, not a real column on this table's own query" shape
-     * {@see findWeightsById()} already established for weight. No row for a given metric (never
+     * formula/isActive live here — same "looked up separately, not a real column on this table's own
+     * query" shape {@see findWeightsById()} already established for weight. No row for a given metric (never
      * configured for this store) is a real, expected absence — {@see prepareData()} treats it as
      * inactive/no formula, the same safe fallback the repository's own `attachStoreConfig()` uses.
      *

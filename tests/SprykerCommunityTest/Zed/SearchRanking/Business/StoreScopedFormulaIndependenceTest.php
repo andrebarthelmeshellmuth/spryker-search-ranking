@@ -28,20 +28,19 @@ use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingPr
 use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingProductMetric\SearchRankingProductMetricWriterStep;
 
 /**
- * INTEGRATION TEST — permanent automated coverage for the store-scoped-formula migration's own central
- * claim (see project memory), previously only ever proven by hand (live chrome-devtools MCP + direct DB
- * queries against the real running demoshop, Phase 3 of that migration): the SAME metric can carry a
- * GENUINELY DIFFERENT formula per store and produce genuinely different normalized output for the exact
- * same raw input, end to end through the REAL {@see ProductMetricNormalizer::normalize()} entry point
- * (not {@see ProductMetricNormalizer::normalizeMetric()} directly, which takes its formula as a plain
- * argument and would prove nothing about the store-scoped LOOKUP this test exists to cover) — so this
- * exercises the real {@see SearchRankingRepository::getActiveMetricCollection()} store-scoped read too,
- * not just the normalization math {@see \SprykerCommunityTest\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizerTest}
+ * INTEGRATION TEST — permanent automated coverage for this package's central store-scoping claim: the
+ * SAME metric can carry a GENUINELY DIFFERENT formula per store and produce genuinely different
+ * normalized output for the exact same raw input, end to end through the REAL
+ * {@see ProductMetricNormalizer::normalize()} entry point (not {@see ProductMetricNormalizer::normalizeMetric()}
+ * directly, which takes its formula as a plain argument and would prove nothing about the store-scoped
+ * LOOKUP this test exists to cover) — so this exercises the real
+ * {@see SearchRankingRepository::getActiveMetricCollection()} store-scoped read too, not just the
+ * normalization math {@see \SprykerCommunityTest\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizerTest}
  * already covers with mocks.
  *
- * DE's formula (`atan(x / 2241.481486) / (pi() / 2)`) and the raw value (23105) are the EXACT real values
- * this migration's own live Phase 3 verification used — reusing them here means this test's expected
- * outputs are independently hand-verified twice, once live against the real demoshop and once here.
+ * DE's formula (`atan(x / 2241.481486) / (pi() / 2)`) and the raw value (23105) are real values
+ * independently hand-verified once against the real running demoshop — reusing them here means this
+ * test's expected outputs are cross-checked, not just internally consistent.
  *
  * @group SprykerCommunityTest
  * @group Zed

@@ -94,9 +94,9 @@
     </transfer>
 
     <!-- One store's own formula/active-flag/shape for a metric — the store-scoped counterpart to
-         SearchRankingMetric's identity fields (name, isHigherBetter stay global). Bootstrapped from the
-         metric's then-global formula/isActive/shape at Phase 1 of the store-scoping migration; each
-         store's own row is independently re-fit and toggled from then on. See
+         SearchRankingMetric's identity fields (name, isHigherBetter stay global). A brand-new store's
+         row is bootstrapped via Scope Copy's Sync Store Config action, then independently re-fit and
+         toggled from then on. See
          spy_search_ranking_metric_store_config's own schema column docs for the store-vs-locale
          reasoning. -->
     <transfer name="SearchRankingMetricStoreConfig" strict="true">
@@ -254,8 +254,9 @@
         <!-- Specificity-aware relevance weighting settings — only read when the Client-layer code flag
              SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled() is
              enabled; always published regardless, same as every other setting here. specificityBlendWeight
-             (alpha) and specificityCurveExponent (p) are CMA-ES-tunable (search-ranking-optimizer);
-             specificitySaturationPoint (k) is Calibration-tunable only, same split as
+             (alpha) and specificityCurveExponent (p) are tunable by search-ranking-optimizer's own
+             blackbox-optimizer search (e.g. CMA-ES); specificitySaturationPoint (k) is Calibration-tunable
+             only, same split as
              relevanceSaturationPoint. specificityCurveExponent reshapes the raw-to-normalized-specificity
              curve itself (raw^p / (raw^p + k^p), p=1 reproduces the original raw/(raw+k) shape) —
              distinct from specificityWeightExponent below, which reshapes a later, already-symmetric
