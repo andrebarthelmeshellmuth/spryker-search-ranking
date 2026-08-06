@@ -39,10 +39,10 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper\SearchRankingMa
 class SearchRankingMapperTest extends Unit
 {
     /**
-     * Since Phase 2 of the store-scoped-formula migration (see project memory): formula/isActive/shape
-     * are genuinely never read here anymore — they live on `spy_search_ranking_metric_store_config`
-     * instead, mapped separately by {@see testMapsMetricStoreConfigEntityFieldsOntoTheTransfer()}. This
-     * only asserts the fields the entity mapper still owns: id/name/isHigherBetter.
+     * formula/isActive/shape are never read here — they live on
+     * `spy_search_ranking_metric_store_config` instead, mapped separately by
+     * {@see testMapsMetricStoreConfigEntityFieldsOntoTheTransfer()}. This only asserts the fields the
+     * entity mapper owns: id/name/isHigherBetter.
      */
     public function testMapsMetricEntityFieldsOntoTheTransfer(): void
     {
@@ -62,8 +62,7 @@ class SearchRankingMapperTest extends Unit
     }
 
     /**
-     * Since Phase 2 of the store-scoped-formula migration (see project memory): formula/isActive/shape
-     * are genuinely never written here anymore — see the sibling test above.
+     * formula/isActive/shape are never written here — see the sibling test above.
      */
     public function testMapsMetricTransferFieldsOntoTheEntity(): void
     {
@@ -81,8 +80,8 @@ class SearchRankingMapperTest extends Unit
     }
 
     /**
-     * formula/isActive/shape's real, live home since Phase 2 of the store-scoped-formula migration (see
-     * project memory) — one row per (metric, store), the sibling this file's own top two tests point at.
+     * formula/isActive/shape's real, live home — one row per (metric, store), the sibling this file's
+     * own top two tests point at.
      */
     public function testMapsMetricStoreConfigEntityFieldsOntoTheTransfer(): void
     {
@@ -131,8 +130,7 @@ class SearchRankingMapperTest extends Unit
     /**
      * A transfer with no `isActive` set (null) must still default the entity to active — mirrors the
      * store-config table's own Propel column default and the "new metrics are active by default" admin
-     * expectation, same reasoning the metric entity itself used to carry before Phase 8 removed its own
-     * copy of this column entirely (see project memory).
+     * expectation.
      */
     public function testDefaultsTheStoreConfigEntityToActiveWhenTheTransferLeavesIsActiveUnset(): void
     {

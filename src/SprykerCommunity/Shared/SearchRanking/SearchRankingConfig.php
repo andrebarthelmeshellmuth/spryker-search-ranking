@@ -60,9 +60,10 @@ class SearchRankingConfig
     /**
      * Specification:
      * - Setting key of the blend weight (alpha) used to combine a query's per-term IDF values into one
-     *   "raw specificity" value: `alpha * max(idf) + (1 - alpha) * harmonicMean(idf)`. CMA-ES-tunable via
-     *   spryker-community/search-ranking-optimizer. Only meaningful when specificity-aware relevance
-     *   weighting is enabled — see {@see isSpecificityWeightingEnabled()}.
+     *   "raw specificity" value: `alpha * max(idf) + (1 - alpha) * harmonicMean(idf)`. Tunable by
+     *   spryker-community/search-ranking-optimizer's own blackbox-optimizer search (e.g. CMA-ES). Only
+     *   meaningful when specificity-aware relevance weighting is enabled — see
+     *   {@see isSpecificityWeightingEnabled()}.
      *
      * @api
      *
@@ -74,7 +75,8 @@ class SearchRankingConfig
      * Specification:
      * - Setting key of the saturation point (k) used to normalize the unbounded raw specificity value
      *   into `[0;1[` before deriving the shift: the raw specificity at which the normalized result
-     *   reaches 0.5. Calibration-tunable only (like `relevance_saturation_point`), NOT CMA-ES-tunable.
+     *   reaches 0.5. Calibration-tunable only (like `relevance_saturation_point`), not tunable by
+     *   search-ranking-optimizer's blackbox-optimizer search.
      *
      * @api
      *
@@ -93,9 +95,10 @@ class SearchRankingConfig
      *   `specificity_weight_exponent` below, which reshapes a DIFFERENT, later step (the already-centered
      *   `[-1;1]` deviation, symmetric by construction) — this one reshapes the raw axis itself, which is
      *   NOT symmetric (a hard floor at `raw=0`, an open ceiling), so it's the only one of the two that can
-     *   correct for that axis's inherent asymmetry. CMA-ES-tunable via
-     *   spryker-community/search-ranking-optimizer, same as `specificity_blend_weight`. Only meaningful
-     *   when specificity-aware relevance weighting is enabled — see {@see isSpecificityWeightingEnabled()}.
+     *   correct for that axis's inherent asymmetry. Tunable by
+     *   spryker-community/search-ranking-optimizer's own blackbox-optimizer search (e.g. CMA-ES), same as
+     *   `specificity_blend_weight`. Only meaningful when specificity-aware relevance weighting is enabled
+     *   — see {@see isSpecificityWeightingEnabled()}.
      *
      * @api
      *
@@ -188,8 +191,8 @@ class SearchRankingConfig
      * Specification:
      * - `spy_search_ranking_metric_history.change_source` value for a weight change applied when a human
      *   clicks "Apply" on a `spryker-community/search-ranking-optimizer` optimizer run's winning candidate —
-     *   the click is manual, but the weight value itself is machine-computed (CMA-ES/DE/ES search result),
-     *   not hand-typed.
+     *   the click is manual, but the weight value itself is machine-computed (a blackbox-optimizer search
+     *   result, e.g. CMA-ES/DE/ES), not hand-typed.
      *
      * @api
      *

@@ -49,17 +49,15 @@ class MetricWriter implements MetricWriterInterface
      * Writes the metric's identity fields — see this method's own interface docblock. The incoming
      * transfer's `weight` (if any) is deliberately ignored here; use {@see saveMetricWeight()} instead.
      *
-     * $storeName is real since Phase 2 of the store-scoped-formula migration (see project memory) —
-     * formula/isActive/shape are saved for THIS store specifically, not locale-scoped at all. $localeName
-     * is real since Phase 4 too, but is used ONLY as a lens: which (store, locale) digest to fit the
+     * $storeName is real here — formula/isActive/shape are saved for THIS store specifically, not
+     * locale-scoped at all. $localeName is used ONLY as a lens: which (store, locale) digest to fit the
      * formula's shape against ({@see detectShape()}) and to snapshot in the history row
      * ({@see recordHistory()}) — never persisted as part of the metric's own scope. Threaded through as
-     * the caller's real, currently-viewed locale (not a hardcoded default) specifically so the shape
-     * saved here matches what the admin already saw in the live formula-preview endpoint, which has
-     * always used the real request locale — before this phase, save silently used
-     * DEFAULT_SCOPE_LOCALE_NAME regardless of which locale the admin was actually viewing, a real
-     * preview/save mismatch. Digest granularity itself is unchanged (still (store, locale)): if the
-     * viewed locale has no digest yet, shape/fit simply comes back null/absent, same as always.
+     * the caller's real, currently-viewed locale (not a hardcoded default), specifically so the shape
+     * saved here matches what the admin already saw in the live formula-preview endpoint, which uses the
+     * real request locale too — a hardcoded default here would silently mismatch whatever locale the
+     * admin was actually viewing. Digest granularity is (store, locale): if the viewed locale has no
+     * digest yet, shape/fit simply comes back null/absent.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
@@ -89,10 +87,10 @@ class MetricWriter implements MetricWriterInterface
         $this->eventFacade->trigger(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE, new EventEntityTransfer());
 
         if ($this->hasAnyTrackedFieldChanged($previousMetricTransfer, $savedMetricTransfer)) {
-            // Since Phase 5 of the store-scoped-formula migration (see project memory): formula/isActive
-            // are store-wide now, not locale-scoped — a single history row keyed to whichever locale the
-            // admin happened to be viewing would under-represent the change (it reads as if the change
-            // only applied to that one locale). Fan out one row per REAL locale of this store instead, so
+            // formula/isActive are store-wide, not locale-scoped — a single history row keyed to
+            // whichever locale the admin happened to be viewing would under-represent the change (it
+            // reads as if the change only applied to that one locale). Fan out one row per REAL locale
+            // of this store instead, so
             // every locale the change actually affects gets its own honest snapshot (with that locale's
             // own real weight/digest/fit — never a duplicate/fake one). $localeName (the viewed locale) is
             // the fallback if the store can't be resolved, and is always itself one of the real locales

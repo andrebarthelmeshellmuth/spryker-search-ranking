@@ -31,11 +31,10 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
     use TransactionTrait;
 
     /**
-     * Since Phase 2 of the store-scoped-formula migration (see project memory): writes the metric's
-     * global identity (name/isHigherBetter) here, then its formula/isActive/shape separately to
-     * `spy_search_ranking_metric_store_config` for `$storeName` via {@see saveMetricStoreConfig()} — a
-     * brand-new metric's identity row is created first so a real id exists for the store-config row's
-     * foreign key.
+     * Writes the metric's global identity (name/isHigherBetter) here, then its formula/isActive/shape
+     * separately to `spy_search_ranking_metric_store_config` for `$storeName` via
+     * {@see saveMetricStoreConfig()} — a brand-new metric's identity row is created first so a real id
+     * exists for the store-config row's foreign key.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName

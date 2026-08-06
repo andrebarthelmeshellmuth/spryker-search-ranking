@@ -93,8 +93,8 @@ class SearchRankingConfig extends AbstractBundleConfig
      * - Still a starting point, not a measured optimum for a given catalog — same status as
      *   {@see getDefaultRelevanceWeight()}'s own 0.75, just favoring `max` over harmonic mean rather than
      *   text relevance over business signals. Tune it via the Zed Settings page once you have a real feel
-     *   for your own catalog's query mix, or let `spryker-community/search-ranking-optimizer`'s CMA-ES
-     *   search find a better value automatically.
+     *   for your own catalog's query mix, or let `spryker-community/search-ranking-optimizer`'s
+     *   blackbox-optimizer search (e.g. CMA-ES) find a better value automatically.
      *
      * @api
      */

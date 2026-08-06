@@ -70,10 +70,9 @@ class SearchRankingMetricWriterStep implements DataImportStepInterface
             ->findOneOrCreate();
         $metricEntity->save();
 
-        // Since the store-scoped-formula migration's Phase 2 (see project memory): formula/isActive are
-        // store-scoped now, on spy_search_ranking_metric_store_config, not columns on the metric entity
-        // above any more (those are vestigial, dropped in Phase 8) — written using this row's own
-        // `store` column, the same one already used for the weight row below.
+        // formula/isActive are store-scoped, on spy_search_ranking_metric_store_config, not columns on
+        // the metric entity above at all — written using this row's own `store` column, the same one
+        // already used for the weight row below.
         $storeConfigEntity = SpySearchRankingMetricStoreConfigQuery::create()
             ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
             ->filterByStoreName((string)$dataSet[SearchRankingMetricDataSetInterface::COL_STORE])

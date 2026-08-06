@@ -408,8 +408,8 @@ so, with no error to tell you why.
   Blocked by default when the target store already has any saved store configuration (same "Overwrite
   existing target store configuration" checkbox pattern as above). Every synced metric is recorded on
   [Metric History](#what-it-does) tagged `scope_copy`, fanned out across every real locale of the target
-  store, same as any other formula change (see the store-scoped-formula migration's own history-fan-out
-  design, project memory). **One-off only** — unlike weight/settings, there is no lockable/daily-synced
+  store, same as any other formula change (a single history row keyed to one locale would under-represent
+  a store-wide change). **One-off only** — unlike weight/settings, there is no lockable/daily-synced
   variant of this action; formula/curve-shape tuning changes far less often than weight in practice.
 
 ## Ranking formula
@@ -588,14 +588,14 @@ keeps `0.5` an exact neutral point regardless of the exponent's value, rather th
 `relevanceSaturationPoint` — see [Ranking formula](#ranking-formula)) — all only take effect once the
 code-level flag below is on:
 - **Specificity blend weight** (default `0.7`) — `specificityBlendWeight` (α) above. Also tunable via
-  `spryker-community/search-ranking-optimizer`'s CMA-ES search.
+  `spryker-community/search-ranking-optimizer`'s own blackbox-optimizer search (e.g. CMA-ES).
 - **Specificity saturation point** — `specificitySaturationPoint` (k) above. Calibration-tunable only
-  (like `relevanceSaturationPoint`), not CMA-ES-tunable — see
+  (like `relevanceSaturationPoint`), not tunable by the blackbox-optimizer search — see
   `spryker-community/search-ranking-optimizer`'s Calibration feature. Needs a real value sampled from your
   own catalog before trusting the default; a placeholder chosen without that data could be wildly wrong.
 - **Specificity curve exponent** (default `1.0`) — `curveExponent` above, how sharply
   `normalizedSpecificity` transitions around the saturation point. Also tunable via
-  `spryker-community/search-ranking-optimizer`'s CMA-ES search.
+  `spryker-community/search-ranking-optimizer`'s own blackbox-optimizer search (e.g. CMA-ES).
 - **Specificity weight exponent** (default `1.0`) — how sharply the shift ramps up away from the neutral
   point.
 - **Specificity weight shift magnitude** (default `0.25`) — the maximum shift in either direction. Sized

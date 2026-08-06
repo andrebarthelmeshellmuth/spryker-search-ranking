@@ -227,9 +227,7 @@ class SearchRankingMetricWriterStepTest extends Unit
     }
 
     /**
-     * Since Phase 2 of the store-scoped-formula migration (see project memory): formula/isActive are
-     * written to this store-scoped child row, not the (now vestigial, unwritten) columns on the metric
-     * entity itself.
+     * formula/isActive are written to this store-scoped child row, not to the metric entity itself.
      *
      * @param int $idSearchRankingMetric
      */

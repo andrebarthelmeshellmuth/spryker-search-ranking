@@ -27,8 +27,8 @@ interface StoreConfigCopierInterface
      * Copies formula/isActive/shape ({@see \Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer})
      * for every metric EXPLICITLY configured in the source STORE onto the target store — store-only,
      * unlike {@see ScopeConfigCopierInterface::copyScopeConfiguration()}'s (store,locale)-scoped weight/
-     * setting copy, since formula/isActive/shape are themselves store-scoped, not locale-scoped (see the
-     * store-scoped-formula migration, project memory). `$sourceLocaleName`/`$targetLocaleName` are used
+     * setting copy, since formula/isActive/shape are themselves store-scoped, not locale-scoped.
+     * `$sourceLocaleName`/`$targetLocaleName` are used
      * ONLY as the digest lens {@see \SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface::saveMetric()}
      * re-detects each copied metric's `shape` against (its own real fit-quality metadata, not carried
      * over verbatim) — never part of the copy's own scope key.

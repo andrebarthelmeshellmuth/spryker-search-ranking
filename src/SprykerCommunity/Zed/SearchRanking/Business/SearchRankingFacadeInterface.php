@@ -128,8 +128,8 @@ interface SearchRankingFacadeInterface
      * Specification:
      * - Returns the raw specificity value at which normalized specificity reaches 0.5, for the given
      *   store+locale; falls back to the module config default when no value was saved yet for that scope.
-     *   Calibration-tunable, not CMA-ES-tunable — see `relevanceSaturationPoint`'s own docblock for the
-     *   same split.
+     *   Calibration-tunable, not tunable by `search-ranking-optimizer`'s own blackbox-optimizer search
+     *   (e.g. CMA-ES) — see `relevanceSaturationPoint`'s own docblock for the same split.
      *
      * @api
      *
@@ -154,8 +154,9 @@ interface SearchRankingFacadeInterface
      * Specification:
      * - Returns the exponent (`p`) reshaping the raw-to-normalized-specificity curve itself
      *   (`raw^p / (raw^p + k^p)`), for the given store+locale; falls back to the module config default
-     *   (`1.0`, the original un-shaped curve) when no value was saved yet for that scope. CMA-ES-tunable,
-     *   same as `specificityBlendWeight` — unlike `specificitySaturationPoint`, which is Calibration-only.
+     *   (`1.0`, the original un-shaped curve) when no value was saved yet for that scope. Tunable by
+     *   `search-ranking-optimizer`'s own blackbox-optimizer search (e.g. CMA-ES), same as
+     *   `specificityBlendWeight` — unlike `specificitySaturationPoint`, which is Calibration-only.
      *
      * @api
      *
@@ -271,9 +272,9 @@ interface SearchRankingFacadeInterface
      * Specification:
      * - Persists the given metric; creates it when idSearchRankingMetric is empty, updates it otherwise.
      * - Validates the normalization formula and throws InvalidFormulaException when it does not evaluate.
-     * - name/isHigherBetter are global; formula/isActive/shape are saved for $storeName specifically (see
-     *   project memory, store-scoped-formula migration Phase 2). $localeName is used only as a lens for
-     *   which digest to fit the saved shape against (Phase 4), never persisted as part of the scope.
+     * - name/isHigherBetter are global; formula/isActive/shape are saved for $storeName specifically.
+     *   $localeName is used only as a lens for which digest to fit the saved shape against, never
+     *   persisted as part of the scope.
      *
      * @api
      *
@@ -566,16 +567,17 @@ interface SearchRankingFacadeInterface
      * Specification:
      * - Copies formula/isActive/shape for every metric explicitly configured in the source STORE onto
      *   the target store — store-only, not (store,locale)-scoped like {@see copyScopeConfiguration()},
-     *   since formula/isActive/shape are themselves store-scoped (see the store-scoped-formula migration,
-     *   project memory). Tagged {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY}.
+     *   since formula/isActive/shape are themselves store-scoped, not (store,locale)-scoped. Tagged
+     *   {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY}.
      * - `MODE_MIRROR` (default) copies every metric the source has configured, creating a target row for
      *   one the target never had. `MODE_COPY_ONLY_OVERLAP` only overwrites a metric the target has
      *   ALREADY independently configured, leaving one it hasn't touched alone (`skippedCount`).
      * - Blocked when the target store already has any explicitly-saved store-config row
      *   (`isBlockedByExistingData=true`, nothing written) unless `$confirmOverwrite` is true.
      * - Fails (`isSuccess=false`) when source and target store are the same.
-     * - One-off only — unlike weight/settings, there is no lockable/cron-synced variant of this action
-     *   (a deliberate Phase 7 decision: formula/k tuning changes far less often than weight).
+     * - One-off only — unlike weight/settings, there is no lockable/cron-synced variant of this action,
+     *   a deliberate choice: formula/k tuning changes far less often than weight, so a recurring sync
+     *   would mostly re-copy an unchanged value.
      *
      * @api
      *

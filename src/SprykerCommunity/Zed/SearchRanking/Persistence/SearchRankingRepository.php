@@ -52,10 +52,9 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
     }
 
     /**
-     * "Active" is now a per-store fact (`spy_search_ranking_metric_store_config.is_active`), not the
-     * vestigial global column — so, unlike before Phase 2, this can no longer filter at the SQL level
-     * (that would filter by the wrong, frozen column); it queries every metric, overlays this store's
-     * real isActive via {@see attachStoreConfig()}, then filters in PHP.
+     * "Active" is a per-store fact (`spy_search_ranking_metric_store_config.is_active`), so this can't
+     * filter at the SQL level on `spy_search_ranking_metric` itself; it queries every metric, overlays
+     * this store's real isActive via {@see attachStoreConfig()}, then filters in PHP.
      *
      * @param string $storeName
      * @param string $localeName
@@ -132,8 +131,8 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
     /**
      * Overlays $metricTransfer's formula/isActive/shape from its store-config row for $storeName — the
-     * real, live per-store values since the store-scoped-formula migration's Phase 2 (see project
-     * memory). Same composable-overlay shape {@see attachWeight()} already established. No store-config
+     * real, live per-store values. Same composable-overlay shape {@see attachWeight()} already
+     * established. No store-config
      * row yet (a metric never configured for this store — e.g. one created via
      * `spryker-community/search-ranking-data-import`, or before this store existed) is a SAFE absence,
      * never an error: isActive=false so nothing downstream evaluates the (also null) formula, matching
@@ -304,9 +303,8 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
     /**
      * Deliberately store-agnostic — "does this product need a republish at all" for the PRODUCT_ABSTRACT_PUBLISH
      * event, not a per-store index view, so a metric active in ANY store (not just one) qualifies its
-     * product. Since Phase 8 of the store-scoped-formula migration (see project memory) `is_active` moved
-     * to `spy_search_ranking_metric_store_config` (one row per store) — this now checks for at least one
-     * store where the metric is active, the closest equivalent to the old single global flag.
+     * product. `is_active` lives on `spy_search_ranking_metric_store_config` (one row per store), so
+     * this checks for at least one store where the metric is active — there is no single global flag.
      *
      * @return array<int>
      */
