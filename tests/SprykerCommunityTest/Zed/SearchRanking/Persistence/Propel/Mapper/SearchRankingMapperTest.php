@@ -12,11 +12,13 @@ namespace SprykerCommunityTest\Zed\SearchRanking\Persistence\Propel\Mapper;
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingProductMetricTransfer;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigest;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricStoreConfig;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric;
 use SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper\SearchRankingMapper;
 
@@ -39,9 +41,8 @@ class SearchRankingMapperTest extends Unit
     /**
      * Since Phase 2 of the store-scoped-formula migration (see project memory): formula/isActive/shape
      * are genuinely never read here anymore — they live on `spy_search_ranking_metric_store_config`
-     * instead, mapped separately by {@see \SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper\SearchRankingMapper::mapMetricStoreConfigEntityToTransfer()}
-     * (no dedicated unit test of its own yet — a real, separate gap, not one this fix attempts to close).
-     * This only asserts the fields the entity mapper still owns: id/name/isHigherBetter.
+     * instead, mapped separately by {@see testMapsMetricStoreConfigEntityFieldsOntoTheTransfer()}. This
+     * only asserts the fields the entity mapper still owns: id/name/isHigherBetter.
      */
     public function testMapsMetricEntityFieldsOntoTheTransfer(): void
     {
@@ -77,6 +78,75 @@ class SearchRankingMapperTest extends Unit
         // Assert
         $this->assertSame('pdp_impressions', $metricEntity->getName());
         $this->assertFalse($metricEntity->getIsHigherBetter());
+    }
+
+    /**
+     * formula/isActive/shape's real, live home since Phase 2 of the store-scoped-formula migration (see
+     * project memory) — one row per (metric, store), the sibling this file's own top two tests point at.
+     */
+    public function testMapsMetricStoreConfigEntityFieldsOntoTheTransfer(): void
+    {
+        // Arrange
+        $storeConfigEntity = new SpySearchRankingMetricStoreConfig();
+        $storeConfigEntity->setIdSearchRankingMetricStoreConfig(3);
+        $storeConfigEntity->setFkSearchRankingMetric(7);
+        $storeConfigEntity->setStoreName('DE');
+        $storeConfigEntity->setFormula('atan(x / 100) / (pi() / 2)');
+        $storeConfigEntity->setIsActive(true);
+        $storeConfigEntity->setShape('atan');
+
+        // Act
+        $storeConfigTransfer = (new SearchRankingMapper())->mapMetricStoreConfigEntityToTransfer($storeConfigEntity, new SearchRankingMetricStoreConfigTransfer());
+
+        // Assert
+        $this->assertSame(3, $storeConfigTransfer->getIdSearchRankingMetricStoreConfig());
+        $this->assertSame(7, $storeConfigTransfer->getFkSearchRankingMetric());
+        $this->assertSame('DE', $storeConfigTransfer->getStoreName());
+        $this->assertSame('atan(x / 100) / (pi() / 2)', $storeConfigTransfer->getFormula());
+        $this->assertTrue($storeConfigTransfer->getIsActive());
+        $this->assertSame('atan', $storeConfigTransfer->getShape());
+    }
+
+    public function testMapsMetricStoreConfigTransferFieldsOntoTheEntity(): void
+    {
+        // Arrange
+        $storeConfigTransfer = (new SearchRankingMetricStoreConfigTransfer())
+            ->setFkSearchRankingMetric(7)
+            ->setStoreName('AT')
+            ->setFormula('x / (x + 5000)')
+            ->setIsActive(false)
+            ->setShape('hyperbolic');
+
+        // Act
+        $storeConfigEntity = (new SearchRankingMapper())->mapMetricStoreConfigTransferToEntity($storeConfigTransfer, new SpySearchRankingMetricStoreConfig());
+
+        // Assert
+        $this->assertSame(7, $storeConfigEntity->getFkSearchRankingMetric());
+        $this->assertSame('AT', $storeConfigEntity->getStoreName());
+        $this->assertSame('x / (x + 5000)', $storeConfigEntity->getFormula());
+        $this->assertFalse($storeConfigEntity->getIsActive());
+        $this->assertSame('hyperbolic', $storeConfigEntity->getShape());
+    }
+
+    /**
+     * A transfer with no `isActive` set (null) must still default the entity to active — mirrors the
+     * store-config table's own Propel column default and the "new metrics are active by default" admin
+     * expectation, same reasoning the metric entity itself used to carry before Phase 8 removed its own
+     * copy of this column entirely (see project memory).
+     */
+    public function testDefaultsTheStoreConfigEntityToActiveWhenTheTransferLeavesIsActiveUnset(): void
+    {
+        // Arrange
+        $storeConfigTransfer = (new SearchRankingMetricStoreConfigTransfer())
+            ->setFkSearchRankingMetric(7)
+            ->setStoreName('DE')
+            ->setFormula('x');
+
+        // Act
+        $storeConfigEntity = (new SearchRankingMapper())->mapMetricStoreConfigTransferToEntity($storeConfigTransfer, new SpySearchRankingMetricStoreConfig());
+
+        // Assert
+        $this->assertTrue($storeConfigEntity->getIsActive());
     }
 
     public function testMapsProductMetricEntityFieldsOntoTheTransfer(): void
