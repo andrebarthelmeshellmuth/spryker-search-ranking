@@ -64,6 +64,7 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
         $normalizedSpecificity = $this->querySpecificityCalculator->normalize(
             $rawSpecificity,
             (float)$configurationTransfer->getSpecificitySaturationPoint(),
+            $configurationTransfer->getSpecificityCurveExponent() ?? 1.0,
         );
 
         $shift = $this->calculateShift(

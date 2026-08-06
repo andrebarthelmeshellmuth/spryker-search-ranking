@@ -56,6 +56,7 @@ class SettingsController extends AbstractController
                 SettingsForm::FIELD_RELEVANCE_SATURATION_POINT => $searchRankingFacade->getRelevanceSaturationPoint($storeName, $localeName),
                 SettingsForm::FIELD_SPECIFICITY_BLEND_WEIGHT => $searchRankingFacade->getSpecificityBlendWeight($storeName, $localeName),
                 SettingsForm::FIELD_SPECIFICITY_SATURATION_POINT => $searchRankingFacade->getSpecificitySaturationPoint($storeName, $localeName),
+                SettingsForm::FIELD_SPECIFICITY_CURVE_EXPONENT => $searchRankingFacade->getSpecificityCurveExponent($storeName, $localeName),
                 SettingsForm::FIELD_SPECIFICITY_WEIGHT_EXPONENT => $searchRankingFacade->getSpecificityWeightExponent($storeName, $localeName),
                 SettingsForm::FIELD_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE => $searchRankingFacade->getSpecificityWeightShiftMagnitude($storeName, $localeName),
             ])
@@ -67,6 +68,7 @@ class SettingsController extends AbstractController
             $searchRankingFacade->saveRelevanceSaturationPoint($storeName, $localeName, (float)$settingsData[SettingsForm::FIELD_RELEVANCE_SATURATION_POINT]);
             $searchRankingFacade->saveSpecificityBlendWeight($storeName, $localeName, (float)$settingsData[SettingsForm::FIELD_SPECIFICITY_BLEND_WEIGHT]);
             $searchRankingFacade->saveSpecificitySaturationPoint($storeName, $localeName, (float)$settingsData[SettingsForm::FIELD_SPECIFICITY_SATURATION_POINT]);
+            $searchRankingFacade->saveSpecificityCurveExponent($storeName, $localeName, (float)$settingsData[SettingsForm::FIELD_SPECIFICITY_CURVE_EXPONENT]);
             $searchRankingFacade->saveSpecificityWeightExponent($storeName, $localeName, (float)$settingsData[SettingsForm::FIELD_SPECIFICITY_WEIGHT_EXPONENT]);
             $searchRankingFacade->saveSpecificityWeightShiftMagnitude($storeName, $localeName, (float)$settingsData[SettingsForm::FIELD_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE]);
             $this->addSuccessMessage('Ranking settings were saved.');

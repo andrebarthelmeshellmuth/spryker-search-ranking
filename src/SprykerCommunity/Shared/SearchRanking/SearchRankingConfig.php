@@ -84,6 +84,27 @@ class SearchRankingConfig
 
     /**
      * Specification:
+     * - Setting key of the exponent (`p`) reshaping the raw-specificity-to-normalized-specificity curve
+     *   itself, the Hill-equation generalization of the plain `raw / (raw + k)` saturating shape:
+     *   `raw^p / (raw^p + k^p)`. `p = 1` reproduces the original curve exactly. `k` (saturation point)
+     *   still means exactly what it always meant — `raw = k ⟺ normalizedSpecificity = 0.5` — regardless
+     *   of `p`; raising `p` sharpens the transition around that pivot and pushes both tails further
+     *   toward their bounds, without moving the pivot itself. Distinct from
+     *   `specificity_weight_exponent` below, which reshapes a DIFFERENT, later step (the already-centered
+     *   `[-1;1]` deviation, symmetric by construction) — this one reshapes the raw axis itself, which is
+     *   NOT symmetric (a hard floor at `raw=0`, an open ceiling), so it's the only one of the two that can
+     *   correct for that axis's inherent asymmetry. CMA-ES-tunable via
+     *   spryker-community/search-ranking-optimizer, same as `specificity_blend_weight`. Only meaningful
+     *   when specificity-aware relevance weighting is enabled — see {@see isSpecificityWeightingEnabled()}.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const SETTING_KEY_SPECIFICITY_CURVE_EXPONENT = 'specificity_curve_exponent';
+
+    /**
+     * Specification:
      * - Setting key of the exponent that reshapes how sharply the specificity-derived shift ramps up as
      *   normalized specificity moves away from perfectly average (0.5).
      *

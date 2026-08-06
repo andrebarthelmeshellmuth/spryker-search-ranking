@@ -143,6 +143,28 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @api
      */
+    public function getSpecificityCurveExponent(string $storeName, string $localeName): float
+    {
+        return $this->getFactory()->createSettingManager()->getSpecificityCurveExponent($storeName, $localeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param float $specificityCurveExponent
+     */
+    public function saveSpecificityCurveExponent(string $storeName, string $localeName, float $specificityCurveExponent): void
+    {
+        $this->getFactory()->createSettingManager()->saveSpecificityCurveExponent($storeName, $localeName, $specificityCurveExponent);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function getSpecificityWeightExponent(string $storeName, string $localeName): float
     {
         return $this->getFactory()->createSettingManager()->getSpecificityWeightExponent($storeName, $localeName);

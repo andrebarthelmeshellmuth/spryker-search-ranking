@@ -119,6 +119,24 @@ class SearchRankingConfig extends AbstractBundleConfig
 
     /**
      * Specification:
+     * - Default exponent (`p`) reshaping the raw-to-normalized-specificity curve itself, when none was
+     *   saved in Zed yet — `raw^p / (raw^p + k^p)`. `1.0` reproduces the original, un-shaped `raw / (raw
+     *   + k)` curve exactly: this feature is opt-in-to-tune, not opt-in-to-exist — a shop that never
+     *   touches this setting sees byte-identical behavior to before this knob existed.
+     * - A starting point, not a measured optimum — same status as every other default in this file.
+     *   Worth raising above `1.0` specifically when a catalog's own real specificity range leaves rare
+     *   (high-idf) queries stuck without much room to differentiate themselves under the plain curve; see
+     *   this package's own README for the full mechanism and a worked example.
+     *
+     * @api
+     */
+    public function getDefaultSpecificityCurveExponent(): float
+    {
+        return 1.0;
+    }
+
+    /**
+     * Specification:
      * - Default exponent reshaping how sharply the specificity-derived shift ramps up, when none was
      *   saved in Zed yet. `1.0` applies the shift linearly with no reshaping.
      *

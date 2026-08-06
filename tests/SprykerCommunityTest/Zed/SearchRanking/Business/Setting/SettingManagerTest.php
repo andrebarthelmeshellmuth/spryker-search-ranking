@@ -289,6 +289,66 @@ class SettingManagerTest extends Unit
         $settingManager->saveSpecificitySaturationPoint('DE', 'de_DE', 4.0);
     }
 
+    public function testReturnsTheSavedSpecificityCurveExponentWhenOneExists(): void
+    {
+        // Arrange
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_CURVE_EXPONENT)
+            ->willReturn('1.8');
+
+        $settingManager = $this->createSettingManager($repositoryMock);
+
+        // Act
+        $specificityCurveExponent = $settingManager->getSpecificityCurveExponent('DE', 'de_DE');
+
+        // Assert
+        $this->assertSame(1.8, $specificityCurveExponent);
+    }
+
+    public function testFallsBackToTheConfigDefaultWhenNoSpecificityCurveExponentIsSaved(): void
+    {
+        // Arrange
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_CURVE_EXPONENT)
+            ->willReturn(null);
+
+        $settingManager = $this->createSettingManager($repositoryMock);
+
+        // Act
+        $specificityCurveExponent = $settingManager->getSpecificityCurveExponent('DE', 'de_DE');
+
+        // Assert
+        $this->assertSame((new SearchRankingConfig())->getDefaultSpecificityCurveExponent(), $specificityCurveExponent);
+    }
+
+    public function testSavesTheSpecificityCurveExponentAsAStringUnderItsSettingKey(): void
+    {
+        // Arrange
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findSettingValue')->willReturn('1.0');
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->expects($this->once())
+            ->method('saveSetting')
+            ->with(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_CURVE_EXPONENT, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME, '1.8');
+        $entityManagerMock->expects($this->once())
+            ->method('recordSettingHistory')
+            ->with($this->equalTo(
+                (new SearchRankingSettingHistoryTransfer())
+                    ->setSettingKey(SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_CURVE_EXPONENT)
+                    ->setStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+                    ->setLocaleName(SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)
+                    ->setSettingValue('1.8'),
+            ));
+
+        $settingManager = $this->createSettingManager($repositoryMock, $entityManagerMock);
+
+        // Act
+        $settingManager->saveSpecificityCurveExponent('DE', 'de_DE', 1.8);
+    }
+
     public function testReturnsTheSavedSpecificityWeightExponentWhenOneExists(): void
     {
         // Arrange

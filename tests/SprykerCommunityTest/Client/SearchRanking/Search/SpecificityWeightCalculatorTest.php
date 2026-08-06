@@ -116,6 +116,25 @@ class SpecificityWeightCalculatorTest extends Unit
         );
     }
 
+    /**
+     * Proves the configuration transfer's own specificityCurveExponent actually reaches
+     * `QuerySpecificityCalculator::normalize()`, not just the default p=1 -- the entire point of adding it
+     * as a per-store/locale tunable setting. A term well above the saturation point must land FURTHER
+     * above 0.5 (and so produce a LARGER positive shift) with a sharpened curve than with the original one.
+     */
+    public function testACurveExponentAboveOneOnTheConfigurationTransferSharpensTheShiftForASpecificTerm(): void
+    {
+        $fetcher = $this->createFetcherStub(1000, ['m11480' => 2]);
+
+        $defaultResult = $this->createCalculator($fetcher)
+            ->calculateWeightingResult('m11480', $this->createConfigurationTransfer(1.0));
+        $sharpenedResult = $this->createCalculator($fetcher)
+            ->calculateWeightingResult('m11480', $this->createConfigurationTransfer(3.0));
+
+        $this->assertGreaterThan($defaultResult->getNormalizedSpecificity(), $sharpenedResult->getNormalizedSpecificity());
+        $this->assertGreaterThan($defaultResult->getShift(), $sharpenedResult->getShift());
+    }
+
     public function testWeightingResultForAnEmptySearchStringCarriesZeroedDiagnostics(): void
     {
         $result = $this->createCalculator($this->createFetcherStub(0, []))
@@ -152,12 +171,17 @@ class SpecificityWeightCalculatorTest extends Unit
         );
     }
 
-    protected function createConfigurationTransfer(): SearchRankingConfigurationStorageTransfer
+    /**
+     * @param float $specificityCurveExponent Defaults to 1.0, the Hill-equation identity value that
+     *   reproduces the original curve exactly -- matches every existing test's implicit expectation.
+     */
+    protected function createConfigurationTransfer(float $specificityCurveExponent = 1.0): SearchRankingConfigurationStorageTransfer
     {
         return (new SearchRankingConfigurationStorageTransfer())
             ->setRelevanceWeight(static::CONFIGURED_RELEVANCE_WEIGHT)
             ->setSpecificityBlendWeight(0.7)
             ->setSpecificitySaturationPoint(3.0)
+            ->setSpecificityCurveExponent($specificityCurveExponent)
             ->setSpecificityWeightExponent(1.0)
             ->setSpecificityWeightShiftMagnitude(static::SHIFT_MAGNITUDE);
     }

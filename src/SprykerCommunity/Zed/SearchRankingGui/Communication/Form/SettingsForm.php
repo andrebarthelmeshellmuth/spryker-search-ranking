@@ -44,6 +44,11 @@ class SettingsForm extends AbstractType
     /**
      * @var string
      */
+    public const FIELD_SPECIFICITY_CURVE_EXPONENT = 'specificityCurveExponent';
+
+    /**
+     * @var string
+     */
     public const FIELD_SPECIFICITY_WEIGHT_EXPONENT = 'specificityWeightExponent';
 
     /**
@@ -106,6 +111,20 @@ class SettingsForm extends AbstractType
                 . 'universal correct value, since it depends entirely on this shop\'s own catalog size '
                 . 'and vocabulary: use Calibration to sample real values and tune from there. Must be '
                 . 'greater than 0.',
+            'constraints' => [
+                new NotBlank(),
+                new GreaterThan(0),
+            ],
+        ]);
+
+        $builder->add(static::FIELD_SPECIFICITY_CURVE_EXPONENT, NumberType::class, [
+            'label' => 'Specificity curve exponent',
+            'help' => 'Only takes effect if specificity-aware relevance weighting is enabled in code. '
+                . 'Reshapes the raw-to-normalized-specificity curve itself (raw^p / (raw^p + k^p)), NOT '
+                . 'the shift below — 1.0 reproduces the original curve exactly. Raising it sharpens the '
+                . 'transition around the saturation point above and pushes both very specific and very '
+                . 'unspecific queries further toward the extremes, without moving what counts as neutral. '
+                . 'Must be greater than 0. Also tunable via spryker-community/search-ranking-optimizer.',
             'constraints' => [
                 new NotBlank(),
                 new GreaterThan(0),

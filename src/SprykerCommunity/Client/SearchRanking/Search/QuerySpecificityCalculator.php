@@ -41,14 +41,25 @@ class QuerySpecificityCalculator implements QuerySpecificityCalculatorInterface
      *
      * @param float $rawSpecificity
      * @param float $saturationPoint
+     * @param float $curveExponent
      */
-    public function normalize(float $rawSpecificity, float $saturationPoint): float
+    public function normalize(float $rawSpecificity, float $saturationPoint, float $curveExponent = 1.0): float
     {
         if ($rawSpecificity <= 0.0) {
             return 0.0;
         }
 
-        return $rawSpecificity / ($rawSpecificity + $saturationPoint);
+        if ($curveExponent === 1.0) {
+            // The plain, un-shaped curve — skips ** entirely, both as a fast path (this is the default,
+            // the overwhelming majority of calls) and so this exact case can never drift from the
+            // original formula's own floating-point behavior no matter how ** is implemented.
+            return $rawSpecificity / ($rawSpecificity + $saturationPoint);
+        }
+
+        $shapedRawSpecificity = $rawSpecificity ** $curveExponent;
+        $shapedSaturationPoint = $saturationPoint ** $curveExponent;
+
+        return $shapedRawSpecificity / ($shapedRawSpecificity + $shapedSaturationPoint);
     }
 
     /**

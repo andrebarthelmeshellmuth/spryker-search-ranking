@@ -549,8 +549,17 @@ unspecific. Real, verified idf values from this package's own catalog (`N = 1064
 from generic to specific, unlike the old entropy signal's two-extremes-only behavior.
 
 The unbounded `rawSpecificity` is then normalized into `[0;1[` the same saturating way `relevanceWeight`'s
-own text-relevance term already is: `normalizedSpecificity = rawSpecificity / (rawSpecificity +
-specificitySaturationPoint)`.
+own text-relevance term already is, generalized to a Hill/Michaelis-Menten curve:
+
+```
+normalizedSpecificity = rawSpecificity^curveExponent / (rawSpecificity^curveExponent + specificitySaturationPoint^curveExponent)
+```
+
+`curveExponent = 1.0` (the default) reproduces the original `rawSpecificity / (rawSpecificity +
+specificitySaturationPoint)` formula exactly. At `rawSpecificity == specificitySaturationPoint` the result
+is always exactly `0.5` for any `curveExponent > 0` — the pivot never moves, only how sharply the curve
+transitions around it does. A `curveExponent` above `1.0` sharpens the transition (near-binary
+specific-vs-unspecific); below `1.0` flattens it (more gradual grading across the whole range).
 
 **The configured `relevanceWeight` is a baseline the specificity result shifts, never fully replaces.** A
 highly specific query shifts it up toward text relevance, an unspecific/browsy query shifts it down toward
@@ -575,7 +584,7 @@ keeps `0.5` an exact neutral point regardless of the exponent's value, rather th
 > `ln(N/df)` ratio. If your shop has uneven per-product locale coverage, this approximation may not hold —
 > verify against your own catalog before relying on it.
 
-**Four Zed-editable settings, at `/search-ranking-gui/settings`** (alongside `relevanceWeight` and
+**Five Zed-editable settings, at `/search-ranking-gui/settings`** (alongside `relevanceWeight` and
 `relevanceSaturationPoint` — see [Ranking formula](#ranking-formula)) — all only take effect once the
 code-level flag below is on:
 - **Specificity blend weight** (default `0.7`) — `specificityBlendWeight` (α) above. Also tunable via
@@ -584,6 +593,9 @@ code-level flag below is on:
   (like `relevanceSaturationPoint`), not CMA-ES-tunable — see
   `spryker-community/search-ranking-optimizer`'s Calibration feature. Needs a real value sampled from your
   own catalog before trusting the default; a placeholder chosen without that data could be wildly wrong.
+- **Specificity curve exponent** (default `1.0`) — `curveExponent` above, how sharply
+  `normalizedSpecificity` transitions around the saturation point. Also tunable via
+  `spryker-community/search-ranking-optimizer`'s CMA-ES search.
 - **Specificity weight exponent** (default `1.0`) — how sharply the shift ramps up away from the neutral
   point.
 - **Specificity weight shift magnitude** (default `0.25`) — the maximum shift in either direction. Sized

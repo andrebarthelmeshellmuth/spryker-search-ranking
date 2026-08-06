@@ -47,6 +47,12 @@ interface SearchRankingStorageToSearchRankingFacadeInterface
      * @param string $storeName
      * @param string $localeName
      */
+    public function getSpecificityCurveExponent(string $storeName, string $localeName): float;
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     */
     public function getSpecificityWeightExponent(string $storeName, string $localeName): float;
 
     /**
