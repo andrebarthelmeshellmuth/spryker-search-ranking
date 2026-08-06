@@ -142,6 +142,12 @@ interface SearchRankingGuiToSearchRankingFacadeInterface
     public function saveSpecificityWeightShiftMagnitude(string $storeName, string $localeName, float $specificityWeightShiftMagnitude): void;
 
     /**
+     * Whether specificity-aware relevance weighting is active — a pure code-level project flag, not
+     * Zed-editable. See {@see \SprykerCommunity\Zed\SearchRanking\Business\SearchRankingFacadeInterface::isSpecificityWeightingEnabled()}.
+     */
+    public function isSpecificityWeightingEnabled(): bool;
+
+    /**
      * @param int $idSearchRankingMetric
      * @param string $formula
      * @param bool $isHigherBetter
