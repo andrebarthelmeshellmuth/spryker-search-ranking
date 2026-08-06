@@ -468,8 +468,11 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
-     * - Returns whether specificity-aware relevance weighting is active
-     *   ({@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled()}).
+     * - Returns whether specificity-aware relevance weighting is active, proxied through the real
+     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingClientInterface::isSpecificityWeightingEnabled()}
+     *   (which itself reads the Client-layer `SearchRankingConfig` — the one actually project-overridable
+     *   flag; see that class's own docblock) so this Facade reports the SAME, real effective value the
+     *   query-building code checks, rather than a second value that would need to be kept in sync by hand.
      * - Unlike every other method on this facade, this is NOT Zed-editable/persisted — it's a pure
      *   code-level project flag, read directly rather than routed through `SettingManager`, since there
      *   is nothing to read-modify-write here.

@@ -423,7 +423,7 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      */
     public function isSpecificityWeightingEnabled(): bool
     {
-        return SharedSearchRankingConfig::isSpecificityWeightingEnabled();
+        return $this->getFactory()->createSpecificityWeightingStatusChecker()->isEnabled();
     }
 
     /**
