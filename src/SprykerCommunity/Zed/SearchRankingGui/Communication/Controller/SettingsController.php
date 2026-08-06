@@ -88,6 +88,7 @@ class SettingsController extends AbstractController
             'selectedStoreName' => $storeName,
             'selectedLocaleName' => $localeName,
             'formAction' => sprintf('%s?%s=%s&%s=%s', static::URL_SETTINGS, static::PARAM_STORE_NAME, $storeName, static::PARAM_LOCALE_NAME, $localeName),
+            'isSpecificityWeightingEnabled' => $searchRankingFacade->isSpecificityWeightingEnabled(),
         ]);
     }
 }

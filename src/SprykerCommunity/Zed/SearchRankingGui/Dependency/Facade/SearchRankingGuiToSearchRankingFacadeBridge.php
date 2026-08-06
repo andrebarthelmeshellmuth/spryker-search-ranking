@@ -214,6 +214,11 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
         $this->searchRankingFacade->saveSpecificityWeightShiftMagnitude($storeName, $localeName, $specificityWeightShiftMagnitude);
     }
 
+    public function isSpecificityWeightingEnabled(): bool
+    {
+        return $this->searchRankingFacade->isSpecificityWeightingEnabled();
+    }
+
     /**
      * @param int $idSearchRankingMetric
      * @param string $formula

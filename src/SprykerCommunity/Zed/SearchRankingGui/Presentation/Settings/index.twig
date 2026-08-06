@@ -10,6 +10,17 @@
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Ranking Formula Settings' } %}
         {% block widget_content %}
+            {% if isSpecificityWeightingEnabled %}
+                <div class="alert alert-success">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    {{ 'Specificity-aware relevance weighting is ON for this deployment. The 4 specificity fields below are live.' | trans }}
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    <span class="material-symbols-outlined">warning</span>
+                    {{ 'Specificity-aware relevance weighting is OFF for this deployment. The 4 specificity fields below can still be saved, but have no effect until it\'s turned on. You need to change code and deploy to turn this on (SearchRankingConfig::isSpecificityWeightingEnabled()) — it\'s deliberately not a Zed-editable setting, since enabling it makes every live catalog search fire an additional Elasticsearch probe. This has real consequences, so it\'s nothing to play around with — that\'s why it\'s code-only.' | trans }}
+                </div>
+            {% endif %}
             <form method="get" class="form-inline" style="margin-bottom: 15px;">
                 <label for="storeName">{{ 'Store' | trans }}</label>
                 <select name="storeName" id="storeName" class="form-control" onchange="this.form.submit()">
