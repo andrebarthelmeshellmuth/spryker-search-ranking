@@ -45,6 +45,7 @@ class SettingsCest
         $i->seeElement('#' . SettingsPage::FIELD_RELEVANCE_SATURATION_POINT);
         $i->seeElement('#' . SettingsPage::FIELD_SPECIFICITY_BLEND_WEIGHT);
         $i->seeElement('#' . SettingsPage::FIELD_SPECIFICITY_SATURATION_POINT);
+        $i->seeElement('#' . SettingsPage::FIELD_SPECIFICITY_CURVE_EXPONENT);
         $i->seeElement('#' . SettingsPage::FIELD_SPECIFICITY_WEIGHT_EXPONENT);
         $i->seeElement('#' . SettingsPage::FIELD_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE);
     }

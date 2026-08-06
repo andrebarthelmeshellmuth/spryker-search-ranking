@@ -39,6 +39,11 @@ class SettingsPage
     /**
      * @var string
      */
+    public const FIELD_SPECIFICITY_CURVE_EXPONENT = 'search_ranking_settings_specificityCurveExponent';
+
+    /**
+     * @var string
+     */
     public const FIELD_SPECIFICITY_WEIGHT_EXPONENT = 'search_ranking_settings_specificityWeightExponent';
 
     /**

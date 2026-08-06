@@ -61,6 +61,7 @@ class RankingConfigurationStorageWriterTest extends Unit
         $this->assertSame(12.0, $capturedConfiguration['relevance_saturation_point']);
         $this->assertSame(0.7, $capturedConfiguration['specificity_blend_weight']);
         $this->assertSame(3.0, $capturedConfiguration['specificity_saturation_point']);
+        $this->assertSame(2.0, $capturedConfiguration['specificity_curve_exponent']);
         $this->assertSame(1.0, $capturedConfiguration['specificity_weight_exponent']);
         $this->assertSame(0.5, $capturedConfiguration['specificity_weight_shift_magnitude']);
     }
@@ -214,6 +215,7 @@ class RankingConfigurationStorageWriterTest extends Unit
         $searchRankingFacadeMock->method('getRelevanceSaturationPoint')->willReturn(12.0);
         $searchRankingFacadeMock->method('getSpecificityBlendWeight')->willReturn(0.7);
         $searchRankingFacadeMock->method('getSpecificitySaturationPoint')->willReturn(3.0);
+        $searchRankingFacadeMock->method('getSpecificityCurveExponent')->willReturn(2.0);
         $searchRankingFacadeMock->method('getSpecificityWeightExponent')->willReturn(1.0);
         $searchRankingFacadeMock->method('getSpecificityWeightShiftMagnitude')->willReturn(0.5);
 
@@ -274,6 +276,7 @@ class RankingConfigurationStorageWriterTest extends Unit
         $searchRankingFacadeMock->method('getRelevanceSaturationPoint')->willReturn($relevanceSaturationPoint);
         $searchRankingFacadeMock->method('getSpecificityBlendWeight')->willReturn(0.7);
         $searchRankingFacadeMock->method('getSpecificitySaturationPoint')->willReturn(3.0);
+        $searchRankingFacadeMock->method('getSpecificityCurveExponent')->willReturn(2.0);
         $searchRankingFacadeMock->method('getSpecificityWeightExponent')->willReturn(1.0);
         $searchRankingFacadeMock->method('getSpecificityWeightShiftMagnitude')->willReturn(0.5);
 
