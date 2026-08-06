@@ -49,6 +49,8 @@ class ProductMetricGapController extends AbstractController
             'metrics' => $this->getFactory()->getSearchRankingFacade()->getActiveMetricCollection($storeName, $localeName)->getMetrics(),
             'selectedIdSearchRankingMetric' => $idSearchRankingMetric,
             'productMetricGapTable' => $this->getFactory()->createProductMetricGapTable($idSearchRankingMetric, $storeName, $localeName)->render(),
+            'stores' => $this->getFactory()->getAllStoreNames(),
+            'locales' => $this->getFactory()->getAllLocaleNames(),
             'storeName' => $storeName,
             'localeName' => $localeName,
         ]);

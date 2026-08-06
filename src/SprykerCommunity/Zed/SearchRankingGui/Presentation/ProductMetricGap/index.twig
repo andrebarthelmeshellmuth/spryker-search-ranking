@@ -11,8 +11,6 @@
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Products with no value at all for a business score' } %}
         {% block widget_content %}
             <form method="get" class="form-inline" style="margin-bottom: 15px;">
-                <input type="hidden" name="storeName" value="{{ storeName }}">
-                <input type="hidden" name="localeName" value="{{ localeName }}">
                 <label for="metric">{{ 'Business score' | trans }}</label>
                 <select name="metric" id="metric" class="form-control" onchange="this.form.submit()">
                     <option value="" {% if selectedIdSearchRankingMetric is null %}selected="selected"{% endif %}>
@@ -24,7 +22,22 @@
                         </option>
                     {% endfor %}
                 </select>
-                <span style="margin-left: 15px;">{{ 'Store' | trans }}: <strong>{{ storeName }}</strong>, {{ 'Locale' | trans }}: <strong>{{ localeName }}</strong></span>
+                <label for="storeName" style="margin-left: 10px;">{{ 'Store' | trans }}</label>
+                <select name="storeName" id="storeName" class="form-control" onchange="this.form.submit()">
+                    {% for store in stores %}
+                        <option value="{{ store }}" {% if store == storeName %}selected="selected"{% endif %}>
+                            {{ store }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <label for="localeName" style="margin-left: 10px;">{{ 'Locale' | trans }}</label>
+                <select name="localeName" id="localeName" class="form-control" onchange="this.form.submit()">
+                    {% for locale in locales %}
+                        <option value="{{ locale }}" {% if locale == localeName %}selected="selected"{% endif %}>
+                            {{ locale }}
+                        </option>
+                    {% endfor %}
+                </select>
             </form>
             {{ productMetricGapTable | raw }}
         {% endblock %}
