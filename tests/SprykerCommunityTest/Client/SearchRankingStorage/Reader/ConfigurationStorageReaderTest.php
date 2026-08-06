@@ -56,6 +56,7 @@ class ConfigurationStorageReaderTest extends Unit
             'relevance_saturation_point' => 12.0,
             'specificity_blend_weight' => 0.8,
             'specificity_saturation_point' => 4.0,
+            'specificity_curve_exponent' => 2.5,
             'specificity_weight_exponent' => 1.5,
             'specificity_weight_shift_magnitude' => 0.3,
         ]);
@@ -69,6 +70,7 @@ class ConfigurationStorageReaderTest extends Unit
         $this->assertSame(12.0, $configurationTransfer->getRelevanceSaturationPoint());
         $this->assertSame(0.8, $configurationTransfer->getSpecificityBlendWeight());
         $this->assertSame(4.0, $configurationTransfer->getSpecificitySaturationPoint());
+        $this->assertSame(2.5, $configurationTransfer->getSpecificityCurveExponent());
         $this->assertSame(1.5, $configurationTransfer->getSpecificityWeightExponent());
         $this->assertSame(0.3, $configurationTransfer->getSpecificityWeightShiftMagnitude());
     }
@@ -106,6 +108,7 @@ class ConfigurationStorageReaderTest extends Unit
         $this->assertSame(12.0, $configurationTransfer->getRelevanceSaturationPoint());
         $this->assertSame(0.7, $configurationTransfer->getSpecificityBlendWeight());
         $this->assertSame(3.0, $configurationTransfer->getSpecificitySaturationPoint());
+        $this->assertSame(1.0, $configurationTransfer->getSpecificityCurveExponent());
         $this->assertSame(1.0, $configurationTransfer->getSpecificityWeightExponent());
         $this->assertSame(0.25, $configurationTransfer->getSpecificityWeightShiftMagnitude());
     }

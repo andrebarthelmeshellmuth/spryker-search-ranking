@@ -118,7 +118,7 @@ data-driven curve-fitting workflow.
 
 Verified: dependency floors resolved and checked at their oldest allowed versions (`composer
 check-floors`), the ranking formula's `function_score`/`script_score` cross-validated across three
-engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 196
+engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 238
 tests, phpcs and phpstan level 8 clean.
 
 This package's own mechanism is complete: the metric/value data model, the Zed management UI, CSV data
@@ -1234,7 +1234,7 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-**206 tests, 1231 assertions** across six Codeception suites (`Zed/SearchRanking`,
+**238 tests, 1371 assertions** across six Codeception suites (`Zed/SearchRanking`,
 `Zed/SearchRankingStorage`, `Zed/SearchRankingGui`, `Zed/SearchRankingDataImport`, `Client/SearchRanking`,
 `Client/SearchRankingStorage`). From a shop that has the package installed:
 
@@ -1313,7 +1313,9 @@ static guarantees; the test suite is run against a real shop before a release.
 covering the Zed GUI: the metric list (scoped by store/locale, plus a full create → edit → delete round
 trip through the real forms), the "Normalize active weights" action, the Edit form's live normalization
 preview (smoke-level only — the curve-fit math itself is already covered by the unit suite above), the
-Settings form, the Product Values table and its Gaps view, and the Metric History table. It is kept as
+Settings form (including that every configured field, `specificityCurveExponent` among them, actually
+renders), the Scope Copy page (loads with both copy actions present), the Product Values table and its
+Gaps view, and the Metric History table. It is kept as
 its own module directory rather than nested under `Zed/SearchRankingGui/` because that module's `Zed`
 suite scans its whole directory tree recursively — a nested WebDriver suite there would break it.
 
