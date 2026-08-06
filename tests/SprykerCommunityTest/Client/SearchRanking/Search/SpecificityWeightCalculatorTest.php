@@ -114,6 +114,11 @@ class SpecificityWeightCalculatorTest extends Unit
             $result->getRelevanceWeight(),
             'relevanceWeight must be exactly configuredRelevanceWeight + shift (clamped) — the same arithmetic calculateRelevanceWeight() performs.',
         );
+        // The configuration transfer's own exponent/shiftMagnitude must reach the result too — the
+        // search-debug overlay's "Shift applied to α" line needs both to show the calculation that
+        // actually produced the shift, not just the shift's own number.
+        $this->assertSame(1.0, $result->getSpecificityWeightExponent());
+        $this->assertSame(static::SHIFT_MAGNITUDE, $result->getSpecificityWeightShiftMagnitude());
     }
 
     /**
@@ -145,6 +150,11 @@ class SpecificityWeightCalculatorTest extends Unit
         $this->assertSame(0.0, $result->getNormalizedSpecificity());
         $this->assertSame(0.0, $result->getShift());
         $this->assertSame(0, $result->getQueryTermCount());
+        // Real regression check: exponent/shiftMagnitude must carry through even on this early-return
+        // path, not just the happy path above — easy to miss since this branch builds its own
+        // SpecificityWeightingResult separately.
+        $this->assertSame(1.0, $result->getSpecificityWeightExponent());
+        $this->assertSame(static::SHIFT_MAGNITUDE, $result->getSpecificityWeightShiftMagnitude());
     }
 
     /**

@@ -27,6 +27,14 @@ class SpecificityWeightingResult
      * @param float $normalizedSpecificity
      * @param float $shift
      * @param int $queryTermCount
+     * @param float $specificityWeightExponent The exponent `shift` was actually shaped with — carried
+     *   here (not just implied by `$shift`'s own value) so a consumer like the search-debug overlay can
+     *   show the calculation that produced `$shift`, not just the result. Defaults to `1.0`, the
+     *   exponent's own identity value, matching every other "no shift happened" fallback here.
+     * @param float $specificityWeightShiftMagnitude The `shiftMagnitude` `shift` was actually scaled by —
+     *   same reasoning as `$specificityWeightExponent`. Defaults to
+     *   {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultSpecificityWeightShiftMagnitude()}'s
+     *   own default value.
      */
     public function __construct(
         protected float $configuredRelevanceWeight,
@@ -34,6 +42,8 @@ class SpecificityWeightingResult
         protected float $normalizedSpecificity,
         protected float $shift,
         protected int $queryTermCount,
+        protected float $specificityWeightExponent = 1.0,
+        protected float $specificityWeightShiftMagnitude = 0.25,
     ) {
     }
 
@@ -71,5 +81,15 @@ class SpecificityWeightingResult
     public function getQueryTermCount(): int
     {
         return $this->queryTermCount;
+    }
+
+    public function getSpecificityWeightExponent(): float
+    {
+        return $this->specificityWeightExponent;
+    }
+
+    public function getSpecificityWeightShiftMagnitude(): float
+    {
+        return $this->specificityWeightShiftMagnitude;
     }
 }

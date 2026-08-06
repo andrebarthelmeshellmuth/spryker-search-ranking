@@ -49,12 +49,22 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
     ): SpecificityWeightingResult {
         $configuredRelevanceWeight = (float)$configurationTransfer->getRelevanceWeight();
+        $specificityWeightExponent = (float)$configurationTransfer->getSpecificityWeightExponent();
+        $specificityWeightShiftMagnitude = (float)$configurationTransfer->getSpecificityWeightShiftMagnitude();
 
         $termFrequencyResult = $this->queryTermFrequencyFetcher->fetch($searchString, $this->fieldToSearchAnalyzer);
         $idfByTerm = $this->calculateIdfByTerm($termFrequencyResult);
 
         if ($idfByTerm === []) {
-            return new SpecificityWeightingResult($configuredRelevanceWeight, $configuredRelevanceWeight, 0.0, 0.0, 0);
+            return new SpecificityWeightingResult(
+                $configuredRelevanceWeight,
+                $configuredRelevanceWeight,
+                0.0,
+                0.0,
+                0,
+                $specificityWeightExponent,
+                $specificityWeightShiftMagnitude,
+            );
         }
 
         $rawSpecificity = $this->querySpecificityCalculator->calculateRawSpecificity(
@@ -67,11 +77,7 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
             $configurationTransfer->getSpecificityCurveExponent() ?? 1.0,
         );
 
-        $shift = $this->calculateShift(
-            $normalizedSpecificity,
-            (float)$configurationTransfer->getSpecificityWeightExponent(),
-            (float)$configurationTransfer->getSpecificityWeightShiftMagnitude(),
-        );
+        $shift = $this->calculateShift($normalizedSpecificity, $specificityWeightExponent, $specificityWeightShiftMagnitude);
         $relevanceWeight = max(0.0, min(1.0, $configuredRelevanceWeight + $shift));
 
         return new SpecificityWeightingResult(
@@ -80,6 +86,8 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
             $normalizedSpecificity,
             $shift,
             count($idfByTerm),
+            $specificityWeightExponent,
+            $specificityWeightShiftMagnitude,
         );
     }
 

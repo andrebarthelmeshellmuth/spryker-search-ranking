@@ -290,8 +290,11 @@ class ScoreSectionBuilderTest extends Unit
 
     public function testBuildsASpecificitySectionWithOneLinePerDiagnostic(): void
     {
-        // Arrange
-        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.6, 0.8, -0.15, 10);
+        // Arrange -- shiftMagnitude=0.5, exponent=2.0 chosen so the resulting calculation string is
+        // arithmetically real (0.5 × (0.6)^2.0 = 0.18), not just plausible-looking, and so a
+        // non-default exponent (the whole reason it's shown at all -- see calculateShift()'s own
+        // docblock) actually appears in the fixture.
+        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.93, 0.8, 0.18, 10, 2.0, 0.5);
 
         // Act
         $section = (new ScoreSectionBuilder())->buildSpecificitySection($specificityWeightingResult);
@@ -301,7 +304,7 @@ class ScoreSectionBuilderTest extends Unit
         // The search-debug overlay reads this flag to render this section in its own dedicated spot
         // (above the relevance-weight line) instead of the default top-of-page position.
         $this->assertTrue($section['isSpecificitySection']);
-        $this->assertCount(4, $section['lines']);
+        $this->assertCount(6, $section['lines']);
 
         $this->assertSame('Configured relevance weight (α₀)', $section['lines'][0]['label']);
         $this->assertSame(0.75, $section['lines'][0]['value']);
@@ -309,10 +312,25 @@ class ScoreSectionBuilderTest extends Unit
         $this->assertSame('Normalized specificity', $section['lines'][1]['label']);
         $this->assertSame(0.8, $section['lines'][1]['value']);
 
-        $this->assertSame('Shift applied to α', $section['lines'][2]['label']);
-        $this->assertSame(-0.15, $section['lines'][2]['value']);
+        // The bridge between "Normalized specificity" and "Shift applied to α" -- without this line, a
+        // reader has no way to see how 0.8 becomes 0.18 two lines below. Deliberately a short label with
+        // no inline formula -- see this label's own constant docblock for why (overlay label truncation).
+        $this->assertSame('Signed deviation', $section['lines'][2]['label']);
+        $this->assertEqualsWithDelta(0.6, $section['lines'][2]['value'], 1.0E-9);
 
-        $this->assertSame('Effective relevance weight (α)', $section['lines'][3]['label']);
-        $this->assertSame(0.6, $section['lines'][3]['value']);
+        // Gives the shift line's calculation string its own labeled source for the "0.500" it plugs in,
+        // rather than that number appearing unexplained inside the formula.
+        $this->assertSame('Shift magnitude', $section['lines'][3]['label']);
+        $this->assertSame(0.5, $section['lines'][3]['value']);
+
+        $this->assertSame('Shift applied to α', $section['lines'][4]['label']);
+        // Plugs in the two already-shown values (shift magnitude 0.500, signed deviation 0.600) directly
+        // rather than repeating "2 × 0.800 − 1" inline -- same convention build()'s own formulaCalculation
+        // uses.
+        $this->assertSame('0.500 × (0.600)^2.000', $section['lines'][4]['calculation']);
+        $this->assertSame(0.18, $section['lines'][4]['value']);
+
+        $this->assertSame('Effective relevance weight (α)', $section['lines'][5]['label']);
+        $this->assertSame(0.93, $section['lines'][5]['value']);
     }
 }
