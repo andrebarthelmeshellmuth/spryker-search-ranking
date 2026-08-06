@@ -15,16 +15,21 @@ use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRan
 interface MetricWriterInterface
 {
     /**
-     * Writes only the metric's IDENTITY fields (name/formula/isActive/isHigherBetter/shape) — global,
-     * not store/locale scoped. See {@see saveMetricWeight()} for the metric's (store, locale)-scoped
-     * weight. $metricTransfer->getChangeSource() (one of SharedSearchRankingConfig::CHANGE_SOURCE_*) is
-     * recorded on the resulting history row if one is written; null means CHANGE_SOURCE_MANUAL.
+     * Writes the metric's identity fields: name/isHigherBetter (global), formula/isActive/shape
+     * (store-scoped, for $storeName — see project memory, store-scoped-formula migration Phase 2). See
+     * {@see saveMetricWeight()} for the metric's (store, locale)-scoped weight.
+     * $localeName is used only as a lens (which digest to fit shape against / snapshot in history — see
+     * project memory, Phase 4), never persisted as part of the metric's scope.
+     * $metricTransfer->getChangeSource() (one of SharedSearchRankingConfig::CHANGE_SOURCE_*) is recorded
+     * on the resulting history row if one is written; null means CHANGE_SOURCE_MANUAL.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
      *
      * @throws \SprykerCommunity\Zed\SearchRanking\Business\Exception\InvalidFormulaException
      */
-    public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer;
+    public function saveMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): SearchRankingMetricTransfer;
 
     /**
      * Writes a metric's weight for one (store, locale) and, if it actually changed, records a history

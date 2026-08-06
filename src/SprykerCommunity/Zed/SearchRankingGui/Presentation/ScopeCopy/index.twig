@@ -1,0 +1,146 @@
+{% extends '@Gui/Layout/layout.twig' %}
+
+{% set widget_title = 'Scope Copy' %}
+{% block section_title %}{{ widget_title | trans }}{% endblock %}
+
+{% block action %}
+    {{ backActionButton('/search-ranking-gui', 'Back to Metrics' | trans) }}
+{% endblock %}
+
+{% block content %}
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Copy configuration between store/locale scopes' } %}
+        {% block widget_content %}
+            <p>
+                Copies every metric weight and setting explicitly saved for the source scope onto the target
+                scope — a starting point for a newly expanded market, not a substitute for its own real data.
+                Product-level metrics are never copied; a freshly bootstrapped market still shows its own
+                honest gaps.
+            </p>
+
+            <form method="get" class="form-inline" style="margin-bottom: 15px;">
+                <label for="sourceStoreName">{{ 'Source store' | trans }}</label>
+                <select name="sourceStoreName" id="sourceStoreName" class="form-control" onchange="this.form.submit()">
+                    {% for store in stores %}
+                        <option value="{{ store }}" {% if store == sourceStoreName %}selected="selected"{% endif %}>{{ store }}</option>
+                    {% endfor %}
+                </select>
+                <label for="sourceLocaleName" style="margin-left: 10px;">{{ 'Source locale' | trans }}</label>
+                <select name="sourceLocaleName" id="sourceLocaleName" class="form-control" onchange="this.form.submit()">
+                    {% for locale in locales %}
+                        <option value="{{ locale }}" {% if locale == sourceLocaleName %}selected="selected"{% endif %}>{{ locale }}</option>
+                    {% endfor %}
+                </select>
+
+                <span style="margin-left: 15px; margin-right: 15px;">&rarr;</span>
+
+                <label for="targetStoreName">{{ 'Target store' | trans }}</label>
+                <select name="targetStoreName" id="targetStoreName" class="form-control" onchange="this.form.submit()">
+                    {% for store in stores %}
+                        <option value="{{ store }}" {% if store == targetStoreName %}selected="selected"{% endif %}>{{ store }}</option>
+                    {% endfor %}
+                </select>
+                <label for="targetLocaleName" style="margin-left: 10px;">{{ 'Target locale' | trans }}</label>
+                <select name="targetLocaleName" id="targetLocaleName" class="form-control" onchange="this.form.submit()">
+                    {% for locale in locales %}
+                        <option value="{{ locale }}" {% if locale == targetLocaleName %}selected="selected"{% endif %}>{{ locale }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            {% if sourceStoreName == targetStoreName and sourceLocaleName == targetLocaleName %}
+                <div class="alert alert-warning">Source and target scope must be different.</div>
+            {% endif %}
+
+            {% if hasTargetData %}
+                <div class="alert alert-warning">
+                    {{ targetStoreName }}/{{ targetLocaleName }} already has saved configuration. Copying or
+                    locking will do nothing unless you check "Overwrite existing target configuration" below.
+                </div>
+            {% endif %}
+
+            {{ form_start(copyForm, {'action': '/search-ranking-gui/scope-copy-run?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName, 'attr': {'class': 'd-inline-block', 'style': 'margin-right: 15px;'}}) }}
+                <label>
+                    {{ form_widget(copyForm.confirmOverwrite) }}
+                    {{ 'Overwrite existing target configuration' | trans }}
+                </label>
+                {{ form_rest(copyForm) }}
+                <button type="submit" class="btn btn-primary" style="margin-left: 10px;">{{ 'Copy now' | trans }}</button>
+            {{ form_end(copyForm) }}
+
+            {{ form_start(lockForm, {'action': '/search-ranking-gui/scope-copy-lock?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName, 'attr': {'class': 'd-inline-block'}}) }}
+                <label>
+                    {{ form_widget(lockForm.confirmOverwrite) }}
+                    {{ 'Overwrite existing target configuration' | trans }}
+                </label>
+                {{ form_rest(lockForm) }}
+                <button type="submit" class="btn btn-success" style="margin-left: 10px;">{{ 'Lock (sync daily)' | trans }}</button>
+            {{ form_end(lockForm) }}
+        {% endblock %}
+    {% endembed %}
+
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Sync store configuration (formula, active flag, curve shape)' } %}
+        {% block widget_content %}
+            <p>
+                Formula/active/curve-shape are store-wide, not per-locale (see the Metrics page's own note) —
+                this syncs them from the source STORE to the target STORE using the source/target pickers
+                above (their locale is only used to preview each copied metric's shape against real data, not
+                part of the copy's own scope). One-off only — there is no daily-synced lock for this action.
+            </p>
+
+            {% if sourceStoreName == targetStoreName %}
+                <div class="alert alert-warning">Source and target store must be different.</div>
+            {% endif %}
+
+            {% if hasTargetStoreConfig %}
+                <div class="alert alert-warning">
+                    {{ targetStoreName }} already has saved store configuration. Syncing will do nothing
+                    unless you check "Overwrite existing target store configuration" below.
+                </div>
+            {% endif %}
+
+            {{ form_start(storeConfigSyncForm, {'action': '/search-ranking-gui/store-config-sync-run?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName}) }}
+                {{ form_widget(storeConfigSyncForm.mode) }}
+                <label>
+                    {{ form_widget(storeConfigSyncForm.confirmOverwrite) }}
+                    {{ 'Overwrite existing target store configuration' | trans }}
+                </label>
+                {{ form_rest(storeConfigSyncForm) }}
+                <button type="submit" class="btn btn-primary" style="margin-top: 10px;">{{ 'Sync now' | trans }}</button>
+            {{ form_end(storeConfigSyncForm) }}
+        {% endblock %}
+    {% endembed %}
+
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Active locks' } %}
+        {% block widget_content %}
+            {% if activeLocks is empty %}
+                <p>No active locks.</p>
+            {% else %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'Source' | trans }}</th>
+                            <th>{{ 'Target' | trans }}</th>
+                            <th>{{ 'Locked since' | trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lock in activeLocks %}
+                            <tr>
+                                <td>{{ lock.sourceStoreName }}/{{ lock.sourceLocaleName }}</td>
+                                <td>{{ lock.targetStoreName }}/{{ lock.targetLocaleName }}</td>
+                                <td>{{ lock.createdAt ? lock.createdAt | date('Y-m-d H:i') : '—' }}</td>
+                                <td>
+                                    {% set unlockForm = unlockFormsByIdScopeCopyLock[lock.idSearchRankingScopeCopyLock] %}
+                                    {{ form_start(unlockForm, {'action': '/search-ranking-gui/scope-copy-unlock?idSearchRankingScopeCopyLock=' ~ lock.idSearchRankingScopeCopyLock, 'attr': {'class': 'd-inline-block'}}) }}
+                                        <button type="submit" class="btn btn-xs btn-danger">{{ 'Unlock' | trans }}</button>
+                                    {{ form_end(unlockForm) }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

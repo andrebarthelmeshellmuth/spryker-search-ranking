@@ -13,8 +13,11 @@ use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingProductMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer;
+use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingMetricStoreConfigTableMap;
 use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingMetricTableMap;
 use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingProductMetricTableMap;
 use Propel\Runtime\ActiveQuery\Criteria;
@@ -41,6 +44,7 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
         foreach ($metricEntities as $metricEntity) {
             $metricTransfer = $mapper->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
+            $metricTransfer = $this->attachStoreConfig($metricTransfer, $storeName);
             $collectionTransfer->addMetric($this->attachWeight($metricTransfer, $storeName, $localeName));
         }
 
@@ -48,6 +52,11 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
     }
 
     /**
+     * "Active" is now a per-store fact (`spy_search_ranking_metric_store_config.is_active`), not the
+     * vestigial global column — so, unlike before Phase 2, this can no longer filter at the SQL level
+     * (that would filter by the wrong, frozen column); it queries every metric, overlays this store's
+     * real isActive via {@see attachStoreConfig()}, then filters in PHP.
+     *
      * @param string $storeName
      * @param string $localeName
      */
@@ -55,7 +64,6 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
     {
         $metricEntities = $this->getFactory()
             ->createSearchRankingMetricQuery()
-            ->filterByIsActive(true)
             ->orderByName()
             ->find();
 
@@ -64,6 +72,12 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
         foreach ($metricEntities as $metricEntity) {
             $metricTransfer = $mapper->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
+            $metricTransfer = $this->attachStoreConfig($metricTransfer, $storeName);
+
+            if ($metricTransfer->getIsActive() !== true) {
+                continue;
+            }
+
             $collectionTransfer->addMetric($this->attachWeight($metricTransfer, $storeName, $localeName));
         }
 
@@ -88,6 +102,7 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
         $metricTransfer = $this->getFactory()
             ->createSearchRankingMapper()
             ->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
+        $metricTransfer = $this->attachStoreConfig($metricTransfer, $storeName);
 
         return $this->attachWeight($metricTransfer, $storeName, $localeName);
     }
@@ -110,8 +125,35 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
         $metricTransfer = $this->getFactory()
             ->createSearchRankingMapper()
             ->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
+        $metricTransfer = $this->attachStoreConfig($metricTransfer, $storeName);
 
         return $this->attachWeight($metricTransfer, $storeName, $localeName);
+    }
+
+    /**
+     * Overlays $metricTransfer's formula/isActive/shape from its store-config row for $storeName — the
+     * real, live per-store values since the store-scoped-formula migration's Phase 2 (see project
+     * memory). Same composable-overlay shape {@see attachWeight()} already established. No store-config
+     * row yet (a metric never configured for this store — e.g. one created via
+     * `spryker-community/search-ranking-data-import`, or before this store existed) is a SAFE absence,
+     * never an error: isActive=false so nothing downstream evaluates the (also null) formula, matching
+     * this package's existing "absence = neutral default" convention for weight.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     */
+    protected function attachStoreConfig(SearchRankingMetricTransfer $metricTransfer, string $storeName): SearchRankingMetricTransfer
+    {
+        $storeConfigTransfer = $this->findMetricStoreConfig($metricTransfer->getIdSearchRankingMetricOrFail(), $storeName);
+
+        if ($storeConfigTransfer === null) {
+            return $metricTransfer->setFormula(null)->setIsActive(false)->setShape(null);
+        }
+
+        return $metricTransfer
+            ->setFormula($storeConfigTransfer->getFormula())
+            ->setIsActive($storeConfigTransfer->getIsActive())
+            ->setShape($storeConfigTransfer->getShape());
     }
 
     /**
@@ -225,14 +267,20 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
             return [];
         }
 
+        $activeMetricIds = $this->findActiveMetricIdsForStore($storeName);
+
+        if ($activeMetricIds === []) {
+            return [];
+        }
+
         $scoreRows = $this->getFactory()
             ->createSearchRankingProductMetricQuery()
             ->filterByFkProductAbstract_In($productAbstractIds)
             ->filterByStoreName($storeName)
             ->filterByLocaleName($localeName)
             ->filterByNormalizedValue(null, Criteria::ISNOTNULL)
+            ->filterByFkSearchRankingMetric_In($activeMetricIds)
             ->useSearchRankingMetricQuery()
-                ->filterByIsActive(true)
             ->endUse()
             ->withColumn(SpySearchRankingMetricTableMap::COL_NAME, 'metric_name')
             ->select([
@@ -254,23 +302,58 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
     }
 
     /**
+     * Deliberately store-agnostic — "does this product need a republish at all" for the PRODUCT_ABSTRACT_PUBLISH
+     * event, not a per-store index view, so a metric active in ANY store (not just one) qualifies its
+     * product. Since Phase 8 of the store-scoped-formula migration (see project memory) `is_active` moved
+     * to `spy_search_ranking_metric_store_config` (one row per store) — this now checks for at least one
+     * store where the metric is active, the closest equivalent to the old single global flag.
+     *
      * @return array<int>
      */
     public function getProductAbstractIdsWithActiveMetricValues(): array
     {
+        $activeMetricIds = $this->getFactory()
+            ->createSearchRankingMetricStoreConfigQuery()
+            ->filterByIsActive(true)
+            ->select([SpySearchRankingMetricStoreConfigTableMap::COL_FK_SEARCH_RANKING_METRIC])
+            ->distinct()
+            ->find()
+            ->getData();
+
+        if ($activeMetricIds === []) {
+            return [];
+        }
+
         /** @var array<int|string> $productAbstractIds */
         $productAbstractIds = $this->getFactory()
             ->createSearchRankingProductMetricQuery()
             ->filterByNormalizedValue(null, Criteria::ISNOTNULL)
-            ->useSearchRankingMetricQuery()
-                ->filterByIsActive(true)
-            ->endUse()
+            ->filterByFkSearchRankingMetric_In($activeMetricIds)
             ->select([SpySearchRankingProductMetricTableMap::COL_FK_PRODUCT_ABSTRACT])
             ->distinct()
             ->find()
             ->getData();
 
         return array_map(static fn ($value): int => (int)$value, $productAbstractIds);
+    }
+
+    /**
+     * @param string $storeName
+     *
+     * @return array<int>
+     */
+    protected function findActiveMetricIdsForStore(string $storeName): array
+    {
+        /** @var array<int|string> $activeMetricIds */
+        $activeMetricIds = $this->getFactory()
+            ->createSearchRankingMetricStoreConfigQuery()
+            ->filterByStoreName($storeName)
+            ->filterByIsActive(true)
+            ->select([SpySearchRankingMetricStoreConfigTableMap::COL_FK_SEARCH_RANKING_METRIC])
+            ->find()
+            ->getData();
+
+        return array_map(static fn ($value): int => (int)$value, $activeMetricIds);
     }
 
     /**
@@ -385,5 +468,122 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
         return $this->getFactory()
             ->createSearchRankingMapper()
             ->mapMetricHistoryEntityToTransfer($historyEntity, new SearchRankingMetricHistoryTransfer());
+    }
+
+    /**
+     * @return array<\Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer>
+     */
+    public function getActiveScopeCopyLocks(): array
+    {
+        $scopeCopyLockEntities = $this->getFactory()
+            ->createSearchRankingScopeCopyLockQuery()
+            ->filterByIsActive(true)
+            ->orderByIdSearchRankingScopeCopyLock(Criteria::DESC)
+            ->find();
+
+        return $this->mapScopeCopyLockEntities($scopeCopyLockEntities);
+    }
+
+    /**
+     * @return array<\Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer>
+     */
+    public function getAllScopeCopyLocks(): array
+    {
+        $scopeCopyLockEntities = $this->getFactory()
+            ->createSearchRankingScopeCopyLockQuery()
+            ->orderByIdSearchRankingScopeCopyLock(Criteria::DESC)
+            ->find();
+
+        return $this->mapScopeCopyLockEntities($scopeCopyLockEntities);
+    }
+
+    /**
+     * @param int $idSearchRankingScopeCopyLock
+     */
+    public function findScopeCopyLockById(int $idSearchRankingScopeCopyLock): ?SearchRankingScopeCopyLockTransfer
+    {
+        $scopeCopyLockEntity = $this->getFactory()
+            ->createSearchRankingScopeCopyLockQuery()
+            ->findOneByIdSearchRankingScopeCopyLock($idSearchRankingScopeCopyLock);
+
+        if ($scopeCopyLockEntity === null) {
+            return null;
+        }
+
+        return $this->getFactory()
+            ->createSearchRankingMapper()
+            ->mapScopeCopyLockEntityToTransfer($scopeCopyLockEntity, new SearchRankingScopeCopyLockTransfer());
+    }
+
+    /**
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     */
+    public function findMetricStoreConfig(int $idSearchRankingMetric, string $storeName): ?SearchRankingMetricStoreConfigTransfer
+    {
+        $metricStoreConfigEntity = $this->getFactory()
+            ->createSearchRankingMetricStoreConfigQuery()
+            ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->filterByStoreName($storeName)
+            ->findOne();
+
+        if ($metricStoreConfigEntity === null) {
+            return null;
+        }
+
+        return $this->getFactory()
+            ->createSearchRankingMapper()
+            ->mapMetricStoreConfigEntityToTransfer($metricStoreConfigEntity, new SearchRankingMetricStoreConfigTransfer());
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     */
+    public function hasScopeConfiguration(string $storeName, string $localeName): bool
+    {
+        $hasMetricWeight = $this->getFactory()
+            ->createSearchRankingMetricWeightQuery()
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
+            ->count() > 0;
+
+        if ($hasMetricWeight) {
+            return true;
+        }
+
+        return $this->getFactory()
+            ->createSearchRankingSettingQuery()
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
+            ->count() > 0;
+    }
+
+    /**
+     * @param string $storeName
+     */
+    public function hasStoreConfiguration(string $storeName): bool
+    {
+        return $this->getFactory()
+            ->createSearchRankingMetricStoreConfigQuery()
+            ->filterByStoreName($storeName)
+            ->count() > 0;
+    }
+
+    /**
+     * @param iterable<\Orm\Zed\SearchRanking\Persistence\SpySearchRankingScopeCopyLock> $scopeCopyLockEntities
+     *
+     * @return array<\Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer>
+     */
+    protected function mapScopeCopyLockEntities(iterable $scopeCopyLockEntities): array
+    {
+        $mapper = $this->getFactory()->createSearchRankingMapper();
+        $scopeCopyLockTransfers = [];
+
+        foreach ($scopeCopyLockEntities as $scopeCopyLockEntity) {
+            $scopeCopyLockTransfers[] = $mapper->mapScopeCopyLockEntityToTransfer($scopeCopyLockEntity, new SearchRankingScopeCopyLockTransfer());
+        }
+
+        return $scopeCopyLockTransfers;
     }
 }

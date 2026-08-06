@@ -22,6 +22,7 @@ use SprykerCommunity\Zed\SearchRanking\Business\Fitting\NormalizationCurveFitter
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriter;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
@@ -69,8 +70,8 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        $resultTransfer = (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
-            ->saveMetric($metricTransfer);
+        $resultTransfer = (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
+            ->saveMetric($metricTransfer, 'DE', 'de_DE');
 
         // Assert
         $this->assertSame(7, $resultTransfer->getIdSearchRankingMetric());
@@ -109,8 +110,8 @@ class MetricWriterTest extends Unit
         $this->expectExceptionMessage('Unexpected end of expression');
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
-            ->saveMetric($metricTransfer);
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
+            ->saveMetric($metricTransfer, 'DE', 'de_DE');
     }
 
     public function testDeletesTheMetricByIdViaTheEntityManager(): void
@@ -127,7 +128,7 @@ class MetricWriterTest extends Unit
         $entityManagerMock->expects($this->once())->method('deleteMetric')->with(9);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
             ->deleteMetric(9);
     }
 
@@ -170,8 +171,8 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
-            ->saveMetric($metricTransfer);
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
+            ->saveMetric($metricTransfer, 'DE', 'de_DE');
     }
 
     public function testDefaultsChangeSourceToManualWhenTheSubmittedMetricDoesNotSetOne(): void
@@ -206,8 +207,8 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
-            ->saveMetric($metricTransfer);
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
+            ->saveMetric($metricTransfer, 'DE', 'de_DE');
     }
 
     /**
@@ -247,8 +248,8 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
-            ->saveMetric($metricTransfer);
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
+            ->saveMetric($metricTransfer, 'DE', 'de_DE');
     }
 
     /**
@@ -284,8 +285,8 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
-            ->saveMetric($resubmittedMetricTransfer);
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
+            ->saveMetric($resubmittedMetricTransfer, 'DE', 'de_DE');
     }
 
     /**
@@ -338,8 +339,8 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
-            ->saveMetric($updatedMetricTransfer);
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
+            ->saveMetric($updatedMetricTransfer, 'DE', 'de_DE');
     }
 
     /**
@@ -375,7 +376,7 @@ class MetricWriterTest extends Unit
         $curveFitterMock->method('fit')->willReturn([]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
             ->recordCheckOnly($metricTransfer, 'DE', 'de_DE');
     }
 
@@ -438,8 +439,8 @@ class MetricWriterTest extends Unit
         ]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
-            ->saveMetric($metricTransfer);
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
+            ->saveMetric($metricTransfer, 'DE', 'de_DE');
     }
 
     /**
@@ -494,8 +495,8 @@ class MetricWriterTest extends Unit
         ]);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
-            ->saveMetric($metricTransfer);
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
+            ->saveMetric($metricTransfer, 'DE', 'de_DE');
     }
 
     /**
@@ -535,8 +536,8 @@ class MetricWriterTest extends Unit
         $curveFitterMock->expects($this->never())->method('fit');
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class)))
-            ->saveMetric($metricTransfer);
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
+            ->saveMetric($metricTransfer, 'DE', 'de_DE');
     }
 
     public function testTriggersRankingConfigurationChangeEventWhenAMetricIsSaved(): void
@@ -567,8 +568,8 @@ class MetricWriterTest extends Unit
         $eventFacadeMock->expects($this->once())->method('trigger')->with(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock))
-            ->saveMetric($metricTransfer);
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock, $this->createStoreFacadeMock()))
+            ->saveMetric($metricTransfer, 'DE', 'de_DE');
     }
 
     public function testTriggersRankingConfigurationChangeEventWhenAMetricWeightIsSaved(): void
@@ -589,7 +590,7 @@ class MetricWriterTest extends Unit
         $eventFacadeMock->expects($this->once())->method('trigger')->with(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock, $this->createStoreFacadeMock()))
             ->saveMetricWeight(7, 'DE', 'de_DE', 0.5);
     }
 
@@ -606,7 +607,7 @@ class MetricWriterTest extends Unit
         $eventFacadeMock->expects($this->once())->method('trigger')->with(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE);
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock, $this->createStoreFacadeMock()))
             ->deleteMetric(9);
     }
 
@@ -637,7 +638,20 @@ class MetricWriterTest extends Unit
         $eventFacadeMock->expects($this->never())->method('trigger');
 
         // Act
-        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock))
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock, $this->createStoreFacadeMock()))
             ->recordCheckOnly($metricTransfer, 'DE', 'de_DE');
+    }
+
+    /**
+     * No configured store matches the scope these tests save into — resolveLocaleNamesForStore() falls
+     * back to just the single locale passed to saveMetric(), preserving every test's existing
+     * once-per-history-write expectation.
+     */
+    protected function createStoreFacadeMock(): SearchRankingToStoreFacadeInterface
+    {
+        $storeFacadeMock = $this->createMock(SearchRankingToStoreFacadeInterface::class);
+        $storeFacadeMock->method('getAllStores')->willReturn([]);
+
+        return $storeFacadeMock;
     }
 }

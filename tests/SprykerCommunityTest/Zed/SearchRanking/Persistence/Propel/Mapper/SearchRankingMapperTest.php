@@ -36,14 +36,20 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper\SearchRankingMa
  */
 class SearchRankingMapperTest extends Unit
 {
+    /**
+     * Since Phase 2 of the store-scoped-formula migration (see project memory): formula/isActive/shape
+     * are genuinely never read here anymore — they live on `spy_search_ranking_metric_store_config`
+     * instead, mapped separately by {@see \SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper\SearchRankingMapper::mapMetricStoreConfigEntityToTransfer()}
+     * (no dedicated unit test of its own yet — a real, separate gap, not one this fix attempts to close).
+     * This only asserts the fields the entity mapper still owns: id/name/isHigherBetter.
+     */
     public function testMapsMetricEntityFieldsOntoTheTransfer(): void
     {
         // Arrange
         $metricEntity = new SpySearchRankingMetric();
         $metricEntity->setIdSearchRankingMetric(7);
         $metricEntity->setName('top_seller');
-        $metricEntity->setFormula('x / max');
-        $metricEntity->setIsActive(true);
+        $metricEntity->setIsHigherBetter(true);
 
         // Act
         $metricTransfer = (new SearchRankingMapper())->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
@@ -51,44 +57,26 @@ class SearchRankingMapperTest extends Unit
         // Assert
         $this->assertSame(7, $metricTransfer->getIdSearchRankingMetric());
         $this->assertSame('top_seller', $metricTransfer->getName());
-        $this->assertSame('x / max', $metricTransfer->getFormula());
-        $this->assertTrue($metricTransfer->getIsActive());
+        $this->assertTrue($metricTransfer->getIsHigherBetter());
     }
 
+    /**
+     * Since Phase 2 of the store-scoped-formula migration (see project memory): formula/isActive/shape
+     * are genuinely never written here anymore — see the sibling test above.
+     */
     public function testMapsMetricTransferFieldsOntoTheEntity(): void
     {
         // Arrange
         $metricTransfer = (new SearchRankingMetricTransfer())
             ->setName('pdp_impressions')
-            ->setFormula('atan(x / avg) / (pi() / 2)')
-            ->setIsActive(false);
+            ->setIsHigherBetter(false);
 
         // Act
         $metricEntity = (new SearchRankingMapper())->mapMetricTransferToEntity($metricTransfer, new SpySearchRankingMetric());
 
         // Assert
         $this->assertSame('pdp_impressions', $metricEntity->getName());
-        $this->assertSame('atan(x / avg) / (pi() / 2)', $metricEntity->getFormula());
-        $this->assertFalse($metricEntity->getIsActive());
-    }
-
-    /**
-     * A transfer with no `isActive` set (null) must still default the entity to active — mirrors the
-     * Propel column default and the "new metrics are active by default" admin expectation.
-     */
-    public function testDefaultsTheEntityToActiveWhenTheTransferLeavesIsActiveUnset(): void
-    {
-        // Arrange
-        $metricTransfer = (new SearchRankingMetricTransfer())
-            ->setName('new_metric')
-            ->setWeight(0.1)
-            ->setFormula('x');
-
-        // Act
-        $metricEntity = (new SearchRankingMapper())->mapMetricTransferToEntity($metricTransfer, new SpySearchRankingMetric());
-
-        // Assert
-        $this->assertTrue($metricEntity->getIsActive());
+        $this->assertFalse($metricEntity->getIsHigherBetter());
     }
 
     public function testMapsProductMetricEntityFieldsOntoTheTransfer(): void

@@ -53,18 +53,27 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
      * a different (store, locale) but none in this one still LEFT JOINs to NULL here, correctly flagged
      * as a gap for the queried scope.
      *
+     * `metric.is_active` was dropped in Phase 8 of the store-scoped-formula migration (see project
+     * memory) — "active" is a per-store fact now, on `spy_search_ranking_metric_store_config`, so an
+     * INNER JOIN against it (scoped to the same `$storeName` this whole query is already scoped to) is
+     * what "active for the queried scope" now means; a metric with no store-config row at all for this
+     * store (never configured here) is correctly excluded, same as an explicitly inactive one.
+     *
      * @var string
      */
     protected const BASE_SQL = <<<SQL
         FROM spy_product_abstract product_abstract
         CROSS JOIN spy_search_ranking_metric metric
+        INNER JOIN spy_search_ranking_metric_store_config metric_store_config
+            ON metric_store_config.fk_search_ranking_metric = metric.id_search_ranking_metric
+            AND metric_store_config.store_name = ?
+            AND metric_store_config.is_active = 1
         LEFT JOIN spy_search_ranking_product_metric product_metric
             ON product_metric.fk_product_abstract = product_abstract.id_product_abstract
             AND product_metric.fk_search_ranking_metric = metric.id_search_ranking_metric
             AND product_metric.store_name = ?
             AND product_metric.locale_name = ?
-        WHERE metric.is_active = 1
-            AND product_metric.id_search_ranking_product_metric IS NULL
+        WHERE product_metric.id_search_ranking_product_metric IS NULL
         SQL;
 
     /**
@@ -92,7 +101,7 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
         int $offset,
     ): array {
         [$whereSql, $whereParams] = $this->buildWhereClause($idSearchRankingMetric, $searchTerm);
-        $params = [$storeName, $localeName, ...$whereParams];
+        $params = [$storeName, $storeName, $localeName, ...$whereParams];
 
         // LIMIT/OFFSET deliberately interpolated, not bound as `?` params: PDOStatement::execute()'s array
         // form binds every value as PARAM_STR, and MariaDB rejects a quoted string literal in LIMIT/OFFSET
@@ -151,7 +160,7 @@ class ProductMetricGapFinder implements ProductMetricGapFinderInterface
     protected function count(?int $idSearchRankingMetric, string $storeName, string $localeName, string $searchTerm): int
     {
         [$whereSql, $whereParams] = $this->buildWhereClause($idSearchRankingMetric, $searchTerm);
-        $params = [$storeName, $localeName, ...$whereParams];
+        $params = [$storeName, $storeName, $localeName, ...$whereParams];
 
         $sql = sprintf('SELECT COUNT(*) %s %s', static::BASE_SQL, $whereSql);
 

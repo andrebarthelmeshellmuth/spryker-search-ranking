@@ -13,7 +13,9 @@ use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricStatisticsTransfer;
+use Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer;
 
 interface SearchRankingRepositoryInterface
 {
@@ -155,4 +157,58 @@ interface SearchRankingRepositoryInterface
      * @param string $localeName
      */
     public function findLastMetricChangeHistoryEntry(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricHistoryTransfer;
+
+    /**
+     * Every currently active lock, newest first — the full set a lock-creation validation scans for the
+     * source/target role-exclusivity check, and what the Zed page's active-locks table renders. The set
+     * is expected to stay small (one row per market expansion in flight), so callers scan it in PHP
+     * rather than this repository offering per-scope filtered variants.
+     *
+     * @return array<\Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer>
+     */
+    public function getActiveScopeCopyLocks(): array;
+
+    /**
+     * Every lock ever created, active or not, newest first — the append-only episode log backing the
+     * Zed page's lock-history view.
+     *
+     * @return array<\Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer>
+     */
+    public function getAllScopeCopyLocks(): array;
+
+    /**
+     * @param int $idSearchRankingScopeCopyLock
+     */
+    public function findScopeCopyLockById(int $idSearchRankingScopeCopyLock): ?SearchRankingScopeCopyLockTransfer;
+
+    /**
+     * Phase 1 of the store-scoped-formula migration (see project memory) — persistence plumbing only,
+     * not yet consumed by any business logic. Null when no row exists yet for this (metric, store).
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     */
+    public function findMetricStoreConfig(int $idSearchRankingMetric, string $storeName): ?SearchRankingMetricStoreConfigTransfer;
+
+    /**
+     * True if the scope has any explicitly-saved `spy_search_ranking_metric_weight` or
+     * `spy_search_ranking_setting` row — deliberately NOT based on {@see getMetricCollection()}/the
+     * setting getters, which always return a value (falling back to 0.0/a config default), so they
+     * can't distinguish "explicitly saved" from "never touched, using the default".
+     *
+     * @param string $storeName
+     * @param string $localeName
+     */
+    public function hasScopeConfiguration(string $storeName, string $localeName): bool;
+
+    /**
+     * True if the store has any explicitly-saved `spy_search_ranking_metric_store_config` row —
+     * store-only counterpart to {@see hasScopeConfiguration()}, which checks the (store,locale)-scoped
+     * weight/setting tables instead. Deliberately NOT based on {@see getMetricCollection()}, which always
+     * returns a value for every metric (falling back to isActive=false/formula=null via the safe-absence
+     * overlay), so it can't distinguish "explicitly configured" from "never touched".
+     *
+     * @param string $storeName
+     */
+    public function hasStoreConfiguration(string $storeName): bool;
 }

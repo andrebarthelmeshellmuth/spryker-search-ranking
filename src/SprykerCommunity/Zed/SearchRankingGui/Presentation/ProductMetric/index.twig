@@ -6,6 +6,7 @@
 {% block action %}
     {{ backActionButton('/search-ranking-gui', 'Back to Metrics' | trans) }}
     {{ viewActionButton('/search-ranking-gui/product-metric-gap?storeName=' ~ selectedStoreName ~ '&localeName=' ~ selectedLocaleName, 'View Gaps' | trans) }}
+    {{ viewActionButton('/search-ranking-gui/scope-copy?sourceStoreName=' ~ selectedStoreName ~ '&sourceLocaleName=' ~ selectedLocaleName, 'Copy Scope' | trans) }}
 {% endblock %}
 
 {% block content %}

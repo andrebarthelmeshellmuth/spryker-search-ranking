@@ -18,6 +18,8 @@ use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer;
+use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
+use Generated\Shared\Transfer\SearchRankingStoreConfigCopyResultTransfer;
 use Spryker\Zed\Kernel\Business\AbstractFacade;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
@@ -226,10 +228,12 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
+     * @param string $storeName
+     * @param string $localeName
      */
-    public function saveMetric(SearchRankingMetricTransfer $metricTransfer): SearchRankingMetricTransfer
+    public function saveMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): SearchRankingMetricTransfer
     {
-        return $this->getFactory()->createMetricWriter()->saveMetric($metricTransfer);
+        return $this->getFactory()->createMetricWriter()->saveMetric($metricTransfer, $storeName, $localeName);
     }
 
     /**
@@ -440,5 +444,150 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     public function evaluateCurrentMetricFit(int $idSearchRankingMetric, string $storeName, string $localeName): ?float
     {
         return $this->getFactory()->createCurrentMetricFitEvaluator()->evaluate($idSearchRankingMetric, $storeName, $localeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     * @param bool $confirmOverwrite
+     */
+    public function copyScopeConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+        bool $confirmOverwrite,
+    ): SearchRankingScopeCopyResultTransfer {
+        return $this->getFactory()->createScopeConfigCopier()->copyScopeConfiguration(
+            $sourceStoreName,
+            $sourceLocaleName,
+            $targetStoreName,
+            $targetLocaleName,
+            $confirmOverwrite,
+            SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
+     */
+    public function hasScopeConfiguration(string $storeName, string $localeName): bool
+    {
+        return $this->getFactory()->createScopeConfigCopier()->hasScopeConfiguration($storeName, $localeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     * @param string $mode
+     * @param bool $confirmOverwrite
+     */
+    public function copyStoreConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+        string $mode,
+        bool $confirmOverwrite,
+    ): SearchRankingStoreConfigCopyResultTransfer {
+        return $this->getFactory()->createStoreConfigCopier()->copyStoreConfiguration(
+            $sourceStoreName,
+            $sourceLocaleName,
+            $targetStoreName,
+            $targetLocaleName,
+            $mode,
+            $confirmOverwrite,
+            SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $storeName
+     */
+    public function hasStoreConfiguration(string $storeName): bool
+    {
+        return $this->getFactory()->createStoreConfigCopier()->hasStoreConfiguration($storeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return array<\Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer>
+     */
+    public function getActiveScopeCopyLocks(): array
+    {
+        return $this->getFactory()->createScopeCopyLockManager()->getActiveScopeCopyLocks();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     * @param bool $confirmOverwrite
+     */
+    public function createScopeCopyLock(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+        bool $confirmOverwrite,
+    ): SearchRankingScopeCopyResultTransfer {
+        return $this->getFactory()->createScopeCopyLockManager()->createScopeCopyLock(
+            $sourceStoreName,
+            $sourceLocaleName,
+            $targetStoreName,
+            $targetLocaleName,
+            $confirmOverwrite,
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param int $idSearchRankingScopeCopyLock
+     */
+    public function deactivateScopeCopyLock(int $idSearchRankingScopeCopyLock): void
+    {
+        $this->getFactory()->createScopeCopyLockManager()->deactivateScopeCopyLock($idSearchRankingScopeCopyLock);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function runScopeCopyDailySync(): int
+    {
+        return $this->getFactory()->createScopeCopyLockManager()->runDailySync();
     }
 }

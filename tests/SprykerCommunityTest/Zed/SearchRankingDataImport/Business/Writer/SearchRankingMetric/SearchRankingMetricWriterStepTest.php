@@ -12,6 +12,8 @@ namespace SprykerCommunityTest\Zed\SearchRankingDataImport\Business\Writer\Searc
 use Codeception\Test\Unit;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricStoreConfig;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricStoreConfigQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeightQuery;
 use Spryker\Zed\DataImport\Business\Exception\InvalidDataException;
 use Spryker\Zed\DataImport\Business\Model\DataSet\DataSet;
@@ -74,15 +76,16 @@ class SearchRankingMetricWriterStepTest extends Unit
         $metricEntity = $this->findAndTrackMetric($name);
 
         $this->assertSame(2.5, $this->findWeight($metricEntity->getIdSearchRankingMetric()));
-        $this->assertSame('x / max', $metricEntity->getFormula());
-        $this->assertTrue($metricEntity->getIsActive());
+        $storeConfigEntity = $this->findStoreConfig($metricEntity->getIdSearchRankingMetric());
+        $this->assertSame('x / max', $storeConfigEntity?->getFormula());
+        $this->assertTrue($storeConfigEntity?->getIsActive());
     }
 
     public function testExecuteUpdatesTheExistingMetricInsteadOfCreatingADuplicateWhenTheNameAlreadyExists(): void
     {
         // Arrange
         $name = 'test_existing_metric_' . uniqid();
-        $this->createTestMetric($name, 1.0, 'x', true);
+        $this->createTestMetric($name, 1.0);
 
         $dataSet = new DataSet([
             SearchRankingMetricDataSetInterface::COL_NAME => $name,
@@ -101,8 +104,9 @@ class SearchRankingMetricWriterStepTest extends Unit
 
         $metricEntity = $this->findAndTrackMetric($name);
         $this->assertSame(9.0, $this->findWeight($metricEntity->getIdSearchRankingMetric()));
-        $this->assertSame('x / avg', $metricEntity->getFormula());
-        $this->assertFalse($metricEntity->getIsActive());
+        $storeConfigEntity = $this->findStoreConfig($metricEntity->getIdSearchRankingMetric());
+        $this->assertSame('x / avg', $storeConfigEntity?->getFormula());
+        $this->assertFalse($storeConfigEntity?->getIsActive());
     }
 
     public function testExecuteThrowsForANameThatWouldNeverContributeToLiveRanking(): void
@@ -172,15 +176,11 @@ class SearchRankingMetricWriterStepTest extends Unit
     /**
      * @param string $name
      * @param float $weight
-     * @param string $formula
-     * @param bool $isActive
      */
-    protected function createTestMetric(string $name, float $weight, string $formula, bool $isActive): SpySearchRankingMetric
+    protected function createTestMetric(string $name, float $weight): SpySearchRankingMetric
     {
         $metricEntity = new SpySearchRankingMetric();
         $metricEntity->setName($name)
-            ->setFormula($formula)
-            ->setIsActive($isActive)
             ->setIsHigherBetter(true)
             ->save();
 
@@ -224,5 +224,20 @@ class SearchRankingMetricWriterStepTest extends Unit
             ->findOne();
 
         return $metricWeightEntity?->getWeight();
+    }
+
+    /**
+     * Since Phase 2 of the store-scoped-formula migration (see project memory): formula/isActive are
+     * written to this store-scoped child row, not the (now vestigial, unwritten) columns on the metric
+     * entity itself.
+     *
+     * @param int $idSearchRankingMetric
+     */
+    protected function findStoreConfig(int $idSearchRankingMetric): ?SpySearchRankingMetricStoreConfig
+    {
+        return SpySearchRankingMetricStoreConfigQuery::create()
+            ->filterByFkSearchRankingMetric($idSearchRankingMetric)
+            ->filterByStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+            ->findOne();
     }
 }

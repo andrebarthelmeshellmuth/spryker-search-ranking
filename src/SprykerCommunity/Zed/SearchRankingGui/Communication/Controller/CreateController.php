@@ -50,7 +50,7 @@ class CreateController extends AbstractController
 
         if ($metricForm->isSubmitted() && $metricForm->isValid()) {
             $metricTransfer = $metricForm->getData();
-            $savedMetricTransfer = $this->getFactory()->getSearchRankingFacade()->saveMetric($metricTransfer);
+            $savedMetricTransfer = $this->getFactory()->getSearchRankingFacade()->saveMetric($metricTransfer, $storeName, $localeName);
 
             if ($metricTransfer->getWeight() !== null) {
                 $this->getFactory()->getSearchRankingFacade()->saveMetricWeight(

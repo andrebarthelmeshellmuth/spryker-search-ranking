@@ -79,7 +79,7 @@ class EditController extends AbstractController
 
         if ($metricForm->isSubmitted() && $metricForm->isValid()) {
             $submittedMetricTransfer = $metricForm->getData();
-            $savedMetricTransfer = $this->getFactory()->getSearchRankingFacade()->saveMetric($submittedMetricTransfer);
+            $savedMetricTransfer = $this->getFactory()->getSearchRankingFacade()->saveMetric($submittedMetricTransfer, $storeName, $localeName);
 
             if ($submittedMetricTransfer->getWeight() !== null) {
                 $this->getFactory()->getSearchRankingFacade()->saveMetricWeight(

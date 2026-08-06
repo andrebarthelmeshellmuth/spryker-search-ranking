@@ -42,10 +42,12 @@ closed-form curve-fit suggestions — no guessing what shape a business signal s
   - [9. Register the Elasticsearch export plugins](#9-register-the-elasticsearch-export-plugins)
   - [10. Register the package's search schema directory](#10-register-the-packages-search-schema-directory)
   - [11. Register the ranking-configuration sync queue](#11-register-the-ranking-configuration-sync-queue)
-  - [12. Register the function_score query expander](#12-register-the-function_score-query-expander)
-  - [13. Optional: register the search-debug overlay section](#13-optional-register-the-search-debug-overlay-section)
-  - [14. Build](#14-build)
-  - [15. Verify the installation](#15-verify-the-installation)
+  - [12. Register the ranking-configuration publish event listener](#12-register-the-ranking-configuration-publish-event-listener)
+  - [13. Register the function_score query expander](#13-register-the-function_score-query-expander)
+  - [14. Optional: register the search-debug overlay section](#14-optional-register-the-search-debug-overlay-section)
+  - [15. Schedule the scope-copy-sync cron](#15-schedule-the-scope-copy-sync-cron)
+  - [16. Build](#16-build)
+  - [17. Verify the installation](#17-verify-the-installation)
 - [Import file formats](#import-file-formats)
 - [Limitations](#limitations)
 - [Testing and CI](#testing-and-ci)
@@ -63,6 +65,18 @@ it's first introduced in context — this is a lookup index, not a replacement f
 
 A named business signal (e.g. `pdp_impressions`, `top_seller`) with its own weight, normalization
 formula, active flag, and direction. See [What it does](#what-it-does).
+
+A metric's fields have two different scopes, not one: `name`/`isHigherBetter` (direction) are global —
+the same everywhere the metric exists at all, since they're definitional (what the metric IS/MEANS).
+`formula`/`isActive`/curve `shape` are STORE-scoped (`spy_search_ranking_metric_store_config`, one row
+per metric × store) — a business-behavior signal like `pdp_impressions` is a store-level reality
+(conversion/stock/warehouse facts), not a language preference, so it's deliberately NOT split further by
+locale. `weight` is scoped one level finer still, per (store, locale) — a tuning DECISION, reasonable to
+let vary by locale even where the underlying business data doesn't. A brand-new store gets its own
+formula/active/shape via the Scope Copy page's Sync Store Config action (see [What it does](#what-it-does)),
+not a database migration — the columns that once held a single global formula/isActive/shape on
+`spy_search_ranking_metric` itself were removed entirely once every part of this package migrated onto
+the store-scoped table (a breaking change; see [CHANGELOG](CHANGELOG.md) for the release that shipped it).
 
 ### weight
 
@@ -324,6 +338,49 @@ requiring any change here.
   same constant search-debug's own overlay numbers use, so the whole page shows one consistent
   precision; see that package's README for details. Rounding happens only at this display step — the
   underlying floats used for the actual ranking calculation stay full-precision throughout.
+- **Scope Copy** (`/search-ranking-gui/scope-copy`) — bootstraps a newly expanded market from an
+  established one. Copies every metric weight and setting **explicitly saved** for a source (store,
+  locale) onto a target scope; a metric/setting never touched in the source stays untouched in the
+  target too, rather than writing an explicit copy of its code-level default.
+  `spy_search_ranking_product_metric`/`_metric_digest` — real, scope-local behavioral data — are never
+  copied, so a freshly bootstrapped market still shows its own honest gaps on the Product Value Gaps page.
+  Blocked by default when the target scope already has any saved configuration; an "Overwrite existing
+  target configuration" checkbox is required to proceed. Every copied metric weight is recorded on
+  [Metric History](#what-it-does) tagged `scope_copy`, alongside the existing `manual`/`auto_tune`/
+  `optimizer_apply`/`checkpoint_restore` sources.
+
+  Two actions:
+  - **Copy now** — a one-off copy, no lasting relationship.
+  - **Lock** — copies immediately, then persists the pairing so the daily `search-ranking:scope-copy-sync`
+    cron keeps re-copying source → target every day, until unlocked. Enforced at creation time so the
+    database can never hold an invalid pairing: a scope may be the **target of at most one active lock**
+    (unambiguous which source feeds it), the **source of many active locks** (one mature market can seed
+    several new ones), and never simultaneously a source and a target. This is a point-in-time check
+    against **active** locks only, not a lifetime tag — a scope freed by unlocking is eligible for either
+    role again in a future lock. Unlocking soft-deletes the row (never hard-deleted) so the Active Locks
+    table stays a real history of every lock episode; relocking the same pair later creates a fresh row
+    rather than reactivating the old one.
+
+  **Sync store configuration** (same page, below the copy/lock actions above) — a separate, **store-only**
+  action for a metric's `formula`/`isActive`/curve `shape`, since those are store-scoped, not
+  (store,locale)-scoped like weight/settings (see [Terminology](#terminology)'s own `metric` entry for the
+  store-vs-(store,locale) scoping background). Uses the SAME source/target Store pickers above it (their
+  locale is only used as a lens to re-detect each copied metric's `shape` against its own real digest — `shape` is never carried over
+  verbatim, so a target with no digest yet correctly ends up with `shape=null` even though its `formula` was
+  copied). Two modes:
+  - **Mirror** (default) — copies every metric the source store has explicitly configured, creating a row
+    for one the target has never configured at all. Matches the copy/lock actions' own bootstrap
+    philosophy above.
+  - **Copy only metrics the target already has** — conservative, opt-in: a metric the target has never
+    independently configured is left alone rather than created. The resulting overlap can end up smaller
+    than the source's own metric set — the page reports how many metrics were skipped.
+
+  Blocked by default when the target store already has any saved store configuration (same "Overwrite
+  existing target store configuration" checkbox pattern as above). Every synced metric is recorded on
+  [Metric History](#what-it-does) tagged `scope_copy`, fanned out across every real locale of the target
+  store, same as any other formula change (see the store-scoped-formula migration's own history-fan-out
+  design, project memory). **One-off only** — unlike weight/settings, there is no lockable/daily-synced
+  variant of this action; formula/curve-shape tuning changes far less often than weight in practice.
 
 ## Ranking formula
 
@@ -657,9 +714,9 @@ misbehaving formula cannot poison the data with zeros, negatives, `NaN` or `INF`
 
 | Module | Purpose |
 | --- | --- |
-| `SearchRanking` (Zed) | Propel schema, facade (CRUD, settings, formula validation, normalization, ES export/publish, metric-history recording), expression evaluator, distribution-digest builder, curve-fit suggester, formula-preview builder, per-formula fit evaluator, ProductPageSearch export plugins, `search-ranking:normalize` / `search-ranking:randomize` console commands |
+| `SearchRanking` (Zed) | Propel schema, facade (CRUD, settings, formula validation, normalization, ES export/publish, metric-history recording, scope-copy/lock), expression evaluator, distribution-digest builder, curve-fit suggester, formula-preview builder, per-formula fit evaluator, ProductPageSearch export plugins, `search-ranking:normalize` / `search-ranking:randomize` / `search-ranking:scope-copy-sync` console commands |
 | `SearchRanking` (Client) | `SearchRankingFunctionScoreQueryExpanderPlugin` + painless script builder |
-| `SearchRankingGui` | Zed UI controllers, tables, forms (metrics + settings), navigation entry |
+| `SearchRankingGui` | Zed UI controllers, tables, forms (metrics + settings + scope copy/lock), navigation entry |
 | `SearchRankingStorage` (Zed) | Ranking-configuration storage table with synchronization behavior, publish writer, sync-data plugin |
 | `SearchRankingStorage` (Client) | Reads the configuration document from key-value storage |
 | `SearchRankingDataImport` | The two data importers; example CSVs in `data/import/` |
@@ -669,6 +726,17 @@ misbehaving formula cannot poison the data with zeros, negatives, `NaN` or `INF`
 - Spryker B2B/B2C/Marketplace shop
 - PHP >= 8.3
 - `symfony/expression-language` ^6 or ^7 (usually already present transitively)
+- **A restricted Zed ACL role for the Scope Copy page** — recommended, not enforced by this package.
+  `/search-ranking-gui/scope-copy` (and its `scope-copy-run`/`scope-copy-lock`/`scope-copy-unlock`
+  actions) is gated by standard Zed ACL only, the same as every other page in this module — no separate
+  fine-grained permission to register, no `spryker/acl` dependency needed for that alone (unlike
+  `spryker-community/search-ranking-optimizer`'s `search-score-admin` role, which resolves ACL
+  group membership in code for email routing; this page only needs the plain access-control check Zed's
+  Security firewall already does for every bundle/controller/action). Because a lock's daily sync
+  overwrites the target scope's configuration going forward, consider restricting this specific
+  controller to a dedicated role (e.g. `search-ranking-scope-admin`) rather than folding it into
+  whichever role already covers ordinary metric editing — create it via the Zed ACL Gui or your own
+  `data:import acl-role`-style fixture; nothing here creates it for you.
 
 Dependency floors are verified, not guessed: `composer check-floors` resolves the declared constraints to
 their oldest allowed versions, and every vendor symbol the package references is checked to exist in that
@@ -742,12 +810,14 @@ use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckC
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckInstallationConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingNormalizeConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingRandomizeConsole;
+use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingScopeCopySyncConsole;
 use SprykerCommunity\Zed\SearchRankingDataImport\SearchRankingDataImportConfig;
 
 new SearchRankingNormalizeConsole(),
 new SearchRankingRandomizeConsole(),
 new SearchRankingCheckCompatibilityConsole(),
 new SearchRankingCheckInstallationConsole(),
+new SearchRankingScopeCopySyncConsole(),
 // optional per-entity import commands:
 new DataImportConsole(DataImportConsole::DEFAULT_NAME . static::COMMAND_SEPARATOR . SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_METRIC),
 new DataImportConsole(DataImportConsole::DEFAULT_NAME . static::COMMAND_SEPARATOR . SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_PRODUCT_METRIC),
@@ -815,8 +885,8 @@ rm -f src/Generated/Zed/Navigation/codeBucket/navigation*.cache
 vendor/bin/console navigation:build-cache
 ```
 
-That gives the full "Search Ranking" sidebar group with all 4 visible pages (Metrics, Product Values,
-Settings, History). If you'd rather not duplicate the whole page list, copying just the
+That gives the full "Search Ranking" sidebar group with all 5 visible pages (Metrics, Product Values,
+Settings, History, Scope Copy). If you'd rather not duplicate the whole page list, copying just the
 top-level `<search-ranking-gui>` entry (drop the `<pages>` block) still gives one working sidebar link
 into `/search-ranking-gui` — the individual pages stay reachable via their own in-page action buttons
 (Back to Metrics, View Product Values, View Gaps, etc.) instead of a dropdown.
@@ -977,7 +1047,21 @@ protected function getProductDebugDataExpanderPlugins(): array
 }
 ```
 
-### 15. Build
+### 15. Schedule the scope-copy-sync cron
+
+E.g. daily, in `Pyz\Zed\SymfonyScheduler\SymfonySchedulerConfig::getCronJobs()`:
+
+```php
+'search-ranking-scope-copy-sync' => [
+    'command' => '$PHP_BIN vendor/bin/console search-ranking:scope-copy-sync',
+    'schedule' => '0 3 * * *',
+],
+```
+
+Re-copies every active [Scope Copy](#what-it-does) lock's source scope onto its target scope. A safe
+no-op to leave scheduled even with zero active locks.
+
+### 16. Build
 
 ```bash
 vendor/bin/console transfer:generate
@@ -990,7 +1074,7 @@ vendor/bin/console search:setup:sources      # merges the scores field into the 
 The "Search Ranking" section then appears in the Back Office navigation, and after the next
 normalize run + queue processing the page documents carry `scores`.
 
-### 16. Verify the installation
+### 17. Verify the installation
 
 ```bash
 vendor/bin/console search-ranking:check-installation

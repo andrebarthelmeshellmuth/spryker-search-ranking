@@ -12,6 +12,7 @@ namespace SprykerCommunity\Zed\SearchRankingGui\Communication\Table;
 use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingMetricTableMap;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricStoreConfigQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricWeightQuery;
 use Spryker\Service\UtilText\Model\Url\Url;
 use Spryker\Zed\Gui\Communication\Table\AbstractTable;
@@ -33,6 +34,21 @@ class MetricTable extends AbstractTable
      * @var string
      */
     protected const COL_WEIGHT = 'weight';
+
+    /**
+     * Not real columns on spy_search_ranking_metric since Phase 8 of the store-scoped-formula migration
+     * dropped them entirely (see project memory) — moved to spy_search_ranking_metric_store_config, one
+     * row per store, looked up separately in {@see prepareData()}. Same "plain array key, not a real
+     * column" shape {@see COL_WEIGHT} already established.
+     *
+     * @var string
+     */
+    protected const COL_FORMULA = 'formula';
+
+    /**
+     * @var string
+     */
+    protected const COL_IS_ACTIVE = 'is_active';
 
     /**
      * @var string
@@ -73,24 +89,28 @@ class MetricTable extends AbstractTable
             SpySearchRankingMetricTableMap::COL_ID_SEARCH_RANKING_METRIC => 'ID',
             SpySearchRankingMetricTableMap::COL_NAME => 'Name',
             static::COL_WEIGHT => 'Weight',
-            SpySearchRankingMetricTableMap::COL_FORMULA => 'Formula',
-            SpySearchRankingMetricTableMap::COL_IS_ACTIVE => 'Active',
+            static::COL_FORMULA => 'Formula',
+            static::COL_IS_ACTIVE => 'Active',
             static::COL_ACTIONS => 'Actions',
         ]);
 
+        // is_active/formula dropped from sortable/searchable since the store-scoped-formula migration's
+        // Phase 2 (see project memory) — they're no longer real columns on THIS table's own query (moved
+        // to spy_search_ranking_metric_store_config, looked up separately below; Phase 8 dropped the
+        // vestigial columns these constants used to reference entirely, so they're plain array keys now,
+        // same as COL_WEIGHT's own comment already explains for weight), so DB-level sort/search against
+        // them would silently operate on stale, frozen data instead of this store's real values.
         $config->setSortable([
             SpySearchRankingMetricTableMap::COL_ID_SEARCH_RANKING_METRIC,
             SpySearchRankingMetricTableMap::COL_NAME,
-            SpySearchRankingMetricTableMap::COL_IS_ACTIVE,
         ]);
 
         $config->setSearchable([
             SpySearchRankingMetricTableMap::COL_NAME,
-            SpySearchRankingMetricTableMap::COL_FORMULA,
         ]);
 
         $config->setRawColumns([
-            SpySearchRankingMetricTableMap::COL_IS_ACTIVE,
+            static::COL_IS_ACTIVE,
             static::COL_ACTIONS,
         ]);
 
@@ -108,18 +128,23 @@ class MetricTable extends AbstractTable
     {
         $metricEntities = $this->runQuery($this->metricQuery, $config, true);
         $weightsById = $this->findWeightsById($metricEntities);
+        $storeConfigsById = $this->findStoreConfigsById($metricEntities);
         $rows = [];
 
         /** @var \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric $metricEntity */
         foreach ($metricEntities as $metricEntity) {
+            $idSearchRankingMetric = $metricEntity->getIdSearchRankingMetric();
+            $storeConfigEntity = $storeConfigsById[$idSearchRankingMetric] ?? null;
+            $isActive = $storeConfigEntity !== null && $storeConfigEntity->getIsActive();
+
             $rows[] = [
-                SpySearchRankingMetricTableMap::COL_ID_SEARCH_RANKING_METRIC => $metricEntity->getIdSearchRankingMetric(),
+                SpySearchRankingMetricTableMap::COL_ID_SEARCH_RANKING_METRIC => $idSearchRankingMetric,
                 SpySearchRankingMetricTableMap::COL_NAME => $metricEntity->getName(),
-                static::COL_WEIGHT => $weightsById[$metricEntity->getIdSearchRankingMetric()] ?? 0.0,
-                SpySearchRankingMetricTableMap::COL_FORMULA => $metricEntity->getFormula(),
-                SpySearchRankingMetricTableMap::COL_IS_ACTIVE => $this->generateLabel(
-                    $metricEntity->getIsActive() ? 'Active' : 'Inactive',
-                    $metricEntity->getIsActive() ? 'label-info' : 'label-danger',
+                static::COL_WEIGHT => $weightsById[$idSearchRankingMetric] ?? 0.0,
+                static::COL_FORMULA => $storeConfigEntity?->getFormula(),
+                static::COL_IS_ACTIVE => $this->generateLabel(
+                    $isActive ? 'Active' : 'Inactive',
+                    $isActive ? 'label-info' : 'label-danger',
                 ),
                 static::COL_ACTIONS => implode(' ', $this->createActionButtons($metricEntity)),
             ];
@@ -158,6 +183,43 @@ class MetricTable extends AbstractTable
         }
 
         return $weightsById;
+    }
+
+    /**
+     * formula/isActive live here since the store-scoped-formula migration's Phase 2 (see project
+     * memory) — same "looked up separately, not a real column on this table's own query" shape
+     * {@see findWeightsById()} already established for weight. No row for a given metric (never
+     * configured for this store) is a real, expected absence — {@see prepareData()} treats it as
+     * inactive/no formula, the same safe fallback the repository's own `attachStoreConfig()` uses.
+     *
+     * @param iterable<\Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric> $metricEntities
+     *
+     * @return array<int, \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricStoreConfig>
+     */
+    protected function findStoreConfigsById(iterable $metricEntities): array
+    {
+        $idSearchRankingMetrics = [];
+
+        foreach ($metricEntities as $metricEntity) {
+            $idSearchRankingMetrics[] = $metricEntity->getIdSearchRankingMetric();
+        }
+
+        if ($idSearchRankingMetrics === []) {
+            return [];
+        }
+
+        $storeConfigsById = [];
+
+        foreach (
+            SpySearchRankingMetricStoreConfigQuery::create()
+                ->filterByFkSearchRankingMetric_In($idSearchRankingMetrics)
+                ->filterByStoreName($this->storeName)
+                ->find() as $storeConfigEntity
+        ) {
+            $storeConfigsById[$storeConfigEntity->getFkSearchRankingMetric()] = $storeConfigEntity;
+        }
+
+        return $storeConfigsById;
     }
 
     /**
