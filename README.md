@@ -21,6 +21,7 @@ closed-form curve-fit suggestions — no guessing what shape a business signal s
 
 - [Terminology](#terminology)
 - [Status](#status)
+- [Before you start: this needs real business-signal data](#before-you-start-this-needs-real-business-signal-data)
 - [What it does](#what-it-does)
 - [Ranking formula](#ranking-formula)
 - [Specificity-aware relevance weighting (opt-in)](#specificity-aware-relevance-weighting-opt-in)
@@ -133,6 +134,35 @@ This package deliberately scopes itself to *using* business signals to rank — 
 *should* be (tuning, evaluation, calibration) is a different concern. Nothing here depends on that
 decision being automated; a separate layer could reasonably be built on top of this one later without
 requiring any change here.
+
+## Before you start: this needs real business-signal data
+
+Installing and wiring this package is not, by itself, enough to change a single search result's rank. It
+is a mechanism that blends **normalized business-signal values** into the query score — with no imported
+values for a metric, that metric has nothing to contribute, and the blend degrades quietly, not loudly:
+
+- **A metric with a non-zero configured weight but zero imported raw values** (nobody has ever run
+  `search-ranking:import` or the metric's data-import CSV for it) never gets normalized —
+  `ProductMetricNormalizer::normalizeMetric()` checks `getMetricStatistics()`'s row count first and
+  returns immediately when it's zero, so the metric's `scores.<name>` field is simply never populated in
+  the product documents. At query time, `FunctionScoreBuilder`'s painless script guards every signal read
+  with `doc.containsKey(...) && doc[...].size() > 0 ? value : 0` — a missing field contributes exactly
+  `0`. Because that `0` is uniform across every product, it doesn't change relative order at all: the
+  blended score reduces to `relevanceWeight × normalizedRelevance` for every hit alike, which — since the
+  saturating curve is monotonic in `_score` — sorts identically to plain text relevance. **The formula
+  runs, the weight is configured, nothing errors, and the ranking looks exactly like this package was
+  never installed.** There is no warning anywhere in the Zed GUI today that a configured metric has zero
+  underlying data.
+- **When *no* active metric has a non-zero weight at all**, `FunctionScoreBuilder::build()` returns `null`
+  and `SearchRankingFunctionScoreQueryExpanderPlugin` leaves the query untouched — the plain, unwrapped
+  text-relevance query runs instead. This case at least is documented (see the plugin's own docblock) and
+  costs nothing extra at query time, unlike the previous case.
+
+**In short:** import (or organically accumulate, e.g. via `spryker-community/search-ranking-optimizer`'s
+own metric-writing hooks) real per-product values for every metric you give a non-zero weight, and run the
+normalization cron, *before* judging whether the ranking formula is doing anything. A fresh install with
+default demo weights and no imported data will rank exactly like stock Spryker search — indistinguishably
+so, with no error to tell you why.
 
 ## What it does
 
