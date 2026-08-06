@@ -45,6 +45,11 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     /**
      * @var string
      */
+    protected const KEY_SPECIFICITY_CURVE_EXPONENT = 'specificity_curve_exponent';
+
+    /**
+     * @var string
+     */
     protected const KEY_SPECIFICITY_WEIGHT_EXPONENT = 'specificity_weight_exponent';
 
     /**
@@ -93,6 +98,15 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
      * @var float
      */
     protected const DEFAULT_SPECIFICITY_SATURATION_POINT = 3.0;
+
+    /**
+     * Matches `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultSpecificityCurveExponent()`
+     * — `1.0` reproduces the original (pre-Hill-generalization) curve exactly, so a payload published
+     * before this key existed behaves identically to before, not merely "a sane default".
+     *
+     * @var float
+     */
+    protected const DEFAULT_SPECIFICITY_CURVE_EXPONENT = 1.0;
 
     /**
      * @var float
@@ -172,6 +186,7 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
             ->setRelevanceSaturationPoint((float)($configurationData[static::KEY_RELEVANCE_SATURATION_POINT] ?? static::DEFAULT_RELEVANCE_SATURATION_POINT))
             ->setSpecificityBlendWeight((float)($configurationData[static::KEY_SPECIFICITY_BLEND_WEIGHT] ?? static::DEFAULT_SPECIFICITY_BLEND_WEIGHT))
             ->setSpecificitySaturationPoint((float)($configurationData[static::KEY_SPECIFICITY_SATURATION_POINT] ?? static::DEFAULT_SPECIFICITY_SATURATION_POINT))
+            ->setSpecificityCurveExponent((float)($configurationData[static::KEY_SPECIFICITY_CURVE_EXPONENT] ?? static::DEFAULT_SPECIFICITY_CURVE_EXPONENT))
             ->setSpecificityWeightExponent((float)($configurationData[static::KEY_SPECIFICITY_WEIGHT_EXPONENT] ?? static::DEFAULT_SPECIFICITY_WEIGHT_EXPONENT))
             ->setSpecificityWeightShiftMagnitude((float)($configurationData[static::KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE] ?? static::DEFAULT_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE));
     }

@@ -90,4 +90,53 @@ class QuerySpecificityCalculatorTest extends Unit
 
         $this->assertSame(0.0, $calculator->normalize(0.0, 3.0));
     }
+
+    /**
+     * The defining property of the Hill-equation generalization `raw^p / (raw^p + k^p)`: at raw == k,
+     * `k^p / (k^p + k^p)` is always exactly 0.5 for any p > 0 — the pivot itself never moves, only the
+     * steepness of the transition around it does. Proves this holds for a real spread of exponents, not
+     * just the default p=1.
+     */
+    public function testNormalizeAtTheSaturationPointIsAlwaysOneHalfRegardlessOfCurveExponent(): void
+    {
+        $calculator = new QuerySpecificityCalculator();
+
+        foreach ([0.1, 0.5, 1.0, 2.0, 5.0] as $curveExponent) {
+            $this->assertEqualsWithDelta(0.5, $calculator->normalize(3.0, 3.0, $curveExponent), 1.0E-9, "p={$curveExponent}");
+        }
+    }
+
+    /**
+     * A curve exponent above 1.0 must sharpen the transition -- push a raw specificity already above the
+     * saturation point FURTHER above 0.5 than the original (p=1) curve would, and a raw specificity below
+     * the saturation point further below 0.5. This is the entire point of the exponent: reshaping the
+     * curve around a fixed pivot, not just rescaling it.
+     */
+    public function testNormalizeWithCurveExponentAboveOneSharpensTheTransitionAroundThePivot(): void
+    {
+        $calculator = new QuerySpecificityCalculator();
+
+        $aboveDefault = $calculator->normalize(6.0, 3.0, 1.0);
+        $aboveSharpened = $calculator->normalize(6.0, 3.0, 2.0);
+        $belowDefault = $calculator->normalize(1.0, 3.0, 1.0);
+        $belowSharpened = $calculator->normalize(1.0, 3.0, 2.0);
+
+        $this->assertGreaterThan($aboveDefault, $aboveSharpened, 'A raw value above k must land further above 0.5 as p increases.');
+        $this->assertLessThan($belowDefault, $belowSharpened, 'A raw value below k must land further below 0.5 as p increases.');
+    }
+
+    public function testNormalizeWithCurveExponentOfOneMatchesTheOriginalUnshapedFormula(): void
+    {
+        $calculator = new QuerySpecificityCalculator();
+
+        $this->assertSame($calculator->normalize(6.0, 3.0), $calculator->normalize(6.0, 3.0, 1.0));
+    }
+
+    public function testNormalizeOfZeroOrNegativeRawSpecificityReturnsZeroRegardlessOfCurveExponent(): void
+    {
+        $calculator = new QuerySpecificityCalculator();
+
+        $this->assertSame(0.0, $calculator->normalize(0.0, 3.0, 2.5));
+        $this->assertSame(0.0, $calculator->normalize(-1.0, 3.0, 2.5));
+    }
 }

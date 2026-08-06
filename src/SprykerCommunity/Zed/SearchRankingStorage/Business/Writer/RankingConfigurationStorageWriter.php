@@ -53,6 +53,11 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
     /**
      * @var string
      */
+    protected const KEY_SPECIFICITY_CURVE_EXPONENT = 'specificity_curve_exponent';
+
+    /**
+     * @var string
+     */
     protected const KEY_SPECIFICITY_WEIGHT_EXPONENT = 'specificity_weight_exponent';
 
     /**
@@ -115,6 +120,7 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
             static::KEY_RELEVANCE_SATURATION_POINT => $this->searchRankingFacade->getRelevanceSaturationPoint($storeName, $localeName),
             static::KEY_SPECIFICITY_BLEND_WEIGHT => $this->searchRankingFacade->getSpecificityBlendWeight($storeName, $localeName),
             static::KEY_SPECIFICITY_SATURATION_POINT => $this->searchRankingFacade->getSpecificitySaturationPoint($storeName, $localeName),
+            static::KEY_SPECIFICITY_CURVE_EXPONENT => $this->searchRankingFacade->getSpecificityCurveExponent($storeName, $localeName),
             static::KEY_SPECIFICITY_WEIGHT_EXPONENT => $this->searchRankingFacade->getSpecificityWeightExponent($storeName, $localeName),
             static::KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE => $this->searchRankingFacade->getSpecificityWeightShiftMagnitude($storeName, $localeName),
         ], $storeName, $localeName);

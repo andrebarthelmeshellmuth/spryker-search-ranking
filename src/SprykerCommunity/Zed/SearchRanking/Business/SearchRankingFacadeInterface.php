@@ -152,6 +152,32 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
+     * - Returns the exponent (`p`) reshaping the raw-to-normalized-specificity curve itself
+     *   (`raw^p / (raw^p + k^p)`), for the given store+locale; falls back to the module config default
+     *   (`1.0`, the original un-shaped curve) when no value was saved yet for that scope. CMA-ES-tunable,
+     *   same as `specificityBlendWeight` — unlike `specificitySaturationPoint`, which is Calibration-only.
+     *
+     * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
+     */
+    public function getSpecificityCurveExponent(string $storeName, string $localeName): float;
+
+    /**
+     * Specification:
+     * - Persists the specificity curve-exponent setting for the given store+locale.
+     *
+     * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificityCurveExponent
+     */
+    public function saveSpecificityCurveExponent(string $storeName, string $localeName, float $specificityCurveExponent): void;
+
+    /**
+     * Specification:
      * - Returns the exponent reshaping how sharply the specificity-derived shift ramps up, for the given
      *   store+locale; falls back to the module config default when no value was saved yet for that scope.
      *

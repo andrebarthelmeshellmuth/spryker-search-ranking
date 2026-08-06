@@ -174,6 +174,40 @@ class SettingManager implements SettingManagerInterface
      * @param string $storeName
      * @param string $localeName
      */
+    public function getSpecificityCurveExponent(string $storeName, string $localeName): float
+    {
+        $settingValue = $this->repository->findSettingValue(
+            SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_CURVE_EXPONENT,
+            $storeName,
+            $localeName,
+        );
+
+        if ($settingValue === null) {
+            return $this->config->getDefaultSpecificityCurveExponent();
+        }
+
+        return (float)$settingValue;
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $specificityCurveExponent
+     */
+    public function saveSpecificityCurveExponent(string $storeName, string $localeName, float $specificityCurveExponent): void
+    {
+        $this->saveSettingWithHistory(
+            SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_CURVE_EXPONENT,
+            $storeName,
+            $localeName,
+            (string)$specificityCurveExponent,
+        );
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     */
     public function getSpecificityWeightExponent(string $storeName, string $localeName): float
     {
         $settingValue = $this->repository->findSettingValue(

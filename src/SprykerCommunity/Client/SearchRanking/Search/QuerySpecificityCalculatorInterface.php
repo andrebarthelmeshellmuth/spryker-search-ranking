@@ -35,17 +35,23 @@ interface QuerySpecificityCalculatorInterface
 
     /**
      * Specification:
-     * - Maps the unbounded `$rawSpecificity` into `[0;1[` via the same saturating shape used elsewhere in
-     *   this package for turning an unbounded raw value into a normalized one: `raw / (raw + k)`.
+     * - Maps the unbounded `$rawSpecificity` into `[0;1[` via the Hill-equation generalization of the
+     *   saturating shape used elsewhere in this package: `raw^p / (raw^p + k^p)`. `$curveExponent` (`p`)
+     *   defaults to `1.0`, reproducing the original plain `raw / (raw + k)` shape exactly (byte-for-byte —
+     *   the `p=1.0` case takes a dedicated fast path that never evaluates `**` at all).
      * - `$saturationPoint` (`k`) is the raw specificity at which the normalized result reaches exactly
      *   `0.5` — calibrated per shop the same way `relevanceSaturationPoint` is (see Calibration), since
      *   what counts as a "typically specific" query depends entirely on the shop's own catalog and query
-     *   patterns.
+     *   patterns. This stays true for ANY `$curveExponent`: `raw = k` always maps to exactly `0.5`,
+     *   regardless of `p` (`k^p / (k^p + k^p) = 0.5` for any `p`), so raising `p` never moves the pivot
+     *   `k` itself means — it only sharpens the transition around it, pushing both tails further toward
+     *   their `0`/`1` bounds.
      *
      * @api
      *
      * @param float $rawSpecificity
      * @param float $saturationPoint
+     * @param float $curveExponent
      */
-    public function normalize(float $rawSpecificity, float $saturationPoint): float;
+    public function normalize(float $rawSpecificity, float $saturationPoint, float $curveExponent = 1.0): float;
 }

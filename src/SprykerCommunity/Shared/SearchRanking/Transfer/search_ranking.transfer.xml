@@ -254,10 +254,15 @@
         <!-- Specificity-aware relevance weighting settings — only read when the Client-layer code flag
              SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled() is
              enabled; always published regardless, same as every other setting here. specificityBlendWeight
-             (alpha) is CMA-ES-tunable (search-ranking-optimizer); specificitySaturationPoint (k) is
-             Calibration-tunable only, same split as relevanceSaturationPoint. -->
+             (alpha) and specificityCurveExponent (p) are CMA-ES-tunable (search-ranking-optimizer);
+             specificitySaturationPoint (k) is Calibration-tunable only, same split as
+             relevanceSaturationPoint. specificityCurveExponent reshapes the raw-to-normalized-specificity
+             curve itself (raw^p / (raw^p + k^p), p=1 reproduces the original raw/(raw+k) shape) —
+             distinct from specificityWeightExponent below, which reshapes a later, already-symmetric
+             step. -->
         <property name="specificityBlendWeight" type="float"/>
         <property name="specificitySaturationPoint" type="float"/>
+        <property name="specificityCurveExponent" type="float"/>
         <property name="specificityWeightExponent" type="float"/>
         <property name="specificityWeightShiftMagnitude" type="float"/>
     </transfer>
