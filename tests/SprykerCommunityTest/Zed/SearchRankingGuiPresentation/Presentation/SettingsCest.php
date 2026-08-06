@@ -58,6 +58,10 @@ class SettingsCest
      */
     public function savingTheFormShowsTheSuccessMessage(SearchRankingGuiPresentationTester $i): void
     {
+        // The settings form is short enough that its submit button sits right where the fixed Symfony
+        // debug toolbar overlaps at this viewport size — scrollTo moves it away from that dead zone so
+        // the click actually lands on the button, not the toolbar sitting on top of it.
+        $i->scrollTo(SettingsPage::SELECTOR_SUBMIT);
         $i->click(SettingsPage::SELECTOR_SUBMIT);
         $i->see(SettingsPage::FLASH_MESSAGE_SAVED);
     }
