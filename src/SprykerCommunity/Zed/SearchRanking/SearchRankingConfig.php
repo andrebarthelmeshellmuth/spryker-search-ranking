@@ -90,6 +90,11 @@ class SearchRankingConfig extends AbstractBundleConfig
      *   heavily than the harmonic mean achieves that, while the harmonic mean's own 0.3 share still lets
      *   an all-common-words query (no rare term at all) read as unspecific. Only meaningful once
      *   specificity-aware relevance weighting is enabled at the code level.
+     * - Still a starting point, not a measured optimum for a given catalog — same status as
+     *   {@see getDefaultRelevanceWeight()}'s own 0.75, just favoring `max` over harmonic mean rather than
+     *   text relevance over business signals. Tune it via the Zed Settings page once you have a real feel
+     *   for your own catalog's query mix, or let `spryker-community/search-ranking-optimizer`'s CMA-ES
+     *   search find a better value automatically.
      *
      * @api
      */
