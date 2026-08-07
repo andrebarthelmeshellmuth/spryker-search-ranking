@@ -88,19 +88,13 @@
             {% endif %}
 
             {{ form_start(copyForm, {'action': '/search-ranking-gui/scope-copy-run?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName ~ '&syncSourceStoreName=' ~ syncSourceStoreName ~ '&syncTargetStoreName=' ~ syncTargetStoreName, 'attr': {'class': 'd-inline-block', 'style': 'margin-right: 15px;'}}) }}
-                <label>
-                    {{ form_widget(copyForm.confirmOverwrite) }}
-                    {{ 'Overwrite existing target configuration' | trans }}
-                </label>
+                {{ form_widget(copyForm.confirmOverwrite) }}
                 {{ form_rest(copyForm) }}
                 <button type="submit" class="btn btn-primary" style="margin-left: 10px;">{{ 'Copy now' | trans }}</button>
             {{ form_end(copyForm) }}
 
             {{ form_start(lockForm, {'action': '/search-ranking-gui/scope-copy-lock?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName ~ '&syncSourceStoreName=' ~ syncSourceStoreName ~ '&syncTargetStoreName=' ~ syncTargetStoreName, 'attr': {'class': 'd-inline-block'}}) }}
-                <label>
-                    {{ form_widget(lockForm.confirmOverwrite) }}
-                    {{ 'Overwrite existing target configuration' | trans }}
-                </label>
+                {{ form_widget(lockForm.confirmOverwrite) }}
                 {{ form_rest(lockForm) }}
                 <button type="submit" class="btn btn-success" style="margin-left: 10px;">{{ 'Lock (sync daily)' | trans }}</button>
             {{ form_end(lockForm) }}
@@ -177,10 +171,7 @@
 
             {{ form_start(storeConfigSyncForm, {'action': '/search-ranking-gui/store-config-sync-run?syncSourceStoreName=' ~ syncSourceStoreName ~ '&syncTargetStoreName=' ~ syncTargetStoreName ~ '&sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName}) }}
                 {{ form_widget(storeConfigSyncForm.mode) }}
-                <label>
-                    {{ form_widget(storeConfigSyncForm.confirmOverwrite) }}
-                    {{ 'Overwrite existing target store configuration' | trans }}
-                </label>
+                {{ form_widget(storeConfigSyncForm.confirmOverwrite) }}
                 {{ form_rest(storeConfigSyncForm) }}
                 <button type="submit" class="btn btn-primary" style="margin-top: 10px;">{{ 'Sync now' | trans }}</button>
             {{ form_end(storeConfigSyncForm) }}
