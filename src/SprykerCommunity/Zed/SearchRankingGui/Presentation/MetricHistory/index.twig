@@ -14,6 +14,30 @@
                 <span class="material-symbols-outlined">info</span>
                 {{ 'Each row is a snapshot of a metric\'s configuration AS OF that timestamp — not a before/after diff of the edit that triggered it. To see what a value was BEFORE a given change, look at the next OLDER row for that same metric, not the row itself.' | trans }}
             </div>
+            <form method="get" class="form-inline" style="margin-bottom: 15px;">
+                <label for="storeName">{{ 'Store' | trans }}</label>
+                <select name="storeName" id="storeName" class="form-control" onchange="this.form.submit()">
+                    <option value="" {% if selectedStoreName is null %}selected="selected"{% endif %}>
+                        {{ 'All stores' | trans }}
+                    </option>
+                    {% for store in stores %}
+                        <option value="{{ store }}" {% if store == selectedStoreName %}selected="selected"{% endif %}>
+                            {{ store }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <label for="localeName" style="margin-left: 10px;">{{ 'Locale' | trans }}</label>
+                <select name="localeName" id="localeName" class="form-control" onchange="this.form.submit()">
+                    <option value="" {% if selectedLocaleName is null %}selected="selected"{% endif %}>
+                        {{ 'All locales' | trans }}
+                    </option>
+                    {% for locale in locales %}
+                        <option value="{{ locale }}" {% if locale == selectedLocaleName %}selected="selected"{% endif %}>
+                            {{ locale }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
             {{ metricHistoryTable | raw }}
         {% endblock %}
     {% endembed %}

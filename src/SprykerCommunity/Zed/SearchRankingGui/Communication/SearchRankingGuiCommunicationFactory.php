@@ -54,9 +54,13 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
         return new ProductMetricTable($this->getSearchRankingProductMetricPropelQuery(), $storeName, $localeName);
     }
 
-    public function createMetricHistoryTable(): MetricHistoryTable
+    /**
+     * @param string|null $storeName
+     * @param string|null $localeName
+     */
+    public function createMetricHistoryTable(?string $storeName = null, ?string $localeName = null): MetricHistoryTable
     {
-        return new MetricHistoryTable($this->getSearchRankingMetricHistoryPropelQuery());
+        return new MetricHistoryTable($this->getSearchRankingMetricHistoryPropelQuery(), $storeName, $localeName);
     }
 
     /**
