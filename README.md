@@ -62,6 +62,9 @@ closed-form curve-fit suggestions — no guessing what shape a business signal s
 A quick reference for terms this README reuses across many sections. Each is explained in full where
 it's first introduced in context — this is a lookup index, not a replacement for those explanations.
 
+For the full store/locale scoping picture across every field this package manages — walked through
+formula term by term, plus a quick-reference table — see [SCOPING.md](SCOPING.md).
+
 ### metric
 
 A named business signal (e.g. `pdp_impressions`, `top_seller`) with its own weight, normalization
@@ -1224,13 +1227,14 @@ SKUs at all, or coincidentally-matching SKUs get some other shop's numbers.
   concrete-product search use pure text relevance.
 - Re-publishing of product documents happens **only via the normalize cron** (or manually) —
   importing raw values alone does not refresh the search documents until the next run.
-- Settings, metric weights, raw/normalized product-metric values, and the published
-  ranking-configuration key-value document are all scoped **per (store, locale)** end to end — one
-  document per store×locale in key-value storage, one row per scope in every underlying table — and the
-  Zed GUI (Metrics, Product Values, Product Value Gaps, Settings) has an explicit Store+Locale selector on
-  every page that needs one, matching `spryker-community/search-ranking-optimizer`'s own selector UX.
-  `search-ranking:normalize`/`:randomize` accept optional `--store`/`--locale` options to restrict a run
-  to one scope; omitting them processes every store×locale, same as before this was scoped at all.
+- Not every field is scoped at the same granularity — settings, metric weights, and raw/normalized
+  product-metric values are (store, locale)-scoped, but a metric's `formula`/`isActive`/curve `shape` are
+  store-only, and a few fields (metric identity, `isSpecificityWeightingEnabled`) are global. See
+  [SCOPING.md](SCOPING.md) for the full picture, term by term. The Zed GUI (Metrics, Product Values,
+  Product Value Gaps, Settings) has an explicit Store+Locale selector on every page that needs one,
+  matching `spryker-community/search-ranking-optimizer`'s own selector UX. `search-ranking:normalize`/
+  `:randomize` accept optional `--store`/`--locale` options to restrict a run to one scope; omitting them
+  processes every store×locale, same as before this was scoped at all.
 - With Spryker's **direct synchronization** enabled, core only flushes the sync buffer on console
   termination; this package flushes explicitly after publishing so Zed web saves reach key-value
   storage immediately.
