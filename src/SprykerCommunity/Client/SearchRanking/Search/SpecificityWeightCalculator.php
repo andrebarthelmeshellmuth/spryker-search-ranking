@@ -51,6 +51,10 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
         $configuredRelevanceWeight = (float)$configurationTransfer->getRelevanceWeight();
         $specificityWeightExponent = (float)$configurationTransfer->getSpecificityWeightExponent();
         $specificityWeightShiftMagnitude = (float)$configurationTransfer->getSpecificityWeightShiftMagnitude();
+        // Real configured values regardless of whether any terms carry evidence below — same reasoning
+        // $specificityWeightExponent/$specificityWeightShiftMagnitude already follow into both branches.
+        $specificitySaturationPoint = (float)$configurationTransfer->getSpecificitySaturationPoint();
+        $specificityCurveExponent = $configurationTransfer->getSpecificityCurveExponent() ?? 1.0;
 
         $termFrequencyResult = $this->queryTermFrequencyFetcher->fetch($searchString, $this->fieldToSearchAnalyzer);
         $idfByTerm = $this->calculateIdfByTerm($termFrequencyResult);
@@ -64,6 +68,9 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
                 0,
                 $specificityWeightExponent,
                 $specificityWeightShiftMagnitude,
+                0.0,
+                $specificitySaturationPoint,
+                $specificityCurveExponent,
             );
         }
 
@@ -73,8 +80,8 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
         );
         $normalizedSpecificity = $this->querySpecificityCalculator->normalize(
             $rawSpecificity,
-            (float)$configurationTransfer->getSpecificitySaturationPoint(),
-            $configurationTransfer->getSpecificityCurveExponent() ?? 1.0,
+            $specificitySaturationPoint,
+            $specificityCurveExponent,
         );
 
         $shift = $this->calculateShift($normalizedSpecificity, $specificityWeightExponent, $specificityWeightShiftMagnitude);
@@ -88,6 +95,9 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
             count($idfByTerm),
             $specificityWeightExponent,
             $specificityWeightShiftMagnitude,
+            $rawSpecificity,
+            $specificitySaturationPoint,
+            $specificityCurveExponent,
         );
     }
 

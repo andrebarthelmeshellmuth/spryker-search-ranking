@@ -293,8 +293,11 @@ class ScoreSectionBuilderTest extends Unit
         // Arrange -- shiftMagnitude=0.5, exponent=2.0 chosen so the resulting calculation string is
         // arithmetically real (0.5 × (0.6)^2.0 = 0.18), not just plausible-looking, and so a
         // non-default exponent (the whole reason it's shown at all -- see calculateShift()'s own
-        // docblock) actually appears in the fixture.
-        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.93, 0.8, 0.18, 10, 2.0, 0.5);
+        // docblock) actually appears in the fixture. rawSpecificity=6.0/saturationPoint=3.0/
+        // curveExponent=2.0 chosen the same way: 6.0^2 / (6.0^2 + 3.0^2) = 36/45 = 0.8, the exact
+        // normalizedSpecificity given below -- so the new "Normalized specificity" calculation string is
+        // real arithmetic too, not just plausible-looking.
+        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.93, 0.8, 0.18, 10, 2.0, 0.5, 6.0, 3.0, 2.0);
 
         // Act
         $section = (new ScoreSectionBuilder())->buildSpecificitySection($specificityWeightingResult);
@@ -304,33 +307,52 @@ class ScoreSectionBuilderTest extends Unit
         // The search-debug overlay reads this flag to render this section in its own dedicated spot
         // (above the relevance-weight line) instead of the default top-of-page position.
         $this->assertTrue($section['isSpecificitySection']);
-        $this->assertCount(6, $section['lines']);
+        // No "Query term count" line (purely informational, dropped as unhelpful) and no trailing
+        // "Effective relevance weight (α)" line (the exact same number as build()'s own
+        // RELEVANCE_WEIGHT_LABEL line, which already renders right below this collapsible section,
+        // outside the fold -- see buildSpecificitySection()'s own closing comment).
+        $this->assertCount(7, $section['lines']);
 
         $this->assertSame('Configured relevance weight (α₀)', $section['lines'][0]['label']);
         $this->assertSame(0.75, $section['lines'][0]['value']);
 
-        $this->assertSame('Normalized specificity', $section['lines'][1]['label']);
-        $this->assertSame(0.8, $section['lines'][1]['value']);
+        $this->assertSame('Saturation point (k)', $section['lines'][1]['label']);
+        $this->assertSame(3.0, $section['lines'][1]['value']);
+
+        $this->assertSame('Raw specificity', $section['lines'][2]['label']);
+        $this->assertSame(6.0, $section['lines'][2]['value']);
+
+        $this->assertSame('Normalized specificity', $section['lines'][3]['label']);
+        // Mirrors QuerySpecificityCalculator::normalize()'s own general (exponent-shaped) formula, always
+        // shown with the `^` notation even at exponent 1.0 -- same convention the shift line's own
+        // exponent already follows below.
+        $this->assertSame('6.000^2.000 / (6.000^2.000 + 3.000^2.000)', $section['lines'][3]['calculation']);
+        $this->assertSame(0.8, $section['lines'][3]['value']);
+        // `stacked` opts this line into the label-above-value layout (search-debug-score-line--stacked)
+        // instead of the default side-by-side one -- the full expression above is too long for the
+        // default layout without squeezing the label to near-zero width (confirmed live).
+        $this->assertTrue($section['lines'][3]['stacked']);
 
         // The bridge between "Normalized specificity" and "Shift applied to α" -- without this line, a
-        // reader has no way to see how 0.8 becomes 0.18 two lines below. Deliberately a short label with
-        // no inline formula -- see this label's own constant docblock for why (overlay label truncation).
-        $this->assertSame('Signed deviation', $section['lines'][2]['label']);
-        $this->assertEqualsWithDelta(0.6, $section['lines'][2]['value'], 1.0E-9);
+        // reader has no way to see how 0.8 becomes 0.18 three lines below.
+        $this->assertSame('Signed deviation', $section['lines'][4]['label']);
+        // Plugs in the already-shown normalized specificity value (0.800) directly.
+        $this->assertSame('2 × 0.800 - 1', $section['lines'][4]['calculation']);
+        $this->assertEqualsWithDelta(0.6, $section['lines'][4]['value'], 1.0E-9);
+        // Same squeeze/overflow reason as the normalized-specificity line above -- confirmed live even
+        // THIS line's own short label ellipsis-truncates under the default layout.
+        $this->assertTrue($section['lines'][4]['stacked']);
 
         // Gives the shift line's calculation string its own labeled source for the "0.500" it plugs in,
         // rather than that number appearing unexplained inside the formula.
-        $this->assertSame('Shift magnitude', $section['lines'][3]['label']);
-        $this->assertSame(0.5, $section['lines'][3]['value']);
+        $this->assertSame('Shift magnitude', $section['lines'][5]['label']);
+        $this->assertSame(0.5, $section['lines'][5]['value']);
 
-        $this->assertSame('Shift applied to α', $section['lines'][4]['label']);
+        $this->assertSame('Shift applied to α', $section['lines'][6]['label']);
         // Plugs in the two already-shown values (shift magnitude 0.500, signed deviation 0.600) directly
         // rather than repeating "2 × 0.800 − 1" inline -- same convention build()'s own formulaCalculation
         // uses.
-        $this->assertSame('0.500 × (0.600)^2.000', $section['lines'][4]['calculation']);
-        $this->assertSame(0.18, $section['lines'][4]['value']);
-
-        $this->assertSame('Effective relevance weight (α)', $section['lines'][5]['label']);
-        $this->assertSame(0.93, $section['lines'][5]['value']);
+        $this->assertSame('0.500 × (0.600)^2.000', $section['lines'][6]['calculation']);
+        $this->assertSame(0.18, $section['lines'][6]['value']);
     }
 }

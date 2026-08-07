@@ -122,6 +122,24 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
     protected const SPECIFICITY_CONFIGURED_WEIGHT_LABEL = 'Configured relevance weight (α₀)';
 
     /**
+     * Same short "(k)" shorthand {@see RELEVANCE_SATURATION_POINT_LABEL} already uses for the OTHER
+     * (text-relevance) saturation point — this is specificity's own, a different configured value,
+     * unambiguous since the two never render outside their own sections.
+     *
+     * @var string
+     */
+    protected const SPECIFICITY_SATURATION_POINT_LABEL = 'Saturation point (k)';
+
+    /**
+     * The pre-normalization blended-IDF value {@see SPECIFICITY_NORMALIZED_LABEL}'s own `calculation`
+     * string below plugs in as its numerator — given its own labeled line first, same convention
+     * `SPECIFICITY_SHIFT_MAGNITUDE_LABEL` already follows for the shift formula's own inputs.
+     *
+     * @var string
+     */
+    protected const SPECIFICITY_RAW_LABEL = 'Raw specificity';
+
+    /**
      * @var string
      */
     protected const SPECIFICITY_NORMALIZED_LABEL = 'Normalized specificity';
@@ -132,10 +150,10 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
      * what {@see \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculator::calculateShift()}
      * actually shapes/scales into the shift — without this line, a reader has no way to see how e.g.
      * `0.463` becomes `-0.018` two lines below. Deliberately doesn't spell out "(2 × specificity − 1)" in
-     * the label itself — the overlay's `.search-debug-score-line__label` is a fixed-width, single-line,
+     * the LABEL itself — the overlay's `.search-debug-score-line__label` is a fixed-width, single-line,
      * ellipsis-truncated span (see search-debug's own SCSS), and that formula pushed this label well past
-     * every sibling label's length, truncating mid-word. The formula lives in this docblock and in the
-     * shift line's own `calculation` string below instead, where there's room for it.
+     * every sibling label's length, truncating mid-word. Shown instead as this line's own `calculation`
+     * string in `buildSpecificitySection()`, where there's room for it.
      *
      * @var string
      */
@@ -156,11 +174,6 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
      * @var string
      */
     protected const SPECIFICITY_SHIFT_LABEL = 'Shift applied to α';
-
-    /**
-     * @var string
-     */
-    protected const SPECIFICITY_EFFECTIVE_WEIGHT_LABEL = 'Effective relevance weight (α)';
 
     /**
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
@@ -302,11 +315,49 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
                     'value' => $specificityWeightingResult->getConfiguredRelevanceWeight(),
                 ],
                 [
+                    'label' => static::SPECIFICITY_SATURATION_POINT_LABEL,
+                    'value' => $specificityWeightingResult->getSpecificitySaturationPoint(),
+                ],
+                [
+                    'label' => static::SPECIFICITY_RAW_LABEL,
+                    'value' => $specificityWeightingResult->getRawSpecificity(),
+                ],
+                [
                     'label' => static::SPECIFICITY_NORMALIZED_LABEL,
+                    // Mirrors QuerySpecificityCalculator::normalize()'s own general formula exactly —
+                    // always shown with the `^` exponent notation, even at its default 1.0, same
+                    // "never make a reader guess whether it was applied" convention the shift line below
+                    // already follows for its own exponent. `stacked` (see the search-debug twig
+                    // template's own comment) is load-bearing, not decorative: the full numerator +
+                    // exponent + denominator + exponent expression is too long for the overlay's default
+                    // side-by-side label/value layout — that layout squeezes the LABEL down to near-zero
+                    // width instead of wrapping the value, and the popup then clips whatever no longer
+                    // fits (confirmed live). Stacking lets the value wrap normally underneath its label.
+                    'calculation' => sprintf(
+                        $decimalFormat . '^' . $decimalFormat . ' / (' . $decimalFormat . '^' . $decimalFormat . ' + ' . $decimalFormat . '^' . $decimalFormat . ')',
+                        $specificityWeightingResult->getRawSpecificity(),
+                        $specificityWeightingResult->getSpecificityCurveExponent(),
+                        $specificityWeightingResult->getRawSpecificity(),
+                        $specificityWeightingResult->getSpecificityCurveExponent(),
+                        $specificityWeightingResult->getSpecificitySaturationPoint(),
+                        $specificityWeightingResult->getSpecificityCurveExponent(),
+                    ),
                     'value' => $specificityWeightingResult->getNormalizedSpecificity(),
+                    'stacked' => true,
                 ],
                 [
                     'label' => static::SPECIFICITY_SIGNED_DEVIATION_LABEL,
+                    // Plugs in the ALREADY-shown normalized specificity value directly, same convention
+                    // the shift line below follows for its own inputs — see this label's own docblock for
+                    // why the formula isn't spelled out in the LABEL itself. `stacked` for the same
+                    // squeeze/overflow reason the normalized-specificity line above uses it — confirmed
+                    // live even THIS line's own short label ("Signed deviation") ellipsis-truncates under
+                    // the default layout once the sibling value line grows past one line.
+                    'calculation' => sprintf(
+                        '2 × ' . $decimalFormat . ' - 1',
+                        $specificityWeightingResult->getNormalizedSpecificity(),
+                    ),
+                    'stacked' => true,
                     'value' => $signedDeviation,
                 ],
                 [
@@ -332,10 +383,11 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
                     ),
                     'value' => $specificityWeightingResult->getShift(),
                 ],
-                [
-                    'label' => static::SPECIFICITY_EFFECTIVE_WEIGHT_LABEL,
-                    'value' => $specificityWeightingResult->getRelevanceWeight(),
-                ],
+                // Deliberately stops here, without its own "Effective relevance weight (α)" line — that
+                // exact same number (getRelevanceWeight()) already renders right below this collapsible
+                // section, OUTSIDE the fold, as build()'s own RELEVANCE_WEIGHT_LABEL line (see this
+                // class's own top docblock for where it sits). Repeating it inside the fold too would be
+                // the same value shown twice a few pixels apart.
             ],
         ];
     }
