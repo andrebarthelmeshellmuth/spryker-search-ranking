@@ -37,6 +37,28 @@ class ScopeCopyPage
     public const SELECTOR_TARGET_LOCALE_SELECT = '#targetLocaleName';
 
     /**
+     * Store-only, independent of the (store,locale) pickers above — see SELECTOR_SOURCE_STORE_SELECT.
+     *
+     * @var string
+     */
+    public const SELECTOR_SYNC_SOURCE_STORE_SELECT = '#syncSourceStoreName';
+
+    /**
+     * @var string
+     */
+    public const SELECTOR_SYNC_TARGET_STORE_SELECT = '#syncTargetStoreName';
+
+    /**
+     * @var string
+     */
+    public const COPY_PREVIEW_HEADING_TEXT = 'This will copy:';
+
+    /**
+     * @var string
+     */
+    public const SYNC_PREVIEW_HEADING_TEXT = 'This will sync:';
+
+    /**
      * @var string
      */
     public const COPY_NOW_BUTTON_TEXT = 'Copy now';

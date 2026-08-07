@@ -227,4 +227,47 @@ class ScopeConfigCopierTest extends Unit
         // Assert
         $this->assertTrue($result);
     }
+
+    /**
+     * The preview must mirror {@see ScopeConfigCopier::copyScopeConfiguration()}'s own selection exactly:
+     * only explicitly-saved metric weights/settings, keyed by name/human label, never a resolved/defaulted
+     * value.
+     */
+    public function testPreviewReturnsOnlyExplicitlySavedMetricWeightsAndSettingsKeyedForDisplay(): void
+    {
+        // Arrange
+        $configuredMetric = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(1)->setName('top_seller');
+        $neverWeightedMetric = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(2)->setName('pdp_impressions');
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('getMetricCollection')->with('DE', 'de_DE')->willReturn(
+            (new SearchRankingMetricCollectionTransfer())
+                ->addMetric($configuredMetric)
+                ->addMetric($neverWeightedMetric),
+        );
+        $repositoryMock->method('findMetricWeight')->willReturnMap([
+            [1, 'DE', 'de_DE', 0.8],
+            [2, 'DE', 'de_DE', null],
+        ]);
+        $repositoryMock->method('findSettingValue')->willReturnMap([
+            [SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT, 'DE', 'de_DE', '0.6'],
+            [SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT, 'DE', 'de_DE', null],
+            [SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_BLEND_WEIGHT, 'DE', 'de_DE', null],
+            [SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_SATURATION_POINT, 'DE', 'de_DE', null],
+            [SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_CURVE_EXPONENT, 'DE', 'de_DE', null],
+            [SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT, 'DE', 'de_DE', null],
+            [SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE, 'DE', 'de_DE', null],
+        ]);
+
+        $metricWriterMock = $this->createMock(MetricWriterInterface::class);
+        $settingManagerMock = $this->createMock(SettingManagerInterface::class);
+
+        // Act
+        $previewTransfer = (new ScopeConfigCopier($repositoryMock, $metricWriterMock, $settingManagerMock))
+            ->previewScopeConfiguration('DE', 'de_DE');
+
+        // Assert
+        $this->assertSame(['top_seller' => 0.8], $previewTransfer->getMetricWeights());
+        $this->assertSame(['Relevance weight' => 0.6], $previewTransfer->getSettings());
+    }
 }

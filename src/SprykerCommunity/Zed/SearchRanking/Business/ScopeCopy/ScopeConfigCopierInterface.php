@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy;
 
+use Generated\Shared\Transfer\SearchRankingScopeCopyPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
 
 interface ScopeConfigCopierInterface
@@ -47,4 +48,13 @@ interface ScopeConfigCopierInterface
      * @param string $localeName
      */
     public function hasScopeConfiguration(string $storeName, string $localeName): bool;
+
+    /**
+     * Read-only preview of exactly what {@see copyScopeConfiguration()} would act on for the given
+     * source scope — same "explicitly saved only" selection, never a resolved/defaulted value.
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     */
+    public function previewScopeConfiguration(string $sourceStoreName, string $sourceLocaleName): SearchRankingScopeCopyPreviewTransfer;
 }

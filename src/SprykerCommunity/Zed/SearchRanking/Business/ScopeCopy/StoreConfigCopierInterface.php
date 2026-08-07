@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy;
 
 use Generated\Shared\Transfer\SearchRankingStoreConfigCopyResultTransfer;
+use Generated\Shared\Transfer\SearchRankingStoreConfigPreviewTransfer;
 
 interface StoreConfigCopierInterface
 {
@@ -71,4 +72,14 @@ interface StoreConfigCopierInterface
      * @param string $storeName
      */
     public function hasStoreConfiguration(string $storeName): bool;
+
+    /**
+     * Read-only preview of exactly what {@see copyStoreConfiguration()} would act on for the given
+     * source store — same "explicitly saved only" selection. Needs no locale at all: unlike the real
+     * copy (which re-detects `shape` against real digest data as a side effect of writing), this never
+     * writes anything, so there is nothing for a locale lens to apply to.
+     *
+     * @param string $sourceStoreName
+     */
+    public function previewStoreConfiguration(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer;
 }

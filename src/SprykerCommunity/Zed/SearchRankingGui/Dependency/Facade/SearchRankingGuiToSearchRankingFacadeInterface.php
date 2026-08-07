@@ -13,8 +13,10 @@ use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingScopeCopyPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
 use Generated\Shared\Transfer\SearchRankingStoreConfigCopyResultTransfer;
+use Generated\Shared\Transfer\SearchRankingStoreConfigPreviewTransfer;
 
 interface SearchRankingGuiToSearchRankingFacadeInterface
 {
@@ -203,6 +205,12 @@ interface SearchRankingGuiToSearchRankingFacadeInterface
     /**
      * @param string $sourceStoreName
      * @param string $sourceLocaleName
+     */
+    public function previewScopeConfigurationCopy(string $sourceStoreName, string $sourceLocaleName): SearchRankingScopeCopyPreviewTransfer;
+
+    /**
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
      * @param string $targetStoreName
      * @param string $targetLocaleName
      * @param string $mode
@@ -221,6 +229,11 @@ interface SearchRankingGuiToSearchRankingFacadeInterface
      * @param string $storeName
      */
     public function hasStoreConfiguration(string $storeName): bool;
+
+    /**
+     * @param string $sourceStoreName
+     */
+    public function previewStoreConfigurationSync(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer;
 
     /**
      * @return array<\Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer>
