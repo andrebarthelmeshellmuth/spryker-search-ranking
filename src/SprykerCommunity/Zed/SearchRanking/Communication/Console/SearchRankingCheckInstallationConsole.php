@@ -9,7 +9,10 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Communication\Console;
 
+use ArrayObject;
 use Elastica\Client;
+use Generated\Shared\Transfer\DataImportConfigurationActionTransfer;
+use Generated\Shared\Transfer\DataImportConfigurationTransfer;
 use Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig;
 use Spryker\Shared\Config\Config;
 use Spryker\Shared\Kernel\KernelConstants;
@@ -17,6 +20,8 @@ use Spryker\Shared\SearchElasticsearch\ElasticaClient\ElasticaClientFactory;
 use Spryker\Zed\Kernel\Communication\Console\Console;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingEvents;
+use SprykerCommunity\Shared\SearchRankingStorage\SearchRankingStorageConfig;
+use SprykerCommunity\Zed\SearchRankingDataImport\SearchRankingDataImportConfig;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
@@ -50,12 +55,25 @@ class SearchRankingCheckInstallationConsole extends Console
     /**
      * @var string
      */
-    public const COMMAND_DESCRIPTION = 'Diagnoses a search-ranking installation: core namespace, sibling console command registration, ranking-configuration publish event listener, search engine reachability, page index shape, and configured metrics.';
+    public const COMMAND_DESCRIPTION = 'Diagnoses a search-ranking installation: core namespace, sibling console command registration, data-import plugin registration, ranking-configuration publish event listener and sync queue, Zed translations, search engine reachability, page index shape, and configured metrics.';
 
     /**
      * @var string
      */
     protected const CORE_NAMESPACE = 'SprykerCommunity';
+
+    /**
+     * A stable, page-heading-level string from this package's own `data/translation/Zed/en_US.csv` (step 6)
+     * — unlikely to be casually reworded, unlike a button label.
+     *
+     * @var string
+     */
+    protected const KNOWN_ZED_TRANSLATION_KEY = 'Search Ranking Metrics';
+
+    /**
+     * @var string
+     */
+    protected const KNOWN_ZED_TRANSLATION_LOCALE = 'en_US';
 
     /**
      * The other console commands this package registers — step 3 of the README's installation section.
@@ -99,7 +117,10 @@ class SearchRankingCheckInstallationConsole extends Console
     {
         $this->checkCoreNamespace($output);
         $this->checkSiblingCommandsRegistered($output);
+        $this->checkDataImportPluginsRegistered($output);
         $this->checkEventListenerRegistered($output);
+        $this->checkSyncQueueRegistered($output);
+        $this->checkZedTranslationRegistered($output);
         $this->checkSearchEngine($output);
         $this->checkActiveMetrics($output);
 
@@ -186,6 +207,49 @@ class SearchRankingCheckInstallationConsole extends Console
     }
 
     /**
+     * Verifies the two data-import plugins (README step 4) are registered in
+     * `Pyz\Zed\DataImport\DataImportDependencyProvider::getDataImportPlugins()`, via
+     * {@see \Spryker\Zed\DataImport\Business\DataImportFacadeInterface::getImportersDumpByConfiguration()}.
+     * NOT `listImporters()`/its underlying `ImporterDumper::dump()` — despite reading like the obvious
+     * choice, that method only reflects the older `DataImporterCollection`-based registration style (an
+     * always-empty collection under this package's plugin-based registration), so it would silently
+     * report nothing even on a correctly wired installation. `getImportersDumpByConfiguration()` is the
+     * one that actually consults the registered plugin stack for a given import type.
+     *
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    protected function checkDataImportPluginsRegistered(OutputInterface $output): void
+    {
+        $importTypes = [
+            SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_METRIC,
+            SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_PRODUCT_METRIC,
+        ];
+
+        $actions = new ArrayObject();
+
+        foreach ($importTypes as $importType) {
+            $actions->append((new DataImportConfigurationActionTransfer())->setDataEntity($importType));
+        }
+
+        $configuredImporters = $this->getFactory()->getDataImportFacade()->getImportersDumpByConfiguration(
+            (new DataImportConfigurationTransfer())->setActions($actions),
+        );
+
+        $missingImportTypes = array_diff($importTypes, array_keys($configuredImporters));
+
+        if ($missingImportTypes === []) {
+            $output->writeln(sprintf('<info>✓</info> all %d data-import plugins are registered', count($importTypes)));
+
+            return;
+        }
+
+        $this->failures[] = sprintf(
+            'The following data-import types are NOT registered: %s. Add them in DataImportDependencyProvider::getDataImportPlugins() (README step 4).',
+            implode(', ', $missingImportTypes),
+        );
+    }
+
+    /**
      * Verifies a listener is registered for {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingEvents::RANKING_CONFIGURATION_CHANGE}
      * (README step 12) via {@see \Spryker\Zed\Event\Business\EventFacadeInterface::dumpEventListener()} —
      * the same project-wide, runtime-merged event map core's own `event:dump:listener` command reads.
@@ -211,6 +275,55 @@ class SearchRankingCheckInstallationConsole extends Console
         $this->failures[] = sprintf(
             'No listener is registered for the "%s" event. Register SearchRankingStorageEventSubscriber in Pyz\Zed\Event\EventDependencyProvider::getEventSubscriberCollection() (README step 12) — without it, saving a metric or setting in Zed persists correctly but never reaches the synced key-value storage the live storefront reads.',
             SearchRankingEvents::RANKING_CONFIGURATION_CHANGE,
+        );
+    }
+
+    /**
+     * The sibling gap to {@see checkEventListenerRegistered()}: a project can register the publish event
+     * listener (step 12) but forget `SearchRankingConfigurationSynchronizationDataPlugin` in
+     * `Pyz\Zed\Synchronization\SynchronizationDependencyProvider::getSynchronizationDataPlugins()`
+     * (step 11), or vice versa — either half missing produces the exact same symptom (a saved setting
+     * never reaches Yves), so both need their own check. Verified via
+     * {@see \Spryker\Zed\Synchronization\Business\SynchronizationFacadeInterface::getAvailableResourceNames()}.
+     *
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    protected function checkSyncQueueRegistered(OutputInterface $output): void
+    {
+        $availableResourceNames = $this->getFactory()->getSynchronizationFacade()->getAvailableResourceNames();
+
+        if (in_array(SearchRankingStorageConfig::SEARCH_RANKING_CONFIGURATION_RESOURCE_NAME, $availableResourceNames, true)) {
+            $output->writeln('<info>✓</info> the ranking-configuration sync queue is registered');
+
+            return;
+        }
+
+        $this->failures[] = sprintf(
+            'The "%s" synchronization resource is NOT registered. Add SearchRankingConfigurationSynchronizationDataPlugin in Pyz\Zed\Synchronization\SynchronizationDependencyProvider::getSynchronizationDataPlugins(), plus the matching queue/processor registrations (README step 11) — without it, a saved setting never reaches the synced key-value storage the live storefront reads.',
+            SearchRankingStorageConfig::SEARCH_RANKING_CONFIGURATION_RESOURCE_NAME,
+        );
+    }
+
+    /**
+     * Confirms the project loaded this package's own Zed translation catalog (README step 6) via
+     * {@see \Spryker\Zed\Translator\Business\TranslatorFacadeInterface::has()} against one of its own
+     * known strings — catches both a missing `spryker-community/*` glob in
+     * `Pyz\Zed\Translator\TranslatorConfig::getCoreTranslationFilePathPatterns()` and a stale translator
+     * cache (`translator:generate-cache` never run since this package was installed).
+     *
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    protected function checkZedTranslationRegistered(OutputInterface $output): void
+    {
+        if ($this->getFactory()->getTranslatorFacade()->has(static::KNOWN_ZED_TRANSLATION_KEY, static::KNOWN_ZED_TRANSLATION_LOCALE)) {
+            $output->writeln('<info>✓</info> the Zed GUI translation catalog is loaded');
+
+            return;
+        }
+
+        $this->failures[] = sprintf(
+            'The Zed translation catalog does not resolve "%s". Add the spryker-community/* glob to Pyz\Zed\Translator\TranslatorConfig::getCoreTranslationFilePathPatterns() (README step 6), then run translator:clean-cache and translator:generate-cache.',
+            static::KNOWN_ZED_TRANSLATION_KEY,
         );
     }
 

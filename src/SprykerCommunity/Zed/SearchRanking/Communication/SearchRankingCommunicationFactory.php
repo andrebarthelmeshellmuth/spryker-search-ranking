@@ -10,8 +10,11 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Communication;
 
 use Spryker\Zed\Kernel\Communication\AbstractCommunicationFactory;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToDataImportFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToSearchRankingStorageFacadeInterface;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToSynchronizationFacadeInterface;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToTranslatorFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\SearchRankingDependencyProvider;
 
 /**
@@ -29,5 +32,20 @@ class SearchRankingCommunicationFactory extends AbstractCommunicationFactory
     public function getEventFacade(): SearchRankingToEventFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_EVENT);
+    }
+
+    public function getSynchronizationFacade(): SearchRankingToSynchronizationFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_SYNCHRONIZATION);
+    }
+
+    public function getTranslatorFacade(): SearchRankingToTranslatorFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_TRANSLATOR);
+    }
+
+    public function getDataImportFacade(): SearchRankingToDataImportFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_DATA_IMPORT);
     }
 }
