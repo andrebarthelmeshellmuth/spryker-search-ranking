@@ -109,6 +109,56 @@ class SearchRankingMetricWriterStepTest extends Unit
         $this->assertFalse($storeConfigEntity?->getIsActive());
     }
 
+    /**
+     * A comma-separated locale list writes the same weight into every listed locale, leaving the
+     * store-scoped formula/isActive row (written once, unrelated to locale) untouched. Whitespace after
+     * the comma is trimmed, so `de_DE, en_US` behaves the same as `de_DE,en_US`.
+     */
+    public function testExecuteFansWeightOutToEveryCommaSeparatedLocaleWithTheSameWeight(): void
+    {
+        // Arrange
+        $name = 'test_multi_locale_metric_' . uniqid();
+        $dataSet = new DataSet([
+            SearchRankingMetricDataSetInterface::COL_NAME => $name,
+            SearchRankingMetricDataSetInterface::COL_WEIGHT => '0.6',
+            SearchRankingMetricDataSetInterface::COL_FORMULA => 'x / max',
+            SearchRankingMetricDataSetInterface::COL_IS_ACTIVE => '1',
+            SearchRankingMetricDataSetInterface::COL_STORE => SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SearchRankingMetricDataSetInterface::COL_LOCALE => 'de_DE, en_US',
+        ]);
+
+        // Act
+        (new SearchRankingMetricWriterStep())->execute($dataSet);
+
+        // Assert
+        $metricEntity = $this->findAndTrackMetric($name);
+
+        $metricWeightEntities = SpySearchRankingMetricWeightQuery::create()
+            ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
+            ->filterByStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+            ->find();
+
+        $localeNames = [];
+
+        foreach ($metricWeightEntities as $metricWeightEntity) {
+            $localeNames[] = $metricWeightEntity->getLocaleName();
+            $this->assertSame(0.6, $metricWeightEntity->getWeight());
+        }
+
+        sort($localeNames);
+        $this->assertSame(['de_DE', 'en_US'], $localeNames);
+
+        // store_config (formula/isActive) is written once, unaffected by how many locales the weight
+        // fanned out to -- there is exactly one row for this store, not one per locale.
+        $this->assertSame(
+            1,
+            SpySearchRankingMetricStoreConfigQuery::create()
+                ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
+                ->filterByStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
+                ->count(),
+        );
+    }
+
     public function testExecuteThrowsForANameThatWouldNeverContributeToLiveRanking(): void
     {
         // Arrange — mixed case is rejected by FunctionScoreBuilder::METRIC_NAME_PATTERN just like a

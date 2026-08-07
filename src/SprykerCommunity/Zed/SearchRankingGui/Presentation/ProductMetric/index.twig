@@ -12,6 +12,14 @@
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Raw and Normalized Values per Product' } %}
         {% block widget_content %}
+            <p>
+                Product values are CSV-imported (<code>search_ranking_product_metric.csv</code>), one row
+                per (product, metric, store, locale). If a metric doesn't genuinely vary by locale — a
+                store-wide fact like sales or stock — list every locale it applies to comma-separated in
+                that CSV's <code>locale</code> column (quoted, e.g. <code>"de_DE,en_US"</code> — the file
+                itself is comma-delimited, so the cell needs quoting) instead of duplicating the row: the
+                importer writes the same raw value into every listed locale automatically.
+            </p>
             <form method="get" class="form-inline" style="margin-bottom: 15px;">
                 <label for="storeName">{{ 'Store' | trans }}</label>
                 <select name="storeName" id="storeName" class="form-control" onchange="this.form.submit()">

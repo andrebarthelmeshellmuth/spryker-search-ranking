@@ -47,15 +47,32 @@ class SearchRankingProductMetricWriterStep implements DataImportStepInterface
             );
         }
 
-        $productMetricEntity = SpySearchRankingProductMetricQuery::create()
-            ->filterByFkSearchRankingMetric($dataSet[SearchRankingProductMetricDataSetInterface::KEY_ID_SEARCH_RANKING_METRIC])
-            ->filterByFkProductAbstract($dataSet[SearchRankingProductMetricDataSetInterface::KEY_ID_PRODUCT_ABSTRACT])
-            ->filterByStoreName((string)$dataSet[SearchRankingProductMetricDataSetInterface::COL_STORE])
-            ->filterByLocaleName((string)$dataSet[SearchRankingProductMetricDataSetInterface::COL_LOCALE])
-            ->findOneOrCreate();
+        foreach ($this->splitLocaleNames((string)$dataSet[SearchRankingProductMetricDataSetInterface::COL_LOCALE]) as $localeName) {
+            $productMetricEntity = SpySearchRankingProductMetricQuery::create()
+                ->filterByFkSearchRankingMetric($dataSet[SearchRankingProductMetricDataSetInterface::KEY_ID_SEARCH_RANKING_METRIC])
+                ->filterByFkProductAbstract($dataSet[SearchRankingProductMetricDataSetInterface::KEY_ID_PRODUCT_ABSTRACT])
+                ->filterByStoreName((string)$dataSet[SearchRankingProductMetricDataSetInterface::COL_STORE])
+                ->filterByLocaleName($localeName)
+                ->findOneOrCreate();
 
-        $productMetricEntity->setRawValue((float)$rawValue);
+            $productMetricEntity->setRawValue((float)$rawValue);
 
-        $productMetricEntity->save();
+            $productMetricEntity->save();
+        }
+    }
+
+    /**
+     * A single locale (`de_DE`) or a comma-separated list (`de_DE,en_US`) — see
+     * {@see \SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingProductMetric\DataSet\SearchRankingProductMetricDataSetInterface::COL_LOCALE}.
+     * Entries are trimmed so `de_DE, en_US` (with incidental whitespace after the comma) works the same
+     * as `de_DE,en_US`.
+     *
+     * @param string $localeNamesColumnValue
+     *
+     * @return array<string>
+     */
+    protected function splitLocaleNames(string $localeNamesColumnValue): array
+    {
+        return array_map('trim', explode(',', $localeNamesColumnValue));
     }
 }

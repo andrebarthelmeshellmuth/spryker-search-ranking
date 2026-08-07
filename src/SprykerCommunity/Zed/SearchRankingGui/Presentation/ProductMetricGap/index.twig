@@ -10,6 +10,15 @@
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Products with no value at all for a business score' } %}
         {% block widget_content %}
+            <p>
+                Missing a value for one locale that already exists for another? If this metric doesn't
+                genuinely vary by locale (a store-wide fact like sales or stock), that may just mean the
+                import never listed this locale — re-import with both locales comma-separated (quoted,
+                e.g. <code>"de_DE,en_US"</code>) in the <code>locale</code> column of
+                <code>search_ranking_product_metric.csv</code> (see the
+                <a href="/search-ranking-gui/product-metric">Product Values</a> page) to fill the gap,
+                if that fits how this particular metric behaves.
+            </p>
             <form method="get" class="form-inline" style="margin-bottom: 15px;">
                 <label for="metric">{{ 'Business score' | trans }}</label>
                 <select name="metric" id="metric" class="form-control" onchange="this.form.submit()">

@@ -32,6 +32,12 @@ interface SearchRankingProductMetricDataSetInterface
     public const COL_STORE = 'store';
 
     /**
+     * A single locale (e.g. `de_DE`) or a comma-separated list of locales (e.g. `de_DE,en_US`) — a
+     * metric that doesn't genuinely vary by locale (a store-wide fact like sales/stock) can list every
+     * locale it applies to in one row instead of one row per locale;
+     * {@see \SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingProductMetric\SearchRankingProductMetricWriterStep}
+     * writes the same raw value into each listed locale.
+     *
      * @var string
      */
     public const COL_LOCALE = 'locale';

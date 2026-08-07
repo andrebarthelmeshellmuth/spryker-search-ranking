@@ -1192,6 +1192,23 @@ abstract_sku,metric_name,raw_value,store,locale
 > required columns too, so a missing `store`/`locale` column surfaces the same way any other missing
 > required column always has.
 
+`locale` in either CSV also accepts a comma-separated list (e.g. `de_DE,en_US`) — the same convention
+Spryker core itself uses for multi-value import cells (e.g. `ProductAbstractSkusToIdsConditionResolver`'s
+`explode(',', $conditionValue)`). For a metric that doesn't genuinely vary by locale — a store-wide fact
+like sales or stock, the kind of metric `isLocaleScoped=false` fits (see [Terminology](#terminology)) —
+list every locale it applies to in one row instead of duplicating the whole row per locale; the importer
+writes the identical `weight`/`raw_value` into each listed locale:
+
+```csv
+name,weight,formula,is_active,store,locale
+top_seller,0.5,x / max,1,DE,"de_DE,en_US"
+```
+
+Quoting the cell (`"de_DE,en_US"`) is required, not optional — the reader is a plain RFC 4180 CSV parser
+(`SplFileObject::READ_CSV`, comma delimiter, `"` enclosure — see Spryker core's
+`CsvReaderConfiguration`), so an unquoted comma inside a cell is indistinguishable from a real column
+boundary and will silently shift every column after it.
+
 Example files ship in this package under `data/import/`, formatted correctly but **populated with this
 package's own development shop's real catalog SKUs and metric values** — they exist to prove the import
 mechanics work end-to-end against a real catalog, not as generic/portable seed data. Copy the format, not
