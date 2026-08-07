@@ -18,8 +18,10 @@ use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer;
+use Generated\Shared\Transfer\SearchRankingScopeCopyPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
 use Generated\Shared\Transfer\SearchRankingStoreConfigCopyResultTransfer;
+use Generated\Shared\Transfer\SearchRankingStoreConfigPreviewTransfer;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
 interface SearchRankingFacadeInterface
@@ -568,6 +570,20 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
+     * - Read-only preview of exactly what {@see copyScopeConfiguration()} would act on for the given
+     *   source scope: every metric's explicitly-saved weight, and every explicitly-saved setting by its
+     *   human-readable label. Never a resolved/defaulted value — same "explicitly saved only" selection
+     *   the real copy uses.
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     */
+    public function previewScopeConfigurationCopy(string $sourceStoreName, string $sourceLocaleName): SearchRankingScopeCopyPreviewTransfer;
+
+    /**
+     * Specification:
      * - Copies formula/isActive/shape for every metric explicitly configured in the source STORE onto
      *   the target store — store-only, not (store,locale)-scoped like {@see copyScopeConfiguration()},
      *   since formula/isActive/shape are themselves store-scoped, not (store,locale)-scoped. Tagged
@@ -611,6 +627,19 @@ interface SearchRankingFacadeInterface
      * @param string $storeName
      */
     public function hasStoreConfiguration(string $storeName): bool;
+
+    /**
+     * Specification:
+     * - Read-only preview of exactly what {@see copyStoreConfiguration()} would act on for the given
+     *   source store: every metric's explicitly-saved formula and active flag. Needs no locale at all —
+     *   unlike the real copy, this never writes anything, so there is nothing for a locale-scoped
+     *   shape-detection lens to apply to.
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     */
+    public function previewStoreConfigurationSync(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer;
 
     /**
      * Specification:

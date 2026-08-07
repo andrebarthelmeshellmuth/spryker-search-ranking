@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy;
 
+use Generated\Shared\Transfer\SearchRankingScopeCopyPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface;
@@ -28,6 +29,23 @@ class ScopeConfigCopier implements ScopeConfigCopierInterface
         SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_CURVE_EXPONENT => 'saveSpecificityCurveExponent',
         SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT => 'saveSpecificityWeightExponent',
         SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE => 'saveSpecificityWeightShiftMagnitude',
+    ];
+
+    /**
+     * Human-readable labels for {@see SETTING_COPIERS}' keys, for the read-only copy preview — mirrors
+     * the Settings page's own {@see \SprykerCommunity\Zed\SearchRankingGui\Communication\Form\SettingsForm}
+     * field labels exactly, so the preview reads as the same names an admin already knows from that page.
+     *
+     * @var array<string, string>
+     */
+    protected const SETTING_LABELS = [
+        SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT => 'Relevance weight',
+        SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT => 'Relevance saturation point',
+        SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_BLEND_WEIGHT => 'Specificity blend weight',
+        SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_SATURATION_POINT => 'Specificity saturation point',
+        SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_CURVE_EXPONENT => 'Specificity curve exponent',
+        SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT => 'Specificity weight exponent',
+        SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE => 'Specificity weight shift magnitude',
     ];
 
     /**
@@ -92,6 +110,67 @@ class ScopeConfigCopier implements ScopeConfigCopierInterface
     public function hasScopeConfiguration(string $storeName, string $localeName): bool
     {
         return $this->repository->hasScopeConfiguration($storeName, $localeName);
+    }
+
+    /**
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     */
+    public function previewScopeConfiguration(string $sourceStoreName, string $sourceLocaleName): SearchRankingScopeCopyPreviewTransfer
+    {
+        return (new SearchRankingScopeCopyPreviewTransfer())
+            ->setMetricWeights($this->previewMetricWeights($sourceStoreName, $sourceLocaleName))
+            ->setSettings($this->previewSettings($sourceStoreName, $sourceLocaleName));
+    }
+
+    /**
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     *
+     * @return array<string, float>
+     */
+    protected function previewMetricWeights(string $sourceStoreName, string $sourceLocaleName): array
+    {
+        $metricWeights = [];
+
+        foreach ($this->repository->getMetricCollection($sourceStoreName, $sourceLocaleName)->getMetrics() as $metricTransfer) {
+            $sourceWeight = $this->repository->findMetricWeight(
+                $metricTransfer->getIdSearchRankingMetricOrFail(),
+                $sourceStoreName,
+                $sourceLocaleName,
+            );
+
+            if ($sourceWeight === null) {
+                continue;
+            }
+
+            $metricWeights[$metricTransfer->getNameOrFail()] = $sourceWeight;
+        }
+
+        return $metricWeights;
+    }
+
+    /**
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     *
+     * @return array<string, float>
+     */
+    protected function previewSettings(string $sourceStoreName, string $sourceLocaleName): array
+    {
+        $settings = [];
+
+        foreach (array_keys(static::SETTING_COPIERS) as $settingKey) {
+            $sourceValue = $this->repository->findSettingValue($settingKey, $sourceStoreName, $sourceLocaleName);
+
+            if ($sourceValue === null) {
+                continue;
+            }
+
+            $settings[static::SETTING_LABELS[$settingKey]] = (float)$sourceValue;
+        }
+
+        return $settings;
     }
 
     /**

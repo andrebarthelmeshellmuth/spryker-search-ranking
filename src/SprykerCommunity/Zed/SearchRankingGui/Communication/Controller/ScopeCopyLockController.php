@@ -38,9 +38,13 @@ class ScopeCopyLockController extends AbstractController
         $sourceLocaleName = (string)$request->query->get(ScopeCopyController::PARAM_SOURCE_LOCALE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME;
         $targetStoreName = (string)$request->query->get(ScopeCopyController::PARAM_TARGET_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
         $targetLocaleName = (string)$request->query->get(ScopeCopyController::PARAM_TARGET_LOCALE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME;
+        // Carried through as hidden fields on the same form purely so the independent "Sync store
+        // configuration" widget's own picker doesn't reset back to its defaults on this redirect.
+        $syncSourceStoreName = (string)$request->query->get(ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
+        $syncTargetStoreName = (string)$request->query->get(ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
 
         $redirectUrl = sprintf(
-            '%s?%s=%s&%s=%s&%s=%s&%s=%s',
+            '%s?%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s',
             static::URL_SCOPE_COPY,
             ScopeCopyController::PARAM_SOURCE_STORE_NAME,
             $sourceStoreName,
@@ -50,6 +54,10 @@ class ScopeCopyLockController extends AbstractController
             $targetStoreName,
             ScopeCopyController::PARAM_TARGET_LOCALE_NAME,
             $targetLocaleName,
+            ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME,
+            $syncSourceStoreName,
+            ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME,
+            $syncTargetStoreName,
         );
 
         $actionForm = $this->getFactory()->createScopeCopyActionForm()->handleRequest($request);

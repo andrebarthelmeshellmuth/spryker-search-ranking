@@ -18,8 +18,10 @@ use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingNormalizationResultTransfer;
+use Generated\Shared\Transfer\SearchRankingScopeCopyPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
 use Generated\Shared\Transfer\SearchRankingStoreConfigCopyResultTransfer;
+use Generated\Shared\Transfer\SearchRankingStoreConfigPreviewTransfer;
 use Spryker\Zed\Kernel\Business\AbstractFacade;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
@@ -516,6 +518,19 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @param string $sourceStoreName
      * @param string $sourceLocaleName
+     */
+    public function previewScopeConfigurationCopy(string $sourceStoreName, string $sourceLocaleName): SearchRankingScopeCopyPreviewTransfer
+    {
+        return $this->getFactory()->createScopeConfigCopier()->previewScopeConfiguration($sourceStoreName, $sourceLocaleName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
      * @param string $targetStoreName
      * @param string $targetLocaleName
      * @param string $mode
@@ -550,6 +565,18 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     public function hasStoreConfiguration(string $storeName): bool
     {
         return $this->getFactory()->createStoreConfigCopier()->hasStoreConfiguration($storeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     */
+    public function previewStoreConfigurationSync(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer
+    {
+        return $this->getFactory()->createStoreConfigCopier()->previewStoreConfiguration($sourceStoreName);
     }
 
     /**

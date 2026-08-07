@@ -209,4 +209,35 @@ class StoreConfigCopierTest extends Unit
         // Assert
         $this->assertTrue($result);
     }
+
+    /**
+     * The preview must mirror {@see StoreConfigCopier::copyStoreConfiguration()}'s own selection exactly:
+     * only metrics with an explicitly-saved store-config row, keyed by name, carrying formula/isActive —
+     * never a metric the source store has never configured (no store-config row at all).
+     */
+    public function testPreviewReturnsOnlyMetricsWithAnExplicitlySavedStoreConfig(): void
+    {
+        // Arrange
+        $configuredMetric = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(1)->setName('top_seller');
+        $neverConfiguredMetric = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(2)->setName('random');
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('getMetricCollection')->with('DE', SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)->willReturn(
+            (new SearchRankingMetricCollectionTransfer())
+                ->addMetric($configuredMetric)
+                ->addMetric($neverConfiguredMetric),
+        );
+        $repositoryMock->method('findMetricStoreConfig')->willReturnMap([
+            [1, 'DE', (new SearchRankingMetricStoreConfigTransfer())->setFormula('x / max')->setIsActive(true)],
+            [2, 'DE', null],
+        ]);
+
+        $metricWriterMock = $this->createMock(MetricWriterInterface::class);
+
+        // Act
+        $previewTransfer = (new StoreConfigCopier($repositoryMock, $metricWriterMock))->previewStoreConfiguration('DE');
+
+        // Assert
+        $this->assertSame(['top_seller' => ['formula' => 'x / max', 'isActive' => true]], $previewTransfer->getMetrics());
+    }
 }

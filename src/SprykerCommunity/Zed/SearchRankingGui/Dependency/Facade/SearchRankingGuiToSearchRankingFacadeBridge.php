@@ -13,8 +13,10 @@ use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingScopeCopyPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
 use Generated\Shared\Transfer\SearchRankingStoreConfigCopyResultTransfer;
+use Generated\Shared\Transfer\SearchRankingStoreConfigPreviewTransfer;
 
 class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToSearchRankingFacadeInterface
 {
@@ -294,6 +296,15 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     /**
      * @param string $sourceStoreName
      * @param string $sourceLocaleName
+     */
+    public function previewScopeConfigurationCopy(string $sourceStoreName, string $sourceLocaleName): SearchRankingScopeCopyPreviewTransfer
+    {
+        return $this->searchRankingFacade->previewScopeConfigurationCopy($sourceStoreName, $sourceLocaleName);
+    }
+
+    /**
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
      * @param string $targetStoreName
      * @param string $targetLocaleName
      * @param string $mode
@@ -323,6 +334,14 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     public function hasStoreConfiguration(string $storeName): bool
     {
         return $this->searchRankingFacade->hasStoreConfiguration($storeName);
+    }
+
+    /**
+     * @param string $sourceStoreName
+     */
+    public function previewStoreConfigurationSync(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer
+    {
+        return $this->searchRankingFacade->previewStoreConfigurationSync($sourceStoreName);
     }
 
     /**

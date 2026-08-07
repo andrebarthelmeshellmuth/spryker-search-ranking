@@ -39,6 +39,21 @@ class ScopeCopyController extends AbstractController
     public const PARAM_TARGET_LOCALE_NAME = 'targetLocaleName';
 
     /**
+     * Store-only — the "Sync store configuration" widget has its own independent source/target STORE
+     * pickers, deliberately separate from the (store,locale)-scoped ones above: formula/isActive/shape
+     * are store-wide, so a locale picker for that widget would be pure noise (see
+     * {@see \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\StoreConfigCopierInterface}).
+     *
+     * @var string
+     */
+    public const PARAM_SYNC_SOURCE_STORE_NAME = 'syncSourceStoreName';
+
+    /**
+     * @var string
+     */
+    public const PARAM_SYNC_TARGET_STORE_NAME = 'syncTargetStoreName';
+
+    /**
      * @param \Symfony\Component\HttpFoundation\Request $request
      *
      * @return array<string, mixed>
@@ -53,6 +68,9 @@ class ScopeCopyController extends AbstractController
         $targetStoreName = (string)$request->query->get(static::PARAM_TARGET_STORE_NAME, '') ?: $this->resolveDefaultTargetStoreName($stores, $sourceStoreName);
         $targetLocaleName = (string)$request->query->get(static::PARAM_TARGET_LOCALE_NAME, '') ?: $sourceLocaleName;
 
+        $syncSourceStoreName = (string)$request->query->get(static::PARAM_SYNC_SOURCE_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
+        $syncTargetStoreName = (string)$request->query->get(static::PARAM_SYNC_TARGET_STORE_NAME, '') ?: $this->resolveDefaultTargetStoreName($stores, $syncSourceStoreName);
+
         $searchRankingFacade = $this->getFactory()->getSearchRankingFacade();
         $activeLocks = $searchRankingFacade->getActiveScopeCopyLocks();
 
@@ -63,8 +81,12 @@ class ScopeCopyController extends AbstractController
             'sourceLocaleName' => $sourceLocaleName,
             'targetStoreName' => $targetStoreName,
             'targetLocaleName' => $targetLocaleName,
+            'syncSourceStoreName' => $syncSourceStoreName,
+            'syncTargetStoreName' => $syncTargetStoreName,
             'hasTargetData' => $searchRankingFacade->hasScopeConfiguration($targetStoreName, $targetLocaleName),
-            'hasTargetStoreConfig' => $searchRankingFacade->hasStoreConfiguration($targetStoreName),
+            'hasTargetStoreConfig' => $searchRankingFacade->hasStoreConfiguration($syncTargetStoreName),
+            'scopeCopyPreview' => $searchRankingFacade->previewScopeConfigurationCopy($sourceStoreName, $sourceLocaleName),
+            'storeConfigPreview' => $searchRankingFacade->previewStoreConfigurationSync($syncSourceStoreName),
             'activeLocks' => $activeLocks,
             'copyForm' => $this->getFactory()->createScopeCopyActionForm()->createView(),
             'lockForm' => $this->getFactory()->createScopeCopyActionForm()->createView(),

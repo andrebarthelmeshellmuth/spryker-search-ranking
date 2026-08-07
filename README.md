@@ -395,7 +395,10 @@ so, with no error to tell you why.
   Blocked by default when the target scope already has any saved configuration; an "Overwrite existing
   target configuration" checkbox is required to proceed. Every copied metric weight is recorded on
   [Metric History](#what-it-does) tagged `scope_copy`, alongside the existing `manual`/`auto_tune`/
-  `optimizer_apply`/`checkpoint_restore` sources.
+  `optimizer_apply`/`checkpoint_restore` sources. A live "This will copy:" preview — every metric weight
+  and setting the source scope currently has explicitly saved, with its real value — re-queries and
+  re-renders on every picker change, so an admin sees exactly what a click on Copy/Lock is about to do
+  before committing to it.
 
   Two actions:
   - **Copy now** — a one-off copy, no lasting relationship.
@@ -412,10 +415,13 @@ so, with no error to tell you why.
   **Sync store configuration** (same page, below the copy/lock actions above) — a separate, **store-only**
   action for a metric's `formula`/`isActive`/curve `shape`, since those are store-scoped, not
   (store,locale)-scoped like weight/settings (see [Terminology](#terminology)'s own `metric` entry for the
-  store-vs-(store,locale) scoping background). Uses the SAME source/target Store pickers above it (their
-  locale is only used as a lens to re-detect each copied metric's `shape` against its own real digest — `shape` is never carried over
-  verbatim, so a target with no digest yet correctly ends up with `shape=null` even though its `formula` was
-  copied). Two modes:
+  store-vs-(store,locale) scoping background). Has its OWN independent source/target Store pickers,
+  deliberately separate from the (store,locale) pickers above — a locale picker for this action would be
+  pure noise, since formula/isActive/shape don't vary by locale at all. (Internally, `shape` is still
+  re-detected against the app's default locale's real digest as a side effect of the write — `shape` is
+  never carried over verbatim, so a target with no digest yet correctly ends up with `shape=null` even
+  though its `formula` was copied — but that's an implementation detail, not something either picker's
+  locale ever controlled.) Two modes:
   - **Mirror** (default) — copies every metric the source store has explicitly configured, creating a row
     for one the target has never configured at all. Matches the copy/lock actions' own bootstrap
     philosophy above.
@@ -428,7 +434,9 @@ so, with no error to tell you why.
   [Metric History](#what-it-does) tagged `scope_copy`, fanned out across every real locale of the target
   store, same as any other formula change (a single history row keyed to one locale would under-represent
   a store-wide change). **One-off only** — unlike weight/settings, there is no lockable/daily-synced
-  variant of this action; formula/curve-shape tuning changes far less often than weight in practice.
+  variant of this action; formula/curve-shape tuning changes far less often than weight in practice. Same
+  live "This will sync:" preview pattern as the copy/lock action above — every metric the source store
+  currently has an explicitly saved formula for, with its real formula and active flag.
 
 ## Ranking formula
 

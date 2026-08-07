@@ -197,6 +197,23 @@
         <property name="skippedCount" type="int"/>
     </transfer>
 
+    <!-- What copyScopeConfiguration() would act on for a given source scope, computed read-only on every
+         page load as the Scope Copy page's pickers change — metricWeights/settings mirror the real copy's
+         own "explicitly saved only" selection exactly (never a resolved/defaulted value), so the preview
+         never shows something the actual copy wouldn't touch. metricWeights is metricName => weight;
+         settings is the human-readable setting label => its current value. -->
+    <transfer name="SearchRankingScopeCopyPreview" strict="true">
+        <property name="metricWeights" type="array" singular="metricWeight" associative="true"/>
+        <property name="settings" type="array" singular="setting" associative="true"/>
+    </transfer>
+
+    <!-- What copyStoreConfiguration() would act on for a given source store — metricName => an
+         associative {formula, isActive} pair, only for metrics with an explicitly saved formula in that
+         store. Same "explicitly saved only" semantics as SearchRankingScopeCopyPreview. -->
+    <transfer name="SearchRankingStoreConfigPreview" strict="true">
+        <property name="metrics" type="array" singular="metric" associative="true"/>
+    </transfer>
+
     <transfer name="SearchRankingSettingHistory" strict="true">
         <property name="idSearchRankingSettingHistory" type="int"/>
         <property name="settingKey" type="string"/>

@@ -35,14 +35,22 @@ class StoreConfigSyncRunController extends AbstractController
      */
     public function indexAction(Request $request): RedirectResponse
     {
+        $syncSourceStoreName = (string)$request->query->get(ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
+        $syncTargetStoreName = (string)$request->query->get(ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
+        // Carried through as hidden fields on the same form purely so the "Copy configuration between
+        // store/locale scopes" widget's own picker doesn't reset back to its defaults on this redirect.
         $sourceStoreName = (string)$request->query->get(ScopeCopyController::PARAM_SOURCE_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
         $sourceLocaleName = (string)$request->query->get(ScopeCopyController::PARAM_SOURCE_LOCALE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME;
         $targetStoreName = (string)$request->query->get(ScopeCopyController::PARAM_TARGET_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
         $targetLocaleName = (string)$request->query->get(ScopeCopyController::PARAM_TARGET_LOCALE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME;
 
         $redirectUrl = sprintf(
-            '%s?%s=%s&%s=%s&%s=%s&%s=%s',
+            '%s?%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s',
             static::URL_SCOPE_COPY,
+            ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME,
+            $syncSourceStoreName,
+            ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME,
+            $syncTargetStoreName,
             ScopeCopyController::PARAM_SOURCE_STORE_NAME,
             $sourceStoreName,
             ScopeCopyController::PARAM_SOURCE_LOCALE_NAME,
@@ -64,11 +72,16 @@ class StoreConfigSyncRunController extends AbstractController
         $confirmOverwrite = (bool)$actionForm->get(StoreConfigSyncActionForm::FIELD_CONFIRM_OVERWRITE)->getData();
         $mode = (string)$actionForm->get(StoreConfigSyncActionForm::FIELD_MODE)->getData();
 
+        // formula/isActive/shape are store-wide, not locale-scoped — the source/target locale this
+        // facade call still technically takes is only ever used internally to pick which locale's real
+        // digest data re-detects each copied metric's `shape` (see StoreConfigCopierInterface's own
+        // docblock), so the app-wide default is passed rather than exposing a locale picker for this
+        // store-only action.
         $resultTransfer = $this->getFactory()->getSearchRankingFacade()->copyStoreConfiguration(
-            $sourceStoreName,
-            $sourceLocaleName,
-            $targetStoreName,
-            $targetLocaleName,
+            $syncSourceStoreName,
+            SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+            $syncTargetStoreName,
+            SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
             $mode,
             $confirmOverwrite,
         );
@@ -76,7 +89,7 @@ class StoreConfigSyncRunController extends AbstractController
         if ($resultTransfer->getIsBlockedByExistingData()) {
             $this->addErrorMessage(sprintf(
                 '%s already has saved store configuration — check "Overwrite existing target store configuration" and sync again to proceed.',
-                $targetStoreName,
+                $syncTargetStoreName,
             ));
 
             return $this->redirectResponse($redirectUrl);
@@ -93,8 +106,8 @@ class StoreConfigSyncRunController extends AbstractController
         $this->addSuccessMessage(sprintf(
             'Synced %d metric(s) from %s to %s.%s',
             $resultTransfer->getCopiedCount(),
-            $sourceStoreName,
-            $targetStoreName,
+            $syncSourceStoreName,
+            $syncTargetStoreName,
             $skippedCount ? sprintf(' Skipped %d metric(s) the target has not adopted yet.', $skippedCount) : '',
         ));
 

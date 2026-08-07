@@ -10,6 +10,8 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy;
 
 use Generated\Shared\Transfer\SearchRankingStoreConfigCopyResultTransfer;
+use Generated\Shared\Transfer\SearchRankingStoreConfigPreviewTransfer;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
@@ -92,5 +94,33 @@ class StoreConfigCopier implements StoreConfigCopierInterface
     public function hasStoreConfiguration(string $storeName): bool
     {
         return $this->repository->hasStoreConfiguration($storeName);
+    }
+
+    /**
+     * The locale passed to {@see \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface::getMetricCollection()}
+     * here is a pure API artifact (it needs one to return a metric list at all) — formula/isActive are
+     * store-wide, so any real locale of the store returns identical results; the app-wide default is
+     * used rather than asking the caller for one it has no actual use for.
+     *
+     * @param string $sourceStoreName
+     */
+    public function previewStoreConfiguration(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer
+    {
+        $metrics = [];
+
+        foreach ($this->repository->getMetricCollection($sourceStoreName, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)->getMetrics() as $metricTransfer) {
+            $storeConfigTransfer = $this->repository->findMetricStoreConfig($metricTransfer->getIdSearchRankingMetricOrFail(), $sourceStoreName);
+
+            if ($storeConfigTransfer === null) {
+                continue;
+            }
+
+            $metrics[$metricTransfer->getNameOrFail()] = [
+                'formula' => $storeConfigTransfer->getFormula(),
+                'isActive' => $storeConfigTransfer->getIsActive(),
+            ];
+        }
+
+        return (new SearchRankingStoreConfigPreviewTransfer())->setMetrics($metrics);
     }
 }
