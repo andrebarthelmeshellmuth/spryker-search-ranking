@@ -24,4 +24,9 @@ interface SearchRankingToEventFacadeInterface
      * @param \Spryker\Shared\Kernel\Transfer\TransferInterface $transfer
      */
     public function trigger(string $eventName, TransferInterface $transfer): void;
+
+    /**
+     * @return array<string, array<string, array<string, mixed>>>
+     */
+    public function dumpEventListener(): array;
 }

@@ -57,7 +57,10 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
 
     /**
      * The storage facade is a Communication-layer dependency only (console command); the Business
-     * layer must stay free of it to avoid a circular module dependency with SearchRankingStorage.
+     * layer must stay free of it to avoid a circular module dependency with SearchRankingStorage. The
+     * event facade is ALSO bound here (in addition to the Business layer above) because
+     * `search-ranking:check-installation` (Communication layer) needs `dumpEventListener()` to verify
+     * the project actually registered the ranking-configuration publish listener.
      *
      * @param \Spryker\Zed\Kernel\Container $container
      */
@@ -65,6 +68,7 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
     public function provideCommunicationLayerDependencies(Container $container): Container
     {
         $container = parent::provideCommunicationLayerDependencies($container);
+        $container = $this->addEventFacade($container);
 
         return $this->addSearchRankingStorageFacade($container);
     }
