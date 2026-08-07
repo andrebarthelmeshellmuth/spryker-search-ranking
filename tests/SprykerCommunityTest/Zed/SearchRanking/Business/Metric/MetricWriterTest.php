@@ -747,6 +747,85 @@ class MetricWriterTest extends Unit
     }
 
     /**
+     * The independent lookup {@see ScopeConfigCopier} uses to know a not-locale-scoped weight write's
+     * real blast radius BEFORE making it — must return every real locale of the store, same set
+     * saveMetricWeight()'s own fan-out would actually write to.
+     */
+    public function testResolveEffectiveWeightLocalesReturnsEveryStoreLocaleWhenNotLocaleScoped(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())
+            ->setIdSearchRankingMetric(7)
+            ->setName('top_seller')
+            ->setIsLocaleScoped(false);
+
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricById')->with(7, 'DE', 'de_DE')->willReturn($metricTransfer);
+
+        // Act
+        $localeNames = (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createMultiLocaleStoreFacadeMock()))
+            ->resolveEffectiveWeightLocales(7, 'DE', 'de_DE');
+
+        // Assert
+        $this->assertSame(['de_DE', 'en_US'], $localeNames);
+    }
+
+    /**
+     * A locale-scoped metric's write never fans out — the given locale is the only effective one.
+     */
+    public function testResolveEffectiveWeightLocalesReturnsOnlyTheGivenLocaleWhenLocaleScoped(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())
+            ->setIdSearchRankingMetric(7)
+            ->setName('pdp_impressions')
+            ->setIsLocaleScoped(true);
+
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricById')->willReturn($metricTransfer);
+
+        // Act
+        $localeNames = (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createMultiLocaleStoreFacadeMock()))
+            ->resolveEffectiveWeightLocales(7, 'DE', 'de_DE');
+
+        // Assert
+        $this->assertSame(['de_DE'], $localeNames);
+    }
+
+    /**
+     * A metric that can't be found at all is treated the same as locale-scoped — never guess a fan-out
+     * from an unknown metric.
+     */
+    public function testResolveEffectiveWeightLocalesReturnsOnlyTheGivenLocaleWhenMetricCannotBeFound(): void
+    {
+        // Arrange
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricById')->willReturn(null);
+
+        // Act
+        $localeNames = (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createMultiLocaleStoreFacadeMock()))
+            ->resolveEffectiveWeightLocales(7, 'DE', 'de_DE');
+
+        // Assert
+        $this->assertSame(['de_DE'], $localeNames);
+    }
+
+    /**
      * isLocaleScoped is a tracked field just like isHigherBetter — changing it alone (formula/isActive/
      * isHigherBetter unchanged) must still produce a history row.
      */

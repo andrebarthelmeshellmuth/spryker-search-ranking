@@ -100,6 +100,89 @@ class ScopeConfigCopierTest extends Unit
     }
 
     /**
+     * The direct-target check alone would say "not blocked" (AT/fr_AT itself has no saved config), but a
+     * not-locale-scoped metric being copied would fan out onto AT/de_AT too — which already has its own
+     * weight for that metric. Regression test for the real bug: the guard used to only see the ONE
+     * selected target scope and missed this sibling-locale collision entirely.
+     */
+    public function testIsBlockedWhenANotLocaleScopedMetricWouldFanOutOntoASiblingLocaleThatAlreadyHasAWeight(): void
+    {
+        // Arrange
+        $storeOnlyMetric = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(1)->setName('units_sold')->setIsLocaleScoped(false);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('hasScopeConfiguration')->with('AT', 'fr_AT')->willReturn(false);
+        $repositoryMock->method('getMetricCollection')->with('DE', 'de_DE')->willReturn(
+            (new SearchRankingMetricCollectionTransfer())->addMetric($storeOnlyMetric),
+        );
+        $repositoryMock->method('findMetricWeight')->willReturnMap([
+            [1, 'DE', 'de_DE', 0.9],
+            [1, 'AT', 'de_AT', 0.4],
+        ]);
+
+        $metricWriterMock = $this->createMock(MetricWriterInterface::class);
+        $metricWriterMock->method('resolveEffectiveWeightLocales')->with(1, 'AT', 'fr_AT')->willReturn(['de_AT', 'fr_AT']);
+        $metricWriterMock->expects($this->never())->method('saveMetricWeight');
+
+        $settingManagerMock = $this->createMock(SettingManagerInterface::class);
+
+        // Act
+        $resultTransfer = (new ScopeConfigCopier($repositoryMock, $metricWriterMock, $settingManagerMock))->copyScopeConfiguration(
+            'DE',
+            'de_DE',
+            'AT',
+            'fr_AT',
+            false,
+            SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
+        );
+
+        // Assert
+        $this->assertTrue($resultTransfer->getIsBlockedByExistingData());
+    }
+
+    /**
+     * Same setup as the sibling-collision test above, but the metric is locale-scoped — resolveEffective-
+     * WeightLocales() returns only the direct target, so there is no sibling to collide with and the copy
+     * proceeds. Proves the new guard doesn't over-block locale-scoped metrics.
+     */
+    public function testIsNotBlockedWhenTheMetricIsLocaleScopedEvenIfASiblingLocaleHasAWeight(): void
+    {
+        // Arrange
+        $localeScopedMetric = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(1)->setName('top_seller')->setIsLocaleScoped(true);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('hasScopeConfiguration')->with('AT', 'fr_AT')->willReturn(false);
+        $repositoryMock->method('getMetricCollection')->with('DE', 'de_DE')->willReturn(
+            (new SearchRankingMetricCollectionTransfer())->addMetric($localeScopedMetric),
+        );
+        $repositoryMock->method('findMetricWeight')->willReturnMap([
+            [1, 'DE', 'de_DE', 0.9],
+            [1, 'AT', 'de_AT', 0.4],
+        ]);
+        $repositoryMock->method('findSettingValue')->willReturn(null);
+
+        $metricWriterMock = $this->createMock(MetricWriterInterface::class);
+        $metricWriterMock->method('resolveEffectiveWeightLocales')->with(1, 'AT', 'fr_AT')->willReturn(['fr_AT']);
+        $metricWriterMock->expects($this->once())->method('saveMetricWeight')->with(1, 'AT', 'fr_AT', 0.9, SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY);
+
+        $settingManagerMock = $this->createMock(SettingManagerInterface::class);
+
+        // Act
+        $resultTransfer = (new ScopeConfigCopier($repositoryMock, $metricWriterMock, $settingManagerMock))->copyScopeConfiguration(
+            'DE',
+            'de_DE',
+            'AT',
+            'fr_AT',
+            false,
+            SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
+        );
+
+        // Assert
+        $this->assertTrue($resultTransfer->getIsSuccess());
+        $this->assertNotTrue($resultTransfer->getIsBlockedByExistingData());
+    }
+
+    /**
      * Only a metric with an explicitly-saved weight in the SOURCE scope is copied — one the source itself
      * never touched must stay untouched in the target too, rather than writing an explicit 0.0.
      */
@@ -123,6 +206,9 @@ class ScopeConfigCopierTest extends Unit
         $repositoryMock->method('findSettingValue')->willReturn(null);
 
         $metricWriterMock = $this->createMock(MetricWriterInterface::class);
+        // Locale-scoped (the default) — the guard's own resolveEffectiveWeightLocales() lookup for the
+        // blast-radius check returns just the direct target, same as the real write itself would.
+        $metricWriterMock->method('resolveEffectiveWeightLocales')->willReturn(['de_AT']);
         $metricWriterMock->expects($this->once())
             ->method('saveMetricWeight')
             ->with(1, 'AT', 'de_AT', 0.8, SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY);

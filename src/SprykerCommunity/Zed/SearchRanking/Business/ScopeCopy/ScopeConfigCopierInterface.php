@@ -20,9 +20,12 @@ interface ScopeConfigCopierInterface
      * stay scope-local real behavioral data and are deliberately never copied; a freshly bootstrapped
      * market should still show honest gaps on its own Product Metric Gaps page.
      *
-     * Blocked by default when the target scope already has any explicitly-saved weight or setting
-     * (`isBlockedByExistingData=true`, nothing written) unless `$confirmOverwrite` is true — the same
-     * guard applies whether this is a one-off "Copy now" or a lock's immediate copy.
+     * Blocked by default (`isBlockedByExistingData=true`, nothing written) unless `$confirmOverwrite` is
+     * true — the same guard applies whether this is a one-off "Copy now" or a lock's immediate copy. The
+     * target scope itself already having any explicitly-saved weight or setting is one trigger; a
+     * not-locale-scoped metric being copied that would fan out onto a SIBLING locale of the target store
+     * which already has its own weight is the other — both are real existing-data collisions, even though
+     * only the first one is visible by looking at the target scope alone.
      *
      * @param string $sourceStoreName
      * @param string $sourceLocaleName

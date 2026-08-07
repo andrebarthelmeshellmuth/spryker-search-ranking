@@ -164,6 +164,31 @@ class MetricWriter implements MetricWriterInterface
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * Deliberately re-derives {@see saveMetricWeight()}'s own fan-out decision independently (same
+     * `findMetricById()` + `getIsLocaleScoped()` check, own resolveLocaleNamesForStore() call) rather than
+     * refactoring saveMetricWeight() to call this — zero risk to that already-tested, already-live-
+     * verified write path.
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return array<string>
+     */
+    public function resolveEffectiveWeightLocales(int $idSearchRankingMetric, string $storeName, string $localeName): array
+    {
+        $metricTransfer = $this->repository->findMetricById($idSearchRankingMetric, $storeName, $localeName);
+
+        if ($metricTransfer !== null && $metricTransfer->getIsLocaleScoped() === false) {
+            return $this->resolveLocaleNamesForStore($storeName, $localeName);
+        }
+
+        return [$localeName];
+    }
+
+    /**
      * The single-locale write {@see saveMetricWeight()} used to do inline, now reusable per fanned-out
      * locale. $metricTransfer is passed in rather than re-fetched per locale — it's the same global
      * identity record (name/isHigherBetter/isLocaleScoped) regardless of which locale it was looked up

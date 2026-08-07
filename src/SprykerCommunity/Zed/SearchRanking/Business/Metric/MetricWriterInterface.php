@@ -31,8 +31,10 @@ interface MetricWriterInterface
     public function saveMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): SearchRankingMetricTransfer;
 
     /**
-     * Writes a metric's weight for one (store, locale) and, if it actually changed, records a history
-     * snapshot at that same scope, tagged with $changeSource.
+     * Writes a metric's weight for $localeName and, if the metric is NOT locale-scoped, fans the same
+     * write out to every other real locale of $storeName too (see
+     * {@see resolveEffectiveWeightLocales()}) — records a history snapshot at each written scope where
+     * the weight actually changed, tagged with $changeSource.
      *
      * @param int $idSearchRankingMetric
      * @param string $storeName
@@ -47,6 +49,21 @@ interface MetricWriterInterface
         float $weight,
         string $changeSource = SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL,
     ): void;
+
+    /**
+     * The set of locales a {@see saveMetricWeight()} call for ($idSearchRankingMetric, $storeName,
+     * $localeName) would actually write to: `[$localeName]` if the metric is locale-scoped (or can't be
+     * found), every real locale of $storeName if it isn't. Exposed as its own method so callers that need
+     * to reason about the blast radius of a write BEFORE making it (e.g. Scope Copy's existing-data guard)
+     * don't have to duplicate {@see saveMetricWeight()}'s own fan-out decision.
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return array<string>
+     */
+    public function resolveEffectiveWeightLocales(int $idSearchRankingMetric, string $storeName, string $localeName): array;
 
     /**
      * @param int $idSearchRankingMetric
