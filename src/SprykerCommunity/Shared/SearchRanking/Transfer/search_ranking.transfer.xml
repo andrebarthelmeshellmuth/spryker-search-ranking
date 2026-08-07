@@ -290,6 +290,43 @@
         <property name="specificityWeightShiftMagnitude" type="float"/>
     </transfer>
 
+    <!-- Immutable snapshot of one SpecificityWeightCalculatorInterface::calculateWeightingResult() outcome
+         — carries both the relevanceWeight that was actually applied to the real query AND the
+         diagnostics behind it (query term count, raw and normalized specificity, the saturation point/
+         curve exponent normalization used, shift), so a consumer like the search-debug overlay can show
+         the SAME numbers that produced the real score, not just the end result. A failed probe, or a
+         query with no terms carrying any real corpus evidence, still produces one of these:
+         relevanceWeight equals configuredRelevanceWeight unchanged, and normalizedSpecificity/shift/
+         rawSpecificity are 0.0 with queryTermCount 0 — there was simply nothing to measure, not an error. -->
+    <transfer name="SearchRankingSpecificityWeightingResult" strict="true">
+        <property name="configuredRelevanceWeight" type="float"/>
+        <property name="relevanceWeight" type="float"/>
+        <property name="normalizedSpecificity" type="float"/>
+        <property name="shift" type="float"/>
+        <!-- How many of the query's terms carried real corpus evidence (a nonzero doc_freq for at least
+             one probed field) and therefore contributed to the specificity calculation (0 when none did,
+             or the probe returned no hits or failed). -->
+        <property name="queryTermCount" type="int"/>
+        <!-- The exponent `shift` was actually shaped with — carried here (not just implied by `shift`'s
+             own value) so a consumer like the search-debug overlay can show the calculation that produced
+             `shift`, not just the result. -->
+        <property name="specificityWeightExponent" type="float"/>
+        <!-- The shiftMagnitude `shift` was actually scaled by — same reasoning as
+             specificityWeightExponent. -->
+        <property name="specificityWeightShiftMagnitude" type="float"/>
+        <!-- The pre-normalization blended-IDF value QuerySpecificityCalculatorInterface::calculateRawSpecificity()
+             produced from this query's own real ES-sourced term stats — the numerator
+             specificitySaturationPoint normalizes into normalizedSpecificity. -->
+        <property name="rawSpecificity" type="float"/>
+        <!-- The saturationPoint normalizedSpecificity was actually normalized against — the real
+             configured value regardless of whether any terms carried evidence, same reasoning as
+             specificityWeightExponent. -->
+        <property name="specificitySaturationPoint" type="float"/>
+        <!-- The curveExponent normalizedSpecificity was actually shaped with — same reasoning as
+             specificityWeightExponent. -->
+        <property name="specificityCurveExponent" type="float"/>
+    </transfer>
+
     <transfer name="ProductPayload">
         <property name="searchRankingScores" type="array" singular="searchRankingScores" associative="true"/>
     </transfer>

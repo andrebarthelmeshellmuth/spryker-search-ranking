@@ -68,9 +68,11 @@ class MetricHistoryTable extends AbstractTable
             $this->historyQuery->filterByStoreName($this->storeName);
         }
 
-        if ($this->localeName !== null) {
-            $this->historyQuery->filterByLocaleName($this->localeName);
+        if ($this->localeName === null) {
+            return;
         }
+
+        $this->historyQuery->filterByLocaleName($this->localeName);
     }
 
     /**

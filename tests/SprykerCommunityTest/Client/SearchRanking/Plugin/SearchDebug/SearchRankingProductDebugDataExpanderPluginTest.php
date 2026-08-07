@@ -19,7 +19,7 @@ use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocal
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface;
 use SprykerCommunity\Client\SearchRanking\Plugin\SearchDebug\SearchRankingProductDebugDataExpanderPlugin;
-use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
+use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use SprykerCommunity\Client\SearchRanking\SearchRankingClient;
 use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;
 use SprykerCommunity\Shared\SearchDebug\SearchDebugConfig;
@@ -140,7 +140,7 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
     {
         // Arrange
         $configurationTransfer = new SearchRankingConfigurationStorageTransfer();
-        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.9, 0.1, 0.15, 10);
+        $specificityWeightingResult = (new SearchRankingSpecificityWeightingResultTransfer())->setConfiguredRelevanceWeight(0.75)->setRelevanceWeight(0.9)->setNormalizedSpecificity(0.1)->setShift(0.15)->setQueryTermCount(10);
         $businessSection = ['title' => 'Business signals'];
         $specificitySection = ['title' => 'Specificity weighting'];
 
@@ -175,7 +175,7 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
     {
         // Arrange
         $configurationTransfer = new SearchRankingConfigurationStorageTransfer();
-        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.9, 0.1, 0.15, 10);
+        $specificityWeightingResult = (new SearchRankingSpecificityWeightingResultTransfer())->setConfiguredRelevanceWeight(0.75)->setRelevanceWeight(0.9)->setNormalizedSpecificity(0.1)->setShift(0.15)->setQueryTermCount(10);
         $specificitySection = ['title' => 'Specificity weighting'];
 
         $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
@@ -200,12 +200,12 @@ class SearchRankingProductDebugDataExpanderPluginTest extends Unit
     /**
      * @param \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface $storageClient
      * @param \SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilderInterface $scoreSectionBuilder
-     * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null $specificityWeightingResult
+     * @param \Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer|null $specificityWeightingResult
      */
     protected function createPlugin(
         SearchRankingToSearchRankingStorageClientInterface $storageClient,
         ScoreSectionBuilderInterface $scoreSectionBuilder,
-        ?SpecificityWeightingResult $specificityWeightingResult = null,
+        ?SearchRankingSpecificityWeightingResultTransfer $specificityWeightingResult = null,
     ): SearchRankingProductDebugDataExpanderPlugin {
         $storeClientMock = $this->createMock(SearchRankingToStoreClientInterface::class);
         $storeClientMock->method('getCurrentStore')->willReturn((new StoreTransfer())->setName('DE'));

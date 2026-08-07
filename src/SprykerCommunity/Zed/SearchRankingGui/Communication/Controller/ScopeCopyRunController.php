@@ -33,14 +33,14 @@ class ScopeCopyRunController extends AbstractController
      */
     public function indexAction(Request $request): RedirectResponse
     {
-        $sourceStoreName = (string)$request->query->get(ScopeCopyController::PARAM_SOURCE_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
-        $sourceLocaleName = (string)$request->query->get(ScopeCopyController::PARAM_SOURCE_LOCALE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME;
-        $targetStoreName = (string)$request->query->get(ScopeCopyController::PARAM_TARGET_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
-        $targetLocaleName = (string)$request->query->get(ScopeCopyController::PARAM_TARGET_LOCALE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME;
+        $sourceStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SOURCE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
+        $sourceLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SOURCE_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
+        $targetStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_TARGET_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
+        $targetLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_TARGET_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
         // Carried through as hidden fields on the same form purely so the independent "Sync store
         // configuration" widget's own picker doesn't reset back to its defaults on this redirect.
-        $syncSourceStoreName = (string)$request->query->get(ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
-        $syncTargetStoreName = (string)$request->query->get(ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
+        $syncSourceStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
+        $syncTargetStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
 
         $redirectUrl = sprintf(
             '%s?%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s',
@@ -104,5 +104,19 @@ class ScopeCopyRunController extends AbstractController
         ));
 
         return $this->redirectResponse($redirectUrl);
+    }
+
+    /**
+     * Extracted purely to keep indexAction()'s own size/complexity down — every one of this controller's
+     * several query params follows the identical "explicit value or fall back to a default" resolution,
+     * no behavioral change from inlining it.
+     *
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param string $paramName
+     * @param string $defaultValue
+     */
+    protected function resolveQueryParam(Request $request, string $paramName, string $defaultValue): string
+    {
+        return (string)$request->query->get($paramName, '') ?: $defaultValue;
     }
 }

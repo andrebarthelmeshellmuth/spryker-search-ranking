@@ -10,7 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunityTest\Client\SearchRanking;
 
 use Codeception\Test\Unit;
-use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
+use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use SprykerCommunity\Client\SearchRanking\SearchRankingClient;
 use SprykerCommunity\Client\SearchRanking\SearchRankingConfig;
 use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;
@@ -43,7 +43,7 @@ class SearchRankingClientTest extends Unit
     {
         // Arrange
         $client = new SearchRankingClient();
-        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.9, 0.1, 0.15, 10);
+        $specificityWeightingResult = (new SearchRankingSpecificityWeightingResultTransfer())->setConfiguredRelevanceWeight(0.75)->setRelevanceWeight(0.9)->setNormalizedSpecificity(0.1)->setShift(0.15)->setQueryTermCount(10);
 
         // Act
         $client->rememberLastSpecificityWeightingResult($specificityWeightingResult);
@@ -60,7 +60,7 @@ class SearchRankingClientTest extends Unit
     {
         // Arrange
         $client = new SearchRankingClient();
-        $client->rememberLastSpecificityWeightingResult(new SpecificityWeightingResult(0.75, 0.9, 0.1, 0.15, 10));
+        $client->rememberLastSpecificityWeightingResult((new SearchRankingSpecificityWeightingResultTransfer())->setConfiguredRelevanceWeight(0.75)->setRelevanceWeight(0.9)->setNormalizedSpecificity(0.1)->setShift(0.15)->setQueryTermCount(10));
 
         // Act
         $client->rememberLastSpecificityWeightingResult(null);

@@ -10,9 +10,9 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking;
 
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
+use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInterface;
-use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
 
 interface SearchRankingClientInterface
 {
@@ -99,9 +99,9 @@ interface SearchRankingClientInterface
      * call (including with `null`, when specificity weighting is disabled or doesn't apply) — never
      * carries a stale value over from an earlier query in the same request.
      *
-     * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null $specificityWeightingResult
+     * @param \Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer|null $specificityWeightingResult
      */
-    public function rememberLastSpecificityWeightingResult(?SpecificityWeightingResult $specificityWeightingResult): void;
+    public function rememberLastSpecificityWeightingResult(?SearchRankingSpecificityWeightingResultTransfer $specificityWeightingResult): void;
 
     /**
      * NOT @api — internal plumbing only, see {@see rememberLastSpecificityWeightingResult()}.
@@ -110,5 +110,5 @@ interface SearchRankingClientInterface
      * {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin::expandQuery()}
      * hasn't run yet this request.
      */
-    public function getLastSpecificityWeightingResult(): ?SpecificityWeightingResult;
+    public function getLastSpecificityWeightingResult(): ?SearchRankingSpecificityWeightingResultTransfer;
 }

@@ -10,7 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking\Debug;
 
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
-use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
+use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 
 interface ScoreSectionBuilderInterface
 {
@@ -25,7 +25,7 @@ interface ScoreSectionBuilderInterface
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
      * @param array<string, float> $documentScores
      * @param float|null $queryScore
-     * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null $specificityWeightingResult
+     * @param \Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer|null $specificityWeightingResult
      *
      * @return array<string, mixed>|null
      */
@@ -33,7 +33,7 @@ interface ScoreSectionBuilderInterface
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
         array $documentScores,
         ?float $queryScore,
-        ?SpecificityWeightingResult $specificityWeightingResult = null,
+        ?SearchRankingSpecificityWeightingResultTransfer $specificityWeightingResult = null,
     ): ?array;
 
     /**
@@ -44,9 +44,9 @@ interface ScoreSectionBuilderInterface
      * full shiftMagnitude/deviation/exponent calculation that produced it), and the resulting effective
      * weight. Only ever called when specificity weighting actually ran for this query.
      *
-     * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult $specificityWeightingResult
+     * @param \Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer $specificityWeightingResult
      *
      * @return array<string, mixed>
      */
-    public function buildSpecificitySection(SpecificityWeightingResult $specificityWeightingResult): array;
+    public function buildSpecificitySection(SearchRankingSpecificityWeightingResultTransfer $specificityWeightingResult): array;
 }

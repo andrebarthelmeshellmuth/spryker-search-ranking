@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking\Search;
 
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
+use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 
 class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterface
 {
@@ -35,7 +36,7 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
         string $searchString,
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
     ): float {
-        return $this->calculateWeightingResult($searchString, $configurationTransfer)->getRelevanceWeight();
+        return $this->calculateWeightingResult($searchString, $configurationTransfer)->getRelevanceWeightOrFail();
     }
 
     /**
@@ -47,7 +48,7 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
     public function calculateWeightingResult(
         string $searchString,
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
-    ): SpecificityWeightingResult {
+    ): SearchRankingSpecificityWeightingResultTransfer {
         $configuredRelevanceWeight = (float)$configurationTransfer->getRelevanceWeight();
         $specificityWeightExponent = (float)$configurationTransfer->getSpecificityWeightExponent();
         $specificityWeightShiftMagnitude = (float)$configurationTransfer->getSpecificityWeightShiftMagnitude();
@@ -60,18 +61,17 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
         $idfByTerm = $this->calculateIdfByTerm($termFrequencyResult);
 
         if ($idfByTerm === []) {
-            return new SpecificityWeightingResult(
-                $configuredRelevanceWeight,
-                $configuredRelevanceWeight,
-                0.0,
-                0.0,
-                0,
-                $specificityWeightExponent,
-                $specificityWeightShiftMagnitude,
-                0.0,
-                $specificitySaturationPoint,
-                $specificityCurveExponent,
-            );
+            return (new SearchRankingSpecificityWeightingResultTransfer())
+                ->setConfiguredRelevanceWeight($configuredRelevanceWeight)
+                ->setRelevanceWeight($configuredRelevanceWeight)
+                ->setNormalizedSpecificity(0.0)
+                ->setShift(0.0)
+                ->setQueryTermCount(0)
+                ->setSpecificityWeightExponent($specificityWeightExponent)
+                ->setSpecificityWeightShiftMagnitude($specificityWeightShiftMagnitude)
+                ->setRawSpecificity(0.0)
+                ->setSpecificitySaturationPoint($specificitySaturationPoint)
+                ->setSpecificityCurveExponent($specificityCurveExponent);
         }
 
         $rawSpecificity = $this->querySpecificityCalculator->calculateRawSpecificity(
@@ -87,18 +87,17 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
         $shift = $this->calculateShift($normalizedSpecificity, $specificityWeightExponent, $specificityWeightShiftMagnitude);
         $relevanceWeight = max(0.0, min(1.0, $configuredRelevanceWeight + $shift));
 
-        return new SpecificityWeightingResult(
-            $configuredRelevanceWeight,
-            $relevanceWeight,
-            $normalizedSpecificity,
-            $shift,
-            count($idfByTerm),
-            $specificityWeightExponent,
-            $specificityWeightShiftMagnitude,
-            $rawSpecificity,
-            $specificitySaturationPoint,
-            $specificityCurveExponent,
-        );
+        return (new SearchRankingSpecificityWeightingResultTransfer())
+            ->setConfiguredRelevanceWeight($configuredRelevanceWeight)
+            ->setRelevanceWeight($relevanceWeight)
+            ->setNormalizedSpecificity($normalizedSpecificity)
+            ->setShift($shift)
+            ->setQueryTermCount(count($idfByTerm))
+            ->setSpecificityWeightExponent($specificityWeightExponent)
+            ->setSpecificityWeightShiftMagnitude($specificityWeightShiftMagnitude)
+            ->setRawSpecificity($rawSpecificity)
+            ->setSpecificitySaturationPoint($specificitySaturationPoint)
+            ->setSpecificityCurveExponent($specificityCurveExponent);
     }
 
     /**

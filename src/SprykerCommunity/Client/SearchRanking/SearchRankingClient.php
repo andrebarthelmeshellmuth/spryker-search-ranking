@@ -10,17 +10,17 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking;
 
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
+use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use Spryker\Client\Kernel\AbstractClient;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInterface;
-use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
 
 /**
  * @method \SprykerCommunity\Client\SearchRanking\SearchRankingFactory getFactory()
  */
 class SearchRankingClient extends AbstractClient implements SearchRankingClientInterface
 {
-    protected ?SpecificityWeightingResult $lastSpecificityWeightingResult = null;
+    protected ?SearchRankingSpecificityWeightingResultTransfer $lastSpecificityWeightingResult = null;
 
     /**
      * {@inheritDoc}
@@ -79,9 +79,9 @@ class SearchRankingClient extends AbstractClient implements SearchRankingClientI
     /**
      * {@inheritDoc}
      *
-     * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult|null $specificityWeightingResult
+     * @param \Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer|null $specificityWeightingResult
      */
-    public function rememberLastSpecificityWeightingResult(?SpecificityWeightingResult $specificityWeightingResult): void
+    public function rememberLastSpecificityWeightingResult(?SearchRankingSpecificityWeightingResultTransfer $specificityWeightingResult): void
     {
         $this->lastSpecificityWeightingResult = $specificityWeightingResult;
     }
@@ -89,7 +89,7 @@ class SearchRankingClient extends AbstractClient implements SearchRankingClientI
     /**
      * {@inheritDoc}
      */
-    public function getLastSpecificityWeightingResult(): ?SpecificityWeightingResult
+    public function getLastSpecificityWeightingResult(): ?SearchRankingSpecificityWeightingResultTransfer
     {
         return $this->lastSpecificityWeightingResult;
     }
