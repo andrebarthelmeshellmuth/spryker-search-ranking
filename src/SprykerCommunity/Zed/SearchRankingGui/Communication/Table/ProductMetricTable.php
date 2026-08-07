@@ -28,19 +28,13 @@ class ProductMetricTable extends AbstractTable
      */
     protected const COL_ABSTRACT_SKU = 'abstract_sku';
 
-    protected SpySearchRankingProductMetricQuery $productMetricQuery;
-
     /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery $productMetricQuery
      * @param string $storeName
      * @param string $localeName
      */
-    public function __construct(
-        SpySearchRankingProductMetricQuery $productMetricQuery,
-        protected string $storeName,
-        protected string $localeName,
-    ) {
-        $this->productMetricQuery = $productMetricQuery;
+    public function __construct(protected SpySearchRankingProductMetricQuery $productMetricQuery, protected string $storeName, protected string $localeName)
+    {
     }
 
     /**

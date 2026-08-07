@@ -126,6 +126,6 @@ class SearchRankingMetricWriterStep implements DataImportStepInterface
      */
     protected function splitLocaleNames(string $localeNamesColumnValue): array
     {
-        return array_map('trim', explode(',', $localeNamesColumnValue));
+        return array_map(trim(...), explode(',', $localeNamesColumnValue));
     }
 }

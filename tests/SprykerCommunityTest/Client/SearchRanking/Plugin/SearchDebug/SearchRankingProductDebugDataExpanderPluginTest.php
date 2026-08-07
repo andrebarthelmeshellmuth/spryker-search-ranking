@@ -12,6 +12,7 @@ namespace SprykerCommunityTest\Client\SearchRanking\Plugin\SearchDebug;
 use Codeception\Test\Unit;
 use Generated\Shared\Search\PageIndexMap;
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
+use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use Generated\Shared\Transfer\StoreTransfer;
 use SprykerCommunity\Client\SearchDebug\Explanation\ExplanationParser;
 use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilderInterface;
@@ -19,7 +20,6 @@ use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocal
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface;
 use SprykerCommunity\Client\SearchRanking\Plugin\SearchDebug\SearchRankingProductDebugDataExpanderPlugin;
-use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use SprykerCommunity\Client\SearchRanking\SearchRankingClient;
 use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;
 use SprykerCommunity\Shared\SearchDebug\SearchDebugConfig;

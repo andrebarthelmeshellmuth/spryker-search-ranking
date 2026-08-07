@@ -760,8 +760,7 @@ class MetricWriterTest extends Unit
         // Arrange
         $metricTransfer = (new SearchRankingMetricTransfer())
             ->setIdSearchRankingMetric(7)
-            ->setName('top_seller')
-            ->setFormula(null)
+            ->setName('top_seller')->setFormula()
             ->setIsActive(false);
 
         $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);

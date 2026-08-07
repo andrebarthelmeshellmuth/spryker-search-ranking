@@ -149,6 +149,9 @@ class WeightNormalizerTest extends Unit
 
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $repositoryMock->method('getActiveMetricCollection')->willReturn($collectionTransfer);
+        // Weight is already set directly on each fixture transfer above (this is a pure repository mock,
+        // never a real attachWeights() call) — just hand the same collection back unchanged.
+        $repositoryMock->method('attachWeights')->willReturn($collectionTransfer);
 
         return $repositoryMock;
     }

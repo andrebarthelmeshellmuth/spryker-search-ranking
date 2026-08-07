@@ -40,8 +40,10 @@ class SearchRankingScopeCopySyncConsole extends Console
      * @param \Symfony\Component\Console\Input\InputInterface $input
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      */
+    // phpcs:disable SlevomatCodingStandard.Functions.UnusedParameter -- $input is unused (this command takes no arguments/options) but required by Console::execute()'s own signature.
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        // phpcs:enable SlevomatCodingStandard.Functions.UnusedParameter
         $syncedCount = $this->getFacade()->runScopeCopyDailySync();
 
         if ($syncedCount === 0) {

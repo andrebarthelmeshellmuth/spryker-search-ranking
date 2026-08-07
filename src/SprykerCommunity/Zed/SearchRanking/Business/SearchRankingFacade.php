@@ -39,7 +39,11 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      */
     public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
-        return $this->getRepository()->getMetricCollection($storeName, $localeName);
+        // This `@api` method's own signature keeps its locale parameter (search-ranking-optimizer's own
+        // bridge reads real per-locale weight off the result) even though the repository's own
+        // getMetricCollection() no longer needs one — composes the repository's weight-free collection
+        // with its separate attachWeights() step instead of a single call.
+        return $this->getRepository()->attachWeights($this->getRepository()->getMetricCollection($storeName), $storeName, $localeName);
     }
 
     /**
@@ -49,7 +53,8 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      */
     public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
-        return $this->getRepository()->getActiveMetricCollection($storeName, $localeName);
+        // Same composition as getMetricCollection() above — see that method's own comment.
+        return $this->getRepository()->attachWeights($this->getRepository()->getActiveMetricCollection($storeName), $storeName, $localeName);
     }
 
     /**
