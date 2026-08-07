@@ -287,6 +287,22 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return array<string>
+     */
+    public function resolveEffectiveWeightLocales(int $idSearchRankingMetric, string $storeName, string $localeName): array
+    {
+        return $this->getFactory()->createMetricWriter()->resolveEffectiveWeightLocales($idSearchRankingMetric, $storeName, $localeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
      */
     public function deleteMetric(int $idSearchRankingMetric): void
     {
