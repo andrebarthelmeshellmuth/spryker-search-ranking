@@ -51,6 +51,7 @@ class SearchRankingMapperTest extends Unit
         $metricEntity->setIdSearchRankingMetric(7);
         $metricEntity->setName('top_seller');
         $metricEntity->setIsHigherBetter(true);
+        $metricEntity->setIsLocaleScoped(false);
 
         // Act
         $metricTransfer = (new SearchRankingMapper())->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
@@ -59,6 +60,7 @@ class SearchRankingMapperTest extends Unit
         $this->assertSame(7, $metricTransfer->getIdSearchRankingMetric());
         $this->assertSame('top_seller', $metricTransfer->getName());
         $this->assertTrue($metricTransfer->getIsHigherBetter());
+        $this->assertFalse($metricTransfer->getIsLocaleScoped());
     }
 
     /**
@@ -69,7 +71,8 @@ class SearchRankingMapperTest extends Unit
         // Arrange
         $metricTransfer = (new SearchRankingMetricTransfer())
             ->setName('pdp_impressions')
-            ->setIsHigherBetter(false);
+            ->setIsHigherBetter(false)
+            ->setIsLocaleScoped(false);
 
         // Act
         $metricEntity = (new SearchRankingMapper())->mapMetricTransferToEntity($metricTransfer, new SpySearchRankingMetric());
@@ -77,6 +80,7 @@ class SearchRankingMapperTest extends Unit
         // Assert
         $this->assertSame('pdp_impressions', $metricEntity->getName());
         $this->assertFalse($metricEntity->getIsHigherBetter());
+        $this->assertFalse($metricEntity->getIsLocaleScoped());
     }
 
     /**
@@ -182,6 +186,7 @@ class SearchRankingMapperTest extends Unit
         $historyEntity->setFormula('atan(x / 100) / (pi() / 2)');
         $historyEntity->setIsActive(true);
         $historyEntity->setIsHigherBetter(true);
+        $historyEntity->setIsLocaleScoped(false);
         $historyEntity->setMinValue(0.0);
         $historyEntity->setMaxValue(100.0);
         $historyEntity->setMeanValue(50.0);
@@ -202,6 +207,7 @@ class SearchRankingMapperTest extends Unit
         $this->assertSame([0.0, 50.0, 100.0], $historyTransfer->getPercentiles());
         $this->assertSame(0.75, $historyTransfer->getFitRSquared());
         $this->assertTrue($historyTransfer->getIsChange());
+        $this->assertFalse($historyTransfer->getIsLocaleScoped());
     }
 
     /**
@@ -240,6 +246,7 @@ class SearchRankingMapperTest extends Unit
             ->setFormula('x / max')
             ->setIsActive(true)
             ->setIsHigherBetter(true)
+            ->setIsLocaleScoped(true)
             ->setMinValue(0.0)
             ->setMaxValue(100.0)
             ->setMeanValue(50.0)
@@ -259,6 +266,7 @@ class SearchRankingMapperTest extends Unit
         $this->assertSame('0,50,100', $historyEntity->getPercentiles());
         $this->assertSame(0.9, $historyEntity->getFitRSquared());
         $this->assertTrue($historyEntity->getIsChange());
+        $this->assertTrue($historyEntity->getIsLocaleScoped());
     }
 
     /**
@@ -278,6 +286,7 @@ class SearchRankingMapperTest extends Unit
             ->setFormula('x')
             ->setIsActive(true)
             ->setIsHigherBetter(true)
+            ->setIsLocaleScoped(true)
             ->setIsChange(true);
 
         // Act

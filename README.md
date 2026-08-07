@@ -79,6 +79,14 @@ not a database migration — the columns that once held a single global formula/
 `spy_search_ranking_metric` itself were removed entirely once every part of this package migrated onto
 the store-scoped table (a breaking change; see [CHANGELOG](CHANGELOG.md) for the release that shipped it).
 
+Whether `weight` genuinely NEEDS per-locale granularity is itself a per-metric decision — a third
+global field, `isLocaleScoped` (default `true`), controls it. `true`: weight is authored and stored
+independently per locale, as above. `false`: this metric is a store-wide fact (e.g. `top_seller`, driven
+by sales/stock data that doesn't vary by language) rather than a language-dependent one — saving the
+weight for any one locale of a store fans it out to every real locale of that store automatically, so
+the admin only ever edits one number per store instead of keeping N locale copies in sync by hand. The
+metric list's "Weight scope" column shows which mode each metric is in.
+
 ### weight
 
 How much one metric's signal contributes to the combined business-signal score, relative to the other
@@ -172,7 +180,9 @@ so, with no error to tell you why.
   (`isHigherBetter`) — whether a higher raw value is the better outcome (sales, impressions) or a lower
   one (days-since-restock, return rate). Direction is business knowledge that cannot be inferred from the
   data; it only steers which curve-fit suggestions the normalization GUI offers below, never the formula
-  itself.
+  itself. A fourth global flag, **`isLocaleScoped`** (default `true`), decides whether `weight` itself
+  needs per-locale granularity — see [Terminology](#terminology) for the full scope breakdown and what
+  turning it off does.
 - **Product values** (`spy_search_ranking_product_metric`): one row per (metric, abstract product)
   pair holding the **raw real-world value** (e.g. "8,250 impressions") and the **normalized value
   in ]0;1]** derived from it. Unique per pair, removed by cascade with either parent.

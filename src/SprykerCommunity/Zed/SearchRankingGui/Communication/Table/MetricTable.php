@@ -53,6 +53,11 @@ class MetricTable extends AbstractTable
     /**
      * @var string
      */
+    protected const COL_SCOPE = 'scope';
+
+    /**
+     * @var string
+     */
     protected const COL_ACTIONS = 'actions';
 
     protected SpySearchRankingMetricQuery $metricQuery;
@@ -91,6 +96,7 @@ class MetricTable extends AbstractTable
             static::COL_WEIGHT => 'Weight',
             static::COL_FORMULA => 'Formula',
             static::COL_IS_ACTIVE => 'Active',
+            static::COL_SCOPE => 'Weight scope',
             static::COL_ACTIONS => 'Actions',
         ]);
 
@@ -109,6 +115,7 @@ class MetricTable extends AbstractTable
 
         $config->setRawColumns([
             static::COL_IS_ACTIVE,
+            static::COL_SCOPE,
             static::COL_ACTIONS,
         ]);
 
@@ -143,6 +150,10 @@ class MetricTable extends AbstractTable
                 static::COL_IS_ACTIVE => $this->generateLabel(
                     $isActive ? 'Active' : 'Inactive',
                     $isActive ? 'label-info' : 'label-danger',
+                ),
+                static::COL_SCOPE => $this->generateLabel(
+                    $metricEntity->getIsLocaleScoped() ? 'Store + locale' : 'Store',
+                    $metricEntity->getIsLocaleScoped() ? 'label-info' : 'label-warning',
                 ),
                 static::COL_ACTIONS => implode(' ', $this->createActionButtons($metricEntity)),
             ];

@@ -58,12 +58,14 @@
                 across every locale. Weight applies specifically to store <strong>{{ storeName }}</strong>,
                 locale <strong>{{ localeName }}</strong> — switch locale from the metrics list to edit a
                 different locale's weight, or to preview the formula against a different locale's own
-                data distribution below.
+                data distribution below — <strong>unless "Locale-specific weight" below is unchecked</strong>,
+                in which case saving the weight here applies it to every locale of this store automatically.
             </p>
             {{ form_start(metricForm, {'action': formAction}) }}
             {{ form_row(metricForm.name) }}
             {{ form_row(metricForm.weight) }}
             {{ form_row(metricForm.isHigherBetter) }}
+            {{ form_row(metricForm.isLocaleScoped) }}
             {{ form_row(metricForm.formula) }}
 
             {# Live preview: the typed formula evaluated at the metric's own real distribution (server-side,
