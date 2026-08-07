@@ -39,6 +39,7 @@
                     {% endfor %}
                 </select>
             </form>
+            <p class="text-muted">{{ 'All of the values below are scoped per store and per locale.' | trans }}</p>
             {{ form_start(settingsForm, {'action': formAction}) }}
             {{ form_widget(settingsForm) }}
             <div class="form-actions">
