@@ -213,7 +213,12 @@ class MetricWriter implements MetricWriterInterface
 
         $this->entityManager->saveMetricWeight($idSearchRankingMetric, $storeName, $localeName, $weight);
 
-        if ($previousWeight === $weight || $metricTransfer === null) {
+        // A null formula means $storeName has no store-config row for this metric yet (e.g. a
+        // brand-new market scope, before its "Sync store configuration" ever ran) — see
+        // SearchRankingRepository::attachStoreConfig()'s "safe absence" contract. There is nothing
+        // real to snapshot into the (formula NOT NULL) history table in that case, so the weight
+        // write above still happens, just without an audit row.
+        if ($previousWeight === $weight || $metricTransfer === null || $metricTransfer->getFormula() === null) {
             return;
         }
 

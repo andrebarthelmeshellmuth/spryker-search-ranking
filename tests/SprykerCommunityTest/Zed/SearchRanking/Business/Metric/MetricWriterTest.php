@@ -747,6 +747,41 @@ class MetricWriterTest extends Unit
     }
 
     /**
+     * A metric with no store-config row yet for the target store (e.g. Scope Copy bootstrapping a
+     * brand-new market) comes back from {@see SearchRankingRepositoryInterface::findMetricById()} with a
+     * null formula — {@see SearchRankingRepository::attachStoreConfig()}'s documented "safe absence".
+     * The weight itself must still be written, but no history row can be built (the history table's
+     * formula column is NOT NULL) — regression test for the real bug where this crashed with "Property
+     * formula of transfer SearchRankingMetricTransfer is null" when using Scope Copy's "Copy now" onto a
+     * store never configured for that metric.
+     */
+    public function testDoesNotRecordHistoryWhenTheMetricHasNoFormulaForTheTargetStoreYet(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())
+            ->setIdSearchRankingMetric(7)
+            ->setName('top_seller')
+            ->setFormula(null)
+            ->setIsActive(false);
+
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricById')->with(7, 'AT', 'de_AT')->willReturn($metricTransfer);
+        $repositoryMock->method('findMetricWeight')->willReturn(0.2);
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->expects($this->once())->method('saveMetricWeight')->with(7, 'AT', 'de_AT', 0.9);
+        $entityManagerMock->expects($this->never())->method('recordMetricHistory');
+
+        // Act
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
+            ->saveMetricWeight(7, 'AT', 'de_AT', 0.9);
+    }
+
+    /**
      * The independent lookup {@see ScopeConfigCopier} uses to know a not-locale-scoped weight write's
      * real blast radius BEFORE making it — must return every real locale of the store, same set
      * saveMetricWeight()'s own fan-out would actually write to.
