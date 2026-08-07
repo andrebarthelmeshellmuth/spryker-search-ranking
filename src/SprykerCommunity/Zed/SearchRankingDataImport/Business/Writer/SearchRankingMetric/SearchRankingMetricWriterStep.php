@@ -102,13 +102,30 @@ class SearchRankingMetricWriterStep implements DataImportStepInterface
             );
         }
 
-        $metricWeightEntity = SpySearchRankingMetricWeightQuery::create()
-            ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
-            ->filterByStoreName((string)$dataSet[SearchRankingMetricDataSetInterface::COL_STORE])
-            ->filterByLocaleName((string)$dataSet[SearchRankingMetricDataSetInterface::COL_LOCALE])
-            ->findOneOrCreate();
+        foreach ($this->splitLocaleNames((string)$dataSet[SearchRankingMetricDataSetInterface::COL_LOCALE]) as $localeName) {
+            $metricWeightEntity = SpySearchRankingMetricWeightQuery::create()
+                ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
+                ->filterByStoreName((string)$dataSet[SearchRankingMetricDataSetInterface::COL_STORE])
+                ->filterByLocaleName($localeName)
+                ->findOneOrCreate();
 
-        $metricWeightEntity->setWeight($weight);
-        $metricWeightEntity->save();
+            $metricWeightEntity->setWeight($weight);
+            $metricWeightEntity->save();
+        }
+    }
+
+    /**
+     * A single locale (`de_DE`) or a comma-separated list (`de_DE,en_US`) — see
+     * {@see \SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingMetric\DataSet\SearchRankingMetricDataSetInterface::COL_LOCALE}.
+     * Entries are trimmed so `de_DE, en_US` (with incidental whitespace after the comma) works the same
+     * as `de_DE,en_US`.
+     *
+     * @param string $localeNamesColumnValue
+     *
+     * @return array<string>
+     */
+    protected function splitLocaleNames(string $localeNamesColumnValue): array
+    {
+        return array_map('trim', explode(',', $localeNamesColumnValue));
     }
 }

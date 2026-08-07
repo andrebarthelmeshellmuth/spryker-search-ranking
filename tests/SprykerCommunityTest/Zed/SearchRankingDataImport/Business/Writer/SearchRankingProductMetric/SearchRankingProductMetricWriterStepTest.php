@@ -140,6 +140,46 @@ class SearchRankingProductMetricWriterStepTest extends Unit
     }
 
     /**
+     * A comma-separated locale list writes the same raw value into every listed locale — this is the
+     * mechanism a store-only metric (e.g. sales, stock) uses to avoid hand-duplicated CSV rows per
+     * locale. Whitespace after the comma is trimmed, so `de_DE, en_US` behaves the same as `de_DE,en_US`.
+     */
+    public function testExecuteFansOutToEveryCommaSeparatedLocaleWithTheSameRawValue(): void
+    {
+        // Arrange
+        $metricEntity = $this->createTestMetric('test_multi_locale_pm_metric_' . uniqid());
+        $productAbstractEntity = $this->createTestProductAbstract('test-multi-locale-pm-sku-' . uniqid());
+
+        $dataSet = new DataSet([
+            SearchRankingProductMetricDataSetInterface::KEY_ID_SEARCH_RANKING_METRIC => $metricEntity->getIdSearchRankingMetric(),
+            SearchRankingProductMetricDataSetInterface::KEY_ID_PRODUCT_ABSTRACT => $productAbstractEntity->getIdProductAbstract(),
+            SearchRankingProductMetricDataSetInterface::COL_RAW_VALUE => '17.0',
+            SearchRankingProductMetricDataSetInterface::COL_STORE => SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME,
+            SearchRankingProductMetricDataSetInterface::COL_LOCALE => 'de_DE, en_US',
+        ]);
+
+        // Act
+        (new SearchRankingProductMetricWriterStep())->execute($dataSet);
+
+        // Assert
+        $productMetricEntities = SpySearchRankingProductMetricQuery::create()
+            ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
+            ->filterByFkProductAbstract($productAbstractEntity->getIdProductAbstract())
+            ->find();
+
+        $localeNames = [];
+
+        foreach ($productMetricEntities as $productMetricEntity) {
+            $this->productMetricEntities[] = $productMetricEntity;
+            $localeNames[] = $productMetricEntity->getLocaleName();
+            $this->assertSame(17.0, $productMetricEntity->getRawValue());
+        }
+
+        sort($localeNames);
+        $this->assertSame(['de_DE', 'en_US'], $localeNames);
+    }
+
+    /**
      * @dataProvider provideNonNumericRawValues
      *
      * @param string $rawValue
