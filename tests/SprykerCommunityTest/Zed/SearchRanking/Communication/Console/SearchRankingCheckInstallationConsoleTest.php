@@ -25,15 +25,15 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 /**
  * Only `checkActiveMetrics()` and `checkSiblingCommandsRegistered()` are exercised under fully controlled
- * conditions here (the Facade is mocked, and the test builds the sibling `Application` itself) — the
- * search-engine/page-index/scores-field checks, and now `checkEventListenerRegistered()`, deliberately hit
- * the REAL Elasticsearch and this demoshop's OWN real project wiring, same portability tradeoff
- * {@see \SprykerCommunityTest\Client\SearchRankingOptimizer\Search\CalibrationSearcherTest} already
- * accepts: this command exists specifically to diagnose a REAL installation, a throwaway/mocked
- * dumpEventListener() would prove nothing about whether the project's own
- * `Pyz\Zed\Event\EventDependencyProvider` actually registers the listener. This demoshop's own
- * installation is expected to be fully wired (core namespace registered, catalog exported, `scores` field
- * mapped, ranking-configuration event listener registered) — asserted on accordingly.
+ * conditions here (the Facade is mocked, and the test builds the sibling `Application` itself) — every
+ * other check (search engine/page index/scores field, event listener, sync queue, Zed translation,
+ * data-import plugins) deliberately hits the REAL Elasticsearch and this demoshop's OWN real project
+ * wiring, same portability tradeoff {@see \SprykerCommunityTest\Client\SearchRankingOptimizer\Search\CalibrationSearcherTest}
+ * already accepts: this command exists specifically to diagnose a REAL installation, throwaway/mocked
+ * facades would prove nothing about whether the project's own DependencyProvider classes actually
+ * register everything. This demoshop's own installation is expected to be fully wired (core namespace
+ * registered, catalog exported, `scores` field mapped, ranking-configuration event listener + sync queue
+ * registered, Zed translations loaded, data-import plugins registered) — asserted on accordingly.
  *
  * @group SprykerCommunityTest
  * @group Zed
@@ -71,7 +71,10 @@ class SearchRankingCheckInstallationConsoleTest extends Unit
         $this->assertSame(SearchRankingCheckInstallationConsole::CODE_SUCCESS, $exitCode);
         $this->assertStringContainsString('core namespace "SprykerCommunity" is registered', $commandTester->getDisplay());
         $this->assertStringContainsString('all 3 sibling console commands are registered', $commandTester->getDisplay());
+        $this->assertStringContainsString('all 2 data-import plugins are registered', $commandTester->getDisplay());
         $this->assertStringContainsString('a listener is registered for the ranking-configuration publish event', $commandTester->getDisplay());
+        $this->assertStringContainsString('the ranking-configuration sync queue is registered', $commandTester->getDisplay());
+        $this->assertStringContainsString('the Zed GUI translation catalog is loaded', $commandTester->getDisplay());
         $this->assertStringContainsString('2 active metric(s) configured', $commandTester->getDisplay());
         $this->assertStringContainsString('Everything checkable from the CLI is in place.', $commandTester->getDisplay());
     }

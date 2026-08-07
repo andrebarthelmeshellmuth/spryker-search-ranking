@@ -1125,9 +1125,12 @@ vendor/bin/console search-ranking:check-installation
 Most of the steps above fail *silently* when missed — a forgotten DependencyProvider wire-up or an
 un-run cron produces no error, just a ranking that quietly stays pure text relevance. This command checks
 the core namespace registration, that every console command from step 3 actually registered, that the
-search engine is reachable, that a page index exists and carries the `scores` field this package's export
-plugins add, and that at least one active metric is configured. It exits non-zero and names the remedy for
-whatever is wrong.
+data-import plugins from step 4 are registered, that the ranking-configuration publish event listener
+(step 12) AND its sync queue counterpart (step 11) are both registered — a project can wire up either half
+alone and get the exact same silent symptom, so both are checked independently — that the Zed GUI
+translation catalog (step 6) actually resolves, that the search engine is reachable, that a page index
+exists and carries the `scores` field this package's export plugins add, and that at least one active
+metric is configured. It exits non-zero and names the remedy for whatever is wrong.
 
 It is explicit about its own blind spots: running in Zed, it cannot confirm the Yves-side `function_score`
 query expander (step 13) is registered, or that a live search result order actually reflects the
