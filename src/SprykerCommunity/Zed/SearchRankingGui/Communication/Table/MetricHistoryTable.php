@@ -46,11 +46,31 @@ class MetricHistoryTable extends AbstractTable
     protected SpySearchRankingMetricHistoryQuery $historyQuery;
 
     /**
+     * Unlike every other table in this GUI, storeName/localeName are OPTIONAL here — this table is a
+     * cross-scope audit trail by design (an admin needs to see everything that changed, not just one
+     * scope), so "no filter" (both null) is the useful default, not an error state. A metric fanning a
+     * weight/formula change out across every locale of a store (see MetricWriter's fan-out) makes several
+     * rows share the same metric/weight/timestamp — the Store/Locale columns below are what actually
+     * distinguishes them, so they exist even when not filtering.
+     *
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistoryQuery $historyQuery
+     * @param string|null $storeName
+     * @param string|null $localeName
      */
-    public function __construct(SpySearchRankingMetricHistoryQuery $historyQuery)
-    {
+    public function __construct(
+        SpySearchRankingMetricHistoryQuery $historyQuery,
+        protected ?string $storeName = null,
+        protected ?string $localeName = null,
+    ) {
         $this->historyQuery = $historyQuery;
+
+        if ($this->storeName !== null) {
+            $this->historyQuery->filterByStoreName($this->storeName);
+        }
+
+        if ($this->localeName !== null) {
+            $this->historyQuery->filterByLocaleName($this->localeName);
+        }
     }
 
     /**
@@ -58,9 +78,25 @@ class MetricHistoryTable extends AbstractTable
      */
     protected function configure(TableConfiguration $config): TableConfiguration
     {
+        // The AJAX endpoint DataTables calls for every sort/page/search action is a fresh request that
+        // never sees the request this Table was originally constructed for — the selected filter (if any)
+        // has to be baked into that URL, same pattern MetricTable/ProductMetricTable already established.
+        // Omitted entirely (not just empty) when unset, so "no filter" round-trips as "no filter" rather
+        // than becoming an explicit-empty-string filter on the next AJAX call.
+        $urlParams = array_filter([
+            'storeName' => $this->storeName,
+            'localeName' => $this->localeName,
+        ], static fn ($value): bool => $value !== null);
+
+        if ($urlParams !== []) {
+            $config->setUrl('table?' . http_build_query($urlParams));
+        }
+
         $config->setHeader([
             SpySearchRankingMetricHistoryTableMap::COL_ID_SEARCH_RANKING_METRIC_HISTORY => 'ID',
             SpySearchRankingMetricHistoryTableMap::COL_METRIC_NAME => 'Metric',
+            SpySearchRankingMetricHistoryTableMap::COL_STORE_NAME => 'Store',
+            SpySearchRankingMetricHistoryTableMap::COL_LOCALE_NAME => 'Locale',
             SpySearchRankingMetricHistoryTableMap::COL_FORMULA => 'Formula',
             SpySearchRankingMetricHistoryTableMap::COL_WEIGHT => 'Weight',
             SpySearchRankingMetricHistoryTableMap::COL_IS_ACTIVE => 'Active',
@@ -75,6 +111,8 @@ class MetricHistoryTable extends AbstractTable
         $config->setSortable([
             SpySearchRankingMetricHistoryTableMap::COL_ID_SEARCH_RANKING_METRIC_HISTORY,
             SpySearchRankingMetricHistoryTableMap::COL_METRIC_NAME,
+            SpySearchRankingMetricHistoryTableMap::COL_STORE_NAME,
+            SpySearchRankingMetricHistoryTableMap::COL_LOCALE_NAME,
             SpySearchRankingMetricHistoryTableMap::COL_WEIGHT,
             SpySearchRankingMetricHistoryTableMap::COL_IS_ACTIVE,
             SpySearchRankingMetricHistoryTableMap::COL_FIT_R_SQUARED,
@@ -84,6 +122,8 @@ class MetricHistoryTable extends AbstractTable
 
         $config->setSearchable([
             SpySearchRankingMetricHistoryTableMap::COL_METRIC_NAME,
+            SpySearchRankingMetricHistoryTableMap::COL_STORE_NAME,
+            SpySearchRankingMetricHistoryTableMap::COL_LOCALE_NAME,
             SpySearchRankingMetricHistoryTableMap::COL_FORMULA,
             SpySearchRankingMetricHistoryTableMap::COL_CHANGE_SOURCE,
         ]);
@@ -119,6 +159,8 @@ class MetricHistoryTable extends AbstractTable
             $rows[] = [
                 SpySearchRankingMetricHistoryTableMap::COL_ID_SEARCH_RANKING_METRIC_HISTORY => $historyEntity->getIdSearchRankingMetricHistory(),
                 SpySearchRankingMetricHistoryTableMap::COL_METRIC_NAME => $historyEntity->getMetricName(),
+                SpySearchRankingMetricHistoryTableMap::COL_STORE_NAME => $historyEntity->getStoreName(),
+                SpySearchRankingMetricHistoryTableMap::COL_LOCALE_NAME => $historyEntity->getLocaleName(),
                 SpySearchRankingMetricHistoryTableMap::COL_FORMULA => $historyEntity->getFormula(),
                 SpySearchRankingMetricHistoryTableMap::COL_WEIGHT => $historyEntity->getWeight(),
                 SpySearchRankingMetricHistoryTableMap::COL_IS_ACTIVE => $this->generateLabel(
