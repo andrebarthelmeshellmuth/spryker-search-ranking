@@ -12,8 +12,9 @@ namespace SprykerCommunity\Client\SearchRanking\Search;
 /**
  * Immutable snapshot of one {@see \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculatorInterface}
  * outcome — carries both the `relevanceWeight` that was actually applied to the real query AND the
- * diagnostics behind it (query term count, normalized specificity, shift), so a consumer like the
- * search-debug overlay can show the SAME numbers that produced the real score, not just the end result.
+ * diagnostics behind it (query term count, raw and normalized specificity, the saturation point/curve
+ * exponent normalization used, shift), so a consumer like the search-debug overlay can show the SAME
+ * numbers that produced the real score, not just the end result.
  *
  * A failed probe, or a query with no terms carrying any real corpus evidence, still produces one of
  * these: `relevanceWeight` equals `configuredRelevanceWeight` unchanged, and `normalizedSpecificity`/
@@ -35,6 +36,18 @@ class SpecificityWeightingResult
      *   same reasoning as `$specificityWeightExponent`. Defaults to
      *   {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultSpecificityWeightShiftMagnitude()}'s
      *   own default value.
+     * @param float $rawSpecificity The pre-normalization blended-IDF value
+     *   {@see \SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInterface::calculateRawSpecificity()}
+     *   produced from this query's own real ES-sourced term stats — `0.0` when there was nothing to
+     *   measure, same as `$normalizedSpecificity`/`$shift`. Carried here (not re-derived) so a consumer
+     *   like the search-debug overlay can show the actual numerator that fed the normalize() formula,
+     *   not just its already-normalized result.
+     * @param float $specificitySaturationPoint The `saturationPoint` `$normalizedSpecificity` was
+     *   actually normalized against — the real configured value regardless of whether any terms carried
+     *   evidence, same reasoning as `$specificityWeightExponent`.
+     * @param float $specificityCurveExponent The `curveExponent` `$normalizedSpecificity` was actually
+     *   shaped with — same reasoning as `$specificityWeightExponent`. Defaults to `1.0`, the exponent's
+     *   own identity value.
      */
     public function __construct(
         protected float $configuredRelevanceWeight,
@@ -44,6 +57,9 @@ class SpecificityWeightingResult
         protected int $queryTermCount,
         protected float $specificityWeightExponent = 1.0,
         protected float $specificityWeightShiftMagnitude = 0.25,
+        protected float $rawSpecificity = 0.0,
+        protected float $specificitySaturationPoint = 0.0,
+        protected float $specificityCurveExponent = 1.0,
     ) {
     }
 
@@ -91,5 +107,24 @@ class SpecificityWeightingResult
     public function getSpecificityWeightShiftMagnitude(): float
     {
         return $this->specificityWeightShiftMagnitude;
+    }
+
+    /**
+     * The pre-normalization blended-IDF value this query's own real ES-sourced term stats produced —
+     * the numerator {@see getSpecificitySaturationPoint()} normalizes into {@see getNormalizedSpecificity()}.
+     */
+    public function getRawSpecificity(): float
+    {
+        return $this->rawSpecificity;
+    }
+
+    public function getSpecificitySaturationPoint(): float
+    {
+        return $this->specificitySaturationPoint;
+    }
+
+    public function getSpecificityCurveExponent(): float
+    {
+        return $this->specificityCurveExponent;
     }
 }

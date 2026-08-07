@@ -119,6 +119,11 @@ class SpecificityWeightCalculatorTest extends Unit
         // actually produced the shift, not just the shift's own number.
         $this->assertSame(1.0, $result->getSpecificityWeightExponent());
         $this->assertSame(static::SHIFT_MAGNITUDE, $result->getSpecificityWeightShiftMagnitude());
+        // Same reasoning: the search-debug overlay's "Normalized specificity" line needs the real
+        // rawSpecificity/saturationPoint/curveExponent that fed normalize(), not just its own result.
+        $this->assertGreaterThan(0.0, $result->getRawSpecificity());
+        $this->assertSame(3.0, $result->getSpecificitySaturationPoint());
+        $this->assertSame(1.0, $result->getSpecificityCurveExponent());
     }
 
     /**
@@ -155,6 +160,12 @@ class SpecificityWeightCalculatorTest extends Unit
         // SpecificityWeightingResult separately.
         $this->assertSame(1.0, $result->getSpecificityWeightExponent());
         $this->assertSame(static::SHIFT_MAGNITUDE, $result->getSpecificityWeightShiftMagnitude());
+        // rawSpecificity is genuinely 0.0 here (nothing to measure), but saturationPoint/curveExponent
+        // must still carry the REAL configured values, not fake zeroed ones — same reasoning as
+        // exponent/shiftMagnitude just above.
+        $this->assertSame(0.0, $result->getRawSpecificity());
+        $this->assertSame(3.0, $result->getSpecificitySaturationPoint());
+        $this->assertSame(1.0, $result->getSpecificityCurveExponent());
     }
 
     /**
