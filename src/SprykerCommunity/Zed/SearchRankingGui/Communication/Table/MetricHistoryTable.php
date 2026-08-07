@@ -129,7 +129,7 @@ class MetricHistoryTable extends AbstractTable
                 static::COL_FIT => $this->formatFit($historyEntity->getFitRSquared()),
                 SpySearchRankingMetricHistoryTableMap::COL_IS_CHANGE => $this->generateLabel(
                     $historyEntity->getIsChange() ? 'Change' : 'Check only',
-                    $historyEntity->getIsChange() ? 'label-success' : 'label-default',
+                    $historyEntity->getIsChange() ? 'label-success' : 'label-secondary',
                 ),
                 SpySearchRankingMetricHistoryTableMap::COL_CHANGE_SOURCE => $this->formatChangeSource($historyEntity->getChangeSource()),
                 SpySearchRankingMetricHistoryTableMap::COL_CREATED_AT => $historyEntity->getCreatedAt('Y-m-d H:i:s'),
@@ -153,7 +153,7 @@ class MetricHistoryTable extends AbstractTable
 
     /**
      * Human-readable label for one of {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig}::CHANGE_SOURCE_*
-     * — a plain default-styled label for the base package's own MANUAL source (nothing to call out), and a
+     * — a neutral-styled label for the base package's own MANUAL source (nothing to call out), and a
      * distinct "info" style for every automated source, so an admin scanning the table can visually spot
      * a machine-originated row at a glance rather than reading each cell. Falls back to the raw stored
      * value for a row written before this label list existed or by a future, not-yet-known source.
@@ -172,7 +172,7 @@ class MetricHistoryTable extends AbstractTable
 
         $label = $labelsByChangeSource[$changeSource] ?? $changeSource ?? 'Manual';
         $cssClass = $changeSource === SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL || $changeSource === null
-            ? 'label-default'
+            ? 'label-secondary'
             : 'label-info';
 
         return $this->generateLabel($label, $cssClass);
