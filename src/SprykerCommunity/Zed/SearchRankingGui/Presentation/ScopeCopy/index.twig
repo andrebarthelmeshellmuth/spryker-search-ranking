@@ -58,8 +58,10 @@
 
             {% if hasTargetData %}
                 <div class="alert alert-warning">
-                    {{ targetStoreName }}/{{ targetLocaleName }} already has saved configuration. Copying or
-                    locking will do nothing unless you check "Overwrite existing target configuration" below.
+                    {{ targetStoreName }}/{{ targetLocaleName }} — or another locale of {{ targetStoreName }}
+                    that a store-only metric in this copy would also apply to — already has saved
+                    configuration. Copying or locking will do nothing unless you check "Overwrite existing
+                    target configuration" below.
                 </div>
             {% endif %}
 

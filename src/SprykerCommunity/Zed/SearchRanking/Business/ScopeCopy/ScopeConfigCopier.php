@@ -84,7 +84,7 @@ class ScopeConfigCopier implements ScopeConfigCopierInterface
                 ->setErrorMessage('Source and target scope must be different.');
         }
 
-        if (!$confirmOverwrite && $this->hasScopeConfiguration($targetStoreName, $targetLocaleName)) {
+        if (!$confirmOverwrite && $this->hasBlockingExistingData($sourceStoreName, $sourceLocaleName, $targetStoreName, $targetLocaleName)) {
             return $resultTransfer->setIsBlockedByExistingData(true);
         }
 
@@ -110,6 +110,47 @@ class ScopeConfigCopier implements ScopeConfigCopierInterface
     public function hasScopeConfiguration(string $storeName, string $localeName): bool
     {
         return $this->repository->hasScopeConfiguration($storeName, $localeName);
+    }
+
+    /**
+     * The real guard {@see copyScopeConfiguration()} uses before writing: the direct-target check
+     * {@see hasScopeConfiguration()} already did, PLUS — for every metric this copy would actually touch
+     * — whether a not-locale-scoped metric's write would silently fan out onto a SIBLING locale of
+     * $targetStoreName that already has its own weight. Without this, a store-only metric's copy could
+     * clobber an already-tuned sibling locale with zero warning, even though the direct-target scope
+     * itself looked empty. Only metrics with an explicit source weight are considered — same "nothing
+     * copied means nothing to collide" selection {@see copyMetricWeights()} itself uses.
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     */
+    protected function hasBlockingExistingData(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+    ): bool {
+        if ($this->hasScopeConfiguration($targetStoreName, $targetLocaleName)) {
+            return true;
+        }
+
+        foreach ($this->repository->getMetricCollection($sourceStoreName, $sourceLocaleName)->getMetrics() as $metricTransfer) {
+            $idSearchRankingMetric = $metricTransfer->getIdSearchRankingMetricOrFail();
+
+            if ($this->repository->findMetricWeight($idSearchRankingMetric, $sourceStoreName, $sourceLocaleName) === null) {
+                continue;
+            }
+
+            foreach ($this->metricWriter->resolveEffectiveWeightLocales($idSearchRankingMetric, $targetStoreName, $targetLocaleName) as $effectiveLocaleName) {
+                if ($effectiveLocaleName !== $targetLocaleName && $this->repository->findMetricWeight($idSearchRankingMetric, $targetStoreName, $effectiveLocaleName) !== null) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
