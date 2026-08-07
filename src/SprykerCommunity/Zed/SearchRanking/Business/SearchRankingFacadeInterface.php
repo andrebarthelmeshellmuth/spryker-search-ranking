@@ -311,6 +311,25 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
+     * - Returns every locale name a {@see saveMetricWeight()} call for this metric/store/locale would
+     *   actually write to: just $localeName when the metric is locale-scoped (the normal case), or every
+     *   real locale of $storeName when it isn't (`isLocaleScoped=false`) — the same fan-out decision
+     *   saveMetricWeight() makes internally, exposed up front so a caller can know the real blast radius
+     *   of a write before committing it.
+     * - A metric that no longer exists resolves to just [$localeName], the same as a locale-scoped one.
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return array<string>
+     */
+    public function resolveEffectiveWeightLocales(int $idSearchRankingMetric, string $storeName, string $localeName): array;
+
+    /**
+     * Specification:
      * - Deletes the metric with the given id; its product-metric rows are removed by cascade.
      * - Does nothing when the metric does not exist.
      *

@@ -95,6 +95,12 @@ Two independent fan-out mechanisms exist for this same table, worth telling apar
   which can be all of them, a subset, or just one — and works regardless of `isLocaleScoped`, since the
   CSV doesn't consult that flag at all.
 
+`SearchRankingFacadeInterface::resolveEffectiveWeightLocales(idSearchRankingMetric, storeName, localeName)`
+answers "which locales would a `saveMetricWeight()` call for this metric actually touch?" up front — the
+same fan-out decision `saveMetricWeight()` makes internally, exposed so a caller (this package's own Scope
+Copy, or a dependent package like `search-ranking-optimizer`) can know the real blast radius of a write
+before committing it, not just after.
+
 ### 6. Specificity-aware relevance weighting (optional)
 
 Before applying the blend above, the query itself gets analyzed: rare terms mean precise intent (lean
