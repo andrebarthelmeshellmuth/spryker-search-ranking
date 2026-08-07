@@ -302,6 +302,15 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
         // normalizedSpecificity alone and doesn't need its own snapshot field.
         $signedDeviation = (2 * $specificityWeightingResult->getNormalizedSpecificity()) - 1;
 
+        // calculateShift() applies the exponent to the deviation's MAGNITUDE only and reattaches the
+        // sign afterward (see that method's own docblock) — a plain "(signedDeviation)^exponent" display
+        // would silently drop that sign-preservation step for every negative deviation (normalized
+        // specificity below the neutral 0.5 point, the common case for a generic/low-specificity query)
+        // whenever exponent isn't exactly 1.0: literally evaluating it gives the WRONG sign for an even
+        // exponent, and no real value at all for a fractional one. Showing the sign as its own explicit
+        // factor keeps the displayed formula a 1:1 mirror of calculateShift()'s real computation.
+        $deviationSign = $signedDeviation <=> 0;
+
         return [
             'title' => static::SPECIFICITY_SECTION_TITLE,
             // Tells the search-debug overlay template to render this section in its own dedicated spot
@@ -374,11 +383,16 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
                     // giving every one of 3 inputs its own line would make this section longer than the
                     // hover overlay comfortably fits. Always shown, even at its default 1.0, since it can
                     // genuinely differ per store/locale and a reader shouldn't have to guess whether it
-                    // was applied.
+                    // was applied. The exponent applies to |signedDeviation| only — the sign is its own
+                    // explicit factor, matching calculateShift()'s real sign-preserving computation (see
+                    // $deviationSign's own comment above) rather than folding the signed value into the
+                    // power directly, which would silently mismatch the shown `value` whenever the
+                    // deviation is negative and the exponent isn't 1.0.
                     'calculation' => sprintf(
-                        $decimalFormat . ' × (' . $decimalFormat . ')^' . $decimalFormat,
+                        $decimalFormat . ' × %d × ' . $decimalFormat . '^' . $decimalFormat,
                         $specificityWeightingResult->getSpecificityWeightShiftMagnitude(),
-                        $signedDeviation,
+                        $deviationSign,
+                        abs($signedDeviation),
                         $specificityWeightingResult->getSpecificityWeightExponent(),
                     ),
                     'value' => $specificityWeightingResult->getShift(),
