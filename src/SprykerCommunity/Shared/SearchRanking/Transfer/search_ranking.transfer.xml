@@ -19,6 +19,10 @@
         <property name="formula" type="string"/>
         <property name="isActive" type="bool"/>
         <property name="isHigherBetter" type="bool"/>
+        <!-- Whether this metric's WEIGHT is a per-locale decision (true, the default) or a store-wide
+             fact fanned out to every locale of a store (false). Global identity field, same bucket as
+             isHigherBetter - does not affect formula/isActive/shape, already store-only regardless. -->
+        <property name="isLocaleScoped" type="bool"/>
         <property name="shape" type="string"/>
         <!-- Optional input to saveMetric(): which SearchRankingConfig::CHANGE_SOURCE_* produced this
              save, recorded on the resulting history row. Null (the default, used by this package's own
@@ -126,6 +130,7 @@
         <property name="formula" type="string"/>
         <property name="isActive" type="bool"/>
         <property name="isHigherBetter" type="bool"/>
+        <property name="isLocaleScoped" type="bool"/>
         <property name="minValue" type="float"/>
         <property name="maxValue" type="float"/>
         <property name="meanValue" type="float"/>

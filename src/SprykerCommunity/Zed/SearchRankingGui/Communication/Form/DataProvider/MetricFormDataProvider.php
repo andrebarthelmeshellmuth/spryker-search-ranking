@@ -30,7 +30,7 @@ class MetricFormDataProvider
     public function getData(?int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricTransfer
     {
         if ($idSearchRankingMetric === null) {
-            return (new SearchRankingMetricTransfer())->setIsActive(true)->setIsHigherBetter(true);
+            return (new SearchRankingMetricTransfer())->setIsActive(true)->setIsHigherBetter(true)->setIsLocaleScoped(true);
         }
 
         return $this->searchRankingFacade->findMetricById($idSearchRankingMetric, $storeName, $localeName);

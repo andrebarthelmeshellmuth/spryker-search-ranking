@@ -129,6 +129,11 @@ class MetricWriter implements MetricWriterInterface
     /**
      * {@inheritDoc}
      *
+     * Fetches the metric up front (rather than only once a change is confirmed, like the rest of this
+     * method used to) because {@see SearchRankingMetricTransfer::getIsLocaleScoped()} must be known
+     * BEFORE writing anything, to decide whether this write targets just $localeName or every real
+     * locale of $storeName.
+     *
      * @param int $idSearchRankingMetric
      * @param string $storeName
      * @param string $localeName
@@ -142,18 +147,48 @@ class MetricWriter implements MetricWriterInterface
         float $weight,
         string $changeSource = SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL,
     ): void {
+        $metricTransfer = $this->repository->findMetricById($idSearchRankingMetric, $storeName, $localeName);
+
+        // Not locale-scoped: fan the same write out to every real locale of the store, same
+        // resolveLocaleNamesForStore() pattern saveMetric() already uses for its own history fan-out —
+        // keeps every locale's weight row in sync automatically instead of requiring N manual edits.
+        $targetLocaleNames = $metricTransfer !== null && $metricTransfer->getIsLocaleScoped() === false
+            ? $this->resolveLocaleNamesForStore($storeName, $localeName)
+            : [$localeName];
+
+        foreach ($targetLocaleNames as $targetLocaleName) {
+            $this->saveMetricWeightForLocale($idSearchRankingMetric, $storeName, $targetLocaleName, $weight, $metricTransfer, $changeSource);
+        }
+
+        $this->eventFacade->trigger(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE, new EventEntityTransfer());
+    }
+
+    /**
+     * The single-locale write {@see saveMetricWeight()} used to do inline, now reusable per fanned-out
+     * locale. $metricTransfer is passed in rather than re-fetched per locale — it's the same global
+     * identity record (name/isHigherBetter/isLocaleScoped) regardless of which locale it was looked up
+     * with, so one fetch in the caller is enough.
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $weight
+     * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer|null $metricTransfer
+     * @param string $changeSource
+     */
+    protected function saveMetricWeightForLocale(
+        int $idSearchRankingMetric,
+        string $storeName,
+        string $localeName,
+        float $weight,
+        ?SearchRankingMetricTransfer $metricTransfer,
+        string $changeSource,
+    ): void {
         $previousWeight = $this->repository->findMetricWeight($idSearchRankingMetric, $storeName, $localeName);
 
         $this->entityManager->saveMetricWeight($idSearchRankingMetric, $storeName, $localeName, $weight);
-        $this->eventFacade->trigger(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE, new EventEntityTransfer());
 
-        if ($previousWeight === $weight) {
-            return;
-        }
-
-        $metricTransfer = $this->repository->findMetricById($idSearchRankingMetric, $storeName, $localeName);
-
-        if ($metricTransfer === null) {
+        if ($previousWeight === $weight || $metricTransfer === null) {
             return;
         }
 
@@ -228,7 +263,8 @@ class MetricWriter implements MetricWriterInterface
 
         return $previousMetricTransfer->getFormula() !== $currentMetricTransfer->getFormula()
             || $previousMetricTransfer->getIsActive() !== $currentMetricTransfer->getIsActive()
-            || $previousMetricTransfer->getIsHigherBetter() !== $currentMetricTransfer->getIsHigherBetter();
+            || $previousMetricTransfer->getIsHigherBetter() !== $currentMetricTransfer->getIsHigherBetter()
+            || $previousMetricTransfer->getIsLocaleScoped() !== $currentMetricTransfer->getIsLocaleScoped();
     }
 
     /**
@@ -290,6 +326,7 @@ class MetricWriter implements MetricWriterInterface
             ->setFormula($metricTransfer->getFormulaOrFail())
             ->setIsActive($metricTransfer->getIsActive() ?? true)
             ->setIsHigherBetter($metricTransfer->getIsHigherBetter() ?? true)
+            ->setIsLocaleScoped($metricTransfer->getIsLocaleScoped() ?? true)
             ->setIsChange($isChange)
             ->setChangeSource($changeSource);
 

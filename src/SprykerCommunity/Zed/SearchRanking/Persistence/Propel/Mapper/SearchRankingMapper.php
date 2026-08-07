@@ -31,7 +31,7 @@ class SearchRankingMapper
 {
     /**
      * formula/isActive/shape are NOT read from the entity here — `spy_search_ranking_metric` itself only
-     * carries id/name/isHigherBetter any more; formula/isActive/shape moved to
+     * carries id/name/isHigherBetter/isLocaleScoped any more; formula/isActive/shape moved to
      * `spy_search_ranking_metric_store_config`, store-scoped (a breaking change; see CHANGELOG.md for the
      * release that shipped it — no live installs meant no backfill migration was needed). This method
      * only maps what's still genuinely global. Callers that need formula/isActive/shape overlay them via
@@ -48,11 +48,12 @@ class SearchRankingMapper
         return $metricTransfer
             ->setIdSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
             ->setName($metricEntity->getName())
-            ->setIsHigherBetter($metricEntity->getIsHigherBetter());
+            ->setIsHigherBetter($metricEntity->getIsHigherBetter())
+            ->setIsLocaleScoped($metricEntity->getIsLocaleScoped());
     }
 
     /**
-     * Only writes name/isHigherBetter — formula/isActive/shape are saved separately, to
+     * Only writes name/isHigherBetter/isLocaleScoped — formula/isActive/shape are saved separately, to
      * `spy_search_ranking_metric_store_config`, by
      * {@see SearchRankingEntityManager::saveMetricStoreConfig()}.
      *
@@ -65,6 +66,7 @@ class SearchRankingMapper
     ): SpySearchRankingMetric {
         $metricEntity->setName($metricTransfer->getNameOrFail());
         $metricEntity->setIsHigherBetter($metricTransfer->getIsHigherBetter() ?? true);
+        $metricEntity->setIsLocaleScoped($metricTransfer->getIsLocaleScoped() ?? true);
 
         return $metricEntity;
     }
@@ -219,6 +221,7 @@ class SearchRankingMapper
             ->setFormula($historyEntity->getFormula())
             ->setIsActive($historyEntity->getIsActive())
             ->setIsHigherBetter($historyEntity->getIsHigherBetter())
+            ->setIsLocaleScoped($historyEntity->getIsLocaleScoped())
             ->setMinValue($historyEntity->getMinValue())
             ->setMaxValue($historyEntity->getMaxValue())
             ->setMeanValue($historyEntity->getMeanValue())
@@ -247,6 +250,7 @@ class SearchRankingMapper
         $historyEntity->setFormula($historyTransfer->getFormulaOrFail());
         $historyEntity->setIsActive($historyTransfer->getIsActiveOrFail());
         $historyEntity->setIsHigherBetter($historyTransfer->getIsHigherBetterOrFail());
+        $historyEntity->setIsLocaleScoped($historyTransfer->getIsLocaleScopedOrFail());
         $historyEntity->setMinValue($historyTransfer->getMinValue());
         $historyEntity->setMaxValue($historyTransfer->getMaxValue());
         $historyEntity->setMeanValue($historyTransfer->getMeanValue());

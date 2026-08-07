@@ -15,6 +15,7 @@ use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\StoreTransfer;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingEvents;
 use SprykerCommunity\Zed\SearchRanking\Business\Exception\InvalidFormulaException;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface;
@@ -643,6 +644,150 @@ class MetricWriterTest extends Unit
     }
 
     /**
+     * A metric marked NOT locale-scoped (a store-wide fact like sales/stock) fans a single weight write
+     * out to every real locale of the store, instead of writing just the one locale it was called with.
+     */
+    public function testFansOutTheWeightWriteToEveryStoreLocaleWhenTheMetricIsNotLocaleScoped(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())
+            ->setIdSearchRankingMetric(7)
+            ->setName('top_seller')
+            ->setFormula('x / max')
+            ->setIsActive(true)
+            ->setIsHigherBetter(true)
+            ->setIsLocaleScoped(false);
+
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricById')->with(7, 'DE', 'de_DE')->willReturn($metricTransfer);
+        $repositoryMock->method('findMetricWeight')->willReturn(0.2);
+        $repositoryMock->method('findMetricDigest')->willReturn(null);
+
+        $savedLocaleNames = [];
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->expects($this->exactly(2))
+            ->method('saveMetricWeight')
+            ->with(7, 'DE', $this->callback(function (string $localeName) use (&$savedLocaleNames): bool {
+                $savedLocaleNames[] = $localeName;
+
+                return true;
+            }), 0.6);
+        $entityManagerMock->expects($this->exactly(2))->method('recordMetricHistory')->willReturnArgument(0);
+
+        $eventFacadeMock = $this->createMock(SearchRankingToEventFacadeInterface::class);
+        $eventFacadeMock->expects($this->once())->method('trigger')->with(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE);
+
+        // Act
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $eventFacadeMock, $this->createMultiLocaleStoreFacadeMock()))
+            ->saveMetricWeight(7, 'DE', 'de_DE', 0.6);
+
+        // Assert
+        $this->assertSame(['de_DE', 'en_US'], $savedLocaleNames);
+    }
+
+    /**
+     * A metric marked locale-scoped (the default) only ever writes the one locale saveMetricWeight() was
+     * called with, even though the store has several locales configured.
+     */
+    public function testOnlyWritesTheGivenLocaleWhenTheMetricIsLocaleScoped(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())
+            ->setIdSearchRankingMetric(7)
+            ->setName('pdp_impressions')
+            ->setFormula('x / max')
+            ->setIsActive(true)
+            ->setIsHigherBetter(true)
+            ->setIsLocaleScoped(true);
+
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricById')->willReturn($metricTransfer);
+        $repositoryMock->method('findMetricWeight')->willReturn(0.2);
+        $repositoryMock->method('findMetricDigest')->willReturn(null);
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->expects($this->once())->method('saveMetricWeight')->with(7, 'DE', 'de_DE', 0.6);
+        $entityManagerMock->expects($this->once())->method('recordMetricHistory')->willReturnArgument(0);
+
+        // Act
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createMultiLocaleStoreFacadeMock()))
+            ->saveMetricWeight(7, 'DE', 'de_DE', 0.6);
+    }
+
+    /**
+     * A metric that can't be found at all (shouldn't happen in practice) is treated the same as
+     * locale-scoped — write just the passed-in locale, never guess a fan-out from an unknown metric.
+     */
+    public function testOnlyWritesTheGivenLocaleWhenTheMetricCannotBeFound(): void
+    {
+        // Arrange
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricById')->willReturn(null);
+        $repositoryMock->method('findMetricWeight')->willReturn(0.2);
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->expects($this->once())->method('saveMetricWeight')->with(7, 'DE', 'de_DE', 0.6);
+        $entityManagerMock->expects($this->never())->method('recordMetricHistory');
+
+        // Act
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createMultiLocaleStoreFacadeMock()))
+            ->saveMetricWeight(7, 'DE', 'de_DE', 0.6);
+    }
+
+    /**
+     * isLocaleScoped is a tracked field just like isHigherBetter — changing it alone (formula/isActive/
+     * isHigherBetter unchanged) must still produce a history row.
+     */
+    public function testRecordsHistoryWhenOnlyIsLocaleScopedChanged(): void
+    {
+        // Arrange
+        $previousMetricTransfer = (new SearchRankingMetricTransfer())
+            ->setIdSearchRankingMetric(7)
+            ->setName('top_seller')
+            ->setWeight(0.5)
+            ->setFormula('x / max')
+            ->setIsActive(true)
+            ->setIsHigherBetter(true)
+            ->setIsLocaleScoped(true);
+
+        $resubmittedMetricTransfer = (clone $previousMetricTransfer)->setIsLocaleScoped(false);
+
+        $formulaEvaluatorMock = $this->createMock(FormulaEvaluatorInterface::class);
+        $formulaEvaluatorMock->method('validate')->willReturn((new SearchRankingFormulaValidationResponseTransfer())->setIsSuccess(true));
+
+        $entityManagerMock = $this->createMock(SearchRankingEntityManagerInterface::class);
+        $entityManagerMock->method('saveMetric')->willReturn(clone $resubmittedMetricTransfer);
+        $entityManagerMock->expects($this->once())
+            ->method('recordMetricHistory')
+            ->with($this->callback(fn (SearchRankingMetricHistoryTransfer $historyTransfer): bool => $historyTransfer->getIsLocaleScoped() === false))
+            ->willReturnArgument(0);
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('findMetricById')->with(7)->willReturn($previousMetricTransfer);
+        $repositoryMock->method('findMetricDigest')->willReturn(null);
+
+        $fitEvaluatorMock = $this->createMock(MetricFormulaFitEvaluatorInterface::class);
+        $curveFitterMock = $this->createMock(NormalizationCurveFitterInterface::class);
+        $curveFitterMock->method('fit')->willReturn([]);
+
+        // Act
+        (new MetricWriter($repositoryMock, $entityManagerMock, $formulaEvaluatorMock, $fitEvaluatorMock, $curveFitterMock, $this->createMock(SearchRankingToEventFacadeInterface::class), $this->createStoreFacadeMock()))
+            ->saveMetric($resubmittedMetricTransfer, 'DE', 'de_DE');
+    }
+
+    /**
      * No configured store matches the scope these tests save into — resolveLocaleNamesForStore() falls
      * back to just the single locale passed to saveMetric(), preserving every test's existing
      * once-per-history-write expectation.
@@ -651,6 +796,20 @@ class MetricWriterTest extends Unit
     {
         $storeFacadeMock = $this->createMock(SearchRankingToStoreFacadeInterface::class);
         $storeFacadeMock->method('getAllStores')->willReturn([]);
+
+        return $storeFacadeMock;
+    }
+
+    /**
+     * A DE store with two real locales — used by the saveMetricWeight() fan-out tests to prove a
+     * not-locale-scoped write reaches every one of them, and a locale-scoped write still doesn't.
+     */
+    protected function createMultiLocaleStoreFacadeMock(): SearchRankingToStoreFacadeInterface
+    {
+        $storeFacadeMock = $this->createMock(SearchRankingToStoreFacadeInterface::class);
+        $storeFacadeMock->method('getAllStores')->willReturn([
+            (new StoreTransfer())->setName('DE')->setAvailableLocaleIsoCodes(['de_DE', 'en_US']),
+        ]);
 
         return $storeFacadeMock;
     }

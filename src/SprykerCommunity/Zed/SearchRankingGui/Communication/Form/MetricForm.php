@@ -59,6 +59,11 @@ class MetricForm extends AbstractType
     protected const FIELD_IS_HIGHER_BETTER = 'isHigherBetter';
 
     /**
+     * @var string
+     */
+    protected const FIELD_IS_LOCALE_SCOPED = 'isLocaleScoped';
+
+    /**
      * @param \Symfony\Component\OptionsResolver\OptionsResolver $resolver
      */
     public function configureOptions(OptionsResolver $resolver): void
@@ -80,6 +85,7 @@ class MetricForm extends AbstractType
             ->addNameField($builder, $options)
             ->addWeightField($builder)
             ->addIsHigherBetterField($builder)
+            ->addIsLocaleScopedField($builder)
             ->addFormulaField($builder, $options)
             ->addIsActiveField($builder);
     }
@@ -162,6 +168,22 @@ class MetricForm extends AbstractType
         $builder->add(static::FIELD_IS_HIGHER_BETTER, CheckboxType::class, [
             'label' => 'Higher raw value is better',
             'help' => 'Checked for signals like sales or impressions (more is better). Unchecked for signals like days-since-restock or return rate (less is better) — this only affects the curve-fit suggestions below, never the formula itself.',
+            'required' => false,
+        ]);
+
+        return $this;
+    }
+
+    /**
+     * @param \Symfony\Component\Form\FormBuilderInterface $builder
+     *
+     * @return $this
+     */
+    protected function addIsLocaleScopedField(FormBuilderInterface $builder)
+    {
+        $builder->add(static::FIELD_IS_LOCALE_SCOPED, CheckboxType::class, [
+            'label' => 'Locale-specific weight',
+            'help' => 'Checked (default): this metric\'s weight is authored and stored separately per locale. Unchecked: this metric is a store-wide fact (e.g. sales, stock) rather than a language-dependent one — saving the weight for any one locale applies it to every locale of this store automatically.',
             'required' => false,
         ]);
 
