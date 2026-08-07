@@ -119,7 +119,7 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
      * returns the configuration transfer unchanged, firing no additional probe, unless a project has
      * explicitly opted in.
      *
-     * Remembers the full {@see \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult}
+     * Remembers the full {@see \Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer}
      * on this package's own Client (see {@see \SprykerCommunity\Client\SearchRanking\SearchRankingClientInterface::rememberLastSpecificityWeightingResult()})
      * whenever specificity weighting is enabled — including when the probe itself found no usable signal
      * and fell back to the configured weight unchanged — so the search-debug overlay can later show the
@@ -144,7 +144,7 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
 
         $this->getClient()->rememberLastSpecificityWeightingResult($specificityWeightingResult);
 
-        return (clone $configurationTransfer)->setRelevanceWeight($specificityWeightingResult->getRelevanceWeight());
+        return (clone $configurationTransfer)->setRelevanceWeight($specificityWeightingResult->getRelevanceWeightOrFail());
     }
 
     /**

@@ -11,8 +11,8 @@ namespace SprykerCommunityTest\Client\SearchRanking\Debug;
 
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
+use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilder;
-use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
 
 /**
  * Auto-generated group annotations
@@ -273,7 +273,7 @@ class ScoreSectionBuilderTest extends Unit
             ->setRelevanceWeight(0.6)
             ->setRelevanceSaturationPoint(12.0);
 
-        $specificityWeightingResult = new SpecificityWeightingResult(0.6, 0.9, 0.1, 0.3, 8);
+        $specificityWeightingResult = $this->createSpecificityWeightingResult(0.6, 0.9, 0.1, 0.3, 8);
 
         // Act
         $section = (new ScoreSectionBuilder())->build(
@@ -297,7 +297,7 @@ class ScoreSectionBuilderTest extends Unit
         // curveExponent=2.0 chosen the same way: 6.0^2 / (6.0^2 + 3.0^2) = 36/45 = 0.8, the exact
         // normalizedSpecificity given below -- so the new "Normalized specificity" calculation string is
         // real arithmetic too, not just plausible-looking.
-        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.93, 0.8, 0.18, 10, 2.0, 0.5, 6.0, 3.0, 2.0);
+        $specificityWeightingResult = $this->createSpecificityWeightingResult(0.75, 0.93, 0.8, 0.18, 10, 2.0, 0.5, 6.0, 3.0, 2.0);
 
         // Act
         $section = (new ScoreSectionBuilder())->buildSpecificitySection($specificityWeightingResult);
@@ -369,7 +369,7 @@ class ScoreSectionBuilderTest extends Unit
     {
         // Arrange -- normalizedSpecificity=0.3 -> signedDeviation = 2 × 0.3 - 1 = -0.4 (negative).
         // exponent=2.0, shiftMagnitude=0.5 -> real shift = 0.5 × sign(-0.4) × |-0.4|^2.0 = 0.5 × -1 × 0.16 = -0.08.
-        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.67, 0.3, -0.08, 10, 2.0, 0.5, 1.0, 1.0, 1.0);
+        $specificityWeightingResult = $this->createSpecificityWeightingResult(0.75, 0.67, 0.3, -0.08, 10, 2.0, 0.5, 1.0, 1.0, 1.0);
 
         // Act
         $section = (new ScoreSectionBuilder())->buildSpecificitySection($specificityWeightingResult);
@@ -382,5 +382,46 @@ class ScoreSectionBuilderTest extends Unit
         // 0.500 × (-0.400)^2.000 = +0.08 -- the wrong sign.
         $this->assertSame('0.500 × -1 × 0.400^2.000', $section['lines'][6]['calculation']);
         $this->assertSame(-0.08, $section['lines'][6]['value']);
+    }
+
+    /**
+     * Same field order/defaults SpecificityWeightCalculator::calculateWeightingResult() itself sets via
+     * fluent setters — kept as its own helper purely so every test above can build a fixture with a plain
+     * positional argument list, same shape the old hand-written value object's constructor offered.
+     *
+     * @param float $configuredRelevanceWeight
+     * @param float $relevanceWeight
+     * @param float $normalizedSpecificity
+     * @param float $shift
+     * @param int $queryTermCount
+     * @param float $specificityWeightExponent
+     * @param float $specificityWeightShiftMagnitude
+     * @param float $rawSpecificity
+     * @param float $specificitySaturationPoint
+     * @param float $specificityCurveExponent
+     */
+    protected function createSpecificityWeightingResult(
+        float $configuredRelevanceWeight,
+        float $relevanceWeight,
+        float $normalizedSpecificity,
+        float $shift,
+        int $queryTermCount,
+        float $specificityWeightExponent = 1.0,
+        float $specificityWeightShiftMagnitude = 0.25,
+        float $rawSpecificity = 0.0,
+        float $specificitySaturationPoint = 0.0,
+        float $specificityCurveExponent = 1.0,
+    ): SearchRankingSpecificityWeightingResultTransfer {
+        return (new SearchRankingSpecificityWeightingResultTransfer())
+            ->setConfiguredRelevanceWeight($configuredRelevanceWeight)
+            ->setRelevanceWeight($relevanceWeight)
+            ->setNormalizedSpecificity($normalizedSpecificity)
+            ->setShift($shift)
+            ->setQueryTermCount($queryTermCount)
+            ->setSpecificityWeightExponent($specificityWeightExponent)
+            ->setSpecificityWeightShiftMagnitude($specificityWeightShiftMagnitude)
+            ->setRawSpecificity($rawSpecificity)
+            ->setSpecificitySaturationPoint($specificitySaturationPoint)
+            ->setSpecificityCurveExponent($specificityCurveExponent);
     }
 }

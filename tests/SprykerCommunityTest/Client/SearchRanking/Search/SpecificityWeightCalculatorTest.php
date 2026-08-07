@@ -157,7 +157,7 @@ class SpecificityWeightCalculatorTest extends Unit
         $this->assertSame(0, $result->getQueryTermCount());
         // Real regression check: exponent/shiftMagnitude must carry through even on this early-return
         // path, not just the happy path above — easy to miss since this branch builds its own
-        // SpecificityWeightingResult separately.
+        // SearchRankingSpecificityWeightingResultTransfer separately.
         $this->assertSame(1.0, $result->getSpecificityWeightExponent());
         $this->assertSame(static::SHIFT_MAGNITUDE, $result->getSpecificityWeightShiftMagnitude());
         // rawSpecificity is genuinely 0.0 here (nothing to measure), but saturationPoint/curveExponent

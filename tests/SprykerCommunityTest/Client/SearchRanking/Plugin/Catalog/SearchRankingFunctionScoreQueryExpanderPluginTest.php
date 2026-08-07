@@ -22,7 +22,7 @@ use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStore
 use SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculatorInterface;
-use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult;
+use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use SprykerCommunity\Client\SearchRanking\SearchRankingClient;
 use SprykerCommunity\Client\SearchRanking\SearchRankingConfig;
 use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;
@@ -51,7 +51,7 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
     {
         // Arrange
         $client = new SearchRankingClient();
-        $client->rememberLastSpecificityWeightingResult(new SpecificityWeightingResult(0.75, 0.9, 0.1, 0.15, 10));
+        $client->rememberLastSpecificityWeightingResult((new SearchRankingSpecificityWeightingResultTransfer())->setConfiguredRelevanceWeight(0.75)->setRelevanceWeight(0.9)->setNormalizedSpecificity(0.1)->setShift(0.15)->setQueryTermCount(10));
 
         $plugin = $this->createPlugin($client);
         $searchQueryMock = $this->createMock(QueryInterface::class);
@@ -110,7 +110,7 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
     {
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())->setRelevanceWeight(0.75);
-        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.9, 0.1, 0.15, 10);
+        $specificityWeightingResult = (new SearchRankingSpecificityWeightingResultTransfer())->setConfiguredRelevanceWeight(0.75)->setRelevanceWeight(0.9)->setNormalizedSpecificity(0.1)->setShift(0.15)->setQueryTermCount(10);
 
         $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
         $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);

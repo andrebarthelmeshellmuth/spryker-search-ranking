@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking\Search;
 
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
+use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 
 interface SpecificityWeightCalculatorInterface
 {
@@ -45,7 +46,7 @@ interface SpecificityWeightCalculatorInterface
     /**
      * Specification:
      * - Same computation as {@see calculateRelevanceWeight()}, returned as a full
-     *   {@see \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightingResult} instead of just
+     *   {@see \Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer} instead of just
      *   the resulting weight — so a caller that needs to explain the shift (e.g. the search-debug overlay)
      *   doesn't have to re-derive the probe/specificity/shift arithmetic itself.
      *
@@ -57,5 +58,5 @@ interface SpecificityWeightCalculatorInterface
     public function calculateWeightingResult(
         string $searchString,
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
-    ): SpecificityWeightingResult;
+    ): SearchRankingSpecificityWeightingResultTransfer;
 }
