@@ -43,4 +43,12 @@ class SearchRankingToEventFacadeBridge implements SearchRankingToEventFacadeInte
     {
         $this->eventFacade->trigger($eventName, $transfer);
     }
+
+    /**
+     * @return array<string, array<string, array<string, mixed>>>
+     */
+    public function dumpEventListener(): array
+    {
+        return $this->eventFacade->dumpEventListener();
+    }
 }

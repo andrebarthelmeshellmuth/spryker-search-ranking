@@ -16,6 +16,7 @@ use Spryker\Shared\Kernel\KernelConstants;
 use Spryker\Shared\SearchElasticsearch\ElasticaClient\ElasticaClientFactory;
 use Spryker\Zed\Kernel\Communication\Console\Console;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig;
+use SprykerCommunity\Shared\SearchRanking\SearchRankingEvents;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
@@ -23,7 +24,7 @@ use Throwable;
 /**
  * Diagnoses a search-ranking installation.
  *
- * This package's own README installation section has 14 steps, and — same as search-debug's equivalent
+ * This package's own README installation section has 17 steps, and — same as search-debug's equivalent
  * command — almost every one of them fails SILENTLY when missed: a forgotten DependencyProvider wire-up
  * or an un-run cron produces no error, just a ranking that quietly stays pure text-relevance. This checks
  * every prerequisite reachable from the CLI and names the exact remedy for whatever is wrong.
@@ -37,6 +38,7 @@ use Throwable;
  * correctly" — run both for a full picture.
  *
  * @method \SprykerCommunity\Zed\SearchRanking\Business\SearchRankingFacadeInterface getFacade()
+ * @method \SprykerCommunity\Zed\SearchRanking\Communication\SearchRankingCommunicationFactory getFactory()
  */
 class SearchRankingCheckInstallationConsole extends Console
 {
@@ -48,7 +50,7 @@ class SearchRankingCheckInstallationConsole extends Console
     /**
      * @var string
      */
-    public const COMMAND_DESCRIPTION = 'Diagnoses a search-ranking installation: core namespace, sibling console command registration, search engine reachability, page index shape, and configured metrics.';
+    public const COMMAND_DESCRIPTION = 'Diagnoses a search-ranking installation: core namespace, sibling console command registration, ranking-configuration publish event listener, search engine reachability, page index shape, and configured metrics.';
 
     /**
      * @var string
@@ -97,6 +99,7 @@ class SearchRankingCheckInstallationConsole extends Console
     {
         $this->checkCoreNamespace($output);
         $this->checkSiblingCommandsRegistered($output);
+        $this->checkEventListenerRegistered($output);
         $this->checkSearchEngine($output);
         $this->checkActiveMetrics($output);
 
@@ -179,6 +182,35 @@ class SearchRankingCheckInstallationConsole extends Console
         $this->failures[] = sprintf(
             'The following console commands are NOT registered: %s. Add them in ConsoleDependencyProvider::getConsoleCommands() (README step 3).',
             implode(', ', $missingCommands),
+        );
+    }
+
+    /**
+     * Verifies a listener is registered for {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingEvents::RANKING_CONFIGURATION_CHANGE}
+     * (README step 12) via {@see \Spryker\Zed\Event\Business\EventFacadeInterface::dumpEventListener()} —
+     * the same project-wide, runtime-merged event map core's own `event:dump:listener` command reads.
+     * Unlike step 13's Yves-side query expander, this one IS reachable from a Zed CLI probe: the listener
+     * collection lives in the project's `Pyz\Zed\Event\EventDependencyProvider`, resolved through the
+     * Event module's own facade rather than by referencing that project class directly. Missing this
+     * listener is the single most likely cause of "I saved a setting in Zed and the storefront still
+     * shows the old value" — the save persists correctly, it just never republishes to the KV store Yves
+     * reads.
+     *
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    protected function checkEventListenerRegistered(OutputInterface $output): void
+    {
+        $listenersByEventName = $this->getFactory()->getEventFacade()->dumpEventListener();
+
+        if (!empty($listenersByEventName[SearchRankingEvents::RANKING_CONFIGURATION_CHANGE])) {
+            $output->writeln('<info>✓</info> a listener is registered for the ranking-configuration publish event');
+
+            return;
+        }
+
+        $this->failures[] = sprintf(
+            'No listener is registered for the "%s" event. Register SearchRankingStorageEventSubscriber in Pyz\Zed\Event\EventDependencyProvider::getEventSubscriberCollection() (README step 12) — without it, saving a metric or setting in Zed persists correctly but never reaches the synced key-value storage the live storefront reads.',
+            SearchRankingEvents::RANKING_CONFIGURATION_CHANGE,
         );
     }
 
