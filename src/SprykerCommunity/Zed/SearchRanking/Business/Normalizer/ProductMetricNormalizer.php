@@ -75,7 +75,7 @@ class ProductMetricNormalizer implements ProductMetricNormalizerInterface
         string $storeName,
         string $localeName,
     ): void {
-        foreach ($this->repository->getActiveMetricCollection($storeName, $localeName)->getMetrics() as $metricTransfer) {
+        foreach ($this->repository->getActiveMetricCollection($storeName)->getMetrics() as $metricTransfer) {
             if ($metricTransfer->getName() === $this->config->getRandomMetricName()) {
                 continue;
             }

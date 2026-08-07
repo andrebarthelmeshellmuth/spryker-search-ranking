@@ -55,7 +55,6 @@ class SearchRankingCheckInstallationConsoleTest extends Unit
     protected function _before(): void
     {
         $reflectionProperty = new ReflectionProperty(SubscriberMerger::class, 'eventCollectionBuffer');
-        $reflectionProperty->setAccessible(true);
         $reflectionProperty->setValue(null, null);
     }
 

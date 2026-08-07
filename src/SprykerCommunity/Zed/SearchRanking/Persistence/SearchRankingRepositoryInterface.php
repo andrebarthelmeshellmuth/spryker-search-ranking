@@ -20,16 +20,40 @@ use Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer;
 interface SearchRankingRepositoryInterface
 {
     /**
+     * Every metric, with its store-scoped formula/isActive/shape overlaid for $storeName — weight
+     * deliberately NOT attached (it's the one field on this transfer that's genuinely locale-scoped, for
+     * a locale-scoped metric). A caller that also needs weight calls {@see attachWeights()} on the
+     * result; one that doesn't (e.g. anything only reading formula/isActive/id/name) no longer has to
+     * supply a locale it would have no real use for just to satisfy this method's old signature.
+     *
      * @param string $storeName
-     * @param string $localeName
      */
-    public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
+    public function getMetricCollection(string $storeName): SearchRankingMetricCollectionTransfer;
 
     /**
+     * Same weight-free contract as {@see getMetricCollection()}, filtered to metrics this store's own
+     * store-config marks active.
+     *
+     * @param string $storeName
+     */
+    public function getActiveMetricCollection(string $storeName): SearchRankingMetricCollectionTransfer;
+
+    /**
+     * Overlays $storeName/$localeName's real per-metric weight onto every metric already in
+     * $collectionTransfer (from {@see getMetricCollection()}/{@see getActiveMetricCollection()}),
+     * mutating and returning the same collection instance. A separate step from building the collection
+     * itself so a caller that doesn't need weight never pays for (or has to fake a locale to trigger) the
+     * per-metric weight lookup this performs.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer $collectionTransfer
      * @param string $storeName
      * @param string $localeName
      */
-    public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
+    public function attachWeights(
+        SearchRankingMetricCollectionTransfer $collectionTransfer,
+        string $storeName,
+        string $localeName,
+    ): SearchRankingMetricCollectionTransfer;
 
     /**
      * @param int $idSearchRankingMetric

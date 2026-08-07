@@ -189,6 +189,7 @@ class ProductMetricNormalizerTest extends Unit
             (new SearchRankingMetricCollectionTransfer())->addMetric($metricTransfer),
         );
         $repositoryMock->method('getMetricStatistics')->willReturn($statisticsTransfer);
+        // phpcs:disable SlevomatCodingStandard.Functions.UnusedParameter -- $storeName/$localeName only kept to position $idLast correctly; this callback's positional signature mirrors getProductMetricBatch()'s own.
         $repositoryMock->method('getProductMetricBatch')->willReturnCallback(
             fn (int $idMetric, string $storeName, string $localeName, int $idLast): array => array_values(array_filter(
                 $productMetricTransfers,
@@ -196,6 +197,7 @@ class ProductMetricNormalizerTest extends Unit
                     && $productMetricTransfer->getIdSearchRankingProductMetric() > $idLast,
             )),
         );
+        // phpcs:enable SlevomatCodingStandard.Functions.UnusedParameter
 
         return $repositoryMock;
     }

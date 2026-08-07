@@ -30,9 +30,8 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 {
     /**
      * @param string $storeName
-     * @param string $localeName
      */
-    public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
+    public function getMetricCollection(string $storeName): SearchRankingMetricCollectionTransfer
     {
         $metricEntities = $this->getFactory()
             ->createSearchRankingMetricQuery()
@@ -44,8 +43,7 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
         foreach ($metricEntities as $metricEntity) {
             $metricTransfer = $mapper->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
-            $metricTransfer = $this->attachStoreConfig($metricTransfer, $storeName);
-            $collectionTransfer->addMetric($this->attachWeight($metricTransfer, $storeName, $localeName));
+            $collectionTransfer->addMetric($this->attachStoreConfig($metricTransfer, $storeName));
         }
 
         return $collectionTransfer;
@@ -57,9 +55,8 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
      * this store's real isActive via {@see attachStoreConfig()}, then filters in PHP.
      *
      * @param string $storeName
-     * @param string $localeName
      */
-    public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
+    public function getActiveMetricCollection(string $storeName): SearchRankingMetricCollectionTransfer
     {
         $metricEntities = $this->getFactory()
             ->createSearchRankingMetricQuery()
@@ -77,7 +74,24 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
                 continue;
             }
 
-            $collectionTransfer->addMetric($this->attachWeight($metricTransfer, $storeName, $localeName));
+            $collectionTransfer->addMetric($metricTransfer);
+        }
+
+        return $collectionTransfer;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer $collectionTransfer
+     * @param string $storeName
+     * @param string $localeName
+     */
+    public function attachWeights(
+        SearchRankingMetricCollectionTransfer $collectionTransfer,
+        string $storeName,
+        string $localeName,
+    ): SearchRankingMetricCollectionTransfer {
+        foreach ($collectionTransfer->getMetrics() as $metricTransfer) {
+            $this->attachWeight($metricTransfer, $storeName, $localeName);
         }
 
         return $collectionTransfer;
@@ -146,7 +160,7 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
         $storeConfigTransfer = $this->findMetricStoreConfig($metricTransfer->getIdSearchRankingMetricOrFail(), $storeName);
 
         if ($storeConfigTransfer === null) {
-            return $metricTransfer->setFormula(null)->setIsActive(false)->setShape(null);
+            return $metricTransfer->setFormula()->setIsActive(false)->setShape();
         }
 
         return $metricTransfer

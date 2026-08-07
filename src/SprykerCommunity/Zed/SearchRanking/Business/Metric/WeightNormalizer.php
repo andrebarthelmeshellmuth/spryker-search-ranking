@@ -51,7 +51,7 @@ class WeightNormalizer implements WeightNormalizerInterface
      */
     public function normalizeActiveWeights(string $storeName, string $localeName): bool
     {
-        $metricTransfers = $this->repository->getActiveMetricCollection($storeName, $localeName)->getMetrics();
+        $metricTransfers = $this->repository->attachWeights($this->repository->getActiveMetricCollection($storeName), $storeName, $localeName)->getMetrics();
 
         $weightSum = 0.0;
 

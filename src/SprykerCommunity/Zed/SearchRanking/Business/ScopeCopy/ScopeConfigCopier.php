@@ -136,7 +136,7 @@ class ScopeConfigCopier implements ScopeConfigCopierInterface
             return true;
         }
 
-        foreach ($this->repository->getMetricCollection($sourceStoreName, $sourceLocaleName)->getMetrics() as $metricTransfer) {
+        foreach ($this->repository->getMetricCollection($sourceStoreName)->getMetrics() as $metricTransfer) {
             $idSearchRankingMetric = $metricTransfer->getIdSearchRankingMetricOrFail();
 
             if ($this->repository->findMetricWeight($idSearchRankingMetric, $sourceStoreName, $sourceLocaleName) === null) {
@@ -174,7 +174,7 @@ class ScopeConfigCopier implements ScopeConfigCopierInterface
     {
         $metricWeights = [];
 
-        foreach ($this->repository->getMetricCollection($sourceStoreName, $sourceLocaleName)->getMetrics() as $metricTransfer) {
+        foreach ($this->repository->getMetricCollection($sourceStoreName)->getMetrics() as $metricTransfer) {
             $sourceWeight = $this->repository->findMetricWeight(
                 $metricTransfer->getIdSearchRankingMetricOrFail(),
                 $sourceStoreName,
@@ -233,7 +233,7 @@ class ScopeConfigCopier implements ScopeConfigCopierInterface
     ): int {
         $copiedCount = 0;
 
-        foreach ($this->repository->getMetricCollection($sourceStoreName, $sourceLocaleName)->getMetrics() as $metricTransfer) {
+        foreach ($this->repository->getMetricCollection($sourceStoreName)->getMetrics() as $metricTransfer) {
             $idSearchRankingMetric = $metricTransfer->getIdSearchRankingMetricOrFail();
             $sourceWeight = $this->repository->findMetricWeight($idSearchRankingMetric, $sourceStoreName, $sourceLocaleName);
 

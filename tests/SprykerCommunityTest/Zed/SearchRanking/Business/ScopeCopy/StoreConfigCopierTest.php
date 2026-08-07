@@ -115,11 +115,11 @@ class StoreConfigCopierTest extends Unit
         // Arrange
         $configuredMetricA = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(1)->setName('top_seller')->setFormula('x / max')->setIsActive(true);
         $configuredMetricB = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(2)->setName('pdp_impressions')->setFormula('x / avg')->setIsActive(false);
-        $neverConfiguredMetric = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(3)->setName('random')->setFormula(null)->setIsActive(false);
+        $neverConfiguredMetric = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(3)->setName('random')->setFormula()->setIsActive(false);
 
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $repositoryMock->method('hasStoreConfiguration')->willReturn(false);
-        $repositoryMock->method('getMetricCollection')->with('DE', 'de_DE')->willReturn(
+        $repositoryMock->method('getMetricCollection')->with('DE')->willReturn(
             (new SearchRankingMetricCollectionTransfer())
                 ->addMetric($configuredMetricA)
                 ->addMetric($configuredMetricB)
@@ -222,7 +222,7 @@ class StoreConfigCopierTest extends Unit
         $neverConfiguredMetric = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(2)->setName('random');
 
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
-        $repositoryMock->method('getMetricCollection')->with('DE', SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME)->willReturn(
+        $repositoryMock->method('getMetricCollection')->with('DE')->willReturn(
             (new SearchRankingMetricCollectionTransfer())
                 ->addMetric($configuredMetric)
                 ->addMetric($neverConfiguredMetric),

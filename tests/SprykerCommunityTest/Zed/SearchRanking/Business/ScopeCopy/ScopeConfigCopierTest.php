@@ -112,7 +112,7 @@ class ScopeConfigCopierTest extends Unit
 
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $repositoryMock->method('hasScopeConfiguration')->with('AT', 'fr_AT')->willReturn(false);
-        $repositoryMock->method('getMetricCollection')->with('DE', 'de_DE')->willReturn(
+        $repositoryMock->method('getMetricCollection')->with('DE')->willReturn(
             (new SearchRankingMetricCollectionTransfer())->addMetric($storeOnlyMetric),
         );
         $repositoryMock->method('findMetricWeight')->willReturnMap([
@@ -152,7 +152,7 @@ class ScopeConfigCopierTest extends Unit
 
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $repositoryMock->method('hasScopeConfiguration')->with('AT', 'fr_AT')->willReturn(false);
-        $repositoryMock->method('getMetricCollection')->with('DE', 'de_DE')->willReturn(
+        $repositoryMock->method('getMetricCollection')->with('DE')->willReturn(
             (new SearchRankingMetricCollectionTransfer())->addMetric($localeScopedMetric),
         );
         $repositoryMock->method('findMetricWeight')->willReturnMap([
@@ -194,7 +194,7 @@ class ScopeConfigCopierTest extends Unit
 
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $repositoryMock->method('hasScopeConfiguration')->willReturn(false);
-        $repositoryMock->method('getMetricCollection')->with('DE', 'de_DE')->willReturn(
+        $repositoryMock->method('getMetricCollection')->with('DE')->willReturn(
             (new SearchRankingMetricCollectionTransfer())
                 ->addMetric($configuredMetric)
                 ->addMetric($neverWeightedMetric),
@@ -326,7 +326,7 @@ class ScopeConfigCopierTest extends Unit
         $neverWeightedMetric = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(2)->setName('pdp_impressions');
 
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
-        $repositoryMock->method('getMetricCollection')->with('DE', 'de_DE')->willReturn(
+        $repositoryMock->method('getMetricCollection')->with('DE')->willReturn(
             (new SearchRankingMetricCollectionTransfer())
                 ->addMetric($configuredMetric)
                 ->addMetric($neverWeightedMetric),

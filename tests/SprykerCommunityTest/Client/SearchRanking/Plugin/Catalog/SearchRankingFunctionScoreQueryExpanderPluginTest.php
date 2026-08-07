@@ -14,6 +14,7 @@ use Elastica\Query;
 use Elastica\Query\FunctionScore;
 use Elastica\Query\MatchAll;
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
+use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use Generated\Shared\Transfer\StoreTransfer;
 use Spryker\Client\SearchExtension\Dependency\Plugin\QueryInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocaleClientInterface;
@@ -22,7 +23,6 @@ use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStore
 use SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculatorInterface;
-use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use SprykerCommunity\Client\SearchRanking\SearchRankingClient;
 use SprykerCommunity\Client\SearchRanking\SearchRankingConfig;
 use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;

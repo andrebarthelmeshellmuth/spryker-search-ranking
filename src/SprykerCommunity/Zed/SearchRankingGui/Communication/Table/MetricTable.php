@@ -60,19 +60,13 @@ class MetricTable extends AbstractTable
      */
     protected const COL_ACTIONS = 'actions';
 
-    protected SpySearchRankingMetricQuery $metricQuery;
-
     /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery $metricQuery
      * @param string $storeName
      * @param string $localeName
      */
-    public function __construct(
-        SpySearchRankingMetricQuery $metricQuery,
-        protected string $storeName,
-        protected string $localeName,
-    ) {
-        $this->metricQuery = $metricQuery;
+    public function __construct(protected SpySearchRankingMetricQuery $metricQuery, protected string $storeName, protected string $localeName)
+    {
     }
 
     /**

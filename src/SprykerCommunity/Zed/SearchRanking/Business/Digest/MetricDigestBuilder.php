@@ -65,7 +65,7 @@ class MetricDigestBuilder implements MetricDigestBuilderInterface
                     continue;
                 }
 
-                foreach ($this->repository->getActiveMetricCollection($storeName, $localeName)->getMetrics() as $metricTransfer) {
+                foreach ($this->repository->getActiveMetricCollection($storeName)->getMetrics() as $metricTransfer) {
                     if (!$this->rebuildDigest($metricTransfer->getIdSearchRankingMetricOrFail(), $storeName, $localeName)) {
                         continue;
                     }

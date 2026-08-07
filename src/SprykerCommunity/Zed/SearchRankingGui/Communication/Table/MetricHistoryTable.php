@@ -43,8 +43,6 @@ class MetricHistoryTable extends AbstractTable
      */
     protected const COL_ACTIONS = 'actions';
 
-    protected SpySearchRankingMetricHistoryQuery $historyQuery;
-
     /**
      * Unlike every other table in this GUI, storeName/localeName are OPTIONAL here — this table is a
      * cross-scope audit trail by design (an admin needs to see everything that changed, not just one
@@ -58,12 +56,10 @@ class MetricHistoryTable extends AbstractTable
      * @param string|null $localeName
      */
     public function __construct(
-        SpySearchRankingMetricHistoryQuery $historyQuery,
+        protected SpySearchRankingMetricHistoryQuery $historyQuery,
         protected ?string $storeName = null,
         protected ?string $localeName = null,
     ) {
-        $this->historyQuery = $historyQuery;
-
         if ($this->storeName !== null) {
             $this->historyQuery->filterByStoreName($this->storeName);
         }

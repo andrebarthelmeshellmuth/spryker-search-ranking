@@ -29,10 +29,16 @@ interface StoreConfigCopierInterface
      * for every metric EXPLICITLY configured in the source STORE onto the target store — store-only,
      * unlike {@see ScopeConfigCopierInterface::copyScopeConfiguration()}'s (store,locale)-scoped weight/
      * setting copy, since formula/isActive/shape are themselves store-scoped, not locale-scoped.
-     * `$sourceLocaleName`/`$targetLocaleName` are used
-     * ONLY as the digest lens {@see \SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface::saveMetric()}
+     * `$targetLocaleName` is used ONLY as the digest lens
+     * {@see \SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface::saveMetric()}
      * re-detects each copied metric's `shape` against (its own real fit-quality metadata, not carried
-     * over verbatim) — never part of the copy's own scope key.
+     * over verbatim) — never part of the copy's own scope key. `$sourceLocaleName` has no effect on this
+     * operation at all (the source side is read purely from {@see \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface::getMetricCollection()},
+     * which is itself store-only) — kept in the signature only so this method's shape matches its
+     * (store,locale)-scoped sibling and this feature's shared Zed page can carry one set of source/target
+     * picker values across both forms without a separate no-op parameter for this one. The one real
+     * caller ({@see \SprykerCommunity\Zed\SearchRankingGui\Communication\Controller\StoreConfigSyncRunController})
+     * always passes the app-wide default here for exactly this reason.
      *
      * `MODE_MIRROR` (default): copies every metric the source has explicitly configured, creating a new
      * target row for one the target has never configured at all — matches this feature's existing

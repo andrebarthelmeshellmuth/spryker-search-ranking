@@ -90,14 +90,16 @@ class SearchRankingRepositoryTest extends Unit
         $this->createStoreConfig($idMetric, static::CONFIGURED_STORE_NAME, static::REAL_FORMULA);
 
         // Act
-        $metricCollectionTransfer = (new SearchRankingRepository())->getMetricCollection(static::UNCONFIGURED_STORE_NAME, 'de_DE');
+        $metricCollectionTransfer = (new SearchRankingRepository())->getMetricCollection(static::UNCONFIGURED_STORE_NAME);
 
         $metricTransfer = null;
 
         foreach ($metricCollectionTransfer->getMetrics() as $candidateMetricTransfer) {
-            if ($candidateMetricTransfer->getIdSearchRankingMetric() === $idMetric) {
-                $metricTransfer = $candidateMetricTransfer;
+            if ($candidateMetricTransfer->getIdSearchRankingMetric() !== $idMetric) {
+                continue;
             }
+
+            $metricTransfer = $candidateMetricTransfer;
         }
 
         // Assert
