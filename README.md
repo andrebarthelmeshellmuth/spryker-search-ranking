@@ -92,6 +92,14 @@ metric list's "Weight scope" column shows which mode each metric is in.
 How much one metric's signal contributes to the combined business-signal score, relative to the other
 active metrics. See [Ranking formula](#ranking-formula).
 
+Since weight is scoped per (store, locale), it's also the mechanism for suppressing one metric in just
+ONE locale of a store without touching `isActive` (store-wide): set that locale's weight to `0`. The
+query-time blend is literally `weight * scores.metric`, so a `0` weight contributes nothing to that
+locale's ranking — no separate per-locale active flag exists or is needed. A `0` weight for a locale
+whose underlying data you distrust (e.g. missing/broken tracking for that market) and a `0` weight that's
+simply never been configured look identical today; there is no flag distinguishing "deliberately
+suppressed" from "unconfigured".
+
 ### raw value / normalized value
 
 The real-world number for one metric on one product (e.g. "8,250 impressions"), and the `]0;1]` value
