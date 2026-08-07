@@ -349,10 +349,38 @@ class ScoreSectionBuilderTest extends Unit
         $this->assertSame(0.5, $section['lines'][5]['value']);
 
         $this->assertSame('Shift applied to α', $section['lines'][6]['label']);
-        // Plugs in the two already-shown values (shift magnitude 0.500, signed deviation 0.600) directly
-        // rather than repeating "2 × 0.800 − 1" inline -- same convention build()'s own formulaCalculation
-        // uses.
-        $this->assertSame('0.500 × (0.600)^2.000', $section['lines'][6]['calculation']);
+        // Plugs in the shift magnitude (0.500), the deviation's sign as its own explicit factor (1, since
+        // 0.600 is positive here), and the deviation's MAGNITUDE raised to the exponent -- mirroring
+        // calculateShift()'s real sign-preserving computation exactly (see the surrounding code's own
+        // comment for why folding the signed value straight into the power would be wrong).
+        $this->assertSame('0.500 × 1 × 0.600^2.000', $section['lines'][6]['calculation']);
         $this->assertSame(0.18, $section['lines'][6]['value']);
+    }
+
+    /**
+     * Regression test: a query LESS specific than typical (normalizedSpecificity below the neutral 0.5
+     * point, the common case for a generic query) produces a NEGATIVE signed deviation. With a non-1.0
+     * exponent, literally evaluating "(signedDeviation)^exponent" would give the WRONG sign for an even
+     * exponent -- calculateShift() itself avoids this by applying the exponent to the deviation's
+     * MAGNITUDE only and reattaching the sign afterward (see that method's own docblock), and this
+     * section's displayed calculation string must do the exact same thing, not just look plausible.
+     */
+    public function testShiftCalculationPreservesTheSignForANegativeDeviationWithANonDefaultExponent(): void
+    {
+        // Arrange -- normalizedSpecificity=0.3 -> signedDeviation = 2 × 0.3 - 1 = -0.4 (negative).
+        // exponent=2.0, shiftMagnitude=0.5 -> real shift = 0.5 × sign(-0.4) × |-0.4|^2.0 = 0.5 × -1 × 0.16 = -0.08.
+        $specificityWeightingResult = new SpecificityWeightingResult(0.75, 0.67, 0.3, -0.08, 10, 2.0, 0.5, 1.0, 1.0, 1.0);
+
+        // Act
+        $section = (new ScoreSectionBuilder())->buildSpecificitySection($specificityWeightingResult);
+
+        // Assert
+        $this->assertEqualsWithDelta(-0.4, $section['lines'][4]['value'], 1.0E-9);
+        // The sign (-1) is its own explicit factor, and the exponent applies only to the magnitude
+        // (0.400) -- literally evaluating this string gives 0.500 × -1 × 0.160 = -0.08, matching `value`
+        // exactly. The old "(signedDeviation)^exponent" form would instead have literally evaluated to
+        // 0.500 × (-0.400)^2.000 = +0.08 -- the wrong sign.
+        $this->assertSame('0.500 × -1 × 0.400^2.000', $section['lines'][6]['calculation']);
+        $this->assertSame(-0.08, $section['lines'][6]['value']);
     }
 }
