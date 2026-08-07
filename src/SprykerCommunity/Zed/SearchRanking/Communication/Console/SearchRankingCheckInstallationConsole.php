@@ -30,7 +30,7 @@ use Throwable;
  *
  * Deliberately honest about its own limits, same posture as
  * {@see \SprykerCommunity\Zed\SearchDebug\Communication\Console\SearchDebugCheckInstallationConsole}: it
- * cannot confirm the Yves-side `function_score` query expander is registered (step 12) or that a live
+ * cannot confirm the Yves-side `function_score` query expander is registered (step 13) or that a live
  * storefront search actually reflects the configured weights — those need a real search request to
  * verify, not a CLI probe. Also distinct from `search-ranking:check-compatibility`: that command asks
  * "does this ENGINE support what the package needs", this one asks "is THIS INSTALLATION wired up
@@ -116,7 +116,7 @@ class SearchRankingCheckInstallationConsole extends Console
 
         $output->writeln('<info>Everything checkable from the CLI is in place.</info>');
         $output->writeln('Not verifiable from here — these need a real storefront search request, not a CLI probe:');
-        $output->writeln('  - the Yves function_score query expander is registered (step 12)');
+        $output->writeln('  - the Yves function_score query expander is registered (step 13)');
         $output->writeln('  - the ranking-configuration KV document search-ranking:normalize published is the one Yves actually reads');
         $output->writeln('  - a live search result order actually reflects the configured weights');
 
