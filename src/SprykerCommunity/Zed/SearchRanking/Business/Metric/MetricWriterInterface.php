@@ -15,10 +15,11 @@ use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRan
 interface MetricWriterInterface
 {
     /**
-     * Writes the metric's identity fields: name/isHigherBetter (global), formula/isActive/shape
-     * (store-scoped, for $storeName). See {@see saveMetricWeight()} for the metric's (store,
-     * locale)-scoped weight. $localeName is used only as a lens (which digest to fit shape against /
-     * snapshot in history), never persisted as part of the metric's scope.
+     * Writes the metric's identity fields: name/isHigherBetter (global, every store and locale) and
+     * formula/isActive/shape, which follow $metricTransfer->getIsLocaleScoped() — the same root flag
+     * {@see saveMetricWeight()}'s weight write already obeys: false (the default) fans the write out to
+     * every real locale of $storeName, true keeps it scoped to exactly $storeName/$localeName. See this
+     * method's own full docblock in the implementation for the fan-out mechanics.
      * $metricTransfer->getChangeSource() (one of SharedSearchRankingConfig::CHANGE_SOURCE_*) is recorded
      * on the resulting history row if one is written; null means CHANGE_SOURCE_MANUAL.
      *

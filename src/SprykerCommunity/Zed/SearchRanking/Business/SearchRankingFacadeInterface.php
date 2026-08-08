@@ -550,10 +550,10 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
-     * - Same fit check as {@see evaluateCurrentMetricFit()}, run once per real locale of $storeName —
-     *   formula/shape are store-only (not locale-scoped) today, so this is the diagnostic that answers
+     * - Same fit check as {@see evaluateCurrentMetricFit()}, run once per real locale of $storeName — for
+     *   a store-wide metric (isLocaleScoped=false, the common case), this is the diagnostic that answers
      *   "does this metric's one store-wide formula actually fit every locale's own real data comparably
-     *   well" without requiring locale-scoped formulas to exist yet.
+     *   well, or should it become locale-scoped instead".
      * - Keyed by locale name; a locale with no digest yet maps to null, never omitted or thrown.
      * - Read-only, no side effect, safe to call as often as needed.
      *
@@ -629,19 +629,23 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
-     * - Copies formula/isActive/shape for every metric explicitly configured in the source STORE onto
-     *   the target store — store-only, not (store,locale)-scoped like {@see copyScopeConfiguration()},
-     *   since formula/isActive/shape are themselves store-scoped, not (store,locale)-scoped. Tagged
-     *   {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY}.
+     * - Copies formula/isActive/shape for every metric explicitly configured in the source (store,
+     *   locale) onto the target. For an `isLocaleScoped=false` metric (most metrics), the write fans out
+     *   to every real locale of the target store regardless of which one target locale was named, same
+     *   fan-out {@see copyScopeConfiguration()}'s weight copy already relies on; for an
+     *   `isLocaleScoped=true` metric it stays scoped to exactly the one (target store, target locale)
+     *   named here. Tagged {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY}.
      * - `MODE_MIRROR` (default) copies every metric the source has configured, creating a target row for
      *   one the target never had. `MODE_COPY_ONLY_OVERLAP` only overwrites a metric the target has
      *   ALREADY independently configured, leaving one it hasn't touched alone (`skippedCount`).
      * - Blocked when the target store already has any explicitly-saved store-config row
      *   (`isBlockedByExistingData=true`, nothing written) unless `$confirmOverwrite` is true.
      * - Fails (`isSuccess=false`) when source and target store are the same.
-     * - One-off only — unlike weight/settings, there is no lockable/cron-synced variant of this action,
-     *   a deliberate choice: formula/k tuning changes far less often than weight, so a recurring sync
-     *   would mostly re-copy an unchanged value.
+     * - One-off only when called directly — {@see copyFullScopeConfiguration()} combines this with
+     *   {@see copyScopeConfiguration()} behind the Zed page's single "Copy now"/"Lock" action; Lock's own
+     *   one-time bootstrap copy DOES include this, but its recurring daily resync deliberately does not —
+     *   formula/k tuning changes far less often than weight, so a recurring resync of it would mostly
+     *   re-copy an unchanged value.
      *
      * @api
      *

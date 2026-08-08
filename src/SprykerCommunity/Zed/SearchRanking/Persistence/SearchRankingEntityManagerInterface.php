@@ -109,9 +109,12 @@ interface SearchRankingEntityManagerInterface
     public function deactivateScopeCopyLock(int $idSearchRankingScopeCopyLock): void;
 
     /**
-     * Upserts by (fkSearchRankingMetric, storeName) — one store-config row per metric per store,
-     * overwritten wholesale rather than versioned (mirrors {@see saveMetricDigest()}'s own upsert shape).
-     * Called by {@see \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManager::saveMetric()}.
+     * Upserts by (fkSearchRankingMetric, storeName, localeName) — one store-config row per metric per
+     * (store, locale), overwritten wholesale rather than versioned (mirrors {@see saveMetricDigest()}'s
+     * own upsert shape). Called once per real locale of the target store when the metric is
+     * `isLocaleScoped=false` (fanned out), or once for just the one named locale when it's `true` — the
+     * fan-out decision itself lives in {@see \SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface::saveMetric()},
+     * not here.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer $metricStoreConfigTransfer
      */

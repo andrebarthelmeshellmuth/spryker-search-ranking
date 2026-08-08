@@ -29,6 +29,16 @@ class ProductMetricTable extends AbstractTable
     protected const COL_ABSTRACT_SKU = 'abstract_sku';
 
     /**
+     * Same meaning/labeling as {@see MetricTable::COL_SCOPE} — whether this row's OWN metric is
+     * store-wide (formula/isActive/weight fanned out to every locale of the store, the default) or
+     * genuinely differs per locale. Pulled from the joined spy_search_ranking_metric row, not this
+     * table's own spy_search_ranking_product_metric.
+     *
+     * @var string
+     */
+    protected const COL_SCOPE = 'scope';
+
+    /**
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetricQuery $productMetricQuery
      * @param string $storeName
      * @param string $localeName
@@ -52,6 +62,7 @@ class ProductMetricTable extends AbstractTable
             SpySearchRankingProductMetricTableMap::COL_ID_SEARCH_RANKING_PRODUCT_METRIC => 'ID',
             static::COL_ABSTRACT_SKU => 'Abstract SKU',
             static::COL_METRIC_NAME => 'Metric',
+            static::COL_SCOPE => 'Scope',
             SpySearchRankingProductMetricTableMap::COL_RAW_VALUE => 'Raw Value',
             SpySearchRankingProductMetricTableMap::COL_NORMALIZED_VALUE => 'Normalized Value',
             SpySearchRankingProductMetricTableMap::COL_UPDATED_AT => 'Updated At',
@@ -67,6 +78,10 @@ class ProductMetricTable extends AbstractTable
         $config->setSearchable([
             SpyProductAbstractTableMap::COL_SKU,
             SpySearchRankingMetricTableMap::COL_NAME,
+        ]);
+
+        $config->setRawColumns([
+            static::COL_SCOPE,
         ]);
 
         $config->setDefaultSortField(SpySearchRankingProductMetricTableMap::COL_ID_SEARCH_RANKING_PRODUCT_METRIC);
@@ -87,16 +102,23 @@ class ProductMetricTable extends AbstractTable
             ->joinWithSearchRankingMetric()
             ->joinWithProductAbstract()
             ->withColumn(SpySearchRankingMetricTableMap::COL_NAME, static::COL_METRIC_NAME)
+            ->withColumn(SpySearchRankingMetricTableMap::COL_IS_LOCALE_SCOPED, static::COL_SCOPE)
             ->withColumn(SpyProductAbstractTableMap::COL_SKU, static::COL_ABSTRACT_SKU);
 
         $productMetricRows = $this->runQuery($query, $config);
         $rows = [];
 
         foreach ($productMetricRows as $productMetricRow) {
+            $isLocaleScoped = (bool)$productMetricRow[static::COL_SCOPE];
+
             $rows[] = [
                 SpySearchRankingProductMetricTableMap::COL_ID_SEARCH_RANKING_PRODUCT_METRIC => $productMetricRow[SpySearchRankingProductMetricTableMap::COL_ID_SEARCH_RANKING_PRODUCT_METRIC],
                 static::COL_ABSTRACT_SKU => $productMetricRow[static::COL_ABSTRACT_SKU],
                 static::COL_METRIC_NAME => $productMetricRow[static::COL_METRIC_NAME],
+                static::COL_SCOPE => $this->generateLabel(
+                    $isLocaleScoped ? 'Store + locale' : 'Store',
+                    $isLocaleScoped ? 'label-info' : 'label-warning',
+                ),
                 SpySearchRankingProductMetricTableMap::COL_RAW_VALUE => $productMetricRow[SpySearchRankingProductMetricTableMap::COL_RAW_VALUE],
                 SpySearchRankingProductMetricTableMap::COL_NORMALIZED_VALUE => $productMetricRow[SpySearchRankingProductMetricTableMap::COL_NORMALIZED_VALUE] ?? '-',
                 SpySearchRankingProductMetricTableMap::COL_UPDATED_AT => $productMetricRow[SpySearchRankingProductMetricTableMap::COL_UPDATED_AT],

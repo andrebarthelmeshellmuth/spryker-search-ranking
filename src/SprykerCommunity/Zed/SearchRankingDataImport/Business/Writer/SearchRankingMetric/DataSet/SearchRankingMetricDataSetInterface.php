@@ -41,8 +41,10 @@ interface SearchRankingMetricDataSetInterface
      * metric that doesn't genuinely vary by locale (a store-wide fact like sales/stock) can list every
      * locale it applies to in one row instead of one row per locale;
      * {@see \SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingMetric\SearchRankingMetricWriterStep}
-     * writes the same weight into each listed locale. Only the WEIGHT row is affected — formula/isActive
-     * are store-scoped already, unrelated to this column's locale value(s).
+     * writes the same weight AND the same formula/isActive into each listed locale (all governed by the
+     * same isLocaleScoped flag, not just weight) — a real per-locale-diverging metric still needs one row
+     * per locale with its own distinct formula/weight; this column is what LETS that happen, not what
+     * forces every locale to match.
      *
      * @var string
      */
