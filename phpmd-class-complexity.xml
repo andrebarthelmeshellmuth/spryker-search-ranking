@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<ruleset name="search-ranking-class-complexity"
+         xmlns="http://pmd.sf.net/ruleset/1.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0 http://pmd.sf.net/ruleset_xml_schema.xsd">
+
+    <description>
+        Class-wide complexity check, exempting Facades, Factories, Bridges, EntityManagers and Mappers for
+        the same reason phpmd-public-methods.xml does: ExcessiveClassComplexity sums each method's own
+        cyclomatic complexity across the whole class (WMC), so it scales with method COUNT as much as with
+        real branching. Every one of these layers is, by Spryker's own architecture, one thin delegating
+        method per business capability/collaborator/entity-transfer pair -- each method individually
+        trivial (CC=1), but the sum climbs with the module's surface area regardless. A high score here
+        reflects the module having many capabilities, not any one method being hard to follow; the
+        per-method rules in phpmd.xml (CyclomaticComplexity, NPathComplexity, etc.) still apply in full to
+        these same files, so a genuinely complex method on a Facade/Factory is still caught. Run as its own
+        phpmd invocation, separate from phpmd.xml — see that file's description for why.
+    </description>
+
+    <exclude-pattern>*Facade.php</exclude-pattern>
+    <exclude-pattern>*Factory.php</exclude-pattern>
+    <exclude-pattern>*Bridge.php</exclude-pattern>
+    <exclude-pattern>*EntityManager.php</exclude-pattern>
+    <exclude-pattern>*Mapper.php</exclude-pattern>
+
+    <rule ref="rulesets/codesize.xml/ExcessiveClassComplexity"/>
+</ruleset>
