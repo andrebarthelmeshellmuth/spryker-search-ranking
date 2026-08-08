@@ -11,13 +11,15 @@ namespace SprykerCommunity\Zed\SearchRankingGui\Communication\Controller;
 
 use Spryker\Zed\Kernel\Communication\Controller\AbstractController;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
-use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\ScopeCopyActionForm;
+use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\ScopeCopyRunActionForm;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * One-off "Copy now" — copies the source scope's configuration onto the target scope without creating a
- * lock. See {@see ScopeCopyLockController} for the persistent, daily-resynced version.
+ * One-off "Copy now" — copies the source scope's weight/setting AND formula/isActive/shape configuration
+ * onto the target scope without creating a lock. See {@see ScopeCopyLockController} for the persistent,
+ * daily-resynced version (weight/setting only after the initial bootstrap — see that controller's own
+ * docblock).
  *
  * @method \SprykerCommunity\Zed\SearchRankingGui\Communication\SearchRankingGuiCommunicationFactory getFactory()
  */
@@ -37,15 +39,9 @@ class ScopeCopyRunController extends AbstractController
         $sourceLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SOURCE_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
         $targetStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_TARGET_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
         $targetLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_TARGET_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
-        // Carried through as hidden fields on the same form purely so the independent "Sync store
-        // configuration" widget's own picker doesn't reset back to its defaults on this redirect.
-        $syncSourceStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
-        $syncTargetStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
-        $syncSourceLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_SOURCE_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
-        $syncTargetLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_TARGET_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
 
         $redirectUrl = sprintf(
-            '%s?%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s',
+            '%s?%s=%s&%s=%s&%s=%s&%s=%s',
             static::URL_SCOPE_COPY,
             ScopeCopyController::PARAM_SOURCE_STORE_NAME,
             $sourceStoreName,
@@ -55,17 +51,9 @@ class ScopeCopyRunController extends AbstractController
             $targetStoreName,
             ScopeCopyController::PARAM_TARGET_LOCALE_NAME,
             $targetLocaleName,
-            ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME,
-            $syncSourceStoreName,
-            ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME,
-            $syncTargetStoreName,
-            ScopeCopyController::PARAM_SYNC_SOURCE_LOCALE_NAME,
-            $syncSourceLocaleName,
-            ScopeCopyController::PARAM_SYNC_TARGET_LOCALE_NAME,
-            $syncTargetLocaleName,
         );
 
-        $actionForm = $this->getFactory()->createScopeCopyActionForm()->handleRequest($request);
+        $actionForm = $this->getFactory()->createScopeCopyRunActionForm()->handleRequest($request);
 
         if (!$actionForm->isSubmitted() || !$actionForm->isValid()) {
             $this->addErrorMessage('CSRF token is not valid.');
@@ -73,13 +61,15 @@ class ScopeCopyRunController extends AbstractController
             return $this->redirectResponse($redirectUrl);
         }
 
-        $confirmOverwrite = (bool)$actionForm->get(ScopeCopyActionForm::FIELD_CONFIRM_OVERWRITE)->getData();
+        $confirmOverwrite = (bool)$actionForm->get(ScopeCopyRunActionForm::FIELD_CONFIRM_OVERWRITE)->getData();
+        $mode = (string)$actionForm->get(ScopeCopyRunActionForm::FIELD_MODE)->getData();
 
-        $resultTransfer = $this->getFactory()->getSearchRankingFacade()->copyScopeConfiguration(
+        $resultTransfer = $this->getFactory()->getSearchRankingFacade()->copyFullScopeConfiguration(
             $sourceStoreName,
             $sourceLocaleName,
             $targetStoreName,
             $targetLocaleName,
+            $mode,
             $confirmOverwrite,
         );
 
@@ -99,14 +89,18 @@ class ScopeCopyRunController extends AbstractController
             return $this->redirectResponse($redirectUrl);
         }
 
+        $skippedCount = $resultTransfer->getSkippedCount() + $resultTransfer->getStoreConfigSkippedCount();
+
         $this->addSuccessMessage(sprintf(
-            'Copied %d metric weight(s) and %d setting(s) from %s/%s to %s/%s.',
+            'Copied %d metric weight(s), %d setting(s) and %d store-config metric(s) from %s/%s to %s/%s.%s',
             $resultTransfer->getMetricWeightCopiedCount(),
             $resultTransfer->getSettingCopiedCount(),
+            $resultTransfer->getStoreConfigCopiedCount(),
             $sourceStoreName,
             $sourceLocaleName,
             $targetStoreName,
             $targetLocaleName,
+            $skippedCount ? sprintf(' Skipped %d item(s) the target has not adopted yet.', $skippedCount) : '',
         ));
 
         return $this->redirectResponse($redirectUrl);

@@ -10,20 +10,22 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRankingGui\Communication\Form;
 
 use Spryker\Zed\Kernel\Communication\Form\AbstractType;
-use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\StoreConfigCopierInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeConfigCopierInterface;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
 
 /**
- * Backs the "Sync now" button on the Scope Copy page's store-config section — same shape as
- * {@see ScopeCopyActionForm}, plus the one extra field this action needs: which of
- * {@see StoreConfigCopierInterface}::MODE_* to run. The 2 store names ride in the form's `action` URL,
- * same as every other GET-selected-scope page in this module, not as form fields.
+ * Backs the "Copy now" button on the Scope Copy page — same shape as {@see ScopeCopyActionForm} (which
+ * still backs "Lock" on its own, always at `MODE_MIRROR` — see {@see \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeCopyLockManagerInterface::createScopeCopyLock()}),
+ * plus the one extra field a one-off copy offers a choice on: which of
+ * {@see ScopeConfigCopierInterface}::MODE_* to run, applied identically to both halves of the combined
+ * copy. The 4 scope names ride in the form's `action` URL, same as every other GET-selected-scope page in
+ * this module, not as form fields.
  *
  * @method \SprykerCommunity\Zed\SearchRankingGui\Communication\SearchRankingGuiCommunicationFactory getFactory()
  */
-class StoreConfigSyncActionForm extends AbstractType
+class ScopeCopyRunActionForm extends AbstractType
 {
     /**
      * @var string
@@ -46,16 +48,16 @@ class StoreConfigSyncActionForm extends AbstractType
         $builder->add(static::FIELD_MODE, ChoiceType::class, [
             'label' => 'Mode',
             'choices' => [
-                'Mirror (create missing metrics too)' => StoreConfigCopierInterface::MODE_MIRROR,
-                'Copy only metrics the target already has' => StoreConfigCopierInterface::MODE_COPY_ONLY_OVERLAP,
+                'Mirror (create missing metrics/settings too)' => ScopeConfigCopierInterface::MODE_MIRROR,
+                'Copy only what the target already has' => ScopeConfigCopierInterface::MODE_COPY_ONLY_OVERLAP,
             ],
-            'data' => StoreConfigCopierInterface::MODE_MIRROR,
+            'data' => ScopeConfigCopierInterface::MODE_MIRROR,
             'expanded' => true,
             'multiple' => false,
         ]);
 
         $builder->add(static::FIELD_CONFIRM_OVERWRITE, CheckboxType::class, [
-            'label' => 'Overwrite existing target store configuration',
+            'label' => 'Overwrite existing target configuration',
             'required' => false,
         ]);
     }
@@ -63,6 +65,6 @@ class StoreConfigSyncActionForm extends AbstractType
     #[\Override]
     public function getBlockPrefix(): string
     {
-        return 'search_ranking_store_config_sync_action';
+        return 'search_ranking_scope_copy_run_action';
     }
 }

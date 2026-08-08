@@ -11,12 +11,10 @@ namespace SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade;
 
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
+use Generated\Shared\Transfer\SearchRankingFullScopeCopyPreviewTransfer;
+use Generated\Shared\Transfer\SearchRankingFullScopeCopyResultTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
-use Generated\Shared\Transfer\SearchRankingScopeCopyPreviewTransfer;
-use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
-use Generated\Shared\Transfer\SearchRankingStoreConfigCopyResultTransfer;
-use Generated\Shared\Transfer\SearchRankingStoreConfigPreviewTransfer;
 
 class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToSearchRankingFacadeInterface
 {
@@ -266,59 +264,18 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
      * @param string $sourceLocaleName
      * @param string $targetStoreName
      * @param string $targetLocaleName
-     * @param bool $confirmOverwrite
-     */
-    public function copyScopeConfiguration(
-        string $sourceStoreName,
-        string $sourceLocaleName,
-        string $targetStoreName,
-        string $targetLocaleName,
-        bool $confirmOverwrite,
-    ): SearchRankingScopeCopyResultTransfer {
-        return $this->searchRankingFacade->copyScopeConfiguration(
-            $sourceStoreName,
-            $sourceLocaleName,
-            $targetStoreName,
-            $targetLocaleName,
-            $confirmOverwrite,
-        );
-    }
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function hasScopeConfiguration(string $storeName, string $localeName): bool
-    {
-        return $this->searchRankingFacade->hasScopeConfiguration($storeName, $localeName);
-    }
-
-    /**
-     * @param string $sourceStoreName
-     * @param string $sourceLocaleName
-     */
-    public function previewScopeConfigurationCopy(string $sourceStoreName, string $sourceLocaleName): SearchRankingScopeCopyPreviewTransfer
-    {
-        return $this->searchRankingFacade->previewScopeConfigurationCopy($sourceStoreName, $sourceLocaleName);
-    }
-
-    /**
-     * @param string $sourceStoreName
-     * @param string $sourceLocaleName
-     * @param string $targetStoreName
-     * @param string $targetLocaleName
      * @param string $mode
      * @param bool $confirmOverwrite
      */
-    public function copyStoreConfiguration(
+    public function copyFullScopeConfiguration(
         string $sourceStoreName,
         string $sourceLocaleName,
         string $targetStoreName,
         string $targetLocaleName,
         string $mode,
         bool $confirmOverwrite,
-    ): SearchRankingStoreConfigCopyResultTransfer {
-        return $this->searchRankingFacade->copyStoreConfiguration(
+    ): SearchRankingFullScopeCopyResultTransfer {
+        return $this->searchRankingFacade->copyFullScopeConfiguration(
             $sourceStoreName,
             $sourceLocaleName,
             $targetStoreName,
@@ -329,20 +286,32 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
     }
 
     /**
-     * @param string $storeName
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
      */
-    public function hasStoreConfiguration(string $storeName): bool
-    {
-        return $this->searchRankingFacade->hasStoreConfiguration($storeName);
+    public function hasFullScopeConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+    ): bool {
+        return $this->searchRankingFacade->hasFullScopeConfiguration(
+            $sourceStoreName,
+            $sourceLocaleName,
+            $targetStoreName,
+            $targetLocaleName,
+        );
     }
 
     /**
      * @param string $sourceStoreName
      * @param string $sourceLocaleName
      */
-    public function previewStoreConfigurationSync(string $sourceStoreName, string $sourceLocaleName): SearchRankingStoreConfigPreviewTransfer
+    public function previewFullScopeConfiguration(string $sourceStoreName, string $sourceLocaleName): SearchRankingFullScopeCopyPreviewTransfer
     {
-        return $this->searchRankingFacade->previewStoreConfigurationSync($sourceStoreName, $sourceLocaleName);
+        return $this->searchRankingFacade->previewFullScopeConfiguration($sourceStoreName, $sourceLocaleName);
     }
 
     /**
@@ -366,7 +335,7 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
         string $targetStoreName,
         string $targetLocaleName,
         bool $confirmOverwrite,
-    ): SearchRankingScopeCopyResultTransfer {
+    ): SearchRankingFullScopeCopyResultTransfer {
         return $this->searchRankingFacade->createScopeCopyLock(
             $sourceStoreName,
             $sourceLocaleName,

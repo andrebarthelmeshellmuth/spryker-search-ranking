@@ -13,6 +13,8 @@ use Generated\Shared\Transfer\ProductPageLoadTransfer;
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
+use Generated\Shared\Transfer\SearchRankingFullScopeCopyPreviewTransfer;
+use Generated\Shared\Transfer\SearchRankingFullScopeCopyResultTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
@@ -513,6 +515,7 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @param string $sourceLocaleName
      * @param string $targetStoreName
      * @param string $targetLocaleName
+     * @param string $mode
      * @param bool $confirmOverwrite
      */
     public function copyScopeConfiguration(
@@ -520,6 +523,7 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
         string $sourceLocaleName,
         string $targetStoreName,
         string $targetLocaleName,
+        string $mode,
         bool $confirmOverwrite,
     ): SearchRankingScopeCopyResultTransfer {
         return $this->getFactory()->createScopeConfigCopier()->copyScopeConfiguration(
@@ -527,6 +531,7 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
             $sourceLocaleName,
             $targetStoreName,
             $targetLocaleName,
+            $mode,
             $confirmOverwrite,
             SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
         );
@@ -619,6 +624,74 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @api
      *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     * @param string $mode
+     * @param bool $confirmOverwrite
+     */
+    public function copyFullScopeConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+        string $mode,
+        bool $confirmOverwrite,
+    ): SearchRankingFullScopeCopyResultTransfer {
+        return $this->getFactory()->createFullScopeCopier()->copyFullScopeConfiguration(
+            $sourceStoreName,
+            $sourceLocaleName,
+            $targetStoreName,
+            $targetLocaleName,
+            $mode,
+            $confirmOverwrite,
+            SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     */
+    public function hasFullScopeConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+    ): bool {
+        return $this->getFactory()->createFullScopeCopier()->hasFullScopeConfiguration(
+            $sourceStoreName,
+            $sourceLocaleName,
+            $targetStoreName,
+            $targetLocaleName,
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     */
+    public function previewFullScopeConfiguration(string $sourceStoreName, string $sourceLocaleName): SearchRankingFullScopeCopyPreviewTransfer
+    {
+        return $this->getFactory()->createFullScopeCopier()->previewFullScopeConfiguration($sourceStoreName, $sourceLocaleName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
      * @return array<\Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer>
      */
     public function getActiveScopeCopyLocks(): array
@@ -643,7 +716,7 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
         string $targetStoreName,
         string $targetLocaleName,
         bool $confirmOverwrite,
-    ): SearchRankingScopeCopyResultTransfer {
+    ): SearchRankingFullScopeCopyResultTransfer {
         return $this->getFactory()->createScopeCopyLockManager()->createScopeCopyLock(
             $sourceStoreName,
             $sourceLocaleName,

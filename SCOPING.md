@@ -146,15 +146,16 @@ full mechanism.
 | Metric `name` / `isHigherBetter` (direction) | Global | `spy_search_ranking_metric` | Metrics page |
 | `isLocaleScoped` flag | Global (per metric) | `spy_search_ranking_metric` | Metrics page |
 | `isSpecificityWeightingEnabled` | Global, code-only | hardcoded `Config` override | not Zed-editable |
-| `formula` / `isActive` / curve `shape` | Store+locale (store-wide via `isLocaleScoped=false` at runtime — the default) | `spy_search_ranking_metric_store_config` | Metrics page (Scope Copy: **Sync store configuration**) |
+| `formula` / `isActive` / curve `shape` | Store+locale (store-wide via `isLocaleScoped=false` at runtime — the default) | `spy_search_ranking_metric_store_config` | Metrics page (Scope Copy: **Copy now**/**Lock**, one-off only — see below) |
 | Raw product-metric value | Store+locale (import CSV's `locale` column can list several, comma-separated, to fan one value across them) | `spy_search_ranking_product_metric` | data import / your integration |
-| Metric `weight` | Store+locale (store-wide via `isLocaleScoped=false` at runtime — same flag as formula/isActive/shape; import CSV's `locale` column can also list several to fan out at import time) | `spy_search_ranking_metric_weight` | Metrics page (Scope Copy: **Copy configuration**) |
-| `relevanceWeight` (α), `relevanceSaturationPoint` (k) | Store+locale | `spy_search_ranking_setting` | Settings page (Scope Copy: **Copy configuration**) |
-| 5 specificity knobs | Store+locale | `spy_search_ranking_setting` | Settings page (Scope Copy: **Copy configuration**) |
+| Metric `weight` | Store+locale (store-wide via `isLocaleScoped=false` at runtime — same flag as formula/isActive/shape; import CSV's `locale` column can also list several to fan out at import time) | `spy_search_ranking_metric_weight` | Metrics page (Scope Copy: **Copy now**/**Lock**) |
+| `relevanceWeight` (α), `relevanceSaturationPoint` (k) | Store+locale | `spy_search_ranking_setting` | Settings page (Scope Copy: **Copy now**/**Lock**) |
+| 5 specificity knobs | Store+locale | `spy_search_ranking_setting` | Settings page (Scope Copy: **Copy now**/**Lock**) |
 | Published ranking-configuration KV document | Store+locale | key-value storage, one document per store×locale | derived, not directly edited |
 
-This is also why [Scope Copy](README.md#what-it-does) is split into two separate actions rather than one:
-**Copy configuration** copies weight + settings, **Sync store configuration** copies formula/isActive/shape
-— two different config groups, each with its own independent source/target store+locale picker, so picking
-a scope for one never resets or gets confused with the other's. (Both actions now genuinely respect a
-locale-scoped metric's own per-locale values, not just a store-wide default — see step 5 above.)
+[Scope Copy](README.md#what-it-does) drives weight, the 6 tunable settings, and formula/isActive/shape from
+one shared source/target store+locale picker — all four are governed by the same per-metric
+`isLocaleScoped` fact (see step 5 above), so there's no remaining reason to pick a scope for one and have
+it be independent from the other. The one place they still diverge is **Lock**'s daily cron: formula
+tuning changes far less often than weight in practice, so only weight/setting are kept in sync going
+forward after a lock's one-time bootstrap copy — see the page's own "Kept in sync by Lock?" preview column.

@@ -11,10 +11,19 @@
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Copy configuration between store/locale scopes' } %}
         {% block widget_content %}
             <p>
-                Copies every metric weight and setting explicitly saved for the source scope onto the target
-                scope — a starting point for a newly expanded market, not a substitute for its own real data.
-                Product-level metrics are never copied; a freshly bootstrapped market still shows its own
-                honest gaps.
+                Copies every metric weight, setting, and formula/active flag explicitly saved for the
+                source scope onto the target scope — a starting point for a newly expanded market, not a
+                substitute for its own real data. Product-level metrics are never copied; a freshly
+                bootstrapped market still shows its own honest gaps.
+            </p>
+            <p>
+                For an <code>isLocaleScoped=false</code> metric (most metrics) formula/active fan out to
+                every real locale of the target store regardless of which target locale is picked below,
+                same as weight already does; for an <code>isLocaleScoped=true</code> one, all four stay
+                scoped to exactly the target store+locale picked here. Copying between two locales of the
+                <strong>same</strong> store only touches weight/setting/formula/active for
+                <code>isLocaleScoped=true</code> metrics — the rest are already identical across that
+                store's own locales.
             </p>
 
             <form method="get" class="form-inline" style="margin-bottom: 15px;">
@@ -45,13 +54,6 @@
                         <option value="{{ locale }}" {% if locale == targetLocaleName %}selected="selected"{% endif %}>{{ locale }}</option>
                     {% endfor %}
                 </select>
-
-                {# Carried through unchanged so submitting THIS form doesn't reset the independent
-                   "Sync store configuration" widget's own picker below. #}
-                <input type="hidden" name="syncSourceStoreName" value="{{ syncSourceStoreName }}">
-                <input type="hidden" name="syncTargetStoreName" value="{{ syncTargetStoreName }}">
-                <input type="hidden" name="syncSourceLocaleName" value="{{ syncSourceLocaleName }}">
-                <input type="hidden" name="syncTargetLocaleName" value="{{ syncTargetLocaleName }}">
             </form>
 
             {% if sourceStoreName == targetStoreName and sourceLocaleName == targetLocaleName %}
@@ -61,139 +63,73 @@
             {% if hasTargetData %}
                 <div class="alert alert-warning">
                     {{ targetStoreName }}/{{ targetLocaleName }} — or another locale of {{ targetStoreName }}
-                    that a store-only metric in this copy would also apply to — already has saved
+                    that a store-only field in this copy would also apply to — already has saved
                     configuration. Copying or locking will do nothing unless you check "Overwrite existing
                     target configuration" below.
                 </div>
             {% endif %}
 
             <p><strong>{{ 'This will copy:' | trans }}</strong></p>
-            {% if scopeCopyPreview.metricWeights is empty and scopeCopyPreview.settings is empty %}
-                <p class="text-muted">{{ sourceStoreName }}/{{ sourceLocaleName }} has no explicitly saved weight or setting — nothing to copy yet.</p>
+            {% if fullScopeCopyPreview.metricWeights is empty and fullScopeCopyPreview.settings is empty and fullScopeCopyPreview.storeConfigMetrics is empty %}
+                <p class="text-muted">{{ sourceStoreName }}/{{ sourceLocaleName }} has no explicitly saved configuration — nothing to copy yet.</p>
             {% else %}
-                <table class="table table-condensed" style="max-width: 500px;">
+                <table class="table table-condensed" style="max-width: 700px;">
+                    <thead>
+                        <tr>
+                            <th>{{ 'Field' | trans }}</th>
+                            <th>{{ 'Value' | trans }}</th>
+                            <th>{{ 'Kept in sync by Lock?' | trans }}</th>
+                        </tr>
+                    </thead>
                     <tbody>
-                        {% for metricName, weight in scopeCopyPreview.metricWeights %}
+                        {% for metricName, weight in fullScopeCopyPreview.metricWeights %}
                             <tr>
                                 <td>{{ 'Weight' | trans }} — {{ metricName }}</td>
                                 <td>{{ weight }}</td>
+                                <td>{{ 'Yes' | trans }}</td>
                             </tr>
                         {% endfor %}
-                        {% for label, value in scopeCopyPreview.settings %}
+                        {% for label, value in fullScopeCopyPreview.settings %}
                             <tr>
                                 <td>{{ label | trans }}</td>
                                 <td>{{ value }}</td>
+                                <td>{{ 'Yes' | trans }}</td>
+                            </tr>
+                        {% endfor %}
+                        {% for metricName, metric in fullScopeCopyPreview.storeConfigMetrics %}
+                            <tr>
+                                <td>{{ 'Formula' | trans }} — {{ metricName }}</td>
+                                <td><code>{{ metric.formula }}</code></td>
+                                <td>{{ 'No — one-off only' | trans }}</td>
+                            </tr>
+                            <tr>
+                                <td>{{ 'Active' | trans }} — {{ metricName }}</td>
+                                <td>{{ (metric.isActive ? 'Yes' : 'No') | trans }}</td>
+                                <td>{{ 'No — one-off only' | trans }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+                <p class="text-muted">
+                    "Kept in sync by Lock" means the daily scope-copy-sync cron keeps re-applying that row
+                    for as long as an active lock covers this pair. Formula/active are only ever written
+                    once — at "Copy now" time, or at the moment a lock is first created — never re-synced
+                    afterwards, since formula tuning changes far less often than weight.
+                </p>
             {% endif %}
 
-            {{ form_start(copyForm, {'action': '/search-ranking-gui/scope-copy-run?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName ~ '&syncSourceStoreName=' ~ syncSourceStoreName ~ '&syncTargetStoreName=' ~ syncTargetStoreName ~ '&syncSourceLocaleName=' ~ syncSourceLocaleName ~ '&syncTargetLocaleName=' ~ syncTargetLocaleName, 'attr': {'class': 'd-inline-block', 'style': 'margin-right: 15px;'}}) }}
+            {{ form_start(copyForm, {'action': '/search-ranking-gui/scope-copy-run?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName, 'attr': {'class': 'd-inline-block', 'style': 'margin-right: 15px;'}}) }}
+                {{ form_widget(copyForm.mode) }}
                 {{ form_widget(copyForm.confirmOverwrite) }}
                 {{ form_rest(copyForm) }}
                 <button type="submit" class="btn btn-primary" style="margin-left: 10px;">{{ 'Copy now' | trans }}</button>
             {{ form_end(copyForm) }}
 
-            {{ form_start(lockForm, {'action': '/search-ranking-gui/scope-copy-lock?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName ~ '&syncSourceStoreName=' ~ syncSourceStoreName ~ '&syncTargetStoreName=' ~ syncTargetStoreName ~ '&syncSourceLocaleName=' ~ syncSourceLocaleName ~ '&syncTargetLocaleName=' ~ syncTargetLocaleName, 'attr': {'class': 'd-inline-block'}}) }}
+            {{ form_start(lockForm, {'action': '/search-ranking-gui/scope-copy-lock?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName, 'attr': {'class': 'd-inline-block'}}) }}
                 {{ form_widget(lockForm.confirmOverwrite) }}
                 {{ form_rest(lockForm) }}
-                <button type="submit" class="btn btn-success" style="margin-left: 10px;">{{ 'Lock (sync daily)' | trans }}</button>
+                <button type="submit" class="btn btn-success" style="margin-left: 10px;">{{ 'Lock (sync weight/setting daily)' | trans }}</button>
             {{ form_end(lockForm) }}
-        {% endblock %}
-    {% endembed %}
-
-    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Sync store configuration (formula, active flag, curve shape)' } %}
-        {% block widget_content %}
-            <p>
-                Syncs formula/active/curve-shape from the source scope to the target scope below,
-                independently of the store/locale pickers above. For a "Store" scoped metric (see the
-                Metrics page's own Scope column) this applies to every locale of the target store
-                regardless of which target locale is picked here; for a "Store + locale" scoped metric it
-                applies to exactly the target store+locale picked here. One-off only — there is no
-                daily-synced lock for this action.
-            </p>
-
-            <form method="get" class="form-inline" style="margin-bottom: 15px;">
-                <label for="syncSourceStoreName">{{ 'Source store' | trans }}</label>
-                <select name="syncSourceStoreName" id="syncSourceStoreName" class="form-control" onchange="this.form.submit()">
-                    {% for store in stores %}
-                        <option value="{{ store }}" {% if store == syncSourceStoreName %}selected="selected"{% endif %}>{{ store }}</option>
-                    {% endfor %}
-                </select>
-                <label for="syncSourceLocaleName" style="margin-left: 10px;">{{ 'Source locale' | trans }}</label>
-                <select name="syncSourceLocaleName" id="syncSourceLocaleName" class="form-control" onchange="this.form.submit()">
-                    {% for locale in locales %}
-                        <option value="{{ locale }}" {% if locale == syncSourceLocaleName %}selected="selected"{% endif %}>{{ locale }}</option>
-                    {% endfor %}
-                </select>
-
-                <span style="margin-left: 15px; margin-right: 15px;">&rarr;</span>
-
-                <label for="syncTargetStoreName">{{ 'Target store' | trans }}</label>
-                <select name="syncTargetStoreName" id="syncTargetStoreName" class="form-control" onchange="this.form.submit()">
-                    {% for store in stores %}
-                        <option value="{{ store }}" {% if store == syncTargetStoreName %}selected="selected"{% endif %}>{{ store }}</option>
-                    {% endfor %}
-                </select>
-                <label for="syncTargetLocaleName" style="margin-left: 10px;">{{ 'Target locale' | trans }}</label>
-                <select name="syncTargetLocaleName" id="syncTargetLocaleName" class="form-control" onchange="this.form.submit()">
-                    {% for locale in locales %}
-                        <option value="{{ locale }}" {% if locale == syncTargetLocaleName %}selected="selected"{% endif %}>{{ locale }}</option>
-                    {% endfor %}
-                </select>
-
-                {# Carried through unchanged so submitting THIS form doesn't reset the "Copy configuration
-                   between store/locale scopes" widget's own picker above. #}
-                <input type="hidden" name="sourceStoreName" value="{{ sourceStoreName }}">
-                <input type="hidden" name="sourceLocaleName" value="{{ sourceLocaleName }}">
-                <input type="hidden" name="targetStoreName" value="{{ targetStoreName }}">
-                <input type="hidden" name="targetLocaleName" value="{{ targetLocaleName }}">
-            </form>
-
-            {% if syncSourceStoreName == syncTargetStoreName and syncSourceLocaleName == syncTargetLocaleName %}
-                <div class="alert alert-warning">Source and target scope must be different.</div>
-            {% endif %}
-
-            {% if hasTargetStoreConfig %}
-                <div class="alert alert-warning">
-                    {{ syncTargetStoreName }} — or another locale of {{ syncTargetStoreName }} that a
-                    "Store" scoped metric in this sync would also apply to — already has saved store
-                    configuration. Syncing will do nothing unless you check "Overwrite existing target
-                    store configuration" below.
-                </div>
-            {% endif %}
-
-            <p><strong>{{ 'This will sync:' | trans }}</strong></p>
-            {% if storeConfigPreview.metrics is empty %}
-                <p class="text-muted">{{ syncSourceStoreName }}/{{ syncSourceLocaleName }} has no explicitly saved formula — nothing to sync yet.</p>
-            {% else %}
-                <table class="table table-condensed" style="max-width: 700px;">
-                    <thead>
-                        <tr>
-                            <th>{{ 'Metric' | trans }}</th>
-                            <th>{{ 'Formula' | trans }}</th>
-                            <th>{{ 'Active' | trans }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for metricName, metric in storeConfigPreview.metrics %}
-                            <tr>
-                                <td>{{ metricName }}</td>
-                                <td><code>{{ metric.formula }}</code></td>
-                                <td>{{ (metric.isActive ? 'Yes' : 'No') | trans }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% endif %}
-
-            {{ form_start(storeConfigSyncForm, {'action': '/search-ranking-gui/store-config-sync-run?syncSourceStoreName=' ~ syncSourceStoreName ~ '&syncTargetStoreName=' ~ syncTargetStoreName ~ '&syncSourceLocaleName=' ~ syncSourceLocaleName ~ '&syncTargetLocaleName=' ~ syncTargetLocaleName ~ '&sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName}) }}
-                {{ form_widget(storeConfigSyncForm.mode) }}
-                {{ form_widget(storeConfigSyncForm.confirmOverwrite) }}
-                {{ form_rest(storeConfigSyncForm) }}
-                <button type="submit" class="btn btn-primary" style="margin-top: 10px;">{{ 'Sync now' | trans }}</button>
-            {{ form_end(storeConfigSyncForm) }}
         {% endblock %}
     {% endembed %}
 
