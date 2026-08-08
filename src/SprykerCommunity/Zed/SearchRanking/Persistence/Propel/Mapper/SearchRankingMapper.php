@@ -66,7 +66,7 @@ class SearchRankingMapper
     ): SpySearchRankingMetric {
         $metricEntity->setName($metricTransfer->getNameOrFail());
         $metricEntity->setIsHigherBetter($metricTransfer->getIsHigherBetter() ?? true);
-        $metricEntity->setIsLocaleScoped($metricTransfer->getIsLocaleScoped() ?? true);
+        $metricEntity->setIsLocaleScoped($metricTransfer->getIsLocaleScoped() ?? false);
 
         return $metricEntity;
     }
@@ -99,6 +99,7 @@ class SearchRankingMapper
             ->setIdSearchRankingMetricStoreConfig($metricStoreConfigEntity->getIdSearchRankingMetricStoreConfig())
             ->setFkSearchRankingMetric($metricStoreConfigEntity->getFkSearchRankingMetric())
             ->setStoreName($metricStoreConfigEntity->getStoreName())
+            ->setLocaleName($metricStoreConfigEntity->getLocaleName())
             ->setFormula($metricStoreConfigEntity->getFormula())
             ->setIsActive($metricStoreConfigEntity->getIsActive())
             ->setShape($metricStoreConfigEntity->getShape());
@@ -114,6 +115,7 @@ class SearchRankingMapper
     ): SpySearchRankingMetricStoreConfig {
         $metricStoreConfigEntity->setFkSearchRankingMetric($metricStoreConfigTransfer->getFkSearchRankingMetricOrFail());
         $metricStoreConfigEntity->setStoreName($metricStoreConfigTransfer->getStoreNameOrFail());
+        $metricStoreConfigEntity->setLocaleName($metricStoreConfigTransfer->getLocaleNameOrFail());
         $metricStoreConfigEntity->setFormula($metricStoreConfigTransfer->getFormulaOrFail());
         $metricStoreConfigEntity->setIsActive($metricStoreConfigTransfer->getIsActive() ?? true);
         $metricStoreConfigEntity->setShape($metricStoreConfigTransfer->getShape());

@@ -5,7 +5,7 @@
         <column name="id_search_ranking_metric" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="name" type="VARCHAR" size="128" required="true" description="Machine name of the business signal, e.g. pdp_impressions."/>
         <column name="is_higher_better" type="BOOLEAN" required="true" defaultValue="true" description="Whether a HIGHER raw value is the better outcome for this signal (e.g. sales) as opposed to a lower one (e.g. days since restock, return rate). Not inferrable from the data — direction is business knowledge. Used by the normalization-curve fit suggestion to pick increasing vs. decreasing candidate shapes; does not affect the formula itself."/>
-        <column name="is_locale_scoped" type="BOOLEAN" required="true" defaultValue="true" description="Whether this metric's WEIGHT is a genuinely per-locale decision (true, the default — e.g. a signal whose blend against text relevance should differ by language) or a store-wide fact applied uniformly to every locale of a store (false — e.g. sales/stock-derived signals that don't vary by language). Same semantic bucket as is_higher_better: a fact about what the metric IS, not a per-store config value. When false, MetricWriter::saveMetricWeight() fans a single write out to every real locale of the store instead of persisting just one. Does not affect formula/isActive/shape, which are already store-only for every metric regardless of this flag."/>
+        <column name="is_locale_scoped" type="BOOLEAN" required="true" defaultValue="false" description="Root fact governing every scoped field this metric owns: does it genuinely differ per locale within a store, or is it store-wide? False (default, most metrics) keeps formula/isActive/shape AND weight uniform across a store's locales, fanned out on save. True (rare — evidence via evaluateCurrentMetricFitAcrossLocales() first) lets both diverge independently per (store, locale). One flag for both, not one per concern — see SCOPING.md. Same bucket as is_higher_better: a fact about the metric, not per-store config."/>
 
         <behavior name="timestampable"/>
         <id-method-parameter value="spy_search_ranking_metric_pk_seq"/>
@@ -18,10 +18,11 @@
     <table name="spy_search_ranking_metric_store_config" idMethod="native" identifierQuoting="true">
         <column name="id_search_ranking_metric_store_config" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_search_ranking_metric" type="INTEGER" required="true"/>
-        <column name="store_name" type="VARCHAR" size="64" required="true" description="e.g. DE — a business-behavior metric's formula/active flag/curve shape is a store-level fact (conversion, stock, warehouse reality), not a language preference; deliberately NOT locale-scoped, unlike weight and the specificity/relevance settings, which genuinely are locale-sensitive (tokenization/decompounding). See spy_search_ranking_metric.is_higher_better for the one identity field that stays global instead of moving here — direction is a semantic property of what the metric MEANS, not a per-store fact."/>
-        <column name="formula" type="VARCHAR" size="512" required="true" description="This store's own normalization expression mapping raw values into ]0;1]; variables: x, min, max, avg, count. The columns that once held a single global formula/isActive/shape on spy_search_ranking_metric itself were removed entirely once every part of this package migrated onto this store-scoped table (a breaking change; see CHANGELOG.md for the release that shipped it — no live installs meant no backfill migration was needed). A brand-new store gets its rows via Scope Copy's Sync Store Config action instead, then diverges per store as each is independently re-fit against its own digest."/>
-        <column name="is_active" type="BOOLEAN" required="true" defaultValue="true" description="Only active metrics are normalized and exported to the search index, for THIS store."/>
-        <column name="shape" type="VARCHAR" size="32" required="false" description="Stable curve-family slug (e.g. atan, sigmoid, hyperbolic) for this store's own formula; NULL for a freeform/custom formula that matches no known candidate shape. Same derivation as spy_search_ranking_metric.shape had, now per store."/>
+        <column name="store_name" type="VARCHAR" size="64" required="true" description="e.g. DE."/>
+        <column name="locale_name" type="VARCHAR" size="16" required="true" description="e.g. de_DE — one real row per (metric, store, locale) unconditionally, same storage shape spy_search_ranking_metric_weight already has. Whether sibling locale rows of the same store are kept identical (spy_search_ranking_metric.is_locale_scoped=false, the default — MetricWriter fans a save out to every real locale) or allowed to diverge independently (=true) is governed entirely by that one flag, not by this table's own shape."/>
+        <column name="formula" type="VARCHAR" size="512" required="true" description="This (store, locale)'s own normalization expression mapping raw values into ]0;1]; variables: x, min, max, avg, count. A brand-new store gets its rows via Scope Copy's Sync Store Config action instead, then diverges per store (and, for an is_locale_scoped=true metric, per locale) as each is independently re-fit against its own digest."/>
+        <column name="is_active" type="BOOLEAN" required="true" defaultValue="true" description="Only active metrics are normalized and exported to the search index, for THIS (store, locale)."/>
+        <column name="shape" type="VARCHAR" size="32" required="false" description="Stable curve-family slug (e.g. atan, sigmoid, hyperbolic) for this (store, locale)'s own formula; NULL for a freeform/custom formula that matches no known candidate shape."/>
 
         <behavior name="timestampable"/>
         <id-method-parameter value="spy_search_ranking_metric_store_config_pk_seq"/>
@@ -30,16 +31,17 @@
             <reference local="fk_search_ranking_metric" foreign="id_search_ranking_metric"/>
         </foreign-key>
 
-        <unique name="spy_srmsc-unique-metric_store">
+        <unique name="spy_srmsc-unique-metric_store_locale">
             <unique-column name="fk_search_ranking_metric"/>
             <unique-column name="store_name"/>
+            <unique-column name="locale_name"/>
         </unique>
     </table>
 
     <table name="spy_search_ranking_metric_weight" idMethod="native" identifierQuoting="true">
         <column name="id_search_ranking_metric_weight" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_search_ranking_metric" type="INTEGER" required="true"/>
-        <column name="store_name" type="VARCHAR" size="64" required="true" description="e.g. DE — a metric's weight in the combined ranking score is store+locale scoped; its definition (formula/isActive/isHigherBetter/shape) on spy_search_ranking_metric is not."/>
+        <column name="store_name" type="VARCHAR" size="64" required="true" description="e.g. DE — a metric's weight in the combined ranking score is store+locale scoped, same as its formula/isActive/shape on spy_search_ranking_metric_store_config; only name/isHigherBetter/isLocaleScoped on spy_search_ranking_metric itself are global."/>
         <column name="locale_name" type="VARCHAR" size="16" required="true" description="e.g. de_DE."/>
         <column name="weight" type="FLOAT" required="true" defaultValue="0" description="Weight of this metric in the combined ranking score, for this store+locale."/>
 
@@ -189,7 +191,7 @@
         <column name="id_search_ranking_metric_history" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_search_ranking_metric" type="INTEGER" required="true" description="Deliberately NOT a Propel foreign key (see below) — plain indexed column only."/>
         <column name="metric_name" type="VARCHAR" size="128" required="true" description="Denormalized: history must stay readable even if the live metric is later renamed or deleted."/>
-        <column name="store_name" type="VARCHAR" size="64" required="true" description="Which store+locale this snapshot's weight/digest applied to — a metric's weight and digest are store+locale scoped, its formula/isActive/isHigherBetter are not, but the whole row is still recorded per (store, locale) for a simple, complete audit trail."/>
+        <column name="store_name" type="VARCHAR" size="64" required="true" description="Which store+locale this snapshot's weight/formula/isActive/digest applied to — only isHigherBetter (and name/isLocaleScoped) are global; everything else this row snapshots is store+locale scoped, recorded per (store, locale) for a simple, complete audit trail."/>
         <column name="locale_name" type="VARCHAR" size="16" required="true"/>
         <column name="weight" type="FLOAT" required="true" description="spy_search_ranking_metric_weight.weight for this store+locale at the time of this snapshot."/>
         <column name="formula" type="VARCHAR" size="512" required="true" description="spy_search_ranking_metric.formula at the time of this snapshot."/>

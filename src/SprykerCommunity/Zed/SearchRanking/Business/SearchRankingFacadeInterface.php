@@ -13,6 +13,8 @@ use Generated\Shared\Transfer\ProductPageLoadTransfer;
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
+use Generated\Shared\Transfer\SearchRankingFullScopeCopyPreviewTransfer;
+use Generated\Shared\Transfer\SearchRankingFullScopeCopyResultTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
@@ -548,15 +550,37 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
+     * - Same fit check as {@see evaluateCurrentMetricFit()}, run once per real locale of $storeName —
+     *   formula/shape are store-only (not locale-scoped) today, so this is the diagnostic that answers
+     *   "does this metric's one store-wide formula actually fit every locale's own real data comparably
+     *   well" without requiring locale-scoped formulas to exist yet.
+     * - Keyed by locale name; a locale with no digest yet maps to null, never omitted or thrown.
+     * - Read-only, no side effect, safe to call as often as needed.
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     *
+     * @return array<string, float|null>
+     */
+    public function evaluateCurrentMetricFitAcrossLocales(int $idSearchRankingMetric, string $storeName): array;
+
+    /**
+     * Specification:
      * - Copies every metric weight and setting explicitly saved for the source scope onto the target
      *   scope, tagged {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY}.
      *   Never touches `spy_search_ranking_product_metric`/`_metric_digest` — real, scope-local behavioral
      *   data is deliberately never copied.
+     * - `MODE_MIRROR` (default) copies every weight/setting the source has explicitly saved, creating a
+     *   target row for one the target never had. `MODE_COPY_ONLY_OVERLAP` only overwrites a weight/setting
+     *   the target has ALREADY independently configured, leaving one it hasn't touched alone (`skippedCount`).
      * - Blocked when the target scope already has any explicitly-saved weight/setting
      *   (`isBlockedByExistingData=true`, nothing written) unless `$confirmOverwrite` is true.
      * - Fails (`isSuccess=false`) when source and target scope are the same.
      * - A one-off action — does not create a lock. See {@see createScopeCopyLock()} for a persistent,
-     *   daily-resynced pairing.
+     *   daily-resynced pairing. See {@see copyFullScopeConfiguration()} for the combined action that also
+     *   covers formula/isActive/shape — the one the Zed page's "Copy now" button actually uses.
      *
      * @api
      *
@@ -564,6 +588,7 @@ interface SearchRankingFacadeInterface
      * @param string $sourceLocaleName
      * @param string $targetStoreName
      * @param string $targetLocaleName
+     * @param string $mode One of {@see \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeConfigCopierInterface}::MODE_*.
      * @param bool $confirmOverwrite
      */
     public function copyScopeConfiguration(
@@ -571,6 +596,7 @@ interface SearchRankingFacadeInterface
         string $sourceLocaleName,
         string $targetStoreName,
         string $targetLocaleName,
+        string $mode,
         bool $confirmOverwrite,
     ): SearchRankingScopeCopyResultTransfer;
 
@@ -650,15 +676,78 @@ interface SearchRankingFacadeInterface
     /**
      * Specification:
      * - Read-only preview of exactly what {@see copyStoreConfiguration()} would act on for the given
-     *   source store: every metric's explicitly-saved formula and active flag. Needs no locale at all —
-     *   unlike the real copy, this never writes anything, so there is nothing for a locale-scoped
-     *   shape-detection lens to apply to.
+     *   (source store, source locale): every metric's explicitly-saved formula and active flag.
      *
      * @api
      *
      * @param string $sourceStoreName
+     * @param string $sourceLocaleName
      */
-    public function previewStoreConfigurationSync(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer;
+    public function previewStoreConfigurationSync(string $sourceStoreName, string $sourceLocaleName): SearchRankingStoreConfigPreviewTransfer;
+
+    /**
+     * Specification:
+     * - The Zed page's single combined "Copy now"/"Lock" action: runs {@see copyScopeConfiguration()} and,
+     *   unless source and target are the SAME store (only the locale differs — {@see copyStoreConfiguration()}'s
+     *   own guard rejects that outright), also {@see copyStoreConfiguration()} — both halves are governed
+     *   by the same per-metric `isLocaleScoped` fact, so there's no remaining reason to drive them through
+     *   two independent actions. `storeConfigCopiedCount`/`storeConfigSkippedCount` are 0 in that same-store
+     *   case; the weight/setting half still runs.
+     * - Blocked ({@see hasFullScopeConfiguration()}) BEFORE either half writes anything, so a blocked
+     *   combined copy never leaves a torn write behind — never just one half applied.
+     * - Fails (`isSuccess=false`) when source and target scope are the same.
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     * @param string $mode One of {@see \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeConfigCopierInterface}::MODE_* — applied to both halves identically.
+     * @param bool $confirmOverwrite
+     */
+    public function copyFullScopeConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+        string $mode,
+        bool $confirmOverwrite,
+    ): SearchRankingFullScopeCopyResultTransfer;
+
+    /**
+     * Specification:
+     * - True if either half of {@see copyFullScopeConfiguration()} would collide with data the target
+     *   already independently has — {@see hasScopeConfiguration()}'s richer collision check for
+     *   weight/setting, plus {@see hasStoreConfiguration()} for the target STORE's formula/isActive/shape
+     *   (skipped when source and target are the same store). Exposed so the Zed page can warn before a
+     *   first submit too, not only after a blocked one.
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     */
+    public function hasFullScopeConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+    ): bool;
+
+    /**
+     * Specification:
+     * - Read-only preview of exactly what {@see copyFullScopeConfiguration()} would act on for the given
+     *   source scope — combines {@see previewScopeConfigurationCopy()} and {@see previewStoreConfigurationSync()}.
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     */
+    public function previewFullScopeConfiguration(string $sourceStoreName, string $sourceLocaleName): SearchRankingFullScopeCopyPreviewTransfer;
 
     /**
      * Specification:
@@ -675,11 +764,13 @@ interface SearchRankingFacadeInterface
      * - Validates the source/target role-exclusivity rule (a scope may be the target of at most one
      *   active lock at a time, source of many, and never simultaneously source and target) — a real
      *   validation failure returns `isSuccess=false` with `errorMessage` set and creates nothing.
-     * - If valid, runs the same overwrite-guarded copy {@see copyScopeConfiguration()} does; the lock row
-     *   is only created once that copy actually succeeds, so a blocked/failed copy never leaves an
-     *   orphaned lock with no data behind it.
-     * - On success, the daily scope-copy-sync cron re-runs this same copy for this pair going forward,
-     *   until it's unlocked.
+     * - If valid, runs the same overwrite-guarded combined copy {@see copyFullScopeConfiguration()} does,
+     *   always `MODE_MIRROR`; the lock row is only created once that copy actually succeeds, so a
+     *   blocked/failed copy never leaves an orphaned lock with no data behind it.
+     * - On success, the daily scope-copy-sync cron re-runs {@see copyScopeConfiguration()} (weight/setting
+     *   only, always `MODE_MIRROR`) for this pair going forward, until it's unlocked. Formula/isActive/shape
+     *   is bootstrapped once here but never re-synced by the cron — see {@see copyStoreConfiguration()}'s
+     *   own docblock for why.
      *
      * @api
      *
@@ -695,7 +786,7 @@ interface SearchRankingFacadeInterface
         string $targetStoreName,
         string $targetLocaleName,
         bool $confirmOverwrite,
-    ): SearchRankingScopeCopyResultTransfer;
+    ): SearchRankingFullScopeCopyResultTransfer;
 
     /**
      * Specification:

@@ -298,10 +298,11 @@ class ProductMetricGapFinderTest extends Unit
         // file's tests query against (DE by default, AT for the store/locale-scoping regression test)
         // so cascade-delete on the tracked metric entity in _after() cleans these up too, no separate
         // tracking needed.
-        foreach (['DE', 'AT'] as $storeName) {
+        foreach (['DE' => 'de_DE', 'AT' => 'de_AT'] as $storeName => $localeName) {
             SpySearchRankingMetricStoreConfigQuery::create()
                 ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
                 ->filterByStoreName($storeName)
+                ->filterByLocaleName($localeName)
                 ->findOneOrCreate()
                 ->setFormula('x')
                 ->setIsActive(true)

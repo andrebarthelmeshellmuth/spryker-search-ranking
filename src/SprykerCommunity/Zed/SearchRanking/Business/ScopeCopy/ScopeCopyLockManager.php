@@ -9,8 +9,8 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy;
 
+use Generated\Shared\Transfer\SearchRankingFullScopeCopyResultTransfer;
 use Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer;
-use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
@@ -22,12 +22,14 @@ class ScopeCopyLockManager implements ScopeCopyLockManagerInterface
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface $entityManager
      * @param \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeCopyLockValidatorInterface $lockValidator
      * @param \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeConfigCopierInterface $scopeConfigCopier
+     * @param \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\FullScopeCopierInterface $fullScopeCopier
      */
     public function __construct(
         protected SearchRankingRepositoryInterface $repository,
         protected SearchRankingEntityManagerInterface $entityManager,
         protected ScopeCopyLockValidatorInterface $lockValidator,
         protected ScopeConfigCopierInterface $scopeConfigCopier,
+        protected FullScopeCopierInterface $fullScopeCopier,
     ) {
     }
 
@@ -40,6 +42,13 @@ class ScopeCopyLockManager implements ScopeCopyLockManagerInterface
     }
 
     /**
+     * The one-time bootstrap copy is the same combined weight+setting+formula/isActive/shape copy the
+     * "Copy now" button runs (see {@see FullScopeCopierInterface}), always in `MODE_MIRROR` — a lock
+     * exists to make the target a full, ongoing mirror of the source, never a partial/conservative one.
+     * Only the recurring daily resync ({@see runDailySync()}) is weight/setting-only: formula/isActive/shape
+     * tuning changes far less often than weight, so a recurring resync of it would mostly re-copy an
+     * unchanged value — see {@see \SprykerCommunity\Zed\SearchRankingGui\Communication\Controller\ScopeCopyLockController}.
+     *
      * @param string $sourceStoreName
      * @param string $sourceLocaleName
      * @param string $targetStoreName
@@ -52,20 +61,21 @@ class ScopeCopyLockManager implements ScopeCopyLockManagerInterface
         string $targetStoreName,
         string $targetLocaleName,
         bool $confirmOverwrite,
-    ): SearchRankingScopeCopyResultTransfer {
+    ): SearchRankingFullScopeCopyResultTransfer {
         $validationError = $this->lockValidator->validate($sourceStoreName, $sourceLocaleName, $targetStoreName, $targetLocaleName);
 
         if ($validationError !== null) {
-            return (new SearchRankingScopeCopyResultTransfer())
+            return (new SearchRankingFullScopeCopyResultTransfer())
                 ->setIsSuccess(false)
                 ->setErrorMessage($validationError);
         }
 
-        $copyResultTransfer = $this->scopeConfigCopier->copyScopeConfiguration(
+        $copyResultTransfer = $this->fullScopeCopier->copyFullScopeConfiguration(
             $sourceStoreName,
             $sourceLocaleName,
             $targetStoreName,
             $targetLocaleName,
+            ScopeConfigCopierInterface::MODE_MIRROR,
             $confirmOverwrite,
             SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
         );
@@ -104,6 +114,7 @@ class ScopeCopyLockManager implements ScopeCopyLockManagerInterface
                 $activeLockTransfer->getSourceLocaleNameOrFail(),
                 $activeLockTransfer->getTargetStoreNameOrFail(),
                 $activeLockTransfer->getTargetLocaleNameOrFail(),
+                ScopeConfigCopierInterface::MODE_MIRROR,
                 true,
                 SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
             );

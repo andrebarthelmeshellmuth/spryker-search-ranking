@@ -94,6 +94,7 @@ class SearchRankingMapperTest extends Unit
         $storeConfigEntity->setIdSearchRankingMetricStoreConfig(3);
         $storeConfigEntity->setFkSearchRankingMetric(7);
         $storeConfigEntity->setStoreName('DE');
+        $storeConfigEntity->setLocaleName('de_DE');
         $storeConfigEntity->setFormula('atan(x / 100) / (pi() / 2)');
         $storeConfigEntity->setIsActive(true);
         $storeConfigEntity->setShape('atan');
@@ -105,6 +106,7 @@ class SearchRankingMapperTest extends Unit
         $this->assertSame(3, $storeConfigTransfer->getIdSearchRankingMetricStoreConfig());
         $this->assertSame(7, $storeConfigTransfer->getFkSearchRankingMetric());
         $this->assertSame('DE', $storeConfigTransfer->getStoreName());
+        $this->assertSame('de_DE', $storeConfigTransfer->getLocaleName());
         $this->assertSame('atan(x / 100) / (pi() / 2)', $storeConfigTransfer->getFormula());
         $this->assertTrue($storeConfigTransfer->getIsActive());
         $this->assertSame('atan', $storeConfigTransfer->getShape());
@@ -116,6 +118,7 @@ class SearchRankingMapperTest extends Unit
         $storeConfigTransfer = (new SearchRankingMetricStoreConfigTransfer())
             ->setFkSearchRankingMetric(7)
             ->setStoreName('AT')
+            ->setLocaleName('en_US')
             ->setFormula('x / (x + 5000)')
             ->setIsActive(false)
             ->setShape('hyperbolic');
@@ -126,6 +129,7 @@ class SearchRankingMapperTest extends Unit
         // Assert
         $this->assertSame(7, $storeConfigEntity->getFkSearchRankingMetric());
         $this->assertSame('AT', $storeConfigEntity->getStoreName());
+        $this->assertSame('en_US', $storeConfigEntity->getLocaleName());
         $this->assertSame('x / (x + 5000)', $storeConfigEntity->getFormula());
         $this->assertFalse($storeConfigEntity->getIsActive());
         $this->assertSame('hyperbolic', $storeConfigEntity->getShape());
@@ -142,6 +146,7 @@ class SearchRankingMapperTest extends Unit
         $storeConfigTransfer = (new SearchRankingMetricStoreConfigTransfer())
             ->setFkSearchRankingMetric(7)
             ->setStoreName('DE')
+            ->setLocaleName('de_DE')
             ->setFormula('x');
 
         // Act

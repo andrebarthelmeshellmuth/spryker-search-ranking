@@ -13,6 +13,8 @@ use Generated\Shared\Transfer\ProductPageLoadTransfer;
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
+use Generated\Shared\Transfer\SearchRankingFullScopeCopyPreviewTransfer;
+use Generated\Shared\Transfer\SearchRankingFullScopeCopyResultTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricDigestTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricHistoryTransfer;
@@ -39,11 +41,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      */
     public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
-        // This `@api` method's own signature keeps its locale parameter (search-ranking-optimizer's own
-        // bridge reads real per-locale weight off the result) even though the repository's own
-        // getMetricCollection() no longer needs one — composes the repository's weight-free collection
-        // with its separate attachWeights() step instead of a single call.
-        return $this->getRepository()->attachWeights($this->getRepository()->getMetricCollection($storeName), $storeName, $localeName);
+        // Composes the repository's weight-free (store, locale) collection with a separate
+        // attachWeights() step instead of a single call — see getMetricCollection()'s own docblock.
+        return $this->getRepository()->attachWeights($this->getRepository()->getMetricCollection($storeName, $localeName), $storeName, $localeName);
     }
 
     /**
@@ -54,7 +54,7 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
         // Same composition as getMetricCollection() above — see that method's own comment.
-        return $this->getRepository()->attachWeights($this->getRepository()->getActiveMetricCollection($storeName), $storeName, $localeName);
+        return $this->getRepository()->attachWeights($this->getRepository()->getActiveMetricCollection($storeName, $localeName), $storeName, $localeName);
     }
 
     /**
@@ -496,10 +496,26 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @api
      *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     *
+     * @return array<string, float|null>
+     */
+    public function evaluateCurrentMetricFitAcrossLocales(int $idSearchRankingMetric, string $storeName): array
+    {
+        return $this->getFactory()->createCurrentMetricFitEvaluator()->evaluateAcrossLocales($idSearchRankingMetric, $storeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
      * @param string $sourceStoreName
      * @param string $sourceLocaleName
      * @param string $targetStoreName
      * @param string $targetLocaleName
+     * @param string $mode
      * @param bool $confirmOverwrite
      */
     public function copyScopeConfiguration(
@@ -507,6 +523,7 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
         string $sourceLocaleName,
         string $targetStoreName,
         string $targetLocaleName,
+        string $mode,
         bool $confirmOverwrite,
     ): SearchRankingScopeCopyResultTransfer {
         return $this->getFactory()->createScopeConfigCopier()->copyScopeConfiguration(
@@ -514,6 +531,7 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
             $sourceLocaleName,
             $targetStoreName,
             $targetLocaleName,
+            $mode,
             $confirmOverwrite,
             SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
         );
@@ -594,10 +612,79 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param string $sourceStoreName
+     * @param string $sourceLocaleName
      */
-    public function previewStoreConfigurationSync(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer
+    public function previewStoreConfigurationSync(string $sourceStoreName, string $sourceLocaleName): SearchRankingStoreConfigPreviewTransfer
     {
-        return $this->getFactory()->createStoreConfigCopier()->previewStoreConfiguration($sourceStoreName);
+        return $this->getFactory()->createStoreConfigCopier()->previewStoreConfiguration($sourceStoreName, $sourceLocaleName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     * @param string $mode
+     * @param bool $confirmOverwrite
+     */
+    public function copyFullScopeConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+        string $mode,
+        bool $confirmOverwrite,
+    ): SearchRankingFullScopeCopyResultTransfer {
+        return $this->getFactory()->createFullScopeCopier()->copyFullScopeConfiguration(
+            $sourceStoreName,
+            $sourceLocaleName,
+            $targetStoreName,
+            $targetLocaleName,
+            $mode,
+            $confirmOverwrite,
+            SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
+     */
+    public function hasFullScopeConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+    ): bool {
+        return $this->getFactory()->createFullScopeCopier()->hasFullScopeConfiguration(
+            $sourceStoreName,
+            $sourceLocaleName,
+            $targetStoreName,
+            $targetLocaleName,
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     */
+    public function previewFullScopeConfiguration(string $sourceStoreName, string $sourceLocaleName): SearchRankingFullScopeCopyPreviewTransfer
+    {
+        return $this->getFactory()->createFullScopeCopier()->previewFullScopeConfiguration($sourceStoreName, $sourceLocaleName);
     }
 
     /**
@@ -629,7 +716,7 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
         string $targetStoreName,
         string $targetLocaleName,
         bool $confirmOverwrite,
-    ): SearchRankingScopeCopyResultTransfer {
+    ): SearchRankingFullScopeCopyResultTransfer {
         return $this->getFactory()->createScopeCopyLockManager()->createScopeCopyLock(
             $sourceStoreName,
             $sourceLocaleName,

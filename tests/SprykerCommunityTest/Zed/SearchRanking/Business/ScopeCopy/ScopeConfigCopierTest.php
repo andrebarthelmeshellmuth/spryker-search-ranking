@@ -15,6 +15,7 @@ use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeConfigCopier;
+use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeConfigCopierInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
@@ -66,6 +67,7 @@ class ScopeConfigCopierTest extends Unit
             'de_DE',
             'DE',
             'de_DE',
+            ScopeConfigCopierInterface::MODE_MIRROR,
             false,
             SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
         );
@@ -91,6 +93,7 @@ class ScopeConfigCopierTest extends Unit
             'de_DE',
             'AT',
             'de_AT',
+            ScopeConfigCopierInterface::MODE_MIRROR,
             false,
             SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
         );
@@ -132,6 +135,7 @@ class ScopeConfigCopierTest extends Unit
             'de_DE',
             'AT',
             'fr_AT',
+            ScopeConfigCopierInterface::MODE_MIRROR,
             false,
             SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
         );
@@ -173,6 +177,7 @@ class ScopeConfigCopierTest extends Unit
             'de_DE',
             'AT',
             'fr_AT',
+            ScopeConfigCopierInterface::MODE_MIRROR,
             false,
             SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
         );
@@ -221,6 +226,7 @@ class ScopeConfigCopierTest extends Unit
             'de_DE',
             'AT',
             'de_AT',
+            ScopeConfigCopierInterface::MODE_MIRROR,
             false,
             SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
         );
@@ -256,6 +262,7 @@ class ScopeConfigCopierTest extends Unit
             'de_DE',
             'AT',
             'de_AT',
+            ScopeConfigCopierInterface::MODE_MIRROR,
             false,
             SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
         );
@@ -290,12 +297,77 @@ class ScopeConfigCopierTest extends Unit
             'de_DE',
             'AT',
             'de_AT',
+            ScopeConfigCopierInterface::MODE_MIRROR,
             false,
             SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
         );
 
         // Assert
         $this->assertSame(0, $resultTransfer->getSettingCopiedCount());
+    }
+
+    /**
+     * The real regression this covers: MODE_COPY_ONLY_OVERLAP must leave a weight/setting alone that the
+     * TARGET has never independently adopted, rather than creating a new row for it the way MODE_MIRROR
+     * would — counted in skippedCount, not an error. Same semantics as
+     * {@see \SprykerCommunityTest\Zed\SearchRanking\Business\ScopeCopy\StoreConfigCopierTest::testCopyOnlyOverlapModeSkipsAMetricTheTargetHasNeverAdopted()}.
+     */
+    public function testCopyOnlyOverlapModeSkipsAWeightAndSettingTheTargetHasNeverAdopted(): void
+    {
+        // Arrange
+        $notYetAdoptedByTarget = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(1)->setName('top_seller');
+        $alreadyAdoptedByTarget = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(2)->setName('pdp_impressions');
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('hasScopeConfiguration')->willReturn(false);
+        $repositoryMock->method('getMetricCollection')->with('DE', 'de_DE')->willReturn(
+            (new SearchRankingMetricCollectionTransfer())
+                ->addMetric($notYetAdoptedByTarget)
+                ->addMetric($alreadyAdoptedByTarget),
+        );
+        $repositoryMock->method('findMetricWeight')->willReturnMap([
+            [1, 'DE', 'de_DE', 0.8],
+            [1, 'AT', 'de_AT', null],
+            [2, 'DE', 'de_DE', 0.5],
+            [2, 'AT', 'de_AT', 0.3],
+        ]);
+        $repositoryMock->method('findSettingValue')->willReturnMap([
+            [SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT, 'DE', 'de_DE', '0.6'],
+            [SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_WEIGHT, 'AT', 'de_AT', null],
+            [SharedSearchRankingConfig::SETTING_KEY_RELEVANCE_SATURATION_POINT, 'DE', 'de_DE', null],
+            [SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_BLEND_WEIGHT, 'DE', 'de_DE', null],
+            [SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_SATURATION_POINT, 'DE', 'de_DE', null],
+            [SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_CURVE_EXPONENT, 'DE', 'de_DE', null],
+            [SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_EXPONENT, 'DE', 'de_DE', null],
+            [SharedSearchRankingConfig::SETTING_KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE, 'DE', 'de_DE', null],
+        ]);
+
+        $metricWriterMock = $this->createMock(MetricWriterInterface::class);
+        $metricWriterMock->method('resolveEffectiveWeightLocales')->willReturn(['de_AT']);
+        $metricWriterMock->expects($this->once())
+            ->method('saveMetricWeight')
+            ->with(2, 'AT', 'de_AT', 0.5, SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY);
+
+        $settingManagerMock = $this->createMock(SettingManagerInterface::class);
+        foreach (static::EXPECTED_SETTING_COPIERS as $setterMethodName) {
+            $settingManagerMock->expects($this->never())->method($setterMethodName);
+        }
+
+        // Act
+        $resultTransfer = (new ScopeConfigCopier($repositoryMock, $metricWriterMock, $settingManagerMock))->copyScopeConfiguration(
+            'DE',
+            'de_DE',
+            'AT',
+            'de_AT',
+            ScopeConfigCopierInterface::MODE_COPY_ONLY_OVERLAP,
+            false,
+            SharedSearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY,
+        );
+
+        // Assert
+        $this->assertSame(1, $resultTransfer->getMetricWeightCopiedCount());
+        $this->assertSame(0, $resultTransfer->getSettingCopiedCount());
+        $this->assertSame(2, $resultTransfer->getSkippedCount());
     }
 
     public function testHasScopeConfigurationDelegatesToTheRepository(): void

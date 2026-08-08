@@ -37,26 +37,9 @@ class ScopeCopyPage
     public const SELECTOR_TARGET_LOCALE_SELECT = '#targetLocaleName';
 
     /**
-     * Store-only, independent of the (store,locale) pickers above — see SELECTOR_SOURCE_STORE_SELECT.
-     *
-     * @var string
-     */
-    public const SELECTOR_SYNC_SOURCE_STORE_SELECT = '#syncSourceStoreName';
-
-    /**
-     * @var string
-     */
-    public const SELECTOR_SYNC_TARGET_STORE_SELECT = '#syncTargetStoreName';
-
-    /**
      * @var string
      */
     public const COPY_PREVIEW_HEADING_TEXT = 'This will copy:';
-
-    /**
-     * @var string
-     */
-    public const SYNC_PREVIEW_HEADING_TEXT = 'This will sync:';
 
     /**
      * @var string
@@ -66,30 +49,30 @@ class ScopeCopyPage
     /**
      * @var string
      */
-    public const LOCK_BUTTON_TEXT = 'Lock (sync daily)';
+    public const LOCK_BUTTON_TEXT = 'Lock (sync weight/setting daily)';
 
     /**
      * @var string
      */
-    public const SYNC_STORE_CONFIG_HEADING_TEXT = 'Sync store configuration';
+    public const SELECTOR_COPY_MODE_MIRROR = '#search_ranking_scope_copy_run_action_mode_0';
 
     /**
      * @var string
      */
-    public const SELECTOR_SYNC_MODE_MIRROR = '#search_ranking_store_config_sync_action_mode_0';
+    public const SELECTOR_COPY_MODE_COPY_ONLY_OVERLAP = '#search_ranking_scope_copy_run_action_mode_1';
 
     /**
      * @var string
      */
-    public const SELECTOR_SYNC_MODE_COPY_ONLY_OVERLAP = '#search_ranking_store_config_sync_action_mode_1';
+    public const SELECTOR_COPY_CONFIRM_OVERWRITE = '#search_ranking_scope_copy_run_action_confirmOverwrite';
 
     /**
      * @var string
      */
-    public const SELECTOR_SYNC_CONFIRM_OVERWRITE = '#search_ranking_store_config_sync_action_confirmOverwrite';
+    public const SELECTOR_LOCK_CONFIRM_OVERWRITE = '#search_ranking_scope_copy_action_confirmOverwrite';
 
     /**
      * @var string
      */
-    public const SYNC_NOW_BUTTON_TEXT = 'Sync now';
+    public const KEPT_IN_SYNC_BY_LOCK_HEADING_TEXT = 'Kept in sync by Lock?';
 }

@@ -49,15 +49,15 @@ class MetricWriter implements MetricWriterInterface
      * Writes the metric's identity fields — see this method's own interface docblock. The incoming
      * transfer's `weight` (if any) is deliberately ignored here; use {@see saveMetricWeight()} instead.
      *
-     * $storeName is real here — formula/isActive/shape are saved for THIS store specifically, not
-     * locale-scoped at all. $localeName is used ONLY as a lens: which (store, locale) digest to fit the
-     * formula's shape against ({@see detectShape()}) and to snapshot in the history row
-     * ({@see recordHistory()}) — never persisted as part of the metric's own scope. Threaded through as
-     * the caller's real, currently-viewed locale (not a hardcoded default), specifically so the shape
-     * saved here matches what the admin already saw in the live formula-preview endpoint, which uses the
-     * real request locale too — a hardcoded default here would silently mismatch whatever locale the
-     * admin was actually viewing. Digest granularity is (store, locale): if the viewed locale has no
-     * digest yet, shape/fit simply comes back null/absent.
+     * $localeName is the admin's own currently-viewed locale — used as the digest lens
+     * {@see detectShape()} fits the formula's shape against (so the shape saved here matches what the
+     * live formula-preview endpoint already showed, which uses the same real request locale), and as the
+     * anchor for deciding the real WRITE scope: for an `isLocaleScoped=false` metric (most metrics — see
+     * {@see \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface}'s own docs
+     * on the flag), formula/isActive/shape are fanned out to every real locale of $storeName, identical to
+     * what's saved for $localeName, the same {@see resolveEffectiveWeightLocales()} fan-out
+     * {@see saveMetricWeight()} already uses. For an `isLocaleScoped=true` metric, the write stays scoped
+     * to just $storeName/$localeName, genuinely independent of its sibling locales.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
@@ -83,26 +83,61 @@ class MetricWriter implements MetricWriterInterface
 
         $metricTransfer->setShape($this->detectShape($metricTransfer, $storeName, $localeName));
 
-        $savedMetricTransfer = $this->entityManager->saveMetric($metricTransfer, $storeName);
+        $targetLocaleNames = $this->resolveEffectiveStoreConfigLocales(
+            $metricTransfer->getIdSearchRankingMetric(),
+            $metricTransfer->getIsLocaleScoped() ?? false,
+            $storeName,
+            $localeName,
+        );
+
+        $savedMetricTransfer = $metricTransfer;
+
+        foreach ($targetLocaleNames as $targetLocaleName) {
+            $savedMetricTransfer = $this->entityManager->saveMetric($metricTransfer, $storeName, $targetLocaleName);
+        }
+
         $this->eventFacade->trigger(SearchRankingEvents::RANKING_CONFIGURATION_CHANGE, new EventEntityTransfer());
 
         if ($this->hasAnyTrackedFieldChanged($previousMetricTransfer, $savedMetricTransfer)) {
-            // formula/isActive are store-wide, not locale-scoped — a single history row keyed to
-            // whichever locale the admin happened to be viewing would under-represent the change (it
-            // reads as if the change only applied to that one locale). Fan out one row per REAL locale
-            // of this store instead, so
-            // every locale the change actually affects gets its own honest snapshot (with that locale's
-            // own real weight/digest/fit — never a duplicate/fake one). $localeName (the viewed locale) is
-            // the fallback if the store can't be resolved, and is always itself one of the real locales
-            // looped over below, so it's never skipped.
+            // One history row per locale this write actually touched (the same $targetLocaleNames the
+            // write itself used, not every real locale unconditionally) — each carrying that locale's own
+            // real weight/digest/fit, never a duplicate/fake one.
             $changeSource = $metricTransfer->getChangeSource() ?? SharedSearchRankingConfig::CHANGE_SOURCE_MANUAL;
 
-            foreach ($this->resolveLocaleNamesForStore($storeName, $localeName) as $historyLocaleName) {
+            foreach ($targetLocaleNames as $historyLocaleName) {
                 $this->recordHistory($savedMetricTransfer, $storeName, $historyLocaleName, $changeSource);
             }
         }
 
         return $savedMetricTransfer;
+    }
+
+    /**
+     * $idSearchRankingMetric === null means this save is creating a brand-new metric — nothing in the
+     * database yet to look `isLocaleScoped` up from, so this trusts $isLocaleScopedFallback (the value
+     * being submitted on the SAME transfer this save is creating) instead of re-deriving it via
+     * {@see resolveEffectiveWeightLocales()}, which requires a real id to look up. For an EXISTING metric,
+     * defers entirely to that same method — the one shared fan-out decision {@see saveMetricWeight()}
+     * already uses, so formula and weight can never disagree about which locales a write touches.
+     *
+     * @param int|null $idSearchRankingMetric
+     * @param bool $isLocaleScopedFallback
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return array<string>
+     */
+    protected function resolveEffectiveStoreConfigLocales(
+        ?int $idSearchRankingMetric,
+        bool $isLocaleScopedFallback,
+        string $storeName,
+        string $localeName,
+    ): array {
+        if ($idSearchRankingMetric !== null) {
+            return $this->resolveEffectiveWeightLocales($idSearchRankingMetric, $storeName, $localeName);
+        }
+
+        return $isLocaleScopedFallback ? [$localeName] : $this->resolveLocaleNamesForStore($storeName, $localeName);
     }
 
     /**
@@ -166,10 +201,11 @@ class MetricWriter implements MetricWriterInterface
     /**
      * {@inheritDoc}
      *
-     * Deliberately re-derives {@see saveMetricWeight()}'s own fan-out decision independently (same
-     * `findMetricById()` + `getIsLocaleScoped()` check, own resolveLocaleNamesForStore() call) rather than
-     * refactoring saveMetricWeight() to call this — zero risk to that already-tested, already-live-
-     * verified write path.
+     * The one shared fan-out decision every scoped write on this metric uses — {@see saveMetricWeight()}
+     * for weight, {@see saveMetric()} (via {@see resolveEffectiveStoreConfigLocales()}) for
+     * formula/isActive/shape. A single source of truth for "which locales does a write for this metric
+     * actually touch" means the two can never disagree about it, unlike before this method existed, when
+     * only weight had this logic at all.
      *
      * @param int $idSearchRankingMetric
      * @param string $storeName
@@ -356,7 +392,7 @@ class MetricWriter implements MetricWriterInterface
             ->setFormula($metricTransfer->getFormulaOrFail())
             ->setIsActive($metricTransfer->getIsActive() ?? true)
             ->setIsHigherBetter($metricTransfer->getIsHigherBetter() ?? true)
-            ->setIsLocaleScoped($metricTransfer->getIsLocaleScoped() ?? true)
+            ->setIsLocaleScoped($metricTransfer->getIsLocaleScoped() ?? false)
             ->setIsChange($isChange)
             ->setChangeSource($changeSource);
 

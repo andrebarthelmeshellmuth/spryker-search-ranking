@@ -11,12 +11,10 @@ namespace SprykerCommunity\Zed\SearchRankingGui\Dependency\Facade;
 
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
+use Generated\Shared\Transfer\SearchRankingFullScopeCopyPreviewTransfer;
+use Generated\Shared\Transfer\SearchRankingFullScopeCopyResultTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
-use Generated\Shared\Transfer\SearchRankingScopeCopyPreviewTransfer;
-use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
-use Generated\Shared\Transfer\SearchRankingStoreConfigCopyResultTransfer;
-use Generated\Shared\Transfer\SearchRankingStoreConfigPreviewTransfer;
 
 interface SearchRankingGuiToSearchRankingFacadeInterface
 {
@@ -182,33 +180,10 @@ interface SearchRankingGuiToSearchRankingFacadeInterface
     ): SearchRankingFormulaPreviewTransfer;
 
     /**
-     * @param string $sourceStoreName
-     * @param string $sourceLocaleName
-     * @param string $targetStoreName
-     * @param string $targetLocaleName
-     * @param bool $confirmOverwrite
-     */
-    public function copyScopeConfiguration(
-        string $sourceStoreName,
-        string $sourceLocaleName,
-        string $targetStoreName,
-        string $targetLocaleName,
-        bool $confirmOverwrite,
-    ): SearchRankingScopeCopyResultTransfer;
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function hasScopeConfiguration(string $storeName, string $localeName): bool;
-
-    /**
-     * @param string $sourceStoreName
-     * @param string $sourceLocaleName
-     */
-    public function previewScopeConfigurationCopy(string $sourceStoreName, string $sourceLocaleName): SearchRankingScopeCopyPreviewTransfer;
-
-    /**
+     * The Zed page's single combined "Copy now"/"Lock" action — see
+     * {@see \SprykerCommunity\Zed\SearchRanking\Business\SearchRankingFacadeInterface::copyFullScopeConfiguration()}
+     * for the full specification.
+     *
      * @param string $sourceStoreName
      * @param string $sourceLocaleName
      * @param string $targetStoreName
@@ -216,24 +191,33 @@ interface SearchRankingGuiToSearchRankingFacadeInterface
      * @param string $mode
      * @param bool $confirmOverwrite
      */
-    public function copyStoreConfiguration(
+    public function copyFullScopeConfiguration(
         string $sourceStoreName,
         string $sourceLocaleName,
         string $targetStoreName,
         string $targetLocaleName,
         string $mode,
         bool $confirmOverwrite,
-    ): SearchRankingStoreConfigCopyResultTransfer;
-
-    /**
-     * @param string $storeName
-     */
-    public function hasStoreConfiguration(string $storeName): bool;
+    ): SearchRankingFullScopeCopyResultTransfer;
 
     /**
      * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     * @param string $targetStoreName
+     * @param string $targetLocaleName
      */
-    public function previewStoreConfigurationSync(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer;
+    public function hasFullScopeConfiguration(
+        string $sourceStoreName,
+        string $sourceLocaleName,
+        string $targetStoreName,
+        string $targetLocaleName,
+    ): bool;
+
+    /**
+     * @param string $sourceStoreName
+     * @param string $sourceLocaleName
+     */
+    public function previewFullScopeConfiguration(string $sourceStoreName, string $sourceLocaleName): SearchRankingFullScopeCopyPreviewTransfer;
 
     /**
      * @return array<\Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer>
@@ -253,7 +237,7 @@ interface SearchRankingGuiToSearchRankingFacadeInterface
         string $targetStoreName,
         string $targetLocaleName,
         bool $confirmOverwrite,
-    ): SearchRankingScopeCopyResultTransfer;
+    ): SearchRankingFullScopeCopyResultTransfer;
 
     /**
      * @param int $idSearchRankingScopeCopyLock

@@ -18,7 +18,10 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * "Lock" — validates the source/target role-exclusivity rule, then runs the same overwrite-guarded copy
  * {@see ScopeCopyRunController} does, and — only once that copy actually succeeds — persists the pairing
- * so the daily scope-copy-sync cron keeps re-copying it going forward.
+ * so the daily scope-copy-sync cron keeps re-copying weight/setting going forward (formula/isActive/shape
+ * is bootstrapped here once, but not part of the recurring daily resync — see
+ * {@see \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeCopyLockManagerInterface::createScopeCopyLock()}
+ * for why).
  *
  * @method \SprykerCommunity\Zed\SearchRankingGui\Communication\SearchRankingGuiCommunicationFactory getFactory()
  */
@@ -38,13 +41,9 @@ class ScopeCopyLockController extends AbstractController
         $sourceLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SOURCE_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
         $targetStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_TARGET_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
         $targetLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_TARGET_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
-        // Carried through as hidden fields on the same form purely so the independent "Sync store
-        // configuration" widget's own picker doesn't reset back to its defaults on this redirect.
-        $syncSourceStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
-        $syncTargetStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
 
         $redirectUrl = sprintf(
-            '%s?%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s',
+            '%s?%s=%s&%s=%s&%s=%s&%s=%s',
             static::URL_SCOPE_COPY,
             ScopeCopyController::PARAM_SOURCE_STORE_NAME,
             $sourceStoreName,
@@ -54,10 +53,6 @@ class ScopeCopyLockController extends AbstractController
             $targetStoreName,
             ScopeCopyController::PARAM_TARGET_LOCALE_NAME,
             $targetLocaleName,
-            ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME,
-            $syncSourceStoreName,
-            ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME,
-            $syncTargetStoreName,
         );
 
         $actionForm = $this->getFactory()->createScopeCopyActionForm()->handleRequest($request);
@@ -95,13 +90,14 @@ class ScopeCopyLockController extends AbstractController
         }
 
         $this->addSuccessMessage(sprintf(
-            'Locked %s/%s to sync daily from %s/%s (copied %d metric weight(s) and %d setting(s) now).',
+            'Locked %s/%s to sync daily from %s/%s (copied %d metric weight(s), %d setting(s) and %d store-config metric(s) now — only weight/setting are kept in sync going forward).',
             $targetStoreName,
             $targetLocaleName,
             $sourceStoreName,
             $sourceLocaleName,
             $resultTransfer->getMetricWeightCopiedCount(),
             $resultTransfer->getSettingCopiedCount(),
+            $resultTransfer->getStoreConfigCopiedCount(),
         ));
 
         return $this->redirectResponse($redirectUrl);

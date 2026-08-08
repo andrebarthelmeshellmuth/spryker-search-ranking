@@ -107,6 +107,7 @@
         <property name="idSearchRankingMetricStoreConfig" type="int"/>
         <property name="fkSearchRankingMetric" type="int"/>
         <property name="storeName" type="string"/>
+        <property name="localeName" type="string"/>
         <property name="formula" type="string"/>
         <property name="isActive" type="bool"/>
         <property name="shape" type="string"/>
@@ -175,13 +176,16 @@
          the "block by default, allow via confirm checkbox" overwrite guard - true means the target scope
          already has non-default weights/settings and nothing was written; the caller must resubmit with
          confirmOverwrite to proceed. isSuccess false + errorMessage covers real validation failures
-         (source == target, or - for a lock - the source/target role-exclusivity rule). -->
+         (source == target, or - for a lock - the source/target role-exclusivity rule). skippedCount is
+         MODE_COPY_ONLY_OVERLAP's count of weights/settings the target hasn't independently adopted yet and
+         was therefore deliberately left alone - always 0 in MODE_MIRROR. -->
     <transfer name="SearchRankingScopeCopyResult" strict="true">
         <property name="isSuccess" type="bool"/>
         <property name="isBlockedByExistingData" type="bool"/>
         <property name="errorMessage" type="string"/>
         <property name="metricWeightCopiedCount" type="int"/>
         <property name="settingCopiedCount" type="int"/>
+        <property name="skippedCount" type="int"/>
     </transfer>
 
     <!-- Result of a one-off store-config sync (formula/isActive/shape, store-only — see
@@ -212,6 +216,33 @@
          store. Same "explicitly saved only" semantics as SearchRankingScopeCopyPreview. -->
     <transfer name="SearchRankingStoreConfigPreview" strict="true">
         <property name="metrics" type="array" singular="metric" associative="true"/>
+    </transfer>
+
+    <!-- Result of the Scope Copy page's single combined "Copy now" action, aggregating
+         ScopeConfigCopierInterface::copyScopeConfiguration() (weight/setting) and
+         StoreConfigCopierInterface::copyStoreConfiguration() (formula/isActive/shape) into one outcome —
+         same isSuccess/isBlockedByExistingData/errorMessage shape as the two results it wraps.
+         storeConfigCopiedCount/storeConfigSkippedCount are always 0 when the source and target store are
+         the same (StoreConfigCopierInterface's own guard - see FullScopeCopierInterface). -->
+    <transfer name="SearchRankingFullScopeCopyResult" strict="true">
+        <property name="isSuccess" type="bool"/>
+        <property name="isBlockedByExistingData" type="bool"/>
+        <property name="errorMessage" type="string"/>
+        <property name="metricWeightCopiedCount" type="int"/>
+        <property name="settingCopiedCount" type="int"/>
+        <property name="skippedCount" type="int"/>
+        <property name="storeConfigCopiedCount" type="int"/>
+        <property name="storeConfigSkippedCount" type="int"/>
+    </transfer>
+
+    <!-- What copyFullScopeConfiguration() would act on for a given source scope — combines
+         SearchRankingScopeCopyPreview's metricWeights/settings with SearchRankingStoreConfigPreview's
+         metrics (formula/isActive), so the merged Scope Copy widget can render one preview table for its
+         one combined "Copy now" action. -->
+    <transfer name="SearchRankingFullScopeCopyPreview" strict="true">
+        <property name="metricWeights" type="array" singular="metricWeight" associative="true"/>
+        <property name="settings" type="array" singular="setting" associative="true"/>
+        <property name="storeConfigMetrics" type="array" singular="storeConfigMetric" associative="true"/>
     </transfer>
 
     <transfer name="SearchRankingSettingHistory" strict="true">
