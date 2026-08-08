@@ -9,7 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy;
 
-use Generated\Shared\Transfer\SearchRankingScopeCopyResultTransfer;
+use Generated\Shared\Transfer\SearchRankingFullScopeCopyResultTransfer;
 
 interface ScopeCopyLockManagerInterface
 {
@@ -19,10 +19,12 @@ interface ScopeCopyLockManagerInterface
     public function getActiveScopeCopyLocks(): array;
 
     /**
-     * Validates the source/target role-exclusivity rule ({@see ScopeCopyLockValidatorInterface}) and,
-     * if valid, runs the same overwrite-guarded copy {@see ScopeConfigCopierInterface::copyScopeConfiguration()}
-     * does — the lock row is only created once that copy actually succeeds, so a validation failure or an
-     * overwrite block never leaves an orphaned lock with no data behind it.
+     * Validates the source/target role-exclusivity rule ({@see ScopeCopyLockValidatorInterface}) and, if
+     * valid, runs the same overwrite-guarded combined copy {@see FullScopeCopierInterface::copyFullScopeConfiguration()}
+     * does (always `MODE_MIRROR` — a lock makes the target a full, ongoing mirror of the source) — the
+     * lock row is only created once that copy actually succeeds, so a validation failure or an overwrite
+     * block never leaves an orphaned lock with no data behind it. Only the recurring daily resync
+     * ({@see runDailySync()}) stays weight/setting-only.
      *
      * @param string $sourceStoreName
      * @param string $sourceLocaleName
@@ -36,7 +38,7 @@ interface ScopeCopyLockManagerInterface
         string $targetStoreName,
         string $targetLocaleName,
         bool $confirmOverwrite,
-    ): SearchRankingScopeCopyResultTransfer;
+    ): SearchRankingFullScopeCopyResultTransfer;
 
     /**
      * Deactivates the lock (soft-delete — see the schema column docs on
@@ -50,7 +52,9 @@ interface ScopeCopyLockManagerInterface
     /**
      * Runs the daily sync: re-copies every active lock's source scope onto its target scope, always
      * overwriting (this is the ongoing authoritative sync, not a first bootstrap — there is no
-     * "confirm overwrite" step to gate on for a cron). Intended for the scope-copy-sync console command.
+     * "confirm overwrite" step to gate on for a cron). Weight/setting only, always `MODE_MIRROR` — unlike
+     * {@see createScopeCopyLock()}'s one-time bootstrap, this never touches formula/isActive/shape again
+     * (see that method's own docblock for why). Intended for the scope-copy-sync console command.
      *
      * @return int Number of locks synced.
      */

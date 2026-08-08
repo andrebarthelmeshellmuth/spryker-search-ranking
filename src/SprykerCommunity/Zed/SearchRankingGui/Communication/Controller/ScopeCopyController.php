@@ -39,31 +39,6 @@ class ScopeCopyController extends AbstractController
     public const PARAM_TARGET_LOCALE_NAME = 'targetLocaleName';
 
     /**
-     * The "Sync store configuration" widget has its own independent source/target store+locale pickers,
-     * deliberately separate from the (store,locale)-scoped ones above — a metric can be `isLocaleScoped`
-     * (see {@see \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\StoreConfigCopierInterface}), so
-     * this widget needs a real locale picker of its own too, not a shared one.
-     *
-     * @var string
-     */
-    public const PARAM_SYNC_SOURCE_STORE_NAME = 'syncSourceStoreName';
-
-    /**
-     * @var string
-     */
-    public const PARAM_SYNC_TARGET_STORE_NAME = 'syncTargetStoreName';
-
-    /**
-     * @var string
-     */
-    public const PARAM_SYNC_SOURCE_LOCALE_NAME = 'syncSourceLocaleName';
-
-    /**
-     * @var string
-     */
-    public const PARAM_SYNC_TARGET_LOCALE_NAME = 'syncTargetLocaleName';
-
-    /**
      * @param \Symfony\Component\HttpFoundation\Request $request
      *
      * @return array<string, mixed>
@@ -73,23 +48,7 @@ class ScopeCopyController extends AbstractController
         $stores = $this->getFactory()->getAllStoreNames();
         $locales = $this->getFactory()->getAllLocaleNames();
 
-        [$sourceStoreName, $sourceLocaleName, $targetStoreName, $targetLocaleName] = $this->resolveScopeParams(
-            $request,
-            $stores,
-            static::PARAM_SOURCE_STORE_NAME,
-            static::PARAM_SOURCE_LOCALE_NAME,
-            static::PARAM_TARGET_STORE_NAME,
-            static::PARAM_TARGET_LOCALE_NAME,
-        );
-
-        [$syncSourceStoreName, $syncSourceLocaleName, $syncTargetStoreName, $syncTargetLocaleName] = $this->resolveScopeParams(
-            $request,
-            $stores,
-            static::PARAM_SYNC_SOURCE_STORE_NAME,
-            static::PARAM_SYNC_SOURCE_LOCALE_NAME,
-            static::PARAM_SYNC_TARGET_STORE_NAME,
-            static::PARAM_SYNC_TARGET_LOCALE_NAME,
-        );
+        [$sourceStoreName, $sourceLocaleName, $targetStoreName, $targetLocaleName] = $this->resolveScopeParams($request, $stores);
 
         $searchRankingFacade = $this->getFactory()->getSearchRankingFacade();
         $activeLocks = $searchRankingFacade->getActiveScopeCopyLocks();
@@ -101,18 +60,11 @@ class ScopeCopyController extends AbstractController
             'sourceLocaleName' => $sourceLocaleName,
             'targetStoreName' => $targetStoreName,
             'targetLocaleName' => $targetLocaleName,
-            'syncSourceStoreName' => $syncSourceStoreName,
-            'syncTargetStoreName' => $syncTargetStoreName,
-            'syncSourceLocaleName' => $syncSourceLocaleName,
-            'syncTargetLocaleName' => $syncTargetLocaleName,
-            'hasTargetData' => $searchRankingFacade->hasScopeConfiguration($targetStoreName, $targetLocaleName),
-            'hasTargetStoreConfig' => $searchRankingFacade->hasStoreConfiguration($syncTargetStoreName),
-            'scopeCopyPreview' => $searchRankingFacade->previewScopeConfigurationCopy($sourceStoreName, $sourceLocaleName),
-            'storeConfigPreview' => $searchRankingFacade->previewStoreConfigurationSync($syncSourceStoreName, $syncSourceLocaleName),
+            'hasTargetData' => $searchRankingFacade->hasFullScopeConfiguration($sourceStoreName, $sourceLocaleName, $targetStoreName, $targetLocaleName),
+            'fullScopeCopyPreview' => $searchRankingFacade->previewFullScopeConfiguration($sourceStoreName, $sourceLocaleName),
             'activeLocks' => $activeLocks,
-            'copyForm' => $this->getFactory()->createScopeCopyActionForm()->createView(),
+            'copyForm' => $this->getFactory()->createScopeCopyRunActionForm()->createView(),
             'lockForm' => $this->getFactory()->createScopeCopyActionForm()->createView(),
-            'storeConfigSyncForm' => $this->getFactory()->createStoreConfigSyncActionForm()->createView(),
             // One fresh form view per row — a single FormView reused across a Twig loop only renders its
             // (CSRF) field on the first iteration, silently leaving every later row's Unlock button
             // without a valid token.
@@ -121,32 +73,17 @@ class ScopeCopyController extends AbstractController
     }
 
     /**
-     * Extracted purely to keep indexAction()'s own size/complexity down — the (source store, source
-     * locale, target store, target locale) resolution is identical for the "Copy configuration between
-     * store/locale scopes" widget and the independent "Sync store configuration" widget, just against a
-     * different set of query param names, no behavioral change from sharing it.
-     *
      * @param \Symfony\Component\HttpFoundation\Request $request
      * @param array<string> $stores
-     * @param string $sourceStoreParamName
-     * @param string $sourceLocaleParamName
-     * @param string $targetStoreParamName
-     * @param string $targetLocaleParamName
      *
      * @return array{0: string, 1: string, 2: string, 3: string}
      */
-    protected function resolveScopeParams(
-        Request $request,
-        array $stores,
-        string $sourceStoreParamName,
-        string $sourceLocaleParamName,
-        string $targetStoreParamName,
-        string $targetLocaleParamName,
-    ): array {
-        $sourceStoreName = (string)$request->query->get($sourceStoreParamName, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
-        $sourceLocaleName = (string)$request->query->get($sourceLocaleParamName, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME;
-        $targetStoreName = (string)$request->query->get($targetStoreParamName, '') ?: $this->resolveDefaultTargetStoreName($stores, $sourceStoreName);
-        $targetLocaleName = (string)$request->query->get($targetLocaleParamName, '') ?: $sourceLocaleName;
+    protected function resolveScopeParams(Request $request, array $stores): array
+    {
+        $sourceStoreName = (string)$request->query->get(static::PARAM_SOURCE_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
+        $sourceLocaleName = (string)$request->query->get(static::PARAM_SOURCE_LOCALE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME;
+        $targetStoreName = (string)$request->query->get(static::PARAM_TARGET_STORE_NAME, '') ?: $this->resolveDefaultTargetStoreName($stores, $sourceStoreName);
+        $targetLocaleName = (string)$request->query->get(static::PARAM_TARGET_LOCALE_NAME, '') ?: $sourceLocaleName;
 
         return [$sourceStoreName, $sourceLocaleName, $targetStoreName, $targetLocaleName];
     }

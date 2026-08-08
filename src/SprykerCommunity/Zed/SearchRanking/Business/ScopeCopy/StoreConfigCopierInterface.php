@@ -35,8 +35,9 @@ interface StoreConfigCopierInterface
      * here, the same fan-out {@see ScopeConfigCopierInterface::copyScopeConfiguration()}'s weight copy
      * already relies on. Only for an `isLocaleScoped=true` metric does the write actually stay scoped to
      * just the one (target store, target locale) pair named here. The one real caller
-     * ({@see \SprykerCommunity\Zed\SearchRankingGui\Communication\Controller\StoreConfigSyncRunController})
-     * has its own independent source/target locale pickers for exactly this case.
+     * ({@see \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\FullScopeCopierInterface}) shares its
+     * one combined source/target store+locale picker with {@see ScopeConfigCopierInterface::copyScopeConfiguration()}
+     * for exactly this case.
      *
      * `MODE_MIRROR` (default): copies every metric the source has explicitly configured, creating a new
      * target row for one the target has never configured at all — matches this feature's existing

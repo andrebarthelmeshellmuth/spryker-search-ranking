@@ -77,7 +77,7 @@ the same everywhere the metric exists at all, since they're definitional (what t
 store × locale unconditionally) — but whether sibling locale rows of the same store are kept identical or
 allowed to genuinely diverge is a single per-metric decision, the global `isLocaleScoped` flag (default
 `false`), not something baked into the storage shape itself. A brand-new store gets its own
-formula/active/shape via the Scope Copy page's Sync Store Config action (see [What it does](#what-it-does)),
+formula/active/shape via the Scope Copy page's combined copy action (see [What it does](#what-it-does)),
 not a database migration — the columns that once held a single global formula/isActive/shape on
 `spy_search_ranking_metric` itself were removed entirely once every part of this package migrated onto
 the (store, locale)-scoped table (a breaking change; see [CHANGELOG](CHANGELOG.md) for the release that
@@ -408,58 +408,50 @@ so, with no error to tell you why.
   precision; see that package's README for details. Rounding happens only at this display step — the
   underlying floats used for the actual ranking calculation stay full-precision throughout.
 - **Scope Copy** (`/search-ranking-gui/scope-copy`) — bootstraps a newly expanded market from an
-  established one. Copies every metric weight and setting **explicitly saved** for a source (store,
-  locale) onto a target scope; a metric/setting never touched in the source stays untouched in the
-  target too, rather than writing an explicit copy of its code-level default.
+  established one. One shared source/target Store+Locale picker drives a single combined action that
+  copies every metric weight, setting, and `formula`/`isActive`/curve `shape` **explicitly saved** for the
+  source scope onto the target scope; a field never touched in the source stays untouched in the target
+  too, rather than writing an explicit copy of its code-level default.
   `spy_search_ranking_product_metric`/`_metric_digest` — real, scope-local behavioral data — are never
   copied, so a freshly bootstrapped market still shows its own honest gaps on the Product Value Gaps page.
+  For an `isLocaleScoped=false` metric (most metrics — see [Terminology](#terminology)'s own `metric`
+  entry), weight/formula/isActive/shape all fan out to every real locale of the target store regardless of
+  which one target locale was picked; only for an `isLocaleScoped=true` metric does the write stay scoped
+  to just the one (target store, target locale) pair picked here. Copying between two locales of the
+  **same** store therefore only touches anything for `isLocaleScoped=true` metrics — everything else is
+  already identical across that store's own locales. (`shape` is always re-detected against the digest of
+  whichever locale the write actually lands on, never carried over verbatim — a target with no digest yet
+  correctly ends up with `shape=null` even though its `formula` was copied.)
+
   Blocked by default when the target scope already has any saved configuration; an "Overwrite existing
-  target configuration" checkbox is required to proceed. Every copied metric weight is recorded on
+  target configuration" checkbox is required to proceed. Every copied field is recorded on
   [Metric History](#what-it-does) tagged `scope_copy`, alongside the existing `manual`/`auto_tune`/
-  `optimizer_apply`/`checkpoint_restore` sources. A live "This will copy:" preview — every metric weight
-  and setting the source scope currently has explicitly saved, with its real value — re-queries and
-  re-renders on every picker change, so an admin sees exactly what a click on Copy/Lock is about to do
-  before committing to it.
+  `optimizer_apply`/`checkpoint_restore` sources — one row per locale the write actually touched, same
+  fan-out rule as above. A live "This will copy:" preview — every weight/setting/formula/active field the
+  source scope currently has explicitly saved, with its real value, plus a "Kept in sync by Lock?" column
+  (see below) — re-queries and re-renders on every picker change, so an admin sees exactly what a click on
+  Copy now/Lock is about to do before committing to it. Two modes:
+  - **Mirror** (default) — copies everything the source has explicitly configured, creating a row for
+    anything the target has never configured at all.
+  - **Copy only what the target already has** — conservative, opt-in: a weight/setting/metric the target
+    has never independently configured is left alone rather than created. The resulting overlap can end up
+    smaller than the source's own configuration — the page reports how many items were skipped.
 
   Two actions:
-  - **Copy now** — a one-off copy, no lasting relationship.
-  - **Lock** — copies immediately, then persists the pairing so the daily `search-ranking:scope-copy-sync`
-    cron keeps re-copying source → target every day, until unlocked. Enforced at creation time so the
-    database can never hold an invalid pairing: a scope may be the **target of at most one active lock**
-    (unambiguous which source feeds it), the **source of many active locks** (one mature market can seed
-    several new ones), and never simultaneously a source and a target. This is a point-in-time check
-    against **active** locks only, not a lifetime tag — a scope freed by unlocking is eligible for either
-    role again in a future lock. Unlocking soft-deletes the row (never hard-deleted) so the Active Locks
-    table stays a real history of every lock episode; relocking the same pair later creates a fresh row
-    rather than reactivating the old one.
-
-  **Sync store configuration** (same page, below the copy/lock actions above) — a separate action for a
-  metric's `formula`/`isActive`/curve `shape`, kept apart from the weight/settings copy above because it
-  acts on a different config group, not because it's a different scope tier: both actions are
-  (store,locale)-scoped, each with its OWN independent source/target Store+Locale pickers so picking a
-  scope for one never resets or gets confused with the other's. For an `isLocaleScoped=false` metric (most
-  metrics — see [Terminology](#terminology)'s own `metric` entry), this is effectively still store-only in
-  outcome: the write fans out to every real locale of the target store regardless of which one locale was
-  picked. Only for an `isLocaleScoped=true` metric does the write actually stay scoped to just the one
-  (target store, target locale) pair picked here. (`shape` is always re-detected against the digest of
-  whichever locale the write actually lands on, never carried over verbatim — a target with no digest yet
-  correctly ends up with `shape=null` even though its `formula` was copied.) Two modes:
-  - **Mirror** (default) — copies every metric the source store has explicitly configured, creating a row
-    for one the target has never configured at all. Matches the copy/lock actions' own bootstrap
-    philosophy above.
-  - **Copy only metrics the target already has** — conservative, opt-in: a metric the target has never
-    independently configured is left alone rather than created. The resulting overlap can end up smaller
-    than the source's own metric set — the page reports how many metrics were skipped.
-
-  Blocked by default when the target store already has any saved store configuration (same "Overwrite
-  existing target store configuration" checkbox pattern as above). Every synced metric is recorded on
-  [Metric History](#what-it-does) tagged `scope_copy` — one row per locale the write actually touched:
-  every real locale of the target store for an `isLocaleScoped=false` metric (a single history row keyed
-  to one locale would under-represent a store-wide change), just the one target locale for an
-  `isLocaleScoped=true` metric. **One-off only** — unlike weight/settings, there is no lockable/daily-synced
-  variant of this action; formula/curve-shape tuning changes far less often than weight in practice. Same
-  live "This will sync:" preview pattern as the copy/lock action above — every metric the source store
-  currently has an explicitly saved formula for, with its real formula and active flag.
+  - **Copy now** — a one-off combined copy (weight/setting/formula/isActive/shape together, either mode),
+    no lasting relationship.
+  - **Lock** — runs that same combined copy once, always in Mirror mode, then persists the pairing so the
+    daily `search-ranking:scope-copy-sync` cron keeps re-copying **weight/setting only** every day, until
+    unlocked. Formula/isActive/shape is bootstrapped by the lock's initial copy but never touched again by
+    the daily cron — tuning it changes far less often than weight in practice, so a recurring resync would
+    mostly re-copy an unchanged value; re-run **Copy now** whenever it genuinely needs refreshing. Enforced
+    at creation time so the database can never hold an invalid pairing: a scope may be the **target of at
+    most one active lock** (unambiguous which source feeds it), the **source of many active locks** (one
+    mature market can seed several new ones), and never simultaneously a source and a target. This is a
+    point-in-time check against **active** locks only, not a lifetime tag — a scope freed by unlocking is
+    eligible for either role again in a future lock. Unlocking soft-deletes the row (never hard-deleted) so
+    the Active Locks table stays a real history of every lock episode; relocking the same pair later
+    creates a fresh row rather than reactivating the old one.
 
 ## Ranking formula
 
@@ -1386,7 +1378,7 @@ covering the Zed GUI: the metric list (scoped by store/locale, plus a full creat
 trip through the real forms), the "Normalize active weights" action, the Edit form's live normalization
 preview (smoke-level only — the curve-fit math itself is already covered by the unit suite above), the
 Settings form (including that every configured field, `specificityCurveExponent` among them, actually
-renders), the Scope Copy page (loads with both copy actions present), the Product Values table and its
+renders), the Scope Copy page (loads with its combined picker and both Copy now/Lock actions present), the Product Values table and its
 Gaps view, and the Metric History table. It is kept as
 its own module directory rather than nested under `Zed/SearchRankingGui/` because that module's `Zed`
 suite scans its whole directory tree recursively — a nested WebDriver suite there would break it.

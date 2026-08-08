@@ -38,6 +38,8 @@ use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePu
 use SprykerCommunity\Zed\SearchRanking\Business\Publisher\ProductAbstractScorePublisherInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Randomizer\MetricRandomizer;
 use SprykerCommunity\Zed\SearchRanking\Business\Randomizer\MetricRandomizerInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\FullScopeCopier;
+use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\FullScopeCopierInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeConfigCopier;
 use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeConfigCopierInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\ScopeCopyLockManager;
@@ -234,6 +236,7 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
             $this->getEntityManager(),
             $this->createScopeCopyLockValidator(),
             $this->createScopeConfigCopier(),
+            $this->createFullScopeCopier(),
         );
     }
 
@@ -242,6 +245,14 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         return new StoreConfigCopier(
             $this->getRepository(),
             $this->createMetricWriter(),
+        );
+    }
+
+    public function createFullScopeCopier(): FullScopeCopierInterface
+    {
+        return new FullScopeCopier(
+            $this->createScopeConfigCopier(),
+            $this->createStoreConfigCopier(),
         );
     }
 }
