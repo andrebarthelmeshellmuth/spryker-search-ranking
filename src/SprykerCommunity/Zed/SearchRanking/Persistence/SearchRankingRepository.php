@@ -30,8 +30,9 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 {
     /**
      * @param string $storeName
+     * @param string $localeName
      */
-    public function getMetricCollection(string $storeName): SearchRankingMetricCollectionTransfer
+    public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
         $metricEntities = $this->getFactory()
             ->createSearchRankingMetricQuery()
@@ -43,20 +44,21 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
         foreach ($metricEntities as $metricEntity) {
             $metricTransfer = $mapper->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
-            $collectionTransfer->addMetric($this->attachStoreConfig($metricTransfer, $storeName));
+            $collectionTransfer->addMetric($this->attachStoreConfig($metricTransfer, $storeName, $localeName));
         }
 
         return $collectionTransfer;
     }
 
     /**
-     * "Active" is a per-store fact (`spy_search_ranking_metric_store_config.is_active`), so this can't
-     * filter at the SQL level on `spy_search_ranking_metric` itself; it queries every metric, overlays
-     * this store's real isActive via {@see attachStoreConfig()}, then filters in PHP.
+     * "Active" is a (store, locale) fact (`spy_search_ranking_metric_store_config.is_active`), so this
+     * can't filter at the SQL level on `spy_search_ranking_metric` itself; it queries every metric,
+     * overlays this (store, locale)'s real isActive via {@see attachStoreConfig()}, then filters in PHP.
      *
      * @param string $storeName
+     * @param string $localeName
      */
-    public function getActiveMetricCollection(string $storeName): SearchRankingMetricCollectionTransfer
+    public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
         $metricEntities = $this->getFactory()
             ->createSearchRankingMetricQuery()
@@ -68,7 +70,7 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
         foreach ($metricEntities as $metricEntity) {
             $metricTransfer = $mapper->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
-            $metricTransfer = $this->attachStoreConfig($metricTransfer, $storeName);
+            $metricTransfer = $this->attachStoreConfig($metricTransfer, $storeName, $localeName);
 
             if ($metricTransfer->getIsActive() !== true) {
                 continue;
@@ -115,7 +117,7 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
         $metricTransfer = $this->getFactory()
             ->createSearchRankingMapper()
             ->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
-        $metricTransfer = $this->attachStoreConfig($metricTransfer, $storeName);
+        $metricTransfer = $this->attachStoreConfig($metricTransfer, $storeName, $localeName);
 
         return $this->attachWeight($metricTransfer, $storeName, $localeName);
     }
@@ -138,26 +140,26 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
         $metricTransfer = $this->getFactory()
             ->createSearchRankingMapper()
             ->mapMetricEntityToTransfer($metricEntity, new SearchRankingMetricTransfer());
-        $metricTransfer = $this->attachStoreConfig($metricTransfer, $storeName);
+        $metricTransfer = $this->attachStoreConfig($metricTransfer, $storeName, $localeName);
 
         return $this->attachWeight($metricTransfer, $storeName, $localeName);
     }
 
     /**
-     * Overlays $metricTransfer's formula/isActive/shape from its store-config row for $storeName — the
-     * real, live per-store values. Same composable-overlay shape {@see attachWeight()} already
-     * established. No store-config
-     * row yet (a metric never configured for this store — e.g. one created via
-     * `spryker-community/search-ranking-data-import`, or before this store existed) is a SAFE absence,
-     * never an error: isActive=false so nothing downstream evaluates the (also null) formula, matching
-     * this package's existing "absence = neutral default" convention for weight.
+     * Overlays $metricTransfer's formula/isActive/shape from its (store, locale) store-config row — the
+     * real, live values for that scope. Same composable-overlay shape {@see attachWeight()} already
+     * established. No store-config row yet (a metric never configured for this store/locale — e.g. one
+     * created via `spryker-community/search-ranking-data-import`, or before this store/locale existed) is
+     * a SAFE absence, never an error: isActive=false so nothing downstream evaluates the (also null)
+     * formula, matching this package's existing "absence = neutral default" convention for weight.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
+     * @param string $localeName
      */
-    protected function attachStoreConfig(SearchRankingMetricTransfer $metricTransfer, string $storeName): SearchRankingMetricTransfer
+    protected function attachStoreConfig(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): SearchRankingMetricTransfer
     {
-        $storeConfigTransfer = $this->findMetricStoreConfig($metricTransfer->getIdSearchRankingMetricOrFail(), $storeName);
+        $storeConfigTransfer = $this->findMetricStoreConfig($metricTransfer->getIdSearchRankingMetricOrFail(), $storeName, $localeName);
 
         if ($storeConfigTransfer === null) {
             return $metricTransfer->setFormula()->setIsActive(false)->setShape();
@@ -280,7 +282,7 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
             return [];
         }
 
-        $activeMetricIds = $this->findActiveMetricIdsForStore($storeName);
+        $activeMetricIds = $this->findActiveMetricIdsForStore($storeName, $localeName);
 
         if ($activeMetricIds === []) {
             return [];
@@ -351,15 +353,17 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
 
     /**
      * @param string $storeName
+     * @param string $localeName
      *
      * @return array<int>
      */
-    protected function findActiveMetricIdsForStore(string $storeName): array
+    protected function findActiveMetricIdsForStore(string $storeName, string $localeName): array
     {
         /** @var array<int|string> $activeMetricIds */
         $activeMetricIds = $this->getFactory()
             ->createSearchRankingMetricStoreConfigQuery()
             ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
             ->filterByIsActive(true)
             ->select([SpySearchRankingMetricStoreConfigTableMap::COL_FK_SEARCH_RANKING_METRIC])
             ->find()
@@ -530,13 +534,15 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
     /**
      * @param int $idSearchRankingMetric
      * @param string $storeName
+     * @param string $localeName
      */
-    public function findMetricStoreConfig(int $idSearchRankingMetric, string $storeName): ?SearchRankingMetricStoreConfigTransfer
+    public function findMetricStoreConfig(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricStoreConfigTransfer
     {
         $metricStoreConfigEntity = $this->getFactory()
             ->createSearchRankingMetricStoreConfigQuery()
             ->filterByFkSearchRankingMetric($idSearchRankingMetric)
             ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
             ->findOne();
 
         if ($metricStoreConfigEntity === null) {

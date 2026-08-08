@@ -338,10 +338,11 @@ class SearchRankingGuiToSearchRankingFacadeBridge implements SearchRankingGuiToS
 
     /**
      * @param string $sourceStoreName
+     * @param string $sourceLocaleName
      */
-    public function previewStoreConfigurationSync(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer
+    public function previewStoreConfigurationSync(string $sourceStoreName, string $sourceLocaleName): SearchRankingStoreConfigPreviewTransfer
     {
-        return $this->searchRankingFacade->previewStoreConfigurationSync($sourceStoreName);
+        return $this->searchRankingFacade->previewStoreConfigurationSync($sourceStoreName, $sourceLocaleName);
     }
 
     /**

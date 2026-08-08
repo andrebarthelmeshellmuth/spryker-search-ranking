@@ -90,7 +90,7 @@ class SearchRankingRepositoryTest extends Unit
         $this->createStoreConfig($idMetric, static::CONFIGURED_STORE_NAME, static::REAL_FORMULA);
 
         // Act
-        $metricCollectionTransfer = (new SearchRankingRepository())->getMetricCollection(static::UNCONFIGURED_STORE_NAME);
+        $metricCollectionTransfer = (new SearchRankingRepository())->getMetricCollection(static::UNCONFIGURED_STORE_NAME, 'de_DE');
 
         $metricTransfer = null;
 
@@ -124,12 +124,14 @@ class SearchRankingRepositoryTest extends Unit
      * @param int $idMetric
      * @param string $storeName
      * @param string $formula
+     * @param string $localeName
      */
-    protected function createStoreConfig(int $idMetric, string $storeName, string $formula): void
+    protected function createStoreConfig(int $idMetric, string $storeName, string $formula, string $localeName = 'de_DE'): void
     {
         SpySearchRankingMetricStoreConfigQuery::create()
             ->filterByFkSearchRankingMetric($idMetric)
             ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
             ->findOneOrCreate()
             ->setFormula($formula)
             ->setIsActive(true)

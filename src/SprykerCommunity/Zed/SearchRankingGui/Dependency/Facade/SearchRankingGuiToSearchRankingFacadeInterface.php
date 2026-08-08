@@ -232,8 +232,9 @@ interface SearchRankingGuiToSearchRankingFacadeInterface
 
     /**
      * @param string $sourceStoreName
+     * @param string $sourceLocaleName
      */
-    public function previewStoreConfigurationSync(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer;
+    public function previewStoreConfigurationSync(string $sourceStoreName, string $sourceLocaleName): SearchRankingStoreConfigPreviewTransfer;
 
     /**
      * @return array<\Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer>

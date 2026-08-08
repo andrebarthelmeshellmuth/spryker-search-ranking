@@ -50,6 +50,8 @@
                    "Sync store configuration" widget's own picker below. #}
                 <input type="hidden" name="syncSourceStoreName" value="{{ syncSourceStoreName }}">
                 <input type="hidden" name="syncTargetStoreName" value="{{ syncTargetStoreName }}">
+                <input type="hidden" name="syncSourceLocaleName" value="{{ syncSourceLocaleName }}">
+                <input type="hidden" name="syncTargetLocaleName" value="{{ syncTargetLocaleName }}">
             </form>
 
             {% if sourceStoreName == targetStoreName and sourceLocaleName == targetLocaleName %}
@@ -87,13 +89,13 @@
                 </table>
             {% endif %}
 
-            {{ form_start(copyForm, {'action': '/search-ranking-gui/scope-copy-run?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName ~ '&syncSourceStoreName=' ~ syncSourceStoreName ~ '&syncTargetStoreName=' ~ syncTargetStoreName, 'attr': {'class': 'd-inline-block', 'style': 'margin-right: 15px;'}}) }}
+            {{ form_start(copyForm, {'action': '/search-ranking-gui/scope-copy-run?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName ~ '&syncSourceStoreName=' ~ syncSourceStoreName ~ '&syncTargetStoreName=' ~ syncTargetStoreName ~ '&syncSourceLocaleName=' ~ syncSourceLocaleName ~ '&syncTargetLocaleName=' ~ syncTargetLocaleName, 'attr': {'class': 'd-inline-block', 'style': 'margin-right: 15px;'}}) }}
                 {{ form_widget(copyForm.confirmOverwrite) }}
                 {{ form_rest(copyForm) }}
                 <button type="submit" class="btn btn-primary" style="margin-left: 10px;">{{ 'Copy now' | trans }}</button>
             {{ form_end(copyForm) }}
 
-            {{ form_start(lockForm, {'action': '/search-ranking-gui/scope-copy-lock?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName ~ '&syncSourceStoreName=' ~ syncSourceStoreName ~ '&syncTargetStoreName=' ~ syncTargetStoreName, 'attr': {'class': 'd-inline-block'}}) }}
+            {{ form_start(lockForm, {'action': '/search-ranking-gui/scope-copy-lock?sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName ~ '&syncSourceStoreName=' ~ syncSourceStoreName ~ '&syncTargetStoreName=' ~ syncTargetStoreName ~ '&syncSourceLocaleName=' ~ syncSourceLocaleName ~ '&syncTargetLocaleName=' ~ syncTargetLocaleName, 'attr': {'class': 'd-inline-block'}}) }}
                 {{ form_widget(lockForm.confirmOverwrite) }}
                 {{ form_rest(lockForm) }}
                 <button type="submit" class="btn btn-success" style="margin-left: 10px;">{{ 'Lock (sync daily)' | trans }}</button>
@@ -104,9 +106,12 @@
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Sync store configuration (formula, active flag, curve shape)' } %}
         {% block widget_content %}
             <p>
-                Formula/active/curve-shape are store-wide, not per-locale (see the Metrics page's own note) —
-                this syncs them from the source STORE to the target STORE below, independently of the
-                store/locale pickers above. One-off only — there is no daily-synced lock for this action.
+                Syncs formula/active/curve-shape from the source scope to the target scope below,
+                independently of the store/locale pickers above. For a "Store" scoped metric (see the
+                Metrics page's own Scope column) this applies to every locale of the target store
+                regardless of which target locale is picked here; for a "Store + locale" scoped metric it
+                applies to exactly the target store+locale picked here. One-off only — there is no
+                daily-synced lock for this action.
             </p>
 
             <form method="get" class="form-inline" style="margin-bottom: 15px;">
@@ -114,6 +119,12 @@
                 <select name="syncSourceStoreName" id="syncSourceStoreName" class="form-control" onchange="this.form.submit()">
                     {% for store in stores %}
                         <option value="{{ store }}" {% if store == syncSourceStoreName %}selected="selected"{% endif %}>{{ store }}</option>
+                    {% endfor %}
+                </select>
+                <label for="syncSourceLocaleName" style="margin-left: 10px;">{{ 'Source locale' | trans }}</label>
+                <select name="syncSourceLocaleName" id="syncSourceLocaleName" class="form-control" onchange="this.form.submit()">
+                    {% for locale in locales %}
+                        <option value="{{ locale }}" {% if locale == syncSourceLocaleName %}selected="selected"{% endif %}>{{ locale }}</option>
                     {% endfor %}
                 </select>
 
@@ -125,6 +136,12 @@
                         <option value="{{ store }}" {% if store == syncTargetStoreName %}selected="selected"{% endif %}>{{ store }}</option>
                     {% endfor %}
                 </select>
+                <label for="syncTargetLocaleName" style="margin-left: 10px;">{{ 'Target locale' | trans }}</label>
+                <select name="syncTargetLocaleName" id="syncTargetLocaleName" class="form-control" onchange="this.form.submit()">
+                    {% for locale in locales %}
+                        <option value="{{ locale }}" {% if locale == syncTargetLocaleName %}selected="selected"{% endif %}>{{ locale }}</option>
+                    {% endfor %}
+                </select>
 
                 {# Carried through unchanged so submitting THIS form doesn't reset the "Copy configuration
                    between store/locale scopes" widget's own picker above. #}
@@ -134,20 +151,22 @@
                 <input type="hidden" name="targetLocaleName" value="{{ targetLocaleName }}">
             </form>
 
-            {% if syncSourceStoreName == syncTargetStoreName %}
-                <div class="alert alert-warning">Source and target store must be different.</div>
+            {% if syncSourceStoreName == syncTargetStoreName and syncSourceLocaleName == syncTargetLocaleName %}
+                <div class="alert alert-warning">Source and target scope must be different.</div>
             {% endif %}
 
             {% if hasTargetStoreConfig %}
                 <div class="alert alert-warning">
-                    {{ syncTargetStoreName }} already has saved store configuration. Syncing will do nothing
-                    unless you check "Overwrite existing target store configuration" below.
+                    {{ syncTargetStoreName }} — or another locale of {{ syncTargetStoreName }} that a
+                    "Store" scoped metric in this sync would also apply to — already has saved store
+                    configuration. Syncing will do nothing unless you check "Overwrite existing target
+                    store configuration" below.
                 </div>
             {% endif %}
 
             <p><strong>{{ 'This will sync:' | trans }}</strong></p>
             {% if storeConfigPreview.metrics is empty %}
-                <p class="text-muted">{{ syncSourceStoreName }} has no explicitly saved formula — nothing to sync yet.</p>
+                <p class="text-muted">{{ syncSourceStoreName }}/{{ syncSourceLocaleName }} has no explicitly saved formula — nothing to sync yet.</p>
             {% else %}
                 <table class="table table-condensed" style="max-width: 700px;">
                     <thead>
@@ -169,7 +188,7 @@
                 </table>
             {% endif %}
 
-            {{ form_start(storeConfigSyncForm, {'action': '/search-ranking-gui/store-config-sync-run?syncSourceStoreName=' ~ syncSourceStoreName ~ '&syncTargetStoreName=' ~ syncTargetStoreName ~ '&sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName}) }}
+            {{ form_start(storeConfigSyncForm, {'action': '/search-ranking-gui/store-config-sync-run?syncSourceStoreName=' ~ syncSourceStoreName ~ '&syncTargetStoreName=' ~ syncTargetStoreName ~ '&syncSourceLocaleName=' ~ syncSourceLocaleName ~ '&syncTargetLocaleName=' ~ syncTargetLocaleName ~ '&sourceStoreName=' ~ sourceStoreName ~ '&sourceLocaleName=' ~ sourceLocaleName ~ '&targetStoreName=' ~ targetStoreName ~ '&targetLocaleName=' ~ targetLocaleName}) }}
                 {{ form_widget(storeConfigSyncForm.mode) }}
                 {{ form_widget(storeConfigSyncForm.confirmOverwrite) }}
                 {{ form_rest(storeConfigSyncForm) }}

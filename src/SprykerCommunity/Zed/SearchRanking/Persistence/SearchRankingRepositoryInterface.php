@@ -20,23 +20,23 @@ use Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer;
 interface SearchRankingRepositoryInterface
 {
     /**
-     * Every metric, with its store-scoped formula/isActive/shape overlaid for $storeName — weight
-     * deliberately NOT attached (it's the one field on this transfer that's genuinely locale-scoped, for
-     * a locale-scoped metric). A caller that also needs weight calls {@see attachWeights()} on the
-     * result; one that doesn't (e.g. anything only reading formula/isActive/id/name) no longer has to
-     * supply a locale it would have no real use for just to satisfy this method's old signature.
+     * Every metric, with its (store, locale)-scoped formula/isActive/shape overlaid — weight deliberately
+     * NOT attached here (a separate, genuinely independent scoped value). A caller that also needs weight
+     * calls {@see attachWeights()} on the result.
      *
      * @param string $storeName
+     * @param string $localeName
      */
-    public function getMetricCollection(string $storeName): SearchRankingMetricCollectionTransfer;
+    public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
 
     /**
-     * Same weight-free contract as {@see getMetricCollection()}, filtered to metrics this store's own
-     * store-config marks active.
+     * Same weight-free contract as {@see getMetricCollection()}, filtered to metrics this (store, locale)'s
+     * own store-config marks active.
      *
      * @param string $storeName
+     * @param string $localeName
      */
-    public function getActiveMetricCollection(string $storeName): SearchRankingMetricCollectionTransfer;
+    public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
 
     /**
      * Overlays $storeName/$localeName's real per-metric weight onto every metric already in
@@ -206,15 +206,16 @@ interface SearchRankingRepositoryInterface
     public function findScopeCopyLockById(int $idSearchRankingScopeCopyLock): ?SearchRankingScopeCopyLockTransfer;
 
     /**
-     * The store-scoped `formula`/`isActive`/`shape` row for one metric — used by
+     * The (store, locale)-scoped `formula`/`isActive`/`shape` row for one metric — used by
      * {@see \SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\StoreConfigCopier} to check whether
-     * the target store already has an explicit config for a given metric before copying/overwriting.
-     * Null when no row exists yet for this (metric, store).
+     * the target already has an explicit config for a given metric before copying/overwriting.
+     * Null when no row exists yet for this (metric, store, locale).
      *
      * @param int $idSearchRankingMetric
      * @param string $storeName
+     * @param string $localeName
      */
-    public function findMetricStoreConfig(int $idSearchRankingMetric, string $storeName): ?SearchRankingMetricStoreConfigTransfer;
+    public function findMetricStoreConfig(int $idSearchRankingMetric, string $storeName, string $localeName): ?SearchRankingMetricStoreConfigTransfer;
 
     /**
      * True if the scope has any explicitly-saved `spy_search_ranking_metric_weight` or

@@ -26,19 +26,17 @@ interface StoreConfigCopierInterface
 
     /**
      * Copies formula/isActive/shape ({@see \Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer})
-     * for every metric EXPLICITLY configured in the source STORE onto the target store — store-only,
-     * unlike {@see ScopeConfigCopierInterface::copyScopeConfiguration()}'s (store,locale)-scoped weight/
-     * setting copy, since formula/isActive/shape are themselves store-scoped, not locale-scoped.
-     * `$targetLocaleName` is used ONLY as the digest lens
-     * {@see \SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface::saveMetric()}
-     * re-detects each copied metric's `shape` against (its own real fit-quality metadata, not carried
-     * over verbatim) — never part of the copy's own scope key. `$sourceLocaleName` has no effect on this
-     * operation at all (the source side is read purely from {@see \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface::getMetricCollection()},
-     * which is itself store-only) — kept in the signature only so this method's shape matches its
-     * (store,locale)-scoped sibling and this feature's shared Zed page can carry one set of source/target
-     * picker values across both forms without a separate no-op parameter for this one. The one real
-     * caller ({@see \SprykerCommunity\Zed\SearchRankingGui\Communication\Controller\StoreConfigSyncRunController})
-     * always passes the app-wide default here for exactly this reason.
+     * for every metric EXPLICITLY configured at (source store, source locale) onto (target store, target
+     * locale). For an `isLocaleScoped=false` metric (most metrics — see
+     * {@see \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface}'s own docs
+     * on the flag) this is effectively still store-only in outcome:
+     * {@see \SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface::saveMetric()} fans
+     * the write out to every real locale of the target store regardless of which one locale was named
+     * here, the same fan-out {@see ScopeConfigCopierInterface::copyScopeConfiguration()}'s weight copy
+     * already relies on. Only for an `isLocaleScoped=true` metric does the write actually stay scoped to
+     * just the one (target store, target locale) pair named here. The one real caller
+     * ({@see \SprykerCommunity\Zed\SearchRankingGui\Communication\Controller\StoreConfigSyncRunController})
+     * has its own independent source/target locale pickers for exactly this case.
      *
      * `MODE_MIRROR` (default): copies every metric the source has explicitly configured, creating a new
      * target row for one the target has never configured at all — matches this feature's existing
@@ -81,11 +79,10 @@ interface StoreConfigCopierInterface
 
     /**
      * Read-only preview of exactly what {@see copyStoreConfiguration()} would act on for the given
-     * source store — same "explicitly saved only" selection. Needs no locale at all: unlike the real
-     * copy (which re-detects `shape` against real digest data as a side effect of writing), this never
-     * writes anything, so there is nothing for a locale lens to apply to.
+     * (source store, source locale) — same "explicitly saved only" selection.
      *
      * @param string $sourceStoreName
+     * @param string $sourceLocaleName
      */
-    public function previewStoreConfiguration(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer;
+    public function previewStoreConfiguration(string $sourceStoreName, string $sourceLocaleName): SearchRankingStoreConfigPreviewTransfer;
 }

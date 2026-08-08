@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Business\Fitting;
 
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
 class CurrentMetricFitEvaluator implements CurrentMetricFitEvaluatorInterface
@@ -16,10 +17,12 @@ class CurrentMetricFitEvaluator implements CurrentMetricFitEvaluatorInterface
     /**
      * @param \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface $repository
      * @param \SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluatorInterface $fitEvaluator
+     * @param \SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface $storeFacade
      */
     public function __construct(
         protected SearchRankingRepositoryInterface $repository,
         protected MetricFormulaFitEvaluatorInterface $fitEvaluator,
+        protected SearchRankingToStoreFacadeInterface $storeFacade,
     ) {
     }
 
@@ -52,5 +55,40 @@ class CurrentMetricFitEvaluator implements CurrentMetricFitEvaluatorInterface
         }
 
         return $this->fitEvaluator->evaluateFit($metricTransfer->getFormulaOrFail(), $digestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     *
+     * @return array<string, float|null>
+     */
+    public function evaluateAcrossLocales(int $idSearchRankingMetric, string $storeName): array
+    {
+        $fitByLocale = [];
+
+        foreach ($this->resolveRealLocaleNames($storeName) as $localeName) {
+            $fitByLocale[$localeName] = $this->evaluate($idSearchRankingMetric, $storeName, $localeName);
+        }
+
+        return $fitByLocale;
+    }
+
+    /**
+     * @param string $storeName
+     *
+     * @return array<int, string>
+     */
+    protected function resolveRealLocaleNames(string $storeName): array
+    {
+        foreach ($this->storeFacade->getAllStores() as $storeTransfer) {
+            if ($storeTransfer->getNameOrFail() === $storeName) {
+                return $storeTransfer->getAvailableLocaleIsoCodes();
+            }
+        }
+
+        return [];
     }
 }

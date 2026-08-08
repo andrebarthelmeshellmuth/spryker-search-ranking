@@ -70,20 +70,6 @@ class SearchRankingMetricWriterStep implements DataImportStepInterface
             ->findOneOrCreate();
         $metricEntity->save();
 
-        // formula/isActive are store-scoped, on spy_search_ranking_metric_store_config, not columns on
-        // the metric entity above at all — written using this row's own `store` column, the same one
-        // already used for the weight row below.
-        $storeConfigEntity = SpySearchRankingMetricStoreConfigQuery::create()
-            ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
-            ->filterByStoreName((string)$dataSet[SearchRankingMetricDataSetInterface::COL_STORE])
-            ->findOneOrCreate();
-
-        $storeConfigEntity
-            ->setFormula((string)$dataSet[SearchRankingMetricDataSetInterface::COL_FORMULA])
-            ->setIsActive((bool)$dataSet[SearchRankingMetricDataSetInterface::COL_IS_ACTIVE]);
-
-        $storeConfigEntity->save();
-
         $weight = (float)$dataSet[SearchRankingMetricDataSetInterface::COL_WEIGHT];
 
         // Mirrors MetricForm's GreaterThanOrEqual(0) constraint -- a negative weight here doesn't just
@@ -103,6 +89,23 @@ class SearchRankingMetricWriterStep implements DataImportStepInterface
         }
 
         foreach ($this->splitLocaleNames((string)$dataSet[SearchRankingMetricDataSetInterface::COL_LOCALE]) as $localeName) {
+            // formula/isActive are (store, locale)-scoped, on spy_search_ranking_metric_store_config, not
+            // columns on the metric entity above at all — written once per locale this row's own comma-
+            // separated `locale` column lists, same fan-out weight already uses below. A real per-locale
+            // difference in the source CSV rows still lands as genuinely different store-config rows;
+            // this loop is what LETS that happen, not what forces every locale to match.
+            $storeConfigEntity = SpySearchRankingMetricStoreConfigQuery::create()
+                ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
+                ->filterByStoreName((string)$dataSet[SearchRankingMetricDataSetInterface::COL_STORE])
+                ->filterByLocaleName($localeName)
+                ->findOneOrCreate();
+
+            $storeConfigEntity
+                ->setFormula((string)$dataSet[SearchRankingMetricDataSetInterface::COL_FORMULA])
+                ->setIsActive((bool)$dataSet[SearchRankingMetricDataSetInterface::COL_IS_ACTIVE]);
+
+            $storeConfigEntity->save();
+
             $metricWeightEntity = SpySearchRankingMetricWeightQuery::create()
                 ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
                 ->filterByStoreName((string)$dataSet[SearchRankingMetricDataSetInterface::COL_STORE])

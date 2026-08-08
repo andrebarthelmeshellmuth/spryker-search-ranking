@@ -38,8 +38,9 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
+     * @param string $localeName
      */
-    public function saveMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName): SearchRankingMetricTransfer
+    public function saveMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): SearchRankingMetricTransfer
     {
         $metricEntity = null;
 
@@ -63,6 +64,7 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
             (new SearchRankingMetricStoreConfigTransfer())
                 ->setFkSearchRankingMetric($savedMetricTransfer->getIdSearchRankingMetricOrFail())
                 ->setStoreName($storeName)
+                ->setLocaleName($localeName)
                 ->setFormula($metricTransfer->getFormulaOrFail())
                 ->setIsActive($metricTransfer->getIsActive() ?? true)
                 ->setShape($metricTransfer->getShape()),
@@ -265,6 +267,7 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
             ->createSearchRankingMetricStoreConfigQuery()
             ->filterByFkSearchRankingMetric($metricStoreConfigTransfer->getFkSearchRankingMetricOrFail())
             ->filterByStoreName($metricStoreConfigTransfer->getStoreNameOrFail())
+            ->filterByLocaleName($metricStoreConfigTransfer->getLocaleNameOrFail())
             ->findOneOrCreate();
 
         $mapper = $this->getFactory()->createSearchRankingMapper();

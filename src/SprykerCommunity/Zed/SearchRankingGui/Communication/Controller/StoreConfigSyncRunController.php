@@ -16,10 +16,11 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * One-off "Sync now" for the store-config (formula/isActive/shape) copy action — store-only, unlike
- * {@see ScopeCopyRunController}'s (store,locale)-scoped weight/setting copy. No lockable/cron-synced
- * variant exists for this action — a deliberate choice: formula/k tuning changes far less often than
- * weight, so a recurring sync would mostly re-copy an unchanged value.
+ * One-off "Sync now" for the store-config (formula/isActive/shape) copy action, with its own independent
+ * source/target store+locale pickers (deliberately separate from {@see ScopeCopyRunController}'s ones —
+ * see {@see ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME}). No lockable/cron-synced variant exists
+ * for this action — a deliberate choice: formula/k tuning changes far less often than weight, so a
+ * recurring sync would mostly re-copy an unchanged value.
  *
  * @method \SprykerCommunity\Zed\SearchRankingGui\Communication\SearchRankingGuiCommunicationFactory getFactory()
  */
@@ -37,6 +38,8 @@ class StoreConfigSyncRunController extends AbstractController
     {
         $syncSourceStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
         $syncTargetStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
+        $syncSourceLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_SOURCE_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
+        $syncTargetLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_TARGET_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
         // Carried through as hidden fields on the same form purely so the "Copy configuration between
         // store/locale scopes" widget's own picker doesn't reset back to its defaults on this redirect.
         $sourceStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SOURCE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
@@ -45,12 +48,16 @@ class StoreConfigSyncRunController extends AbstractController
         $targetLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_TARGET_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
 
         $redirectUrl = sprintf(
-            '%s?%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s',
+            '%s?%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s',
             static::URL_SCOPE_COPY,
             ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME,
             $syncSourceStoreName,
             ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME,
             $syncTargetStoreName,
+            ScopeCopyController::PARAM_SYNC_SOURCE_LOCALE_NAME,
+            $syncSourceLocaleName,
+            ScopeCopyController::PARAM_SYNC_TARGET_LOCALE_NAME,
+            $syncTargetLocaleName,
             ScopeCopyController::PARAM_SOURCE_STORE_NAME,
             $sourceStoreName,
             ScopeCopyController::PARAM_SOURCE_LOCALE_NAME,
@@ -72,16 +79,11 @@ class StoreConfigSyncRunController extends AbstractController
         $confirmOverwrite = (bool)$actionForm->get(StoreConfigSyncActionForm::FIELD_CONFIRM_OVERWRITE)->getData();
         $mode = (string)$actionForm->get(StoreConfigSyncActionForm::FIELD_MODE)->getData();
 
-        // formula/isActive/shape are store-wide, not locale-scoped — the source/target locale this
-        // facade call still technically takes is only ever used internally to pick which locale's real
-        // digest data re-detects each copied metric's `shape` (see StoreConfigCopierInterface's own
-        // docblock), so the app-wide default is passed rather than exposing a locale picker for this
-        // store-only action.
         $resultTransfer = $this->getFactory()->getSearchRankingFacade()->copyStoreConfiguration(
             $syncSourceStoreName,
-            SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+            $syncSourceLocaleName,
             $syncTargetStoreName,
-            SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME,
+            $syncTargetLocaleName,
             $mode,
             $confirmOverwrite,
         );

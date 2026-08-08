@@ -35,8 +35,6 @@ class StoreConfigCopier implements StoreConfigCopierInterface
      * @param bool $confirmOverwrite
      * @param string $changeSource
      */
-    // phpcs:disable SlevomatCodingStandard.Functions.UnusedParameter -- $sourceLocaleName kept for signature parity with StoreConfigCopierInterface/the (store,locale)-scoped sibling copy — see that interface's own docblock.
-
     public function copyStoreConfiguration(
         string $sourceStoreName,
         string $sourceLocaleName,
@@ -46,7 +44,6 @@ class StoreConfigCopier implements StoreConfigCopierInterface
         bool $confirmOverwrite,
         string $changeSource,
     ): SearchRankingStoreConfigCopyResultTransfer {
-        // phpcs:enable SlevomatCodingStandard.Functions.UnusedParameter
         $resultTransfer = new SearchRankingStoreConfigCopyResultTransfer();
 
         if ($sourceStoreName === $targetStoreName) {
@@ -62,10 +59,10 @@ class StoreConfigCopier implements StoreConfigCopierInterface
         $copiedCount = 0;
         $skippedCount = 0;
 
-        foreach ($this->repository->getMetricCollection($sourceStoreName)->getMetrics() as $metricTransfer) {
+        foreach ($this->repository->getMetricCollection($sourceStoreName, $sourceLocaleName)->getMetrics() as $metricTransfer) {
             if ($metricTransfer->getFormula() === null) {
-                // Never explicitly configured for the source store at all — nothing to copy, same
-                // "absence means untouched" convention weight/settings copying already uses.
+                // Never explicitly configured for the source (store, locale) at all — nothing to copy,
+                // same "absence means untouched" convention weight/settings copying already uses.
                 continue;
             }
 
@@ -73,7 +70,7 @@ class StoreConfigCopier implements StoreConfigCopierInterface
 
             if (
                 $mode === static::MODE_COPY_ONLY_OVERLAP
-                && $this->repository->findMetricStoreConfig($idSearchRankingMetric, $targetStoreName) === null
+                && $this->repository->findMetricStoreConfig($idSearchRankingMetric, $targetStoreName, $targetLocaleName) === null
             ) {
                 $skippedCount++;
 
@@ -100,13 +97,14 @@ class StoreConfigCopier implements StoreConfigCopierInterface
 
     /**
      * @param string $sourceStoreName
+     * @param string $sourceLocaleName
      */
-    public function previewStoreConfiguration(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer
+    public function previewStoreConfiguration(string $sourceStoreName, string $sourceLocaleName): SearchRankingStoreConfigPreviewTransfer
     {
         $metrics = [];
 
-        foreach ($this->repository->getMetricCollection($sourceStoreName)->getMetrics() as $metricTransfer) {
-            $storeConfigTransfer = $this->repository->findMetricStoreConfig($metricTransfer->getIdSearchRankingMetricOrFail(), $sourceStoreName);
+        foreach ($this->repository->getMetricCollection($sourceStoreName, $sourceLocaleName)->getMetrics() as $metricTransfer) {
+            $storeConfigTransfer = $this->repository->findMetricStoreConfig($metricTransfer->getIdSearchRankingMetricOrFail(), $sourceStoreName, $sourceLocaleName);
 
             if ($storeConfigTransfer === null) {
                 continue;

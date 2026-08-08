@@ -39,11 +39,9 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      */
     public function getMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
-        // This `@api` method's own signature keeps its locale parameter (search-ranking-optimizer's own
-        // bridge reads real per-locale weight off the result) even though the repository's own
-        // getMetricCollection() no longer needs one — composes the repository's weight-free collection
-        // with its separate attachWeights() step instead of a single call.
-        return $this->getRepository()->attachWeights($this->getRepository()->getMetricCollection($storeName), $storeName, $localeName);
+        // Composes the repository's weight-free (store, locale) collection with a separate
+        // attachWeights() step instead of a single call — see getMetricCollection()'s own docblock.
+        return $this->getRepository()->attachWeights($this->getRepository()->getMetricCollection($storeName, $localeName), $storeName, $localeName);
     }
 
     /**
@@ -54,7 +52,7 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
     {
         // Same composition as getMetricCollection() above — see that method's own comment.
-        return $this->getRepository()->attachWeights($this->getRepository()->getActiveMetricCollection($storeName), $storeName, $localeName);
+        return $this->getRepository()->attachWeights($this->getRepository()->getActiveMetricCollection($storeName, $localeName), $storeName, $localeName);
     }
 
     /**
@@ -496,6 +494,21 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @api
      *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     *
+     * @return array<string, float|null>
+     */
+    public function evaluateCurrentMetricFitAcrossLocales(int $idSearchRankingMetric, string $storeName): array
+    {
+        return $this->getFactory()->createCurrentMetricFitEvaluator()->evaluateAcrossLocales($idSearchRankingMetric, $storeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
      * @param string $sourceStoreName
      * @param string $sourceLocaleName
      * @param string $targetStoreName
@@ -594,10 +607,11 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      * @api
      *
      * @param string $sourceStoreName
+     * @param string $sourceLocaleName
      */
-    public function previewStoreConfigurationSync(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer
+    public function previewStoreConfigurationSync(string $sourceStoreName, string $sourceLocaleName): SearchRankingStoreConfigPreviewTransfer
     {
-        return $this->getFactory()->createStoreConfigCopier()->previewStoreConfiguration($sourceStoreName);
+        return $this->getFactory()->createStoreConfigCopier()->previewStoreConfiguration($sourceStoreName, $sourceLocaleName);
     }
 
     /**

@@ -184,6 +184,7 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
         return new CurrentMetricFitEvaluator(
             $this->getRepository(),
             $this->createMetricFormulaFitEvaluator(),
+            $this->getStoreFacade(),
         );
     }
 

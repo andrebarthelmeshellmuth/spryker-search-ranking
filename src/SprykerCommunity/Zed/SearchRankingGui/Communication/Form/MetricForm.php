@@ -182,8 +182,8 @@ class MetricForm extends AbstractType
     protected function addIsLocaleScopedField(FormBuilderInterface $builder)
     {
         $builder->add(static::FIELD_IS_LOCALE_SCOPED, CheckboxType::class, [
-            'label' => 'Locale-specific weight',
-            'help' => 'Checked (default): this metric\'s weight is authored and stored separately per locale. Unchecked: this metric is a store-wide fact (e.g. sales, stock) rather than a language-dependent one — saving the weight for any one locale applies it to every locale of this store automatically.',
+            'label' => 'Locale-specific metric',
+            'help' => 'Unchecked (default): this metric is a store-wide fact (e.g. sales, stock) — formula, active status and weight are authored once and fanned out to every locale of this store automatically when saved. Checked: this metric genuinely differs per locale (evidence first via evaluateCurrentMetricFitAcrossLocales()) — formula, active status and weight are then authored and stored separately per locale, and saving here only affects the locale currently selected.',
             'required' => false,
         ]);
 
