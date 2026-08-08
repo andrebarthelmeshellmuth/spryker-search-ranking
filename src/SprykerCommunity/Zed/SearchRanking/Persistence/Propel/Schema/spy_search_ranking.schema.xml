@@ -41,7 +41,7 @@
     <table name="spy_search_ranking_metric_weight" idMethod="native" identifierQuoting="true">
         <column name="id_search_ranking_metric_weight" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_search_ranking_metric" type="INTEGER" required="true"/>
-        <column name="store_name" type="VARCHAR" size="64" required="true" description="e.g. DE — a metric's weight in the combined ranking score is store+locale scoped; its definition (formula/isActive/isHigherBetter/shape) on spy_search_ranking_metric is not."/>
+        <column name="store_name" type="VARCHAR" size="64" required="true" description="e.g. DE — a metric's weight in the combined ranking score is store+locale scoped, same as its formula/isActive/shape on spy_search_ranking_metric_store_config; only name/isHigherBetter/isLocaleScoped on spy_search_ranking_metric itself are global."/>
         <column name="locale_name" type="VARCHAR" size="16" required="true" description="e.g. de_DE."/>
         <column name="weight" type="FLOAT" required="true" defaultValue="0" description="Weight of this metric in the combined ranking score, for this store+locale."/>
 
@@ -191,7 +191,7 @@
         <column name="id_search_ranking_metric_history" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_search_ranking_metric" type="INTEGER" required="true" description="Deliberately NOT a Propel foreign key (see below) — plain indexed column only."/>
         <column name="metric_name" type="VARCHAR" size="128" required="true" description="Denormalized: history must stay readable even if the live metric is later renamed or deleted."/>
-        <column name="store_name" type="VARCHAR" size="64" required="true" description="Which store+locale this snapshot's weight/digest applied to — a metric's weight and digest are store+locale scoped, its formula/isActive/isHigherBetter are not, but the whole row is still recorded per (store, locale) for a simple, complete audit trail."/>
+        <column name="store_name" type="VARCHAR" size="64" required="true" description="Which store+locale this snapshot's weight/formula/isActive/digest applied to — only isHigherBetter (and name/isLocaleScoped) are global; everything else this row snapshots is store+locale scoped, recorded per (store, locale) for a simple, complete audit trail."/>
         <column name="locale_name" type="VARCHAR" size="16" required="true"/>
         <column name="weight" type="FLOAT" required="true" description="spy_search_ranking_metric_weight.weight for this store+locale at the time of this snapshot."/>
         <column name="formula" type="VARCHAR" size="512" required="true" description="spy_search_ranking_metric.formula at the time of this snapshot."/>
