@@ -548,6 +548,24 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
+     * - Same fit check as {@see evaluateCurrentMetricFit()}, run once per real locale of $storeName —
+     *   formula/shape are store-only (not locale-scoped) today, so this is the diagnostic that answers
+     *   "does this metric's one store-wide formula actually fit every locale's own real data comparably
+     *   well" without requiring locale-scoped formulas to exist yet.
+     * - Keyed by locale name; a locale with no digest yet maps to null, never omitted or thrown.
+     * - Read-only, no side effect, safe to call as often as needed.
+     *
+     * @api
+     *
+     * @param int $idSearchRankingMetric
+     * @param string $storeName
+     *
+     * @return array<string, float|null>
+     */
+    public function evaluateCurrentMetricFitAcrossLocales(int $idSearchRankingMetric, string $storeName): array;
+
+    /**
+     * Specification:
      * - Copies every metric weight and setting explicitly saved for the source scope onto the target
      *   scope, tagged {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::CHANGE_SOURCE_SCOPE_COPY}.
      *   Never touches `spy_search_ranking_product_metric`/`_metric_digest` — real, scope-local behavioral
@@ -650,15 +668,14 @@ interface SearchRankingFacadeInterface
     /**
      * Specification:
      * - Read-only preview of exactly what {@see copyStoreConfiguration()} would act on for the given
-     *   source store: every metric's explicitly-saved formula and active flag. Needs no locale at all —
-     *   unlike the real copy, this never writes anything, so there is nothing for a locale-scoped
-     *   shape-detection lens to apply to.
+     *   (source store, source locale): every metric's explicitly-saved formula and active flag.
      *
      * @api
      *
      * @param string $sourceStoreName
+     * @param string $sourceLocaleName
      */
-    public function previewStoreConfigurationSync(string $sourceStoreName): SearchRankingStoreConfigPreviewTransfer;
+    public function previewStoreConfigurationSync(string $sourceStoreName, string $sourceLocaleName): SearchRankingStoreConfigPreviewTransfer;
 
     /**
      * Specification:

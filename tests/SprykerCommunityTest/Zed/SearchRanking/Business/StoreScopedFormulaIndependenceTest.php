@@ -132,6 +132,7 @@ class StoreScopedFormulaIndependenceTest extends Unit
         SpySearchRankingMetricStoreConfigQuery::create()
             ->filterByFkSearchRankingMetric($idMetric)
             ->filterByStoreName($storeName)
+            ->filterByLocaleName('de_DE')
             ->findOneOrCreate()
             ->setFormula($formula)
             ->setIsActive(true)

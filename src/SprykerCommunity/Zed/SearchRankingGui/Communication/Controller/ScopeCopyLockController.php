@@ -42,9 +42,11 @@ class ScopeCopyLockController extends AbstractController
         // configuration" widget's own picker doesn't reset back to its defaults on this redirect.
         $syncSourceStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_SOURCE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
         $syncTargetStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
+        $syncSourceLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_SOURCE_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
+        $syncTargetLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SYNC_TARGET_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
 
         $redirectUrl = sprintf(
-            '%s?%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s',
+            '%s?%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s&%s=%s',
             static::URL_SCOPE_COPY,
             ScopeCopyController::PARAM_SOURCE_STORE_NAME,
             $sourceStoreName,
@@ -58,6 +60,10 @@ class ScopeCopyLockController extends AbstractController
             $syncSourceStoreName,
             ScopeCopyController::PARAM_SYNC_TARGET_STORE_NAME,
             $syncTargetStoreName,
+            ScopeCopyController::PARAM_SYNC_SOURCE_LOCALE_NAME,
+            $syncSourceLocaleName,
+            ScopeCopyController::PARAM_SYNC_TARGET_LOCALE_NAME,
+            $syncTargetLocaleName,
         );
 
         $actionForm = $this->getFactory()->createScopeCopyActionForm()->handleRequest($request);

@@ -20,13 +20,15 @@ interface SearchRankingEntityManagerInterface
 {
     /**
      * Writes the metric's global identity (name/isHigherBetter), then its formula/isActive/shape
-     * separately to `spy_search_ranking_metric_store_config` for `$storeName` — see the implementation's
-     * own docblock for the full reasoning.
+     * separately to `spy_search_ranking_metric_store_config` for exactly (`$storeName`, `$localeName`) —
+     * no fan-out to sibling locales at this layer; see {@see \SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface::saveMetric()}
+     * for where that decision (governed by the metric's own `isLocaleScoped`) is actually made.
      *
      * @param \Generated\Shared\Transfer\SearchRankingMetricTransfer $metricTransfer
      * @param string $storeName
+     * @param string $localeName
      */
-    public function saveMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName): SearchRankingMetricTransfer;
+    public function saveMetric(SearchRankingMetricTransfer $metricTransfer, string $storeName, string $localeName): SearchRankingMetricTransfer;
 
     /**
      * @param int $idSearchRankingMetric

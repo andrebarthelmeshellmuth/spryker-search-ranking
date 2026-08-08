@@ -72,36 +72,46 @@ formula, active flag, and direction. See [What it does](#what-it-does).
 
 A metric's fields have two different scopes, not one: `name`/`isHigherBetter` (direction) are global —
 the same everywhere the metric exists at all, since they're definitional (what the metric IS/MEANS).
-`formula`/`isActive`/curve `shape` are STORE-scoped (`spy_search_ranking_metric_store_config`, one row
-per metric × store) — a business-behavior signal like `pdp_impressions` is a store-level reality
-(conversion/stock/warehouse facts), not a language preference, so it's deliberately NOT split further by
-locale. `weight` is scoped one level finer still, per (store, locale) — a tuning DECISION, reasonable to
-let vary by locale even where the underlying business data doesn't. A brand-new store gets its own
+`formula`/`isActive`/curve `shape`/`weight` all live at (store, locale) tier
+(`spy_search_ranking_metric_store_config` and `spy_search_ranking_metric_weight`, one row per metric ×
+store × locale unconditionally) — but whether sibling locale rows of the same store are kept identical or
+allowed to genuinely diverge is a single per-metric decision, the global `isLocaleScoped` flag (default
+`false`), not something baked into the storage shape itself. A brand-new store gets its own
 formula/active/shape via the Scope Copy page's Sync Store Config action (see [What it does](#what-it-does)),
 not a database migration — the columns that once held a single global formula/isActive/shape on
 `spy_search_ranking_metric` itself were removed entirely once every part of this package migrated onto
-the store-scoped table (a breaking change; see [CHANGELOG](CHANGELOG.md) for the release that shipped it).
+the (store, locale)-scoped table (a breaking change; see [CHANGELOG](CHANGELOG.md) for the release that
+shipped it).
 
-Whether `weight` genuinely NEEDS per-locale granularity is itself a per-metric decision — a third
-global field, `isLocaleScoped` (default `true`), controls it. `true`: weight is authored and stored
-independently per locale, as above. `false`: this metric is a store-wide fact (e.g. `top_seller`, driven
-by sales/stock data that doesn't vary by language) rather than a language-dependent one — saving the
-weight for any one locale of a store fans it out to every real locale of that store automatically, so
-the admin only ever edits one number per store instead of keeping N locale copies in sync by hand. The
-metric list's "Weight scope" column shows which mode each metric is in.
+`isLocaleScoped` (default `false`) answers one question once, and the answer cascades through formula,
+isActive, shape, AND weight together — never one flag per concern:
+- **`false`** (default, most metrics): this metric is a store-wide fact (e.g. `top_seller`, driven by
+  sales/stock data that doesn't vary by language) rather than a language-dependent one — saving
+  formula/isActive/weight for any one locale of a store fans it out to every real locale of that store
+  automatically, so the admin only ever edits one value per store instead of keeping N locale copies in
+  sync by hand.
+- **`true`** (rare — evidence first via `evaluateCurrentMetricFitAcrossLocales()`, see
+  [Metric history](#what-it-does) below): this metric genuinely differs per locale (the classic case: a
+  signal whose raw-value distribution differs by language, needing e.g. `2 * atan(x)` in one locale and
+  `3 * atan(x)` in another to normalize comparably) — formula, isActive, shape, and weight are then
+  authored and stored independently per locale, no fan-out.
+
+The metric list's "Scope" column shows which mode each metric is in. See
+[SCOPING.md](SCOPING.md) for the full field-by-field breakdown.
 
 ### weight
 
 How much one metric's signal contributes to the combined business-signal score, relative to the other
 active metrics. See [Ranking formula](#ranking-formula).
 
-Since weight is scoped per (store, locale), it's also the mechanism for suppressing one metric in just
-ONE locale of a store without touching `isActive` (store-wide): set that locale's weight to `0`. The
-query-time blend is literally `weight * scores.metric`, so a `0` weight contributes nothing to that
-locale's ranking — no separate per-locale active flag exists or is needed. A `0` weight for a locale
-whose underlying data you distrust (e.g. missing/broken tracking for that market) and a `0` weight that's
-simply never been configured look identical today; there is no flag distinguishing "deliberately
-suppressed" from "unconfigured".
+For an `isLocaleScoped=false` metric (most metrics — see [metric](#metric) above), weight is still the
+mechanism for suppressing one metric in just ONE locale of a store without touching `isActive` (which
+stays store-wide, fanned out with everything else): set that locale's weight to `0`. The query-time blend
+is literally `weight * scores.metric`, so a `0` weight contributes nothing to that locale's ranking. (For
+an `isLocaleScoped=true` metric, `isActive` is itself per-locale, so this trick isn't needed — just
+uncheck Active for that one locale directly.) A `0` weight for a locale whose underlying data you distrust
+(e.g. missing/broken tracking for that market) and a `0` weight that's simply never been configured look
+identical today; there is no flag distinguishing "deliberately suppressed" from "unconfigured".
 
 ### raw value / normalized value
 
@@ -191,9 +201,10 @@ so, with no error to tell you why.
   (`isHigherBetter`) — whether a higher raw value is the better outcome (sales, impressions) or a lower
   one (days-since-restock, return rate). Direction is business knowledge that cannot be inferred from the
   data; it only steers which curve-fit suggestions the normalization GUI offers below, never the formula
-  itself. A fourth global flag, **`isLocaleScoped`** (default `true`), decides whether `weight` itself
-  needs per-locale granularity — see [Terminology](#terminology) for the full scope breakdown and what
-  turning it off does.
+  itself. A fourth global flag, **`isLocaleScoped`** (default `false`), decides whether formula/active/
+  weight together need genuine per-locale granularity for this metric, or stay fanned out identically
+  across a store's locales — see [Terminology](#terminology) for the full scope breakdown and what
+  turning it on does.
 - **Product values** (`spy_search_ranking_product_metric`): one row per (metric, abstract product)
   pair holding the **raw real-world value** (e.g. "8,250 impressions") and the **normalized value
   in ]0;1]** derived from it. Unique per pair, removed by cascade with either parent.
@@ -217,13 +228,20 @@ so, with no error to tell you why.
   true`) instead of just the newest row. A check-only run (fit still fine, nothing changed) would append
   its own row with `isChange = false`, extending the timeline without moving the anchor.
 
-  Three read-only primitives on `SearchRankingFacade` exist specifically for a drift-detection job like
+  Four read-only primitives on `SearchRankingFacade` exist specifically for a drift-detection job like
   that to build on, without it needing any direct database access of its own: `findLastMetricChangeHistoryEntry()`
   (the anchor row above), `evaluateCurrentMetricFit()` (a fresh, side-effect-free "how well does this
-  metric's CURRENT formula fit its CURRENT digest right now" read — never writes a history row, safe to
-  call as often as needed), and `recordCheckOnly()` (appends the `isChange = false` row itself once a
-  check has run). This package makes no decision about thresholds, schedules, or notifications with
-  them — that policy is deliberately somebody else's job to build on top.
+  metric's CURRENT formula fit its CURRENT digest right now" read for one given locale — never writes a
+  history row, safe to call as often as needed), `evaluateCurrentMetricFitAcrossLocales()` (the same
+  check, once per real locale of a store, keyed by locale name — the evidence for whether a metric should
+  be flagged `isLocaleScoped=true` in the first place, see [Terminology](#terminology)'s `metric` entry,
+  as well as the ongoing diagnostic for whether a store-wide formula still fits every locale's own real
+  data comparably well once it's set), and `recordCheckOnly()`
+  (appends the `isChange = false` row itself once a check has run). This package makes no decision about
+  thresholds, schedules, or notifications with them — that policy is deliberately somebody else's job to
+  build on top. `spryker-community/search-ranking-optimizer`'s own monthly auto-tune job is exactly that:
+  its console report flags a metric whose per-locale fit spreads by more than a configurable threshold,
+  purely informational today (nothing acts on it differently per locale yet).
 - **Zed UI**:
 
   ![The metrics list: ID, name, weight, formula, active/inactive status, and edit/delete actions for every configured business signal](docs/screenshots/metrics-list.png)
@@ -415,16 +433,17 @@ so, with no error to tell you why.
     table stays a real history of every lock episode; relocking the same pair later creates a fresh row
     rather than reactivating the old one.
 
-  **Sync store configuration** (same page, below the copy/lock actions above) — a separate, **store-only**
-  action for a metric's `formula`/`isActive`/curve `shape`, since those are store-scoped, not
-  (store,locale)-scoped like weight/settings (see [Terminology](#terminology)'s own `metric` entry for the
-  store-vs-(store,locale) scoping background). Has its OWN independent source/target Store pickers,
-  deliberately separate from the (store,locale) pickers above — a locale picker for this action would be
-  pure noise, since formula/isActive/shape don't vary by locale at all. (Internally, `shape` is still
-  re-detected against the app's default locale's real digest as a side effect of the write — `shape` is
-  never carried over verbatim, so a target with no digest yet correctly ends up with `shape=null` even
-  though its `formula` was copied — but that's an implementation detail, not something either picker's
-  locale ever controlled.) Two modes:
+  **Sync store configuration** (same page, below the copy/lock actions above) — a separate action for a
+  metric's `formula`/`isActive`/curve `shape`, kept apart from the weight/settings copy above because it
+  acts on a different config group, not because it's a different scope tier: both actions are
+  (store,locale)-scoped, each with its OWN independent source/target Store+Locale pickers so picking a
+  scope for one never resets or gets confused with the other's. For an `isLocaleScoped=false` metric (most
+  metrics — see [Terminology](#terminology)'s own `metric` entry), this is effectively still store-only in
+  outcome: the write fans out to every real locale of the target store regardless of which one locale was
+  picked. Only for an `isLocaleScoped=true` metric does the write actually stay scoped to just the one
+  (target store, target locale) pair picked here. (`shape` is always re-detected against the digest of
+  whichever locale the write actually lands on, never carried over verbatim — a target with no digest yet
+  correctly ends up with `shape=null` even though its `formula` was copied.) Two modes:
   - **Mirror** (default) — copies every metric the source store has explicitly configured, creating a row
     for one the target has never configured at all. Matches the copy/lock actions' own bootstrap
     philosophy above.
@@ -434,9 +453,10 @@ so, with no error to tell you why.
 
   Blocked by default when the target store already has any saved store configuration (same "Overwrite
   existing target store configuration" checkbox pattern as above). Every synced metric is recorded on
-  [Metric History](#what-it-does) tagged `scope_copy`, fanned out across every real locale of the target
-  store, same as any other formula change (a single history row keyed to one locale would under-represent
-  a store-wide change). **One-off only** — unlike weight/settings, there is no lockable/daily-synced
+  [Metric History](#what-it-does) tagged `scope_copy` — one row per locale the write actually touched:
+  every real locale of the target store for an `isLocaleScoped=false` metric (a single history row keyed
+  to one locale would under-represent a store-wide change), just the one target locale for an
+  `isLocaleScoped=true` metric. **One-off only** — unlike weight/settings, there is no lockable/daily-synced
   variant of this action; formula/curve-shape tuning changes far less often than weight in practice. Same
   live "This will sync:" preview pattern as the copy/lock action above — every metric the source store
   currently has an explicitly saved formula for, with its real formula and active flag.
@@ -1227,10 +1247,12 @@ SKUs at all, or coincidentally-matching SKUs get some other shop's numbers.
   concrete-product search use pure text relevance.
 - Re-publishing of product documents happens **only via the normalize cron** (or manually) —
   importing raw values alone does not refresh the search documents until the next run.
-- Not every field is scoped at the same granularity — settings, metric weights, and raw/normalized
-  product-metric values are (store, locale)-scoped, but a metric's `formula`/`isActive`/curve `shape` are
-  store-only, and a few fields (metric identity, `isSpecificityWeightingEnabled`) are global. See
-  [SCOPING.md](SCOPING.md) for the full picture, term by term. The Zed GUI (Metrics, Product Values,
+- Not every field is scoped at the same granularity — settings, metric weights, raw/normalized
+  product-metric values, and a metric's `formula`/`isActive`/curve `shape` are all (store, locale)-scoped,
+  but whether sibling locale rows genuinely diverge or stay fanned-out-identical is governed by the
+  metric's own `isLocaleScoped` flag (store-wide is the default); a few fields (metric identity,
+  `isSpecificityWeightingEnabled`) are global regardless. See [SCOPING.md](SCOPING.md) for the full
+  picture, term by term. The Zed GUI (Metrics, Product Values,
   Product Value Gaps, Settings) has an explicit Store+Locale selector on every page that needs one,
   matching `spryker-community/search-ranking-optimizer`'s own selector UX. `search-ranking:normalize`/
   `:randomize` accept optional `--store`/`--locale` options to restrict a run to one scope; omitting them

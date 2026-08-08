@@ -119,7 +119,7 @@ class StoreConfigCopierTest extends Unit
 
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
         $repositoryMock->method('hasStoreConfiguration')->willReturn(false);
-        $repositoryMock->method('getMetricCollection')->with('DE')->willReturn(
+        $repositoryMock->method('getMetricCollection')->with('DE', 'de_DE')->willReturn(
             (new SearchRankingMetricCollectionTransfer())
                 ->addMetric($configuredMetricA)
                 ->addMetric($configuredMetricB)
@@ -169,8 +169,8 @@ class StoreConfigCopierTest extends Unit
                 ->addMetric($alreadyAdoptedByTarget),
         );
         $repositoryMock->method('findMetricStoreConfig')->willReturnMap([
-            [1, 'AT', null],
-            [2, 'AT', new SearchRankingMetricStoreConfigTransfer()],
+            [1, 'AT', 'de_AT', null],
+            [2, 'AT', 'de_AT', new SearchRankingMetricStoreConfigTransfer()],
         ]);
 
         $metricWriterMock = $this->createMock(MetricWriterInterface::class);
@@ -222,22 +222,49 @@ class StoreConfigCopierTest extends Unit
         $neverConfiguredMetric = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(2)->setName('random');
 
         $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
-        $repositoryMock->method('getMetricCollection')->with('DE')->willReturn(
+        $repositoryMock->method('getMetricCollection')->with('DE', 'de_DE')->willReturn(
             (new SearchRankingMetricCollectionTransfer())
                 ->addMetric($configuredMetric)
                 ->addMetric($neverConfiguredMetric),
         );
         $repositoryMock->method('findMetricStoreConfig')->willReturnMap([
-            [1, 'DE', (new SearchRankingMetricStoreConfigTransfer())->setFormula('x / max')->setIsActive(true)],
-            [2, 'DE', null],
+            [1, 'DE', 'de_DE', (new SearchRankingMetricStoreConfigTransfer())->setFormula('x / max')->setIsActive(true)],
+            [2, 'DE', 'de_DE', null],
         ]);
 
         $metricWriterMock = $this->createMock(MetricWriterInterface::class);
 
         // Act
-        $previewTransfer = (new StoreConfigCopier($repositoryMock, $metricWriterMock))->previewStoreConfiguration('DE');
+        $previewTransfer = (new StoreConfigCopier($repositoryMock, $metricWriterMock))->previewStoreConfiguration('DE', 'de_DE');
 
         // Assert
         $this->assertSame(['top_seller' => ['formula' => 'x / max', 'isActive' => true]], $previewTransfer->getMetrics());
+    }
+
+    /**
+     * The gap this closes: for an isLocaleScoped=true metric, a non-default source locale can have a
+     * genuinely different formula than the app-wide default locale — the preview must read the locale it
+     * was actually given, not silently fall back to a hardcoded default.
+     */
+    public function testPreviewReadsTheGivenSourceLocaleRatherThanTheAppWideDefault(): void
+    {
+        // Arrange
+        $metricTransfer = (new SearchRankingMetricTransfer())->setIdSearchRankingMetric(1)->setName('top_seller');
+
+        $repositoryMock = $this->createMock(SearchRankingRepositoryInterface::class);
+        $repositoryMock->method('getMetricCollection')->with('DE', 'en_US')->willReturn(
+            (new SearchRankingMetricCollectionTransfer())->addMetric($metricTransfer),
+        );
+        $repositoryMock->method('findMetricStoreConfig')->with(1, 'DE', 'en_US')->willReturn(
+            (new SearchRankingMetricStoreConfigTransfer())->setFormula('3 * atan(x)')->setIsActive(true),
+        );
+
+        $metricWriterMock = $this->createMock(MetricWriterInterface::class);
+
+        // Act
+        $previewTransfer = (new StoreConfigCopier($repositoryMock, $metricWriterMock))->previewStoreConfiguration('DE', 'en_US');
+
+        // Assert
+        $this->assertSame(['top_seller' => ['formula' => '3 * atan(x)', 'isActive' => true]], $previewTransfer->getMetrics());
     }
 }

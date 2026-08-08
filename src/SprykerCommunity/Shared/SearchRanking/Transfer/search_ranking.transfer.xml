@@ -107,6 +107,7 @@
         <property name="idSearchRankingMetricStoreConfig" type="int"/>
         <property name="fkSearchRankingMetric" type="int"/>
         <property name="storeName" type="string"/>
+        <property name="localeName" type="string"/>
         <property name="formula" type="string"/>
         <property name="isActive" type="bool"/>
         <property name="shape" type="string"/>

@@ -90,7 +90,7 @@ class MetricTable extends AbstractTable
             static::COL_WEIGHT => 'Weight',
             static::COL_FORMULA => 'Formula',
             static::COL_IS_ACTIVE => 'Active',
-            static::COL_SCOPE => 'Weight scope',
+            static::COL_SCOPE => 'Scope',
             static::COL_ACTIONS => 'Actions',
         ]);
 
@@ -216,6 +216,7 @@ class MetricTable extends AbstractTable
             SpySearchRankingMetricStoreConfigQuery::create()
                 ->filterByFkSearchRankingMetric_In($idSearchRankingMetrics)
                 ->filterByStoreName($this->storeName)
+                ->filterByLocaleName($this->localeName)
                 ->find() as $storeConfigEntity
         ) {
             $storeConfigsById[$storeConfigEntity->getFkSearchRankingMetric()] = $storeConfigEntity;

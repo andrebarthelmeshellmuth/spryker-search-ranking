@@ -148,15 +148,24 @@ class SearchRankingMetricWriterStepTest extends Unit
         sort($localeNames);
         $this->assertSame(['de_DE', 'en_US'], $localeNames);
 
-        // store_config (formula/isActive) is written once, unaffected by how many locales the weight
-        // fanned out to -- there is exactly one row for this store, not one per locale.
-        $this->assertSame(
-            1,
+        // store_config (formula/isActive) now fans out across the same comma-separated locale list weight
+        // already did -- one real row per (metric, store, locale), the same storage shape weight has, not
+        // one shared row per store.
+        $storeConfigLocaleNames = [];
+
+        foreach (
             SpySearchRankingMetricStoreConfigQuery::create()
                 ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
                 ->filterByStoreName(SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME)
-                ->count(),
-        );
+                ->find() as $storeConfigEntity
+        ) {
+            $storeConfigLocaleNames[] = $storeConfigEntity->getLocaleName();
+            $this->assertSame('x / max', $storeConfigEntity->getFormula());
+            $this->assertTrue($storeConfigEntity->getIsActive());
+        }
+
+        sort($storeConfigLocaleNames);
+        $this->assertSame(['de_DE', 'en_US'], $storeConfigLocaleNames);
     }
 
     public function testExecuteThrowsForANameThatWouldNeverContributeToLiveRanking(): void
