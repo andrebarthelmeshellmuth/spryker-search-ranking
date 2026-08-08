@@ -317,10 +317,11 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
     }
 
     /**
-     * Deliberately store-agnostic — "does this product need a republish at all" for the PRODUCT_ABSTRACT_PUBLISH
-     * event, not a per-store index view, so a metric active in ANY store (not just one) qualifies its
-     * product. `is_active` lives on `spy_search_ranking_metric_store_config` (one row per store), so
-     * this checks for at least one store where the metric is active — there is no single global flag.
+     * Deliberately store/locale-agnostic — "does this product need a republish at all" for the
+     * PRODUCT_ABSTRACT_PUBLISH event, not a per-store index view, so a metric active in ANY (store,
+     * locale) (not just one) qualifies its product. `is_active` lives on
+     * `spy_search_ranking_metric_store_config` (one row per store+locale), so this checks for at least
+     * one (store, locale) where the metric is active — there is no single global flag.
      *
      * @return array<int>
      */

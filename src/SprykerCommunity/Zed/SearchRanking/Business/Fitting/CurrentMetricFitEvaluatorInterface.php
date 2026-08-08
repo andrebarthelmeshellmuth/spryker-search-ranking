@@ -28,9 +28,11 @@ interface CurrentMetricFitEvaluatorInterface
     /**
      * Specification:
      * - Same fit check as {@see evaluate()}, run once per real locale of $storeName instead of a single
-     *   given locale -- the diagnostic this package's own formula/shape being store-only (not yet
-     *   locale-scoped) can't otherwise answer: does this metric's CURRENT store-wide formula actually fit
-     *   EVERY locale's own real data comparably well, or does one locale's fit quietly lag the others?
+     *   given locale -- for a store-wide metric (isLocaleScoped=false, the common case, one formula fanned
+     *   out to every locale) this is the evidence a curator needs to decide whether that's still the right
+     *   call: does the current store-wide formula actually fit EVERY locale's own real data comparably
+     *   well, or does one locale's fit quietly lag the others enough to warrant flipping the metric to
+     *   isLocaleScoped=true so each locale can be fit independently?
      * - Keyed by locale name; a locale with no digest yet (or the metric not configured for this store at
      *   all) maps to null, same absence-is-neutral convention {@see evaluate()} already uses -- never
      *   thrown, never omitted from the map.

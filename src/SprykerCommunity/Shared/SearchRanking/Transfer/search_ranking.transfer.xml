@@ -19,9 +19,13 @@
         <property name="formula" type="string"/>
         <property name="isActive" type="bool"/>
         <property name="isHigherBetter" type="bool"/>
-        <!-- Whether this metric's WEIGHT is a per-locale decision (true, the default) or a store-wide
-             fact fanned out to every locale of a store (false). Global identity field, same bucket as
-             isHigherBetter - does not affect formula/isActive/shape, already store-only regardless. -->
+        <!-- Root fact governing every scoped field this metric owns — formula, isActive, shape, AND
+             weight together, one flag for all four, not one per concern. False (default, most metrics):
+             this metric is store-wide — all four are authored once and fanned out to every real locale of
+             a store automatically when saved. True (rare — evidence via evaluateCurrentMetricFitAcrossLocales()
+             first): all four genuinely differ per locale and are authored/stored independently per (store,
+             locale). Global identity field, same bucket as isHigherBetter (name/isHigherBetter/isLocaleScoped
+             are the only genuinely global fields left on this metric). -->
         <property name="isLocaleScoped" type="bool"/>
         <property name="shape" type="string"/>
         <!-- Optional input to saveMetric(): which SearchRankingConfig::CHANGE_SOURCE_* produced this
@@ -97,10 +101,12 @@
         <property name="percentiles" type="float[]" singular="percentile"/>
     </transfer>
 
-    <!-- One store's own formula/active-flag/shape for a metric — the store-scoped counterpart to
-         SearchRankingMetric's identity fields (name, isHigherBetter stay global). A brand-new store's
-         row is bootstrapped via Scope Copy's Sync Store Config action, then independently re-fit and
-         toggled from then on. See
+    <!-- One (store, locale)'s own formula/active-flag/shape for a metric — the store+locale-scoped
+         counterpart to SearchRankingMetric's identity fields (name, isHigherBetter, isLocaleScoped stay
+         global). For an isLocaleScoped=false metric (the common case) every real locale of a store shares
+         the SAME row content, fanned out on save; for isLocaleScoped=true each locale's row is genuinely
+         independent. A brand-new store's rows are bootstrapped via Scope Copy's combined "Copy now"/Lock
+         action, then independently re-fit and toggled from then on. See
          spy_search_ranking_metric_store_config's own schema column docs for the store-vs-locale
          reasoning. -->
     <transfer name="SearchRankingMetricStoreConfig" strict="true">
@@ -188,11 +194,11 @@
         <property name="skippedCount" type="int"/>
     </transfer>
 
-    <!-- Result of a one-off store-config sync (formula/isActive/shape, store-only — see
-         SearchRankingMetricStoreConfig). Same isBlockedByExistingData/isSuccess+errorMessage shape as
-         SearchRankingScopeCopyResult, but store-only (no locale in the block/error semantics) and with a
-         skippedCount: in MODE_COPY_ONLY_OVERLAP a metric the target hasn't already independently adopted
-         is deliberately left alone rather than copied, and skippedCount says how many were. -->
+    <!-- Result of a one-off store-config sync (formula/isActive/shape — see SearchRankingMetricStoreConfig
+         for its own store+locale scoping). Same isBlockedByExistingData/isSuccess+errorMessage shape as
+         SearchRankingScopeCopyResult, plus a skippedCount: in MODE_COPY_ONLY_OVERLAP a metric the target
+         hasn't already independently adopted is deliberately left alone rather than copied, and
+         skippedCount says how many were. -->
     <transfer name="SearchRankingStoreConfigCopyResult" strict="true">
         <property name="isSuccess" type="bool"/>
         <property name="isBlockedByExistingData" type="bool"/>

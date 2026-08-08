@@ -39,7 +39,7 @@
                 </select>
             </form>
             <p class="text-muted" style="margin-bottom: 15px;">
-                {{ 'Scope column shows how each metric is authored. "Store" (default): formula, active status and weight apply per store, across every locale. "Store + locale": this metric genuinely differs per locale — formula, active status and weight all apply to this exact store+locale, switch Locale above to see/edit a different one.' | trans }}
+                {{ 'Scope column shows how each metric is authored. Name and direction are global, always — not part of this column. "Store" (default): formula, active status and weight are authored once and fanned out to every real locale of the store automatically when saved, not a separate store-only value. "Store + locale": this metric genuinely differs per locale — formula, active status and weight are authored and stored independently per (store, locale); switch Locale above to see/edit a different one.' | trans }}
             </p>
             {{ metricTable | raw }}
         {% endblock %}

@@ -32,8 +32,8 @@ class SearchRankingMapper
     /**
      * formula/isActive/shape are NOT read from the entity here — `spy_search_ranking_metric` itself only
      * carries id/name/isHigherBetter/isLocaleScoped any more; formula/isActive/shape moved to
-     * `spy_search_ranking_metric_store_config`, store-scoped (a breaking change; see CHANGELOG.md for the
-     * release that shipped it — no live installs meant no backfill migration was needed). This method
+     * `spy_search_ranking_metric_store_config`, store+locale-scoped (a breaking change; see CHANGELOG.md
+     * for the release that shipped it — no live installs meant no backfill migration was needed). This method
      * only maps what's still genuinely global. Callers that need formula/isActive/shape overlay them via
      * {@see SearchRankingRepository::attachStoreConfig()}, the same composable-overlay shape
      * {@see SearchRankingRepository::attachWeight()} already established.
