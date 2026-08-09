@@ -16,10 +16,13 @@ use Spryker\Shared\SearchElasticsearch\ElasticaClient\ElasticaClientFactory;
 use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilder;
 use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocaleClientInterface;
+use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToPermissionClientInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
+use SprykerCommunity\Client\SearchRanking\RandomImpact\RandomImpactCalculator;
+use SprykerCommunity\Client\SearchRanking\RandomImpact\RandomImpactCalculatorInterface;
 use SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityChecker;
 use SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityCheckerInterface;
 use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculator;
@@ -37,6 +40,11 @@ class SearchRankingFactory extends AbstractFactory
     public function createFunctionScoreBuilder(): FunctionScoreBuilderInterface
     {
         return new FunctionScoreBuilder();
+    }
+
+    public function createRandomImpactCalculator(): RandomImpactCalculatorInterface
+    {
+        return new RandomImpactCalculator();
     }
 
     public function createScoreSectionBuilder(): ScoreSectionBuilderInterface
@@ -71,6 +79,11 @@ class SearchRankingFactory extends AbstractFactory
     public function getLocaleClient(): SearchRankingToLocaleClientInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::CLIENT_LOCALE);
+    }
+
+    public function getPermissionClient(): SearchRankingToPermissionClientInterface
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::CLIENT_PERMISSION);
     }
 
     public function createQueryTermFrequencyFetcher(): QueryTermFrequencyFetcherInterface

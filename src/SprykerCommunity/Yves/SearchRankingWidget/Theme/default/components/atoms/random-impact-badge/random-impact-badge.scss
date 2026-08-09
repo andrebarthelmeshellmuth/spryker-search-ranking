@@ -1,0 +1,64 @@
+// A small circular "-X/+X" badge overlaid on a product tile's own card, showing how many positions that
+// product would move if the configured random tie-breaker metric's weight were 0 — see
+// RandomImpactResultFormatterPlugin for where the delta itself comes from. Hidden by default; shown only
+// while `body.random-impact-visible` is set, toggled entirely by the sibling `random-impact-toggle`
+// molecule's own checkbox (see that component's .ts) — this atom carries no interactivity of its own.
+//
+// Deliberately its own class, not a reuse of search-debug's `.search-debug-product-wrapper`/positioning —
+// this package stays independently installable from search-debug, with zero code (or styling) coupling
+// either direction. `page-layout-catalog.twig` applies THIS wrapper class to the same product-tile
+// wrapper `<div>` search-debug's own class is applied to, side by side, whenever a product carries a delta.
+.random-impact-product-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+
+    > .col {
+        width: 100%;
+        min-width: 100%;
+        flex: 1 0 auto;
+    }
+}
+
+.random-impact-badge {
+    position: absolute;
+    // Tucked into the product image's own bottom-right corner rather than centered on it, so it interferes
+    // with the product photo as little as possible. `.product-item__image-wrap--catalog` (core Shop-UI,
+    // this package doesn't own it) is a fixed 180px tall slot flush against the top of the card, confirmed
+    // live via the actual rendered layout; 180px minus this badge's own 32px height flushes its bottom edge
+    // with the image's bottom edge. `right` (not `left`) is used so the badge stays anchored to the image's
+    // right edge regardless of the wrapper's own width across breakpoints.
+    top: rem(148);
+    right: rem(8);
+    // Lower than search-debug's own hover overlay ($setting-zi-element-floating, 350) so that overlay —
+    // when a search-admin actually hovers a product to open it — paints ON TOP of this badge, never the
+    // reverse. Same tier as search-debug's own (non-hover) trigger banner, which is fine: the two never
+    // overlap in the resting state (the banner occupies the card's top 36px, this badge sits near the
+    // image's bottom edge).
+    z-index: $setting-zi-element;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: rem(32);
+    height: rem(32);
+    border-radius: 50%;
+    color: $setting-color-white;
+    font-size: rem(12);
+    font-weight: bold;
+    line-height: 1;
+
+    // +X (delta > 0): random is currently HELPING this product rank higher than it otherwise would --
+    // shown green (see random-impact-toggle's own README/docblock for the full sign convention).
+    &--positive {
+        background-color: map-get($setting-color-actions, success);
+    }
+
+    // -X (delta < 0): random is currently HOLDING this product BACK -- shown red.
+    &--negative {
+        background-color: map-get($setting-color-actions, alert);
+    }
+}
+
+body.random-impact-visible .random-impact-badge {
+    display: inline-flex;
+}

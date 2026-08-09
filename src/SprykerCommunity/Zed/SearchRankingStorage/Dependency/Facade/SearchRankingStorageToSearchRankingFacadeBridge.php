@@ -97,4 +97,9 @@ class SearchRankingStorageToSearchRankingFacadeBridge implements SearchRankingSt
     {
         return $this->searchRankingFacade->getSpecificityWeightShiftMagnitude($storeName, $localeName);
     }
+
+    public function getRandomMetricName(): string
+    {
+        return $this->searchRankingFacade->getRandomMetricName();
+    }
 }

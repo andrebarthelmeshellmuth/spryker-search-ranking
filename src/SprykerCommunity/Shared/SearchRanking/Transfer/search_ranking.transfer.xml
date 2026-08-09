@@ -310,6 +310,11 @@
         <property name="metricWeights" type="array" singular="metricWeight" associative="true"/>
         <property name="relevanceWeight" type="float"/>
         <property name="relevanceSaturationPoint" type="float"/>
+        <!-- Names whichever `metricWeights` key SearchRankingConfig::getRandomMetricName() designates as
+             the project's random tie-breaker (default 'random') — lets Yves-reachable code (e.g. a
+             random-impact simulation) identify that one metric without hardcoding its name. Project-wide,
+             not store/locale scoped, same as the Zed-side config it mirrors. -->
+        <property name="randomMetricName" type="string"/>
         <!-- Specificity-aware relevance weighting settings — only read when the Client-layer code flag
              SprykerCommunity\Client\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled() is
              enabled; always published regardless, same as every other setting here. specificityBlendWeight

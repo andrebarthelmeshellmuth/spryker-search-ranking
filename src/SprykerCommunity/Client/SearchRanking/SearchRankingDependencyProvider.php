@@ -12,6 +12,7 @@ namespace SprykerCommunity\Client\SearchRanking;
 use Spryker\Client\Kernel\AbstractDependencyProvider;
 use Spryker\Client\Kernel\Container;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocaleClientBridge;
+use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToPermissionClientBridge;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientBridge;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientBridge;
 
@@ -33,6 +34,11 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
     public const CLIENT_LOCALE = 'CLIENT_LOCALE';
 
     /**
+     * @var string
+     */
+    public const CLIENT_PERMISSION = 'CLIENT_PERMISSION';
+
+    /**
      * @param \Spryker\Client\Kernel\Container $container
      */
     #[\Override]
@@ -42,6 +48,7 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
         $container = $this->addSearchRankingStorageClient($container);
         $container = $this->addStoreClient($container);
         $container = $this->addLocaleClient($container);
+        $container = $this->addPermissionClient($container);
 
         return $container;
     }
@@ -77,6 +84,18 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
     {
         $container->set(static::CLIENT_LOCALE, fn (Container $container) => new SearchRankingToLocaleClientBridge(
             $container->getLocator()->locale()->client(),
+        ));
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Client\Kernel\Container $container
+     */
+    protected function addPermissionClient(Container $container): Container
+    {
+        $container->set(static::CLIENT_PERMISSION, fn (Container $container) => new SearchRankingToPermissionClientBridge(
+            $container->getLocator()->permission()->client(),
         ));
 
         return $container;

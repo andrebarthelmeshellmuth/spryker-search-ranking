@@ -64,6 +64,7 @@ class RankingConfigurationStorageWriterTest extends Unit
         $this->assertSame(2.0, $capturedConfiguration['specificity_curve_exponent']);
         $this->assertSame(1.0, $capturedConfiguration['specificity_weight_exponent']);
         $this->assertSame(0.5, $capturedConfiguration['specificity_weight_shift_magnitude']);
+        $this->assertSame('random', $capturedConfiguration['random_metric_name']);
     }
 
     /**
@@ -218,6 +219,7 @@ class RankingConfigurationStorageWriterTest extends Unit
         $searchRankingFacadeMock->method('getSpecificityCurveExponent')->willReturn(2.0);
         $searchRankingFacadeMock->method('getSpecificityWeightExponent')->willReturn(1.0);
         $searchRankingFacadeMock->method('getSpecificityWeightShiftMagnitude')->willReturn(0.5);
+        $searchRankingFacadeMock->method('getRandomMetricName')->willReturn('random');
 
         $capturedScopes = [];
         $entityManagerMock = $this->createMock(SearchRankingStorageEntityManagerInterface::class);
@@ -279,6 +281,7 @@ class RankingConfigurationStorageWriterTest extends Unit
         $searchRankingFacadeMock->method('getSpecificityCurveExponent')->willReturn(2.0);
         $searchRankingFacadeMock->method('getSpecificityWeightExponent')->willReturn(1.0);
         $searchRankingFacadeMock->method('getSpecificityWeightShiftMagnitude')->willReturn(0.5);
+        $searchRankingFacadeMock->method('getRandomMetricName')->willReturn('random');
 
         return $searchRankingFacadeMock;
     }

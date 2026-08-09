@@ -1,0 +1,18 @@
+random-impact-toggle {
+    display: block;
+    margin-top: rem(8);
+}
+
+.random-impact-toggle__label {
+    display: inline-flex;
+    align-items: center;
+    gap: rem(6);
+    font-size: rem(13);
+    cursor: pointer;
+}
+
+.random-impact-toggle__disclaimer {
+    margin-top: rem(2);
+    color: $setting-color-darker;
+    font-size: rem(11);
+}

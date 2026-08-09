@@ -1,0 +1,19 @@
+{% extends model('component') %}
+
+{# `tag` matching `name` makes this a real custom element (see ShopUi's model('component')) — required so
+   random-impact-toggle.ts can attach to it as a Component/HTMLElement subclass. #}
+{% define config = {
+    name: 'random-impact-toggle',
+    tag: 'random-impact-toggle',
+} %}
+
+{% block body %}
+    {# `config.name` (plain BEM class) for CSS, `config.jsName` for JS hooks only — see the
+       search-ranking-optimizer sibling's product-rating molecule for the same dual-class convention. The
+       checkbox itself needs only the jsName hook: it carries no styling of its own beyond the label's. #}
+    <label class="{{ config.name }}__label">
+        <input type="checkbox" class="{{ config.jsName }}__checkbox">
+        {{ 'search_ranking.random_impact.show' | trans }}
+    </label>
+    <p class="{{ config.name }}__disclaimer">{{ 'search_ranking.random_impact.disclaimer' | trans }}</p>
+{% endblock %}
