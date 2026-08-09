@@ -46,6 +46,7 @@ closed-form curve-fit suggestions — no guessing what shape a business signal s
   - [12. Register the ranking-configuration publish event listener](#12-register-the-ranking-configuration-publish-event-listener)
   - [13. Register the function_score query expander](#13-register-the-function_score-query-expander)
   - [14. Optional: register the search-debug overlay section](#14-optional-register-the-search-debug-overlay-section)
+  - [14a. Optional: register the random-impact admin preview](#14a-optional-register-the-random-impact-admin-preview)
   - [15. Schedule the scope-copy-sync cron](#15-schedule-the-scope-copy-sync-cron)
   - [16. Build](#16-build)
   - [17. Verify the installation](#17-verify-the-installation)
@@ -452,6 +453,31 @@ so, with no error to tell you why.
     eligible for either role again in a future lock. Unlocking soft-deletes the row (never hard-deleted) so
     the Active Locks table stays a real history of every lock episode; relocking the same pair later
     creates a fresh row rather than reactivating the old one.
+- **Random-impact admin preview** (optional, SRP, gated behind its own
+  `SeeSearchRankingRandomImpactPermissionPlugin`) — on the storefront search results page, a "Show random
+  impact" checkbox reveals a small +X/-X badge on every product whose rank the configured random
+  tie-breaker metric (see [Random tie-breaker cron](#what-it-does) above) is currently shifting — how many
+  positions that product would move if that one metric's weight were 0 instead of its real live value. No
+  second search query: since a hit's `_score` already IS the final blended score
+  (`BOOST_MODE_REPLACE`) and every metric's own raw signal is already whitelisted into `_source` as
+  `scores.<metricName>`, simulating "random off" is just `_score - (1 - relevanceWeight) * randomWeight *
+  randomSignal`, then a client-side re-sort. **A real, deliberate limitation**: this only re-sorts the
+  products already on the current page, not the full result set the query would otherwise produce across
+  every page — increasing the shop's own items-per-page setting narrows that gap somewhat, which is exactly
+  what the checkbox's own help text says. Green (`+X`) means random is currently helping that product rank
+  higher than it otherwise would; red (`-X`) means random is currently holding it back. A product whose
+  position wouldn't change renders no badge at all. Deltas are computed once, up front, alongside the
+  search results themselves — for permitted search-admins only, the same convention search-debug's own
+  overlay data uses.
+
+  ![The "Show random impact" checkbox and its help text above a row of search results, with three +X/-X badges tucked into the bottom-right corner of their product images](docs/screenshots/random-impact.png)
+
+  Deliberately **zero coupling with spryker-community/search-debug** in either direction — its own
+  permission plugin (duplicating the shape of `SeeSearchDebugInfoPermissionPlugin`, not reusing the class:
+  permission plugins are meant to be one-per-package by design), its own Yves widget module
+  (`Yves/SearchRankingWidget`), its own wrapper CSS class applied alongside (never instead of)
+  search-debug's own on the same product tile. Installing and registering search-debug is not required for
+  this feature to work.
 
 ## Ranking formula
 
@@ -798,11 +824,12 @@ misbehaving formula cannot poison the data with zeros, negatives, `NaN` or `INF`
 | Module | Purpose |
 | --- | --- |
 | `SearchRanking` (Zed) | Propel schema, facade (CRUD, settings, formula validation, normalization, ES export/publish, metric-history recording, scope-copy/lock), expression evaluator, distribution-digest builder, curve-fit suggester, formula-preview builder, per-formula fit evaluator, ProductPageSearch export plugins, `search-ranking:normalize` / `search-ranking:randomize` / `search-ranking:scope-copy-sync` console commands |
-| `SearchRanking` (Client) | `SearchRankingFunctionScoreQueryExpanderPlugin` + painless script builder |
+| `SearchRanking` (Client) | `SearchRankingFunctionScoreQueryExpanderPlugin` + painless script builder + permission-gated `RandomImpactResultFormatterPlugin`/`RandomImpactCalculator` (see [Random-impact admin preview](#what-it-does)) |
 | `SearchRankingGui` | Zed UI controllers, tables, forms (metrics + settings + scope copy/lock), navigation entry |
 | `SearchRankingStorage` (Zed) | Ranking-configuration storage table with synchronization behavior, publish writer, sync-data plugin |
 | `SearchRankingStorage` (Client) | Reads the configuration document from key-value storage |
 | `SearchRankingDataImport` | The two data importers; example CSVs in `data/import/` |
+| `SearchRankingWidget` (Yves) | The "Show random impact" checkbox and badge Twig/SCSS/TS components, rendered by the project's own SRP template |
 
 ## Requirements
 
@@ -1130,6 +1157,65 @@ protected function getProductDebugDataExpanderPlugins(): array
 }
 ```
 
+### 14a. Optional: register the random-impact admin preview
+
+In **both** `Pyz\Zed\Permission\PermissionDependencyProvider::getPermissionPlugins()` and
+`Pyz\Client\Permission\PermissionDependencyProvider::getPermissionPlugins()`:
+
+```php
+use SprykerCommunity\Shared\SearchRanking\Plugin\SeeSearchRankingRandomImpactPermissionPlugin;
+
+new SeeSearchRankingRandomImpactPermissionPlugin(),
+```
+
+Registering the plugin only makes the permission *grantable* — the checkbox stays absent from the DOM
+entirely until a customer's company role is actually given `SeeSearchRankingRandomImpactPermissionPlugin`
+(e.g. via `company_role_permission.csv`), and a customer already logged in when the grant is added needs to
+log out and back in for it to take effect in their session. Same caveat as
+`spryker-community/search-ranking-optimizer`'s own `RateSearchRelevancePermissionPlugin`.
+
+Then extend the Catalog client's own search result formatters on project level
+(`Pyz\Client\Catalog\CatalogDependencyProvider::createCatalogSearchResultFormatterPlugins()`):
+
+```php
+use SprykerCommunity\Client\SearchRanking\Plugin\Catalog\RandomImpactResultFormatterPlugin;
+
+new RandomImpactResultFormatterPlugin(),
+```
+
+Finally, render the toggle and per-product badge in your own SRP template (this package does not override
+`page-layout-catalog.twig` itself — same project-owned convention as
+`spryker-community/search-ranking-optimizer`'s rating widget). The formatter above populates
+`_view.randomImpact.isActive`/`.deltas` on the search result; pull both into your own `{% define data =
+{...} %}`:
+
+```twig
+randomImpactIsActive: _view.randomImpact.isActive | default(false),
+randomImpactDeltas: _view.randomImpact.deltas | default([]),
+```
+
+Render the checkbox once, above the results:
+
+```twig
+{% if data.randomImpactIsActive %}
+    {% include molecule('random-impact-toggle', 'SearchRankingWidget') only %}
+{% endif %}
+```
+
+And the badge once per product, wherever your template renders each product tile:
+
+```twig
+{% set productRandomImpactDelta = (data.randomImpactDeltas | default([]))[product.id_product_abstract] | default(null) %}
+{% if productRandomImpactDelta is not null %}
+    {% set randomImpactIsPositive = productRandomImpactDelta > 0 %}
+    <span class="random-impact-badge random-impact-badge--{{ randomImpactIsPositive ? 'positive' : 'negative' }}">
+        {{ randomImpactIsPositive ? '+' ~ productRandomImpactDelta : productRandomImpactDelta }}
+    </span>
+{% endif %}
+```
+
+A product missing from `randomImpactDeltas` (its position wouldn't change) renders no badge — never a `+0`.
+
 ### 15. Schedule the scope-copy-sync cron
 
 E.g. daily, in `Pyz\Zed\SymfonyScheduler\SymfonySchedulerConfig::getCronJobs()`:
@@ -1298,7 +1384,7 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-**272 tests, 1595 assertions** across six Codeception suites (`Zed/SearchRanking`,
+**287 tests, 1632 assertions** across six Codeception suites (`Zed/SearchRanking`,
 `Zed/SearchRankingStorage`, `Zed/SearchRankingGui`, `Zed/SearchRankingDataImport`, `Client/SearchRanking`,
 `Client/SearchRankingStorage`). From a shop that has the package installed:
 
@@ -1337,7 +1423,12 @@ test-owned index (including one deliberately using a mismatched index-time analy
 `per_field_analyzer` actually overrides it) — all three need a reachable search engine, though still no
 database. `QuerySpecificityCalculator`'s own blend/normalize formula and `SpecificityWeightCalculator`'s
 own shift/fallback orchestration are covered separately as plain unit tests (plain arrays/stubbed IO, no
-engine needed) in `QuerySpecificityCalculatorTest`/`SpecificityWeightCalculatorTest`.
+engine needed) in `QuerySpecificityCalculatorTest`/`SpecificityWeightCalculatorTest`. The [random-impact
+preview](#what-it-does)'s own delta math is covered the same way: `RandomImpactCalculatorTest` (pure unit,
+the subtract-and-resort formula plus the "no signal of its own defaults to zero"/"unchanged position
+renders nothing" edge cases) and `RandomImpactResultFormatterPluginTest` (mocks the factory the same way
+`SearchDebugResultFormatterPluginTest` does, covering the permission gate and the "not active" short
+circuit) — neither needs a search engine.
 
 `Zed/SearchRankingGui` (`ProductMetricGapFinderTest`) is the mirror case on the database side: real raw
 SQL (the `CROSS JOIN` + `LEFT JOIN` + `IS NULL` — see [What it does](#what-it-does) for why this one query
@@ -1366,29 +1457,44 @@ static guarantees; the test suite is run against a real shop before a release.
 
 ### Browser (Presentation) suite
 
-> **This suite is a development tool for this package's own reference demoshop — it is not something
-> to install or run against YOUR shop.** It logs in as `admin@spryker.com`, drives the real Zed GUI
-> through a store/locale scope this demoshop seeds (`DE`/`de_DE`), and asserts against an existing
-> metric (id `1`) that already has a distribution digest for the normalization-preview check. Point it
-> at a different shop and most of it will simply fail on missing data, not on a real defect. It exists to
-> catch UI regressions while developing this package, not as something adopters are expected to run.
+> **These suites are a development tool for this package's own reference demoshop — not something
+> to install or run against YOUR shop.** The Zed suite logs in as `admin@spryker.com`, drives the real Zed
+> GUI through a store/locale scope this demoshop seeds (`DE`/`de_DE`), and asserts against an existing
+> metric (id `1`) that already has a distribution digest for the normalization-preview check. The Yves
+> suite logs in as `search-admin@test-company.example` (the one account this demoshop's fixtures grant
+> `SeeSearchRankingRandomImpactPermissionPlugin` to) and `spencor.hopkin@acme.com` (same company, no role,
+> for the negative permission-gate tests). Point either at a different shop and most of it will simply fail
+> on missing data, not on a real defect. They exist to catch UI regressions while developing this package,
+> not as something adopters are expected to run.
 
-`tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation/` is a real WebDriver click-through suite
-covering the Zed GUI: the metric list (scoped by store/locale, plus a full create → edit → delete round
-trip through the real forms), the "Normalize active weights" action, the Edit form's live normalization
-preview (smoke-level only — the curve-fit math itself is already covered by the unit suite above), the
-Settings form (including that every configured field, `specificityCurveExponent` among them, actually
-renders), the Scope Copy page (loads with its combined picker and both Copy now/Lock actions present), the Product Values table and its
-Gaps view, and the Metric History table. It is kept as
-its own module directory rather than nested under `Zed/SearchRankingGui/` because that module's `Zed`
-suite scans its whole directory tree recursively — a nested WebDriver suite there would break it.
+Two suites, split by layer:
+
+- `tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation/` — the Zed GUI: the metric list (scoped
+  by store/locale, plus a full create → edit → delete round trip through the real forms), the "Normalize
+  active weights" action, the Edit form's live normalization preview (smoke-level only — the curve-fit
+  math itself is already covered by the unit suite above), the Settings form (including that every
+  configured field, `specificityCurveExponent` among them, actually renders), the Scope Copy page (loads
+  with its combined picker and both Copy now/Lock actions present), the Product Values table and its Gaps
+  view, and the Metric History table. It is kept as its own module directory rather than nested under
+  `Zed/SearchRankingGui/` because that module's `Zed` suite scans its whole directory tree recursively — a
+  nested WebDriver suite there would break it.
+- `tests/SprykerCommunityTest/Yves/SearchRankingWidgetPresentation/` — the [random-impact admin
+  preview](#what-it-does): the permission gate (two negative-test accounts plus an anonymous-shopper
+  check, mirroring `spryker-community/search-ranking-optimizer`'s own `PermissionGateCest`), and that the
+  checkbox toggles every badge's visibility on and back off client-side with no second request, and that
+  every rendered badge carries exactly one of the two sign/color classes (asserted via a live DOM count,
+  not just "at least one exists"). Deltas are real, live data — today's randomized signal values, refreshed
+  daily by the `search-ranking:randomize` cron — so this suite deliberately never asserts a *specific*
+  delta value or count, only "at least one badge is visible", to stay green across that daily reshuffle.
 
 ```bash
 vendor/bin/codecept build -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation
-vendor/bin/codecept run -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation
+vendor/bin/codecept run   -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation
+vendor/bin/codecept build -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Yves/SearchRankingWidgetPresentation
+vendor/bin/codecept run   -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Yves/SearchRankingWidgetPresentation
 ```
 
-Like the rest of the test suite, this is not part of CI — it needs a real running shop plus the Selenium/
+Like the rest of the test suite, neither is part of CI — both need a real running shop plus the Selenium/
 chromedriver service already provisioned in this demoshop's `docker-compose.yml`.
 
 Static analysis (`phpstan`, level 8, config in [`phpstan.neon`](phpstan.neon)) is likewise run from a host

@@ -60,4 +60,9 @@ interface SearchRankingStorageToSearchRankingFacadeInterface
      * @param string $localeName
      */
     public function getSpecificityWeightShiftMagnitude(string $storeName, string $localeName): float;
+
+    /**
+     * Project-wide, not store/locale scoped -- see `SearchRankingConfig::getRandomMetricName()`.
+     */
+    public function getRandomMetricName(): string;
 }

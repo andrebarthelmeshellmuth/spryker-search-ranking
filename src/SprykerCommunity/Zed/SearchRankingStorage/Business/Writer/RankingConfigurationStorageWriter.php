@@ -66,6 +66,11 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
     protected const KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE = 'specificity_weight_shift_magnitude';
 
     /**
+     * @var string
+     */
+    protected const KEY_RANDOM_METRIC_NAME = 'random_metric_name';
+
+    /**
      * @param \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface $searchRankingFacade
      * @param \SprykerCommunity\Zed\SearchRankingStorage\Persistence\SearchRankingStorageEntityManagerInterface $entityManager
      * @param \SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSynchronizationFacadeInterface $synchronizationFacade
@@ -123,6 +128,7 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
             static::KEY_SPECIFICITY_CURVE_EXPONENT => $this->searchRankingFacade->getSpecificityCurveExponent($storeName, $localeName),
             static::KEY_SPECIFICITY_WEIGHT_EXPONENT => $this->searchRankingFacade->getSpecificityWeightExponent($storeName, $localeName),
             static::KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE => $this->searchRankingFacade->getSpecificityWeightShiftMagnitude($storeName, $localeName),
+            static::KEY_RANDOM_METRIC_NAME => $this->searchRankingFacade->getRandomMetricName(),
         ], $storeName, $localeName);
     }
 

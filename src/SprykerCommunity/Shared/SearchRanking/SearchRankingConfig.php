@@ -35,6 +35,42 @@ class SearchRankingConfig
 
     /**
      * Specification:
+     * - {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\RandomImpactResultFormatterPlugin::getName()}'s
+     *   own registration key in the Catalog client's `ResultFormatterPlugin` stack — the `_view` key its
+     *   payload surfaces under in Yves (`_view.randomImpact.*`).
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const RANDOM_IMPACT_RESULT_KEY = 'randomImpact';
+
+    /**
+     * Specification:
+     * - Key, within {@see RANDOM_IMPACT_RESULT_KEY}'s own payload, of the bool saying whether a random
+     *   tie-breaker metric is currently active with a non-zero weight for this (store, locale) — the gate
+     *   for whether the random-impact checkbox should render at all.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const RANDOM_IMPACT_KEY_IS_ACTIVE = 'isActive';
+
+    /**
+     * Specification:
+     * - Key, within {@see RANDOM_IMPACT_RESULT_KEY}'s own payload, of the `idProductAbstract => position
+     *   delta` map — see {@see \SprykerCommunity\Client\SearchRanking\RandomImpact\RandomImpactCalculatorInterface::calculate()}
+     *   for the full sign convention.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const RANDOM_IMPACT_KEY_DELTAS = 'deltas';
+
+    /**
+     * Specification:
      * - Setting key of the blend weight used in the function_score script: the share of the final score
      *   that comes from normalized text relevance, with `(1 - relevanceWeight)` going to the weighted
      *   business signals. See {@see \SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder}.

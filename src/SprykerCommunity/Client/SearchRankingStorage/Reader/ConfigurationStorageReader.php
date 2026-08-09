@@ -58,6 +58,20 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     protected const KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE = 'specificity_weight_shift_magnitude';
 
     /**
+     * @var string
+     */
+    protected const KEY_RANDOM_METRIC_NAME = 'random_metric_name';
+
+    /**
+     * Matches `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getRandomMetricName()`'s own
+     * default, so a payload published before this key existed still resolves to the same metric name a
+     * fresh Zed save would produce.
+     *
+     * @var string
+     */
+    protected const DEFAULT_RANDOM_METRIC_NAME = 'random';
+
+    /**
      * Defaults for a KV payload published before this feature existed — matches
      * `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultRelevanceWeight()` (see that
      * method's own docblock for why 0.75, not a neutral 0.5), so a payload predating this key still gets
@@ -188,6 +202,7 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
             ->setSpecificitySaturationPoint((float)($configurationData[static::KEY_SPECIFICITY_SATURATION_POINT] ?? static::DEFAULT_SPECIFICITY_SATURATION_POINT))
             ->setSpecificityCurveExponent((float)($configurationData[static::KEY_SPECIFICITY_CURVE_EXPONENT] ?? static::DEFAULT_SPECIFICITY_CURVE_EXPONENT))
             ->setSpecificityWeightExponent((float)($configurationData[static::KEY_SPECIFICITY_WEIGHT_EXPONENT] ?? static::DEFAULT_SPECIFICITY_WEIGHT_EXPONENT))
-            ->setSpecificityWeightShiftMagnitude((float)($configurationData[static::KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE] ?? static::DEFAULT_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE));
+            ->setSpecificityWeightShiftMagnitude((float)($configurationData[static::KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE] ?? static::DEFAULT_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE))
+            ->setRandomMetricName((string)($configurationData[static::KEY_RANDOM_METRIC_NAME] ?? static::DEFAULT_RANDOM_METRIC_NAME));
     }
 }
