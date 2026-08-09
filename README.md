@@ -971,7 +971,9 @@ $coreTranslationFilePathPatterns[] = APPLICATION_VENDOR_DIR . '/spryker-communit
 
 That one addition auto-discovers this package's [`data/translation/Zed/en_US.csv`](data/translation/Zed/en_US.csv)
 and [`de_DE.csv`](data/translation/Zed/de_DE.csv) — no per-project copy step, unlike the Yves-side
-glossary convention. Add further locale CSVs here (or override the translated text) as your project
+glossary convention (this package's own [`data/glossary.csv`](data/glossary.csv), needed only for the
+[random-impact admin preview](#14a-optional-register-the-random-impact-admin-preview), does need a copy
+step — see that section). Add further locale CSVs here (or override the translated text) as your project
 needs, then refresh the cache:
 
 ```bash
@@ -1173,6 +1175,16 @@ entirely until a customer's company role is actually given `SeeSearchRankingRand
 (e.g. via `company_role_permission.csv`), and a customer already logged in when the grant is added needs to
 log out and back in for it to take effect in their session. Same caveat as
 `spryker-community/search-ranking-optimizer`'s own `RateSearchRelevancePermissionPlugin`.
+
+The checkbox label, its help text, and the permission's own display name are the one piece of this package
+that goes through the Yves-facing Glossary module rather than the Zed-only `data/translation/Zed/` CSVs
+covered in [step 6](#6-translations-for-the-zed-gui) — copy
+[`data/glossary.csv`](data/glossary.csv) into your project's own glossary data and import it the normal
+Spryker way:
+
+```bash
+vendor/bin/console data:import glossary
+```
 
 Then extend the Catalog client's own search result formatters on project level
 (`Pyz\Client\Catalog\CatalogDependencyProvider::createCatalogSearchResultFormatterPlugins()`):

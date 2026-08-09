@@ -1,0 +1,11 @@
+key,translation,locale
+search_ranking.random_impact.show,Show random impact,en_US
+search_ranking.random_impact.show,Zufalls-Einfluss anzeigen,de_DE
+search_ranking.random_impact.disclaimer,Shows the impact on product sort order of THIS page only -- not the full order this search would otherwise produce. Increasing items per page mitigates this a bit.,en_US
+search_ranking.random_impact.disclaimer,Zeigt den Einfluss auf die Sortierreihenfolge nur für DIESE Seite -- nicht auf die gesamte Reihenfolge dieser Suche. Eine höhere Anzahl an Artikeln pro Seite mildert das etwas.,de_DE
+search_ranking.random_impact.improved,Random is currently holding this product back -- it would rank better without it,en_US
+search_ranking.random_impact.improved,Zufall bremst dieses Produkt aktuell aus -- ohne ihn würde es besser ranken,de_DE
+search_ranking.random_impact.worse,Random is currently helping this product -- it would rank worse without it,en_US
+search_ranking.random_impact.worse,Zufall hilft diesem Produkt aktuell -- ohne ihn würde es schlechter ranken,de_DE
+permission.name.SeeSearchRankingRandomImpactPermissionPlugin,See search ranking random impact,en_US
+permission.name.SeeSearchRankingRandomImpactPermissionPlugin,Zufalls-Einfluss im Suchranking einsehen,de_DE
