@@ -1176,6 +1176,13 @@ entirely until a customer's company role is actually given `SeeSearchRankingRand
 log out and back in for it to take effect in their session. Same caveat as
 `spryker-community/search-ranking-optimizer`'s own `RateSearchRelevancePermissionPlugin`.
 
+**The very first `company_role_permission.csv` import after registering this plugin will fail** with
+`Could not find permission by key "SeeSearchRankingRandomImpactPermissionPlugin"`, even though the plugin
+is correctly registered in both dependency providers. Spryker's permission importer resolves keys against
+`spy_permission`, a table `PermissionFacade::syncPermissionPlugins()` populates — nothing calls that
+automatically, so a freshly-registered plugin has no row yet. Trigger it once (the Zed GUI's Permissions
+page has a "Sync" action that calls it) and re-run the import.
+
 The checkbox label, its help text, and the permission's own display name are the one piece of this package
 that goes through the Yves-facing Glossary module rather than the Zed-only `data/translation/Zed/` CSVs
 covered in [step 6](#6-translations-for-the-zed-gui) — copy
