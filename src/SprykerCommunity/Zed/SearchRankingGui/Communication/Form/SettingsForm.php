@@ -12,6 +12,7 @@ namespace SprykerCommunity\Zed\SearchRankingGui\Communication\Form;
 use Spryker\Zed\Kernel\Communication\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\GreaterThan;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Range;
@@ -57,12 +58,35 @@ class SettingsForm extends AbstractType
     public const FIELD_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE = 'specificityWeightShiftMagnitude';
 
     /**
+     * @var string
+     */
+    public const OPTION_IS_SPECIFICITY_WEIGHTING_ENABLED = 'isSpecificityWeightingEnabled';
+
+    /**
+     * @param \Symfony\Component\OptionsResolver\OptionsResolver $resolver
+     */
+    #[\Override]
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        parent::configureOptions($resolver);
+
+        $resolver->setDefaults([
+            static::OPTION_IS_SPECIFICITY_WEIGHTING_ENABLED => true,
+        ]);
+    }
+
+    /**
      * @param \Symfony\Component\Form\FormBuilderInterface $builder
      * @param array<string, mixed> $options
      */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         parent::buildForm($builder, $options);
+
+        // Disabled fields are dropped from the submitted request by Symfony's own form handling, not
+        // just visually greyed out — a client re-enabling the input via devtools still can't change what
+        // gets saved, so this is a real lock, not merely a UI hint.
+        $isSpecificityWeightingDisabled = !$options[static::OPTION_IS_SPECIFICITY_WEIGHTING_ENABLED];
 
         $builder->add(static::FIELD_RELEVANCE_WEIGHT, NumberType::class, [
             'label' => 'Relevance weight',
@@ -98,6 +122,7 @@ class SettingsForm extends AbstractType
                 . 'with one very rare term (e.g. a SKU) even if its other words are common; lower '
                 . 'penalizes a query as soon as any one term is common. Must be between 0 and 1. Also '
                 . 'tunable via spryker-community/search-ranking-optimizer.',
+            'disabled' => $isSpecificityWeightingDisabled,
             'constraints' => [
                 new NotBlank(),
                 new Range(['min' => 0, 'max' => 1]),
@@ -111,6 +136,7 @@ class SettingsForm extends AbstractType
                 . 'universal correct value, since it depends entirely on this shop\'s own catalog size '
                 . 'and vocabulary: use Calibration to sample real values and tune from there. Must be '
                 . 'greater than 0.',
+            'disabled' => $isSpecificityWeightingDisabled,
             'constraints' => [
                 new NotBlank(),
                 new GreaterThan(0),
@@ -125,6 +151,7 @@ class SettingsForm extends AbstractType
                 . 'transition around the saturation point above and pushes both very specific and very '
                 . 'unspecific queries further toward the extremes, without moving what counts as neutral. '
                 . 'Must be greater than 0. Also tunable via spryker-community/search-ranking-optimizer.',
+            'disabled' => $isSpecificityWeightingDisabled,
             'constraints' => [
                 new NotBlank(),
                 new GreaterThan(0),
@@ -139,6 +166,7 @@ class SettingsForm extends AbstractType
                 . 'the shift only grows meaningful once a query is quite unspecific or quite specific; '
                 . 'below 1.0 even a mild deviation already produces a fairly large shift. Must be '
                 . 'greater than 0.',
+            'disabled' => $isSpecificityWeightingDisabled,
             'constraints' => [
                 new NotBlank(),
                 new GreaterThan(0),
@@ -153,6 +181,7 @@ class SettingsForm extends AbstractType
                 . '0.5 reaches the full [0;1] range at 0.5; a baseline nearer either edge reaches '
                 . 'correspondingly less on the side nearer that edge, since relevanceWeight itself cannot '
                 . 'leave [0;1]. Must be between 0 (specificity has no effect at all) and 1.',
+            'disabled' => $isSpecificityWeightingDisabled,
             'constraints' => [
                 new NotBlank(),
                 new Range(['min' => 0, 'max' => 1]),

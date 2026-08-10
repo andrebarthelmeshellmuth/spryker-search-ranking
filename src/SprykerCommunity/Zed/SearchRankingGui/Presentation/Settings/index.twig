@@ -7,18 +7,40 @@
     {{ backActionButton('/search-ranking-gui', 'Back to Metrics' | trans) }}
 {% endblock %}
 
+{% block head_css %}
+    {{ parent() }}
+    <style>
+        .search-ranking-settings-specificity-fields--locked {
+            filter: grayscale(1);
+            opacity: 0.6;
+        }
+
+        .search-ranking-settings-specificity-fields--locked input {
+            cursor: not-allowed;
+        }
+
+        .search-ranking-settings-lock-note {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            margin: 20px 0 10px;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Ranking Formula Settings' } %}
         {% block widget_content %}
             {% if isSpecificityWeightingEnabled %}
                 <div class="alert alert-success">
                     <span class="material-symbols-outlined">check_circle</span>
-                    {{ 'Specificity-aware relevance weighting is ON for this deployment. The 5 specificity fields below are live.' | trans }}
+                    {{ 'Specificity-aware relevance weighting is ON for this deployment. The 5 specificity fields below are live and editable.' | trans }}
                 </div>
             {% else %}
                 <div class="alert alert-warning">
                     <span class="material-symbols-outlined">warning</span>
-                    {{ 'Specificity-aware relevance weighting is OFF for this deployment. The 5 specificity fields below can still be saved, but have no effect until it\'s turned on. You need to change code and deploy to turn this on (SearchRankingConfig::isSpecificityWeightingEnabled()) — it\'s deliberately not a Zed-editable setting, since enabling it makes every live catalog search fire an additional Elasticsearch probe. This has real consequences, so it\'s nothing to play around with — that\'s why it\'s code-only.' | trans }}
+                    {{ 'Specificity-aware relevance weighting is OFF for this deployment. The 5 specificity fields below are locked (greyed out, read-only) and have no effect until it\'s turned on. You need to change code and deploy to turn this on (SearchRankingConfig::isSpecificityWeightingEnabled()) — it\'s deliberately not a Zed-editable setting, since enabling it makes every live catalog search fire an additional Elasticsearch probe. This has real consequences, so it\'s nothing to play around with — that\'s why it\'s code-only.' | trans }}
                 </div>
             {% endif %}
             <form method="get" class="form-inline" style="margin-bottom: 15px;">
@@ -41,7 +63,24 @@
             </form>
             <p class="text-muted">{{ 'All of the values below are scoped per store and per locale.' | trans }}</p>
             {{ form_start(settingsForm, {'action': formAction}) }}
-            {{ form_widget(settingsForm) }}
+            {{ form_row(settingsForm.relevanceWeight) }}
+            {{ form_row(settingsForm.relevanceSaturationPoint) }}
+
+            {% if not isSpecificityWeightingEnabled %}
+                <p class="search-ranking-settings-lock-note">
+                    <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+                    {{ 'Locked — specificity-aware relevance weighting is off in code for this deployment.' | trans }}
+                </p>
+            {% endif %}
+            <div class="{{ isSpecificityWeightingEnabled ? '' : 'search-ranking-settings-specificity-fields--locked' }}">
+                {{ form_row(settingsForm.specificityBlendWeight) }}
+                {{ form_row(settingsForm.specificitySaturationPoint) }}
+                {{ form_row(settingsForm.specificityCurveExponent) }}
+                {{ form_row(settingsForm.specificityWeightExponent) }}
+                {{ form_row(settingsForm.specificityWeightShiftMagnitude) }}
+            </div>
+
+            {{ form_rest(settingsForm) }}
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">{{ 'Save' | trans }}</button>
             </div>

@@ -188,11 +188,25 @@ values for a metric, that metric has nothing to contribute, and the blend degrad
   text-relevance query runs instead. This case at least is documented (see the plugin's own docblock) and
   costs nothing extra at query time, unlike the previous case.
 
-**In short:** import (or organically accumulate, e.g. via `spryker-community/search-ranking-optimizer`'s
-own metric-writing hooks) real per-product values for every metric you give a non-zero weight, and run the
-normalization cron, *before* judging whether the ranking formula is doing anything. A fresh install with
-default demo weights and no imported data will rank exactly like stock Spryker search — indistinguishably
-so, with no error to tell you why.
+**In short:** import real per-product values — via the data-import CSVs above, or your own project-level
+`DataImportPlugin` pulling from wherever your business signals actually live (a BI export, an analytics
+warehouse, an events pipeline) — for every metric you give a non-zero weight, and run the normalization
+cron, *before* judging whether the ranking formula is doing anything. A fresh install with default demo
+weights and no imported data will rank exactly like stock Spryker search — indistinguishably so, with no
+error to tell you why.
+
+This package itself never computes or writes a raw value on its own; it only reads whatever was imported.
+Don't confuse this with `spryker-community/search-ranking-optimizer`'s relevance-judgment widget (the
+heart/checkmark/✕ buttons an admin user submits per search result) — that writes to a completely separate
+table used to score the *optimizer's* own rank-eval tuning runs, and never touches
+`spy_search_ranking_product_metric`. It has no bearing on whether this package's metrics have data.
+
+> **This repo's own demo data is fixtures, not a model to imitate.** The
+> `data/import/common/common/search_ranking_metric.csv` / `search_ranking_product_metric.csv` files
+> shipped in this project's demo shop contain made-up numbers for a handful of SKUs, purely so a fresh
+> install has *something* to render in the Zed GUI and to blend into search results. A real shop's
+> `pdp_impressions`, `top_seller`, etc. need to come from that shop's actual analytics — copying the demo
+> CSVs' shape is fine, copying their *values* is not.
 
 ## What it does
 
