@@ -49,6 +49,7 @@ class SettingsController extends AbstractController
         $storeName = (string)$request->query->get(static::PARAM_STORE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME;
         $localeName = (string)$request->query->get(static::PARAM_LOCALE_NAME, '') ?: SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME;
         $searchRankingFacade = $this->getFactory()->getSearchRankingFacade();
+        $isSpecificityWeightingEnabled = $searchRankingFacade->isSpecificityWeightingEnabled();
 
         $settingsForm = $this->getFactory()
             ->getSettingsForm([
@@ -59,6 +60,8 @@ class SettingsController extends AbstractController
                 SettingsForm::FIELD_SPECIFICITY_CURVE_EXPONENT => $searchRankingFacade->getSpecificityCurveExponent($storeName, $localeName),
                 SettingsForm::FIELD_SPECIFICITY_WEIGHT_EXPONENT => $searchRankingFacade->getSpecificityWeightExponent($storeName, $localeName),
                 SettingsForm::FIELD_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE => $searchRankingFacade->getSpecificityWeightShiftMagnitude($storeName, $localeName),
+            ], [
+                SettingsForm::OPTION_IS_SPECIFICITY_WEIGHTING_ENABLED => $isSpecificityWeightingEnabled,
             ])
             ->handleRequest($request);
 
@@ -90,7 +93,7 @@ class SettingsController extends AbstractController
             'selectedStoreName' => $storeName,
             'selectedLocaleName' => $localeName,
             'formAction' => sprintf('%s?%s=%s&%s=%s', static::URL_SETTINGS, static::PARAM_STORE_NAME, $storeName, static::PARAM_LOCALE_NAME, $localeName),
-            'isSpecificityWeightingEnabled' => $searchRankingFacade->isSpecificityWeightingEnabled(),
+            'isSpecificityWeightingEnabled' => $isSpecificityWeightingEnabled,
         ]);
     }
 }

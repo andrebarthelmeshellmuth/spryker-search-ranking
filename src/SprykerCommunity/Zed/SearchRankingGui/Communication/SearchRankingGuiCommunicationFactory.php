@@ -124,10 +124,11 @@ class SearchRankingGuiCommunicationFactory extends AbstractCommunicationFactory
 
     /**
      * @param array<string, mixed> $settingsData
+     * @param array<string, mixed> $options
      */
-    public function getSettingsForm(array $settingsData): FormInterface
+    public function getSettingsForm(array $settingsData, array $options = []): FormInterface
     {
-        return $this->getFormFactory()->create(SettingsForm::class, $settingsData);
+        return $this->getFormFactory()->create(SettingsForm::class, $settingsData, $options);
     }
 
     public function getSearchRankingFacade(): SearchRankingGuiToSearchRankingFacadeInterface
