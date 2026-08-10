@@ -1003,6 +1003,14 @@ top-level `<search-ranking-gui>` entry (drop the `<pages>` block) still gives on
 into `/search-ranking-gui` — the individual pages stay reachable via their own in-page action buttons
 (Back to Metrics, View Product Values, View Gaps, etc.) instead of a dropdown.
 
+**If the entry still doesn't appear after this**, a *new* Zed module's routes can also be hidden behind a
+separate router cache that `navigation:build-cache` does not touch — Zed's navigation renderer silently
+drops any item whose route doesn't resolve yet, rather than showing a broken link. This is a general
+Spryker/Docker SDK caching behavior (a `ConfigCache`-style file, independent of the navigation cache and
+not reliably cleared by `router:cache:warm-up` alone for a brand-new controller), not specific to this
+package — if you hit it, clear your deployment's Zed router runtime cache the same way you would for any
+other newly-added Zed controller, then retry.
+
 ### 8. Schedule the normalization cron
 
 E.g. hourly, in `Pyz\Zed\SymfonyScheduler\SymfonySchedulerConfig::getCronJobs()`:
