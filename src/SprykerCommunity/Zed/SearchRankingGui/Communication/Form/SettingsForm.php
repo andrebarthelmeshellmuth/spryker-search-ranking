@@ -83,11 +83,20 @@ class SettingsForm extends AbstractType
     {
         parent::buildForm($builder, $options);
 
+        $this->addRelevanceFields($builder);
+
         // Disabled fields are dropped from the submitted request by Symfony's own form handling, not
         // just visually greyed out — a client re-enabling the input via devtools still can't change what
         // gets saved, so this is a real lock, not merely a UI hint.
         $isSpecificityWeightingDisabled = !$options[static::OPTION_IS_SPECIFICITY_WEIGHTING_ENABLED];
+        $this->addSpecificityFields($builder, $isSpecificityWeightingDisabled);
+    }
 
+    /**
+     * @param \Symfony\Component\Form\FormBuilderInterface $builder
+     */
+    protected function addRelevanceFields(FormBuilderInterface $builder): void
+    {
         $builder->add(static::FIELD_RELEVANCE_WEIGHT, NumberType::class, [
             'label' => 'Relevance weight',
             'help' => 'Share of the final ranking score that comes from normalized text relevance, in the formula: '
@@ -112,7 +121,14 @@ class SettingsForm extends AbstractType
                 new GreaterThan(0),
             ],
         ]);
+    }
 
+    /**
+     * @param \Symfony\Component\Form\FormBuilderInterface $builder
+     * @param bool $isSpecificityWeightingDisabled
+     */
+    protected function addSpecificityFields(FormBuilderInterface $builder, bool $isSpecificityWeightingDisabled): void
+    {
         $builder->add(static::FIELD_SPECIFICITY_BLEND_WEIGHT, NumberType::class, [
             'label' => 'Specificity blend weight',
             'help' => 'Only takes effect if specificity-aware relevance weighting is enabled in code '
