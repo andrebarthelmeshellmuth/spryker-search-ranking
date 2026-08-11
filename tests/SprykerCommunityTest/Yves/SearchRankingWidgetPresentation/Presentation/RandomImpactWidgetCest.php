@@ -83,4 +83,26 @@ class RandomImpactWidgetCest
         $i->assertGreaterThan(0, $totalCount);
         $i->assertEquals($totalCount, $signedCount);
     }
+
+    /**
+     * The badge is absolutely positioned inside the same wrapper search-debug's overlay anchors to, and
+     * that wrapper already produced one real height-collapse bug in this demoshop. The sibling
+     * spryker-community/search-ranking-optimizer package asserts the same coexistence for its own rating
+     * widget; this package shares the tile with both and had no equivalent assertion.
+     *
+     * @param \SprykerCommunityTest\Yves\SearchRankingWidgetPresentation\SearchRankingWidgetPresentationTester $i
+     */
+    public function coexistsWithTheSearchDebugOverlayOnTheSameTile(SearchRankingWidgetPresentationTester $i): void
+    {
+        $i->amOnPage(SearchResultsPage::URL_CHAIR_WITH_SEARCH_DEBUG);
+        $i->waitForElementVisible(SearchResultsPage::SELECTOR_TOGGLE_CHECKBOX, 10);
+        $i->seeElement(SearchResultsPage::SELECTOR_SEARCH_DEBUG_TRIGGER);
+
+        $i->click(SearchResultsPage::SELECTOR_TOGGLE_CHECKBOX);
+        $i->wait(1);
+
+        // Both render fully on the same tile — neither collapses or hides the other.
+        $i->seeElement(SearchResultsPage::SELECTOR_BADGE);
+        $i->seeElement(SearchResultsPage::SELECTOR_SEARCH_DEBUG_TRIGGER);
+    }
 }
