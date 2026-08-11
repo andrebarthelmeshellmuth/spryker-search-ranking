@@ -24,6 +24,7 @@
         "spryker/product-page-search": "^3.0.0",
         "spryker/product-page-search-extension": "^1.3.0",
         "spryker/propel-orm": "^1.24.0",
+        "spryker/router": "^1.21.0",
         "spryker/search-elasticsearch": "^1.10.0",
         "spryker/search-extension": "^1.2.0",
         "spryker/storage": "^3.4.0",
@@ -48,7 +49,8 @@
         "spryker/code-sniffer": "^0.17.30"
     },
     "suggest": {
-        "spryker-community/search-debug": "Adds a business-signal score breakdown section to the search-debug SRP overlay (SearchRankingProductDebugDataExpanderPlugin)."
+        "spryker-community/search-debug": "Adds a business-signal score breakdown section to the search-debug SRP overlay (SearchRankingProductDebugDataExpanderPlugin).",
+        "spryker/symfony-scheduler": "Lets check-installation verify that this package's cron jobs are actually scheduled. Not required: cron registration is project config either way, and the check degrades to a warning without it."
     },
     "repositories": [
         {

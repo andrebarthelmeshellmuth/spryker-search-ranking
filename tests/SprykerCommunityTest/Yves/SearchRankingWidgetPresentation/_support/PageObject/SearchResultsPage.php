@@ -20,6 +20,21 @@ class SearchResultsPage
     public const URL_CHAIR = '/en/search?q=chair';
 
     /**
+     * Same query, with search-debug's own overlay also active — the badge shares a product tile (and a
+     * wrapper) with it, so coexistence needs its own assertion.
+     *
+     * @var string
+     */
+    public const URL_CHAIR_WITH_SEARCH_DEBUG = '/en/search?q=chair&searchDebugInfo=1';
+
+    /**
+     * search-debug's own per-product score trigger, asserted alongside this package's badge.
+     *
+     * @var string
+     */
+    public const SELECTOR_SEARCH_DEBUG_TRIGGER = '.search-debug-trigger';
+
+    /**
      * @var string
      */
     public const SELECTOR_TOGGLE_CHECKBOX = '.js-random-impact-toggle__checkbox';

@@ -1011,6 +1011,13 @@ rm -f src/Generated/Zed/Navigation/codeBucket/navigation*.cache
 vendor/bin/console navigation:build-cache
 ```
 
+Because a missing entry never errors — the page simply cannot be reached from the sidebar, and a stale
+cache hides a correct copy just as completely — `vendor/bin/console search-ranking:check-installation` verifies every one of
+this package's page keys against the built navigation cache, reading the expected list from the package's
+own `navigation.xml` so it also catches a page added by a later version that your project never copied. It
+tells the two failures apart: "not in your navigation.xml" and "in your navigation.xml but not in the
+cache" get different remedies.
+
 That gives the full "Search Ranking" sidebar group with all 5 visible pages (Metrics, Product Values,
 Settings, History, Scope Copy). If you'd rather not duplicate the whole page list, copying just the
 top-level `<search-ranking-gui>` entry (drop the `<pages>` block) still gives one working sidebar link
@@ -1044,6 +1051,15 @@ Besides normalizing, each run triggers publish events so the search documents pi
 scores (suppress with `--skip-publish`). `search-ranking:randomize` is intentionally on its own,
 less-frequent schedule — see [What it does](#what-it-does) for why — and is a safe no-op
 to leave scheduled even if the random tie-breaker metric is inactive or does not exist.
+
+Nothing registers a cron job for you: `SymfonySchedulerConfig::getCronJobs()` returns `[]` in Spryker core
+and has no plugin stack, so a package cannot contribute an entry even in principle — this is project config
+by design, for every package, not just this one. Because skipping it produces no error (just a ranking that
+quietly keeps serving stale normalized scores), `vendor/bin/console search-ranking:check-installation`
+verifies these registrations for you, including
+[`search-ranking:scope-copy-sync`](#15-schedule-the-scope-copy-sync-cron) from step 15. If your project
+schedules jobs some other way than `spryker/symfony-scheduler`, that check degrades to a warning listing
+what to confirm by hand rather than failing.
 
 ### 9. Register the Elasticsearch export plugins
 
@@ -1257,6 +1273,45 @@ And the badge once per product, wherever your template renders each product tile
 
 A product missing from `randomImpactDeltas` (its position wouldn't change) renders no badge — never a `+0`.
 
+#### 14b. Optional but recommended: the Yves installation-check page
+
+Every step in 14a fails **silently**. An unregistered result formatter, an unsynchronized ranking
+configuration, an unimported glossary and an unbuilt frontend all leave a storefront that renders perfectly
+and simply never shows the checkbox or the badges — there is no error anywhere to notice, and the four look
+identical from the outside.
+
+Register the route provider plugin in `Pyz\Yves\Router\RouterDependencyProvider::getRouteProviderPlugins()`:
+
+```php
+use SprykerCommunity\Yves\SearchRankingWidget\Plugin\Router\SearchRankingWidgetRouteProviderPlugin;
+
+new SearchRankingWidgetRouteProviderPlugin(),
+```
+
+and set the flag in a development-tier config (e.g. `config/Shared/config_default-development.php`):
+
+```php
+use SprykerCommunity\Shared\SearchRanking\SearchRankingConstants;
+
+$config[SearchRankingConstants::IS_CHECK_INSTALLATION_PAGE_ENABLED] = true;
+```
+
+Then visit `/search-ranking-widget/check-installation` as a customer holding
+`SeeSearchRankingRandomImpactPermissionPlugin`. It runs one real catalog search through your own formatter
+plugin stack and reports whether `RandomImpactResultFormatterPlugin` is registered, whether a random
+tie-breaker metric is actually active for this store/locale, whether the glossary was imported, and whether
+the frontend build picked this package's components up — each with the exact remedy.
+
+The flag defaults to `false`, so the route does not exist at all until a project opts in; the URL 404s
+rather than existing-but-denied, and the plugin above adds no routes while it is off. It complements
+`vendor/bin/console search-ranking:check-installation` (search engine, page index, sync queue, data-import
+plugins, active metrics) —
+Zed never bootstraps the Yves DI container, so neither can see the other's half.
+
+Reaching the page at all already proves the Client-side half of the permission wiring: `can()` on Yves
+resolves through `Pyz\Client\Permission\PermissionDependencyProvider`, so a permission-denied response can
+equally mean the plugin was registered in Zed only. The denied page says so.
+
 ### 15. Schedule the scope-copy-sync cron
 
 E.g. daily, in `Pyz\Zed\SymfonyScheduler\SymfonySchedulerConfig::getCronJobs()`:
@@ -1425,9 +1480,9 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
-**287 tests, 1632 assertions** across six Codeception suites (`Zed/SearchRanking`,
+**299 tests, 1670 assertions** across seven Codeception suites (`Zed/SearchRanking`,
 `Zed/SearchRankingStorage`, `Zed/SearchRankingGui`, `Zed/SearchRankingDataImport`, `Client/SearchRanking`,
-`Client/SearchRankingStorage`). From a shop that has the package installed:
+`Client/SearchRankingStorage`, `Yves/SearchRankingWidget`). From a shop that has the package installed:
 
 ```bash
 vendor/bin/codecept build -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRanking
@@ -1510,7 +1565,7 @@ static guarantees; the test suite is run against a real shop before a release.
 
 Two suites, split by layer:
 
-- `tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation/` — the Zed GUI: the metric list (scoped
+- `tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation/` (15 tests) — the Zed GUI: the metric list (scoped
   by store/locale, plus a full create → edit → delete round trip through the real forms), the "Normalize
   active weights" action, the Edit form's live normalization preview (smoke-level only — the curve-fit
   math itself is already covered by the unit suite above), the Settings form (including that every
@@ -1519,7 +1574,7 @@ Two suites, split by layer:
   view, and the Metric History table. It is kept as its own module directory rather than nested under
   `Zed/SearchRankingGui/` because that module's `Zed` suite scans its whole directory tree recursively — a
   nested WebDriver suite there would break it.
-- `tests/SprykerCommunityTest/Yves/SearchRankingWidgetPresentation/` — the [random-impact admin
+- `tests/SprykerCommunityTest/Yves/SearchRankingWidgetPresentation/` (9 tests) — the [random-impact admin
   preview](#what-it-does): the permission gate (two negative-test accounts plus an anonymous-shopper
   check, mirroring `spryker-community/search-ranking-optimizer`'s own `PermissionGateCest`), and that the
   checkbox toggles every badge's visibility on and back off client-side with no second request, and that
