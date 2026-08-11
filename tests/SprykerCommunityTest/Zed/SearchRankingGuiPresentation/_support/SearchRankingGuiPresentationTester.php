@@ -98,10 +98,12 @@ class SearchRankingGuiPresentationTester extends Actor
      */
     protected function grabIdFromEditLinkByName(string $name): int
     {
-        $href = $this->grabAttributeFrom(
-            "//td[contains(., '" . $name . "')]/ancestor::tr//a[contains(@class, 'btn-edit')]",
-            'href',
-        );
+        $editLinkXpath = "//td[contains(., '" . $name . "')]/ancestor::tr//a[contains(@class, 'btn-edit')]";
+
+        $this->waitForElementVisible(MetricListPage::SELECTOR_TABLE, 10);
+        $this->waitForElementVisible($editLinkXpath, 10);
+
+        $href = $this->grabAttributeFrom($editLinkXpath, 'href');
         preg_match('/id-search-ranking-metric=(\d+)/', $href, $matches);
 
         return (int)($matches[1] ?? 0);
