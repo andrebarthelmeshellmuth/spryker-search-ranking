@@ -73,7 +73,8 @@
     },
     "autoload": {
         "psr-4": {
-            "SprykerCommunity\\": "src/SprykerCommunity/"
+            "SprykerCommunity\\": "src/SprykerCommunity/",
+            "SprykerCommunityTest\\Client\\SearchRanking\\Fixture\\": "tests/SprykerCommunityTest/Client/SearchRanking/Fixture/"
         }
     },
     "autoload-dev": {
