@@ -9,3 +9,19 @@ search_ranking.random_impact.worse,Random is currently helping this product -- i
 search_ranking.random_impact.worse,Zufall hilft diesem Produkt aktuell -- ohne ihn würde es schlechter ranken,de_DE
 permission.name.SeeSearchRankingRandomImpactPermissionPlugin,See search ranking random impact,en_US
 permission.name.SeeSearchRankingRandomImpactPermissionPlugin,Zufalls-Einfluss im Suchranking einsehen,de_DE
+search_ranking.check_installation.heading,Search Ranking: installation check,en_US
+search_ranking.check_installation.heading,Search Ranking: Installationsprüfung,de_DE
+search_ranking.check_installation.scope_hint,"Checks the random-impact admin preview's storefront (Yves) integration — every step of it fails silently, so nothing here surfaces as an error on its own.",en_US
+search_ranking.check_installation.scope_hint,"Prüft die Storefront-(Yves)-Integration der Zufalls-Einfluss-Vorschau — jeder ihrer Schritte schlägt stillschweigend fehl, nichts davon zeigt sich von selbst als Fehler.",de_DE
+search_ranking.check_installation.not_verifiable_heading,Not verifiable from this page:,en_US
+search_ranking.check_installation.not_verifiable_heading,Von dieser Seite aus nicht prüfbar:,de_DE
+search_ranking.check_installation.not_verifiable_templates,"Whether your project's SRP template actually renders the toggle and the per-product badges — load a search results page as a permitted customer to confirm.",en_US
+search_ranking.check_installation.not_verifiable_templates,"Ob das SRP-Template deines Projekts den Schalter und die Badges pro Produkt tatsächlich rendert — lade eine Suchergebnisseite als berechtigter Kunde, um das zu bestätigen.",de_DE
+search_ranking.check_installation.not_verifiable_permission_grant,"Whether other admins hold SeeSearchRankingRandomImpactPermissionPlugin — you reaching this page only proves your own account does.",en_US
+search_ranking.check_installation.not_verifiable_permission_grant,"Ob andere Admins SeeSearchRankingRandomImpactPermissionPlugin besitzen — dass du diese Seite siehst, belegt das nur für dein eigenes Konto.",de_DE
+search_ranking.check_installation.cross_reference_zed,"For the search engine, the page index, the sync queue, the data-import plugins and the active metrics, run vendor/bin/console search-ranking:check-installation in Zed.",en_US
+search_ranking.check_installation.cross_reference_zed,"Für Suchmaschine, Page-Index, Sync-Queue, Data-Import-Plugins und aktive Metriken führe vendor/bin/console search-ranking:check-installation in Zed aus.",de_DE
+search_ranking.check_installation.permission_denied_heading,Search Ranking: permission required,en_US
+search_ranking.check_installation.permission_denied_heading,Search Ranking: Berechtigung erforderlich,de_DE
+search_ranking.check_installation.permission_denied_body,"This installation-check page is only shown to a customer holding the SeeSearchRankingRandomImpactPermissionPlugin permission. Note that this can also mean the plugin is missing from Pyz\Client\Permission\PermissionDependencyProvider specifically — registering it in Zed alone is not enough. Grant it to a Company Role in Zed → Customer → Company Roles, assign that role to your account, log out and back in, then reload this page.",en_US
+search_ranking.check_installation.permission_denied_body,"Diese Installationsprüfung wird nur einem Kunden mit der Berechtigung SeeSearchRankingRandomImpactPermissionPlugin angezeigt. Das kann auch bedeuten, dass das Plugin speziell in Pyz\Client\Permission\PermissionDependencyProvider fehlt — die Registrierung in Zed allein genügt nicht. Vergib sie in Zed → Kunde → Unternehmensrollen an eine Rolle, weise sie deinem Konto zu, melde dich ab und wieder an und lade die Seite neu.",de_DE

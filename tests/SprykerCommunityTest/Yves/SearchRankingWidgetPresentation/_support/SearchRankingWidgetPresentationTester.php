@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunityTest\Yves\SearchRankingWidgetPresentation;
 
 use Codeception\Actor;
+use Exception;
 use SprykerCommunityTest\Yves\SearchRankingWidgetPresentation\PageObject\LoginPage;
 
 /**
@@ -65,5 +66,19 @@ class SearchRankingWidgetPresentationTester extends Actor
             LoginPage::FORM_FIELD_EMAIL => $email,
             LoginPage::FORM_FIELD_PASSWORD => static::CUSTOMER_PASSWORD,
         ]);
+    }
+
+    /**
+     * @param string $selector
+     */
+    public function tryToSeeElement(string $selector): bool
+    {
+        try {
+            $this->seeElement($selector);
+
+            return true;
+        } catch (Exception) {
+            return false;
+        }
     }
 }
