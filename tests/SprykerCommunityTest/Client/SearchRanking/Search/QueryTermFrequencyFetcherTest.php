@@ -29,6 +29,7 @@ use SprykerCommunityTest\Client\SearchRanking\Fixture\TestTermVectorIndexTrait;
  * @group SearchRanking
  * @group Search
  * @group QueryTermFrequencyFetcherTest
+ * @group NeedsSearch
  */
 class QueryTermFrequencyFetcherTest extends Unit
 {

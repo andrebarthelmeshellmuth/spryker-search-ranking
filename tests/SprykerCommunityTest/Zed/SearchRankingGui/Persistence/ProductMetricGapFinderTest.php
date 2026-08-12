@@ -40,6 +40,7 @@ use SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapFinder;
  * @group ProductMetricGapFinderTest
  *
  * @property \SprykerCommunityTest\Zed\SearchRankingGui\SearchRankingGuiZedTester $tester
+ * @group NeedsDatabase
  */
 class ProductMetricGapFinderTest extends Unit
 {

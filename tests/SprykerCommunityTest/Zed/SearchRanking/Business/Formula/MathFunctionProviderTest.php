@@ -30,6 +30,7 @@ use Symfony\Component\ExpressionLanguage\ExpressionFunction;
  * @group Formula
  * @group MathFunctionProviderTest
  * Add your own group annotations below this line
+ * @group Portable
  */
 class MathFunctionProviderTest extends Unit
 {

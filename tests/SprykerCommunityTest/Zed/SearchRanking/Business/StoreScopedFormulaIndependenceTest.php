@@ -49,6 +49,7 @@ use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingPr
  * @group StoreScopedFormulaIndependenceTest
  *
  * @property \SprykerCommunityTest\Zed\SearchRanking\SearchRankingZedTester $tester
+ * @group NeedsDatabase
  */
 class StoreScopedFormulaIndependenceTest extends Unit
 {

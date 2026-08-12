@@ -28,6 +28,7 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  * @group Preview
  * @group FormulaPreviewBuilderTest
  * Add your own group annotations below this line
+ * @group Portable
  */
 class FormulaPreviewBuilderTest extends Unit
 {

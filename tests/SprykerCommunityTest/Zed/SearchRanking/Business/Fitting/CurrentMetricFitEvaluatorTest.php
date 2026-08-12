@@ -28,6 +28,7 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  * @group Fitting
  * @group CurrentMetricFitEvaluatorTest
  * Add your own group annotations below this line
+ * @group Portable
  */
 class CurrentMetricFitEvaluatorTest extends Unit
 {

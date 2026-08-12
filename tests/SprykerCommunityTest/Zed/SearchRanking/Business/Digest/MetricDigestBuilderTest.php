@@ -37,6 +37,7 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  * @group Digest
  * @group MetricDigestBuilderTest
  * Add your own group annotations below this line
+ * @group Portable
  */
 class MetricDigestBuilderTest extends Unit
 {

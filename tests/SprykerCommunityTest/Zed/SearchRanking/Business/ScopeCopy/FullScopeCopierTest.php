@@ -29,6 +29,7 @@ use SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy\StoreConfigCopierInter
  * @group ScopeCopy
  * @group FullScopeCopierTest
  * Add your own group annotations below this line
+ * @group Portable
  */
 class FullScopeCopierTest extends Unit
 {

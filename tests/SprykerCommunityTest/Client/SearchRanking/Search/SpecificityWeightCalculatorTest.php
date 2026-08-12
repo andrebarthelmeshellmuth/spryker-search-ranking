@@ -27,6 +27,7 @@ use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculator;
  * @group SearchRanking
  * @group Search
  * @group SpecificityWeightCalculatorTest
+ * @group Portable
  */
 class SpecificityWeightCalculatorTest extends Unit
 {

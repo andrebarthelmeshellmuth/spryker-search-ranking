@@ -35,6 +35,7 @@ use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRan
  * @group Plugin
  * @group Catalog
  * @group RandomImpactResultFormatterPluginTest
+ * @group NeedsSearch
  */
 class RandomImpactResultFormatterPluginTest extends Unit
 {

@@ -29,6 +29,7 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  * @group Randomizer
  * @group MetricRandomizerTest
  * Add your own group annotations below this line
+ * @group Portable
  */
 class MetricRandomizerTest extends Unit
 {

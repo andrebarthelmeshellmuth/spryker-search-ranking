@@ -38,6 +38,7 @@ use SprykerCommunity\Zed\SearchRankingStorage\Persistence\SearchRankingStorageEn
  * @group Plugin
  * @group Synchronization
  * @group SearchRankingConfigurationSynchronizationDataPluginTest
+ * @group NeedsDatabase
  */
 class SearchRankingConfigurationSynchronizationDataPluginTest extends Unit
 {

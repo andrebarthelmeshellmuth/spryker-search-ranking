@@ -30,6 +30,7 @@ use SprykerCommunity\Zed\SearchRankingStorage\Persistence\SearchRankingStorageEn
  * Add your own group annotations below this line
  *
  * @property \SprykerCommunityTest\Zed\SearchRankingStorage\SearchRankingStorageZedTester $tester
+ * @group Portable
  */
 class RankingConfigurationStorageWriterTest extends Unit
 {

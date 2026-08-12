@@ -39,6 +39,7 @@ use SprykerCommunityTest\Client\SearchRanking\Fixture\TestScoresIndexTrait;
  * @group SearchRanking
  * @group Query
  * @group FunctionScoreExecutionTest
+ * @group NeedsSearch
  */
 class FunctionScoreExecutionTest extends Unit
 {

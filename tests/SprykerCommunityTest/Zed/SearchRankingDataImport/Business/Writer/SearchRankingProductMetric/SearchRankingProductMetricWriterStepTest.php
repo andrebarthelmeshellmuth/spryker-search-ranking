@@ -39,6 +39,7 @@ use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingPr
  * Add your own group annotations below this line
  *
  * @property \SprykerCommunityTest\Zed\SearchRankingDataImport\SearchRankingDataImportZedTester $tester
+ * @group NeedsDatabase
  */
 class SearchRankingProductMetricWriterStepTest extends Unit
 {

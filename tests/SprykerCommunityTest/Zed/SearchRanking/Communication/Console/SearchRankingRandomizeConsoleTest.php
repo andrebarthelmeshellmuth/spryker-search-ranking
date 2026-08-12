@@ -22,6 +22,7 @@ use Symfony\Component\Console\Tester\CommandTester;
  * @group Communication
  * @group Console
  * @group SearchRankingRandomizeConsoleTest
+ * @group Portable
  */
 class SearchRankingRandomizeConsoleTest extends Unit
 {
