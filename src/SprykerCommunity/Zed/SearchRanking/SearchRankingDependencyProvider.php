@@ -12,6 +12,7 @@ namespace SprykerCommunity\Zed\SearchRanking;
 use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
 use Spryker\Zed\Kernel\Container;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientBridge;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToAclFacadeBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToDataImportFacadeBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToSearchRankingStorageFacadeBridge;
@@ -60,6 +61,15 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
     public const FACADE_DATA_IMPORT = 'FACADE_DATA_IMPORT';
 
     /**
+     * Used ONLY by `search-ranking:check-installation`, to report whether anybody other than a root-style
+     * admin can reach this package's Zed pages. Nothing on the request path consults it — Zed access
+     * control is enforced by Spryker's own Acl module, exactly as for every other module.
+     *
+     * @var string
+     */
+    public const FACADE_ACL = 'FACADE_ACL';
+
+    /**
      * @param \Spryker\Zed\Kernel\Container $container
      */
     #[\Override]
@@ -93,6 +103,7 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
         $container = $this->addSynchronizationFacade($container);
         $container = $this->addTranslatorFacade($container);
         $container = $this->addDataImportFacade($container);
+        $container = $this->addAclFacade($container);
 
         return $this->addSearchRankingStorageFacade($container);
     }
@@ -180,6 +191,18 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
     {
         $container->set(static::FACADE_DATA_IMPORT, fn (Container $container) => new SearchRankingToDataImportFacadeBridge(
             $container->getLocator()->dataImport()->facade(),
+        ));
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     */
+    protected function addAclFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_ACL, fn (Container $container) => new SearchRankingToAclFacadeBridge(
+            $container->getLocator()->acl()->facade(),
         ));
 
         return $container;

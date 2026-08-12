@@ -1355,6 +1355,15 @@ translation catalog (step 6) actually resolves, that the search engine is reacha
 exists and carries the `scores` field this package's export plugins add, and that at least one active
 metric is configured. It exits non-zero and names the remedy for whatever is wrong.
 
+It also reports whether anybody other than a root-style admin can reach this package's Zed pages. Zed
+access is deny-by-default outside a matching ACL rule, and a nav entry the current user has no rule for is
+filtered out of the sidebar entirely rather than 403ing — so on a shop with real restricted back-office
+roles, "nobody adjusted ACL" looks exactly like "the package was never installed". A default Spryker
+install needs nothing done here (`root_role` holds a total wildcard), which is why this is a **warning at
+most, never a failure**, and only when restricted roles exist and not one of them has a rule for this
+package's module. Restricting these pages to root-style admins is a perfectly ordinary choice; the command
+cannot know which roles you meant to grant, so it asks you to confirm rather than telling you to fix.
+
 It is explicit about its own blind spots: running in Zed, it cannot confirm the Yves-side `function_score`
 query expander (step 13) is registered, or that a live search result order actually reflects the
 configured weights — those need a real storefront search request, not a CLI probe. Distinct from

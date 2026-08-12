@@ -10,6 +10,9 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Communication;
 
 use Spryker\Zed\Kernel\Communication\AbstractCommunicationFactory;
+use SprykerCommunity\Zed\SearchRanking\Communication\Acl\BackOfficeAccessAnalyzer;
+use SprykerCommunity\Zed\SearchRanking\Communication\Acl\BackOfficeAccessAnalyzerInterface;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToAclFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToDataImportFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToSearchRankingStorageFacadeInterface;
@@ -47,5 +50,15 @@ class SearchRankingCommunicationFactory extends AbstractCommunicationFactory
     public function getDataImportFacade(): SearchRankingToDataImportFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_DATA_IMPORT);
+    }
+
+    public function getAclFacade(): SearchRankingToAclFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_ACL);
+    }
+
+    public function createBackOfficeAccessAnalyzer(): BackOfficeAccessAnalyzerInterface
+    {
+        return new BackOfficeAccessAnalyzer($this->getAclFacade());
     }
 }
