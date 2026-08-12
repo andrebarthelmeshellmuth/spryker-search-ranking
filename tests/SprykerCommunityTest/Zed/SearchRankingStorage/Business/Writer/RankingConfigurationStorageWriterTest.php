@@ -10,8 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunityTest\Zed\SearchRankingStorage\Business\Writer;
 
 use Codeception\Test\Unit;
-use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
-use Generated\Shared\Transfer\SearchRankingMetricTransfer;
+use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 use Generated\Shared\Transfer\StoreTransfer;
 use SprykerCommunity\Zed\SearchRankingStorage\Business\Writer\RankingConfigurationStorageWriter;
 use SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade\SearchRankingStorageToSearchRankingFacadeInterface;
@@ -37,10 +36,11 @@ class RankingConfigurationStorageWriterTest extends Unit
     public function testNormalizesActiveMetricWeightsToSumToOneBeforePublishing(): void
     {
         // Arrange
-        $searchRankingFacadeMock = $this->createSearchRankingFacadeMock([
-            $this->createMetricTransfer('top_seller', 2.0),
-            $this->createMetricTransfer('pdp_impressions', 2.0),
-        ], 0.6, 12.0);
+        $searchRankingFacadeMock = $this->createSearchRankingFacadeMock(
+            ['top_seller' => 2.0, 'pdp_impressions' => 2.0],
+            0.6,
+            12.0,
+        );
 
         $capturedConfiguration = null;
         $entityManagerMock = $this->createMock(SearchRankingStorageEntityManagerInterface::class);
@@ -75,9 +75,7 @@ class RankingConfigurationStorageWriterTest extends Unit
     public function testNormalizesASingleActiveMetricToExactlyOneRegardlessOfItsRawWeight(): void
     {
         // Arrange
-        $searchRankingFacadeMock = $this->createSearchRankingFacadeMock([
-            $this->createMetricTransfer('top_seller', 0.3),
-        ], 0.6, 12.0);
+        $searchRankingFacadeMock = $this->createSearchRankingFacadeMock(['top_seller' => 0.3], 0.6, 12.0);
 
         $capturedConfiguration = null;
         $entityManagerMock = $this->createMock(SearchRankingStorageEntityManagerInterface::class);
@@ -101,10 +99,11 @@ class RankingConfigurationStorageWriterTest extends Unit
     public function testLeavesAlreadyNormalizedWeightsUnchanged(): void
     {
         // Arrange
-        $searchRankingFacadeMock = $this->createSearchRankingFacadeMock([
-            $this->createMetricTransfer('top_seller', 0.5),
-            $this->createMetricTransfer('pdp_impressions', 0.5),
-        ], 0.6, 12.0);
+        $searchRankingFacadeMock = $this->createSearchRankingFacadeMock(
+            ['top_seller' => 0.5, 'pdp_impressions' => 0.5],
+            0.6,
+            12.0,
+        );
 
         $capturedConfiguration = null;
         $entityManagerMock = $this->createMock(SearchRankingStorageEntityManagerInterface::class);
@@ -129,10 +128,11 @@ class RankingConfigurationStorageWriterTest extends Unit
     public function testLeavesAllZeroWeightsUnchangedInsteadOfDividingByZero(): void
     {
         // Arrange
-        $searchRankingFacadeMock = $this->createSearchRankingFacadeMock([
-            $this->createMetricTransfer('top_seller', 0.0),
-            $this->createMetricTransfer('pdp_impressions', 0.0),
-        ], 0.6, 12.0);
+        $searchRankingFacadeMock = $this->createSearchRankingFacadeMock(
+            ['top_seller' => 0.0, 'pdp_impressions' => 0.0],
+            0.6,
+            12.0,
+        );
 
         $capturedConfiguration = null;
         $entityManagerMock = $this->createMock(SearchRankingStorageEntityManagerInterface::class);
@@ -198,28 +198,20 @@ class RankingConfigurationStorageWriterTest extends Unit
 
     /**
      * Publishing must fan out over every store × that store's own available locales, saving one document
-     * per scope with the SAME scope threaded through to both `getActiveMetricCollection()`/the other
-     * getters AND `saveRankingConfiguration()` — never a cross-join against every globally available
-     * locale (mirrors `ProductMetricNormalizer`'s own fan-out shape) — and flushing the synchronization
-     * buffer exactly once at the end, not once per scope.
+     * per scope with the SAME scope threaded through to both `getConfiguration()` AND
+     * `saveRankingConfiguration()` — never a cross-join against every globally available locale (mirrors
+     * `ProductMetricNormalizer`'s own fan-out shape) — and flushing the synchronization buffer exactly
+     * once at the end, not once per scope.
      */
     public function testPublishesOneConfigurationDocumentPerStoreAndItsOwnLocales(): void
     {
         // Arrange
         $searchRankingFacadeMock = $this->createMock(SearchRankingStorageToSearchRankingFacadeInterface::class);
-        $searchRankingFacadeMock->method('getActiveMetricCollection')->willReturn(new SearchRankingMetricCollectionTransfer());
-        $searchRankingFacadeMock->method('getRelevanceWeight')->willReturnMap([
-            ['DE', 'de_DE', 0.6],
-            ['AT', 'de_AT', 0.9],
-            ['AT', 'fr_FR', 0.9],
+        $searchRankingFacadeMock->method('getConfiguration')->willReturnMap([
+            ['DE', 'de_DE', $this->createConfigurationTransfer([], 0.6, 12.0)],
+            ['AT', 'de_AT', $this->createConfigurationTransfer([], 0.9, 12.0)],
+            ['AT', 'fr_FR', $this->createConfigurationTransfer([], 0.9, 12.0)],
         ]);
-        $searchRankingFacadeMock->method('getRelevanceSaturationPoint')->willReturn(12.0);
-        $searchRankingFacadeMock->method('getSpecificityBlendWeight')->willReturn(0.7);
-        $searchRankingFacadeMock->method('getSpecificitySaturationPoint')->willReturn(3.0);
-        $searchRankingFacadeMock->method('getSpecificityCurveExponent')->willReturn(2.0);
-        $searchRankingFacadeMock->method('getSpecificityWeightExponent')->willReturn(1.0);
-        $searchRankingFacadeMock->method('getSpecificityWeightShiftMagnitude')->willReturn(0.5);
-        $searchRankingFacadeMock->method('getRandomMetricName')->willReturn('random');
 
         $capturedScopes = [];
         $entityManagerMock = $this->createMock(SearchRankingStorageEntityManagerInterface::class);
@@ -257,33 +249,43 @@ class RankingConfigurationStorageWriterTest extends Unit
     }
 
     /**
-     * @param array<\Generated\Shared\Transfer\SearchRankingMetricTransfer> $metricTransfers
+     * @param array<string, float> $metricWeights
      * @param float $relevanceWeight
      * @param float $relevanceSaturationPoint
      */
     protected function createSearchRankingFacadeMock(
-        array $metricTransfers,
+        array $metricWeights,
         float $relevanceWeight,
         float $relevanceSaturationPoint,
     ): SearchRankingStorageToSearchRankingFacadeInterface {
-        $collectionTransfer = new SearchRankingMetricCollectionTransfer();
-
-        foreach ($metricTransfers as $metricTransfer) {
-            $collectionTransfer->addMetric($metricTransfer);
-        }
-
         $searchRankingFacadeMock = $this->createMock(SearchRankingStorageToSearchRankingFacadeInterface::class);
-        $searchRankingFacadeMock->method('getActiveMetricCollection')->willReturn($collectionTransfer);
-        $searchRankingFacadeMock->method('getRelevanceWeight')->willReturn($relevanceWeight);
-        $searchRankingFacadeMock->method('getRelevanceSaturationPoint')->willReturn($relevanceSaturationPoint);
-        $searchRankingFacadeMock->method('getSpecificityBlendWeight')->willReturn(0.7);
-        $searchRankingFacadeMock->method('getSpecificitySaturationPoint')->willReturn(3.0);
-        $searchRankingFacadeMock->method('getSpecificityCurveExponent')->willReturn(2.0);
-        $searchRankingFacadeMock->method('getSpecificityWeightExponent')->willReturn(1.0);
-        $searchRankingFacadeMock->method('getSpecificityWeightShiftMagnitude')->willReturn(0.5);
-        $searchRankingFacadeMock->method('getRandomMetricName')->willReturn('random');
+        $searchRankingFacadeMock->method('getConfiguration')->willReturn(
+            $this->createConfigurationTransfer($metricWeights, $relevanceWeight, $relevanceSaturationPoint),
+        );
 
         return $searchRankingFacadeMock;
+    }
+
+    /**
+     * @param array<string, float> $metricWeights
+     * @param float $relevanceWeight
+     * @param float $relevanceSaturationPoint
+     */
+    protected function createConfigurationTransfer(
+        array $metricWeights,
+        float $relevanceWeight,
+        float $relevanceSaturationPoint,
+    ): SearchRankingConfigurationStorageTransfer {
+        return (new SearchRankingConfigurationStorageTransfer())
+            ->setMetricWeights($metricWeights)
+            ->setRelevanceWeight($relevanceWeight)
+            ->setRelevanceSaturationPoint($relevanceSaturationPoint)
+            ->setSpecificityBlendWeight(0.7)
+            ->setSpecificitySaturationPoint(3.0)
+            ->setSpecificityCurveExponent(2.0)
+            ->setSpecificityWeightExponent(1.0)
+            ->setSpecificityWeightShiftMagnitude(0.5)
+            ->setRandomMetricName('random');
     }
 
     /**
@@ -315,19 +317,5 @@ class RankingConfigurationStorageWriterTest extends Unit
         ]);
 
         return $storeFacadeMock;
-    }
-
-    /**
-     * @param string $name
-     * @param float $weight
-     */
-    protected function createMetricTransfer(string $name, float $weight): SearchRankingMetricTransfer
-    {
-        return (new SearchRankingMetricTransfer())
-            ->setIdSearchRankingMetric(1)
-            ->setName($name)
-            ->setWeight($weight)
-            ->setFormula('x')
-            ->setIsActive(true);
     }
 }

@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business;
 
 use Generated\Shared\Transfer\ProductPageLoadTransfer;
+use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
@@ -55,6 +56,16 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
     {
         // Same composition as getMetricCollection() above — see that method's own comment.
         return $this->getRepository()->attachWeights($this->getRepository()->getActiveMetricCollection($storeName, $localeName), $storeName, $localeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function getConfiguration(string $storeName, string $localeName): SearchRankingConfigurationStorageTransfer
+    {
+        return $this->getFactory()->createConfigurationReader()->getConfiguration($storeName, $localeName);
     }
 
     /**

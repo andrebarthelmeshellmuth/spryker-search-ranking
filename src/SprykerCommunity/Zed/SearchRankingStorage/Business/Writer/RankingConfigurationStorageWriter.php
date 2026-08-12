@@ -113,22 +113,24 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
      */
     protected function publishRankingConfigurationForStoreAndLocale(string $storeName, string $localeName): void
     {
-        $metricWeights = [];
+        // One read of the whole live configuration rather than a getter per field: the document published
+        // here IS this transfer, just flattened onto the storage key names below, so a new ranking knob
+        // only has to be added to the transfer and to `SearchRanking`'s own assembler behind this call.
+        $configurationTransfer = $this->searchRankingFacade->getConfiguration($storeName, $localeName);
 
-        foreach ($this->searchRankingFacade->getActiveMetricCollection($storeName, $localeName)->getMetrics() as $metricTransfer) {
-            $metricWeights[$metricTransfer->getNameOrFail()] = $metricTransfer->getWeightOrFail();
-        }
+        /** @var array<string, float> $metricWeights */
+        $metricWeights = $configurationTransfer->getMetricWeights();
 
         $this->entityManager->saveRankingConfiguration([
             static::KEY_METRIC_WEIGHTS => $this->normalizeMetricWeights($metricWeights),
-            static::KEY_RELEVANCE_WEIGHT => $this->searchRankingFacade->getRelevanceWeight($storeName, $localeName),
-            static::KEY_RELEVANCE_SATURATION_POINT => $this->searchRankingFacade->getRelevanceSaturationPoint($storeName, $localeName),
-            static::KEY_SPECIFICITY_BLEND_WEIGHT => $this->searchRankingFacade->getSpecificityBlendWeight($storeName, $localeName),
-            static::KEY_SPECIFICITY_SATURATION_POINT => $this->searchRankingFacade->getSpecificitySaturationPoint($storeName, $localeName),
-            static::KEY_SPECIFICITY_CURVE_EXPONENT => $this->searchRankingFacade->getSpecificityCurveExponent($storeName, $localeName),
-            static::KEY_SPECIFICITY_WEIGHT_EXPONENT => $this->searchRankingFacade->getSpecificityWeightExponent($storeName, $localeName),
-            static::KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE => $this->searchRankingFacade->getSpecificityWeightShiftMagnitude($storeName, $localeName),
-            static::KEY_RANDOM_METRIC_NAME => $this->searchRankingFacade->getRandomMetricName(),
+            static::KEY_RELEVANCE_WEIGHT => $configurationTransfer->getRelevanceWeightOrFail(),
+            static::KEY_RELEVANCE_SATURATION_POINT => $configurationTransfer->getRelevanceSaturationPointOrFail(),
+            static::KEY_SPECIFICITY_BLEND_WEIGHT => $configurationTransfer->getSpecificityBlendWeightOrFail(),
+            static::KEY_SPECIFICITY_SATURATION_POINT => $configurationTransfer->getSpecificitySaturationPointOrFail(),
+            static::KEY_SPECIFICITY_CURVE_EXPONENT => $configurationTransfer->getSpecificityCurveExponentOrFail(),
+            static::KEY_SPECIFICITY_WEIGHT_EXPONENT => $configurationTransfer->getSpecificityWeightExponentOrFail(),
+            static::KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE => $configurationTransfer->getSpecificityWeightShiftMagnitudeOrFail(),
+            static::KEY_RANDOM_METRIC_NAME => $configurationTransfer->getRandomMetricNameOrFail(),
         ], $storeName, $localeName);
     }
 

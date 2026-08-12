@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business;
 
 use Generated\Shared\Transfer\ProductPageLoadTransfer;
+use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaPreviewTransfer;
 use Generated\Shared\Transfer\SearchRankingFormulaValidationResponseTransfer;
@@ -51,6 +52,30 @@ interface SearchRankingFacadeInterface
      * @param string $localeName
      */
     public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
+
+    /**
+     * Specification:
+     * - Returns the complete LIVE ranking configuration for the given store+locale in one read: the
+     *   weights of that scope's active metrics keyed by metric name, every scalar setting the ranking
+     *   formula uses (both blend weights, both saturation points, both specificity exponents and the
+     *   shift magnitude), and the project's configured random-tie-breaker metric name.
+     * - Each scalar falls back to its module config default when no value was saved yet for that scope,
+     *   exactly as the corresponding single-value getter does.
+     * - Metric weights are the raw values a curator entered, NOT normalized to sum to 1 — the published
+     *   storefront document applies that normalization on top (see `SearchRankingStorage`'s own
+     *   `RankingConfigurationStorageWriter`).
+     * - Reads Zed's own settings directly, never the synced key-value storage copy the storefront reads
+     *   at request time, so the result reflects what is configured right now rather than what was last
+     *   published.
+     * - Returns the same transfer the storefront's configuration document uses, so a consumer can feed it
+     *   straight into `SearchRanking`'s own Client-layer `FunctionScoreBuilder`.
+     *
+     * @api
+     *
+     * @param string $storeName
+     * @param string $localeName
+     */
+    public function getConfiguration(string $storeName, string $localeName): SearchRankingConfigurationStorageTransfer;
 
     /**
      * Specification:
