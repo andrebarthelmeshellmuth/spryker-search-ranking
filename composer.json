@@ -13,6 +13,7 @@
     ],
     "require": {
         "php": ">=8.3",
+        "spryker/acl": "^3.27.0",
         "spryker/catalog": "^5.7.0",
         "spryker/data-import": "^1.18.0",
         "spryker/event": "^2.2.0",
