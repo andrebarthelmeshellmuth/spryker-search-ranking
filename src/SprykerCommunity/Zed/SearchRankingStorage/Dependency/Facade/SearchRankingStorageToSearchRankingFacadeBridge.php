@@ -9,7 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade;
 
-use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
+use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 
 class SearchRankingStorageToSearchRankingFacadeBridge implements SearchRankingStorageToSearchRankingFacadeInterface
 {
@@ -30,76 +30,8 @@ class SearchRankingStorageToSearchRankingFacadeBridge implements SearchRankingSt
      * @param string $storeName
      * @param string $localeName
      */
-    public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer
+    public function getConfiguration(string $storeName, string $localeName): SearchRankingConfigurationStorageTransfer
     {
-        return $this->searchRankingFacade->getActiveMetricCollection($storeName, $localeName);
-    }
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getRelevanceWeight(string $storeName, string $localeName): float
-    {
-        return $this->searchRankingFacade->getRelevanceWeight($storeName, $localeName);
-    }
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getRelevanceSaturationPoint(string $storeName, string $localeName): float
-    {
-        return $this->searchRankingFacade->getRelevanceSaturationPoint($storeName, $localeName);
-    }
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getSpecificityBlendWeight(string $storeName, string $localeName): float
-    {
-        return $this->searchRankingFacade->getSpecificityBlendWeight($storeName, $localeName);
-    }
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getSpecificitySaturationPoint(string $storeName, string $localeName): float
-    {
-        return $this->searchRankingFacade->getSpecificitySaturationPoint($storeName, $localeName);
-    }
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getSpecificityCurveExponent(string $storeName, string $localeName): float
-    {
-        return $this->searchRankingFacade->getSpecificityCurveExponent($storeName, $localeName);
-    }
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getSpecificityWeightExponent(string $storeName, string $localeName): float
-    {
-        return $this->searchRankingFacade->getSpecificityWeightExponent($storeName, $localeName);
-    }
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getSpecificityWeightShiftMagnitude(string $storeName, string $localeName): float
-    {
-        return $this->searchRankingFacade->getSpecificityWeightShiftMagnitude($storeName, $localeName);
-    }
-
-    public function getRandomMetricName(): string
-    {
-        return $this->searchRankingFacade->getRandomMetricName();
+        return $this->searchRankingFacade->getConfiguration($storeName, $localeName);
     }
 }

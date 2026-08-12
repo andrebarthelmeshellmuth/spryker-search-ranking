@@ -12,6 +12,8 @@ namespace SprykerCommunity\Zed\SearchRanking\Business;
 use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
 use SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityChecker;
 use SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityCheckerInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Configuration\ConfigurationReader;
+use SprykerCommunity\Zed\SearchRanking\Business\Configuration\ConfigurationReaderInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilder;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilderInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\CurrentMetricFitEvaluator;
@@ -131,6 +133,15 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
             $this->getEntityManager(),
             $this->getConfig(),
             $this->getEventFacade(),
+        );
+    }
+
+    public function createConfigurationReader(): ConfigurationReaderInterface
+    {
+        return new ConfigurationReader(
+            $this->getRepository(),
+            $this->createSettingManager(),
+            $this->getConfig(),
         );
     }
 

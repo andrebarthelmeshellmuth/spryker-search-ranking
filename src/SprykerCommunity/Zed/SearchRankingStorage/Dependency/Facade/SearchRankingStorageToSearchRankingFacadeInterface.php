@@ -9,60 +9,18 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRankingStorage\Dependency\Facade;
 
-use Generated\Shared\Transfer\SearchRankingMetricCollectionTransfer;
+use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
 
 interface SearchRankingStorageToSearchRankingFacadeInterface
 {
     /**
+     * The whole live configuration for one scope in a single read — see `SearchRanking`'s own facade for
+     * the full specification. Metric weights arrive raw here; normalizing them is this module's own job
+     * (see {@see \SprykerCommunity\Zed\SearchRankingStorage\Business\Writer\RankingConfigurationStorageWriter}),
+     * because only the published document needs weights summing to 1.
+     *
      * @param string $storeName
      * @param string $localeName
      */
-    public function getActiveMetricCollection(string $storeName, string $localeName): SearchRankingMetricCollectionTransfer;
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getRelevanceWeight(string $storeName, string $localeName): float;
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getRelevanceSaturationPoint(string $storeName, string $localeName): float;
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getSpecificityBlendWeight(string $storeName, string $localeName): float;
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getSpecificitySaturationPoint(string $storeName, string $localeName): float;
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getSpecificityCurveExponent(string $storeName, string $localeName): float;
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getSpecificityWeightExponent(string $storeName, string $localeName): float;
-
-    /**
-     * @param string $storeName
-     * @param string $localeName
-     */
-    public function getSpecificityWeightShiftMagnitude(string $storeName, string $localeName): float;
-
-    /**
-     * Project-wide, not store/locale scoped -- see `SearchRankingConfig::getRandomMetricName()`.
-     */
-    public function getRandomMetricName(): string;
+    public function getConfiguration(string $storeName, string $localeName): SearchRankingConfigurationStorageTransfer;
 }
