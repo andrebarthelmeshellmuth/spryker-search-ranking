@@ -204,7 +204,7 @@ class ScoreSectionBuilder implements ScoreSectionBuilderInterface
         ];
 
         if ($queryScore !== null && $queryScore >= 0) {
-            $section = $this->addRelevanceLines(
+            return $this->addRelevanceLines(
                 $section,
                 $configurationTransfer,
                 $queryScore,
