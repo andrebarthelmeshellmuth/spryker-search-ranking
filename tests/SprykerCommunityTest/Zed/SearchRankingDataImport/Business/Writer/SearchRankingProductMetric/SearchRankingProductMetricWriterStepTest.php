@@ -42,38 +42,6 @@ use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingPr
  */
 class SearchRankingProductMetricWriterStepTest extends Unit
 {
-    /**
-     * @var array<\Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric>
-     */
-    protected array $metricEntities = [];
-
-    /**
-     * @var array<\Orm\Zed\Product\Persistence\SpyProductAbstract>
-     */
-    protected array $productAbstractEntities = [];
-
-    /**
-     * @var array<\Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric>
-     */
-    protected array $productMetricEntities = [];
-
-    protected function _after(): void
-    {
-        foreach ($this->productMetricEntities as $productMetricEntity) {
-            $productMetricEntity->delete();
-        }
-
-        foreach ($this->productAbstractEntities as $productAbstractEntity) {
-            $productAbstractEntity->delete();
-        }
-
-        foreach ($this->metricEntities as $metricEntity) {
-            $metricEntity->delete();
-        }
-
-        parent::_after();
-    }
-
     public function testExecuteCreatesANewProductMetricRowWhenNoneExistsYetForThatPair(): void
     {
         // Arrange
@@ -92,7 +60,7 @@ class SearchRankingProductMetricWriterStepTest extends Unit
         (new SearchRankingProductMetricWriterStep())->execute($dataSet);
 
         // Assert
-        $productMetricEntity = $this->findAndTrackProductMetric($metricEntity, $productAbstractEntity);
+        $productMetricEntity = $this->findProductMetric($metricEntity, $productAbstractEntity);
 
         $this->assertSame(42.5, $productMetricEntity->getRawValue());
         $this->assertNull($productMetricEntity->getNormalizedValue());
@@ -112,7 +80,6 @@ class SearchRankingProductMetricWriterStepTest extends Unit
             ->setRawValue(1.0)
             ->setNormalizedValue(0.75)
             ->save();
-        $this->productMetricEntities[] = $productMetricEntity;
 
         $dataSet = new DataSet([
             SearchRankingProductMetricDataSetInterface::KEY_ID_SEARCH_RANKING_METRIC => $metricEntity->getIdSearchRankingMetric(),
@@ -134,7 +101,7 @@ class SearchRankingProductMetricWriterStepTest extends Unit
                 ->count(),
         );
 
-        $updatedEntity = $this->findAndTrackProductMetric($metricEntity, $productAbstractEntity);
+        $updatedEntity = $this->findProductMetric($metricEntity, $productAbstractEntity);
         $this->assertSame(99.0, $updatedEntity->getRawValue());
         $this->assertSame(0.75, $updatedEntity->getNormalizedValue());
     }
@@ -170,7 +137,6 @@ class SearchRankingProductMetricWriterStepTest extends Unit
         $localeNames = [];
 
         foreach ($productMetricEntities as $productMetricEntity) {
-            $this->productMetricEntities[] = $productMetricEntity;
             $localeNames[] = $productMetricEntity->getLocaleName();
             $this->assertSame(17.0, $productMetricEntity->getRawValue());
         }
@@ -240,8 +206,6 @@ class SearchRankingProductMetricWriterStepTest extends Unit
             ->setIsHigherBetter(true)
             ->save();
 
-        $this->metricEntities[] = $metricEntity;
-
         return $metricEntity;
     }
 
@@ -255,8 +219,6 @@ class SearchRankingProductMetricWriterStepTest extends Unit
             ->setAttributes('{}')
             ->save();
 
-        $this->productAbstractEntities[] = $productAbstractEntity;
-
         return $productAbstractEntity;
     }
 
@@ -264,7 +226,7 @@ class SearchRankingProductMetricWriterStepTest extends Unit
      * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric $metricEntity
      * @param \Orm\Zed\Product\Persistence\SpyProductAbstract $productAbstractEntity
      */
-    protected function findAndTrackProductMetric(
+    protected function findProductMetric(
         SpySearchRankingMetric $metricEntity,
         SpyProductAbstract $productAbstractEntity,
     ): SpySearchRankingProductMetric {
@@ -274,8 +236,6 @@ class SearchRankingProductMetricWriterStepTest extends Unit
             ->findOne();
 
         $this->assertNotNull($productMetricEntity);
-
-        $this->productMetricEntities[] = $productMetricEntity;
 
         return $productMetricEntity;
     }

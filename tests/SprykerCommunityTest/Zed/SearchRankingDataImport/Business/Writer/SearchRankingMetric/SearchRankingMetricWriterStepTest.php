@@ -42,20 +42,6 @@ use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingMe
  */
 class SearchRankingMetricWriterStepTest extends Unit
 {
-    /**
-     * @var array<\Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric>
-     */
-    protected array $metricEntities = [];
-
-    protected function _after(): void
-    {
-        foreach ($this->metricEntities as $metricEntity) {
-            $metricEntity->delete();
-        }
-
-        parent::_after();
-    }
-
     public function testExecuteCreatesANewMetricWhenNoneWithThatNameExistsYet(): void
     {
         // Arrange
@@ -73,7 +59,7 @@ class SearchRankingMetricWriterStepTest extends Unit
         (new SearchRankingMetricWriterStep())->execute($dataSet);
 
         // Assert
-        $metricEntity = $this->findAndTrackMetric($name);
+        $metricEntity = $this->findMetric($name);
 
         $this->assertSame(2.5, $this->findWeight($metricEntity->getIdSearchRankingMetric()));
         $storeConfigEntity = $this->findStoreConfig($metricEntity->getIdSearchRankingMetric());
@@ -102,7 +88,7 @@ class SearchRankingMetricWriterStepTest extends Unit
         // Assert
         $this->assertSame(1, SpySearchRankingMetricQuery::create()->filterByName($name)->count());
 
-        $metricEntity = $this->findAndTrackMetric($name);
+        $metricEntity = $this->findMetric($name);
         $this->assertSame(9.0, $this->findWeight($metricEntity->getIdSearchRankingMetric()));
         $storeConfigEntity = $this->findStoreConfig($metricEntity->getIdSearchRankingMetric());
         $this->assertSame('x / avg', $storeConfigEntity?->getFormula());
@@ -131,7 +117,7 @@ class SearchRankingMetricWriterStepTest extends Unit
         (new SearchRankingMetricWriterStep())->execute($dataSet);
 
         // Assert
-        $metricEntity = $this->findAndTrackMetric($name);
+        $metricEntity = $this->findMetric($name);
 
         $metricWeightEntities = SpySearchRankingMetricWeightQuery::create()
             ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
@@ -220,15 +206,14 @@ class SearchRankingMetricWriterStepTest extends Unit
         }
 
         // The metric row itself is created before the weight is validated (mirroring how the formula is
-        // saved before the weight-scoped row is touched) -- track it for cleanup, but the important
-        // assertion is that no weight row was ever persisted for it.
+        // saved before the weight-scoped row is touched); the important assertion is that no weight row
+        // was ever persisted for it.
         $metricEntity = SpySearchRankingMetricQuery::create()->findOneByName($name);
 
         if ($metricEntity === null) {
             return;
         }
 
-        $this->metricEntities[] = $metricEntity;
         $this->assertNull($this->findWeight($metricEntity->getIdSearchRankingMetric()));
     }
 
@@ -251,20 +236,16 @@ class SearchRankingMetricWriterStepTest extends Unit
             ->setWeight($weight)
             ->save();
 
-        $this->metricEntities[] = $metricEntity;
-
         return $metricEntity;
     }
 
     /**
      * @param string $name
      */
-    protected function findAndTrackMetric(string $name): SpySearchRankingMetric
+    protected function findMetric(string $name): SpySearchRankingMetric
     {
         $metricEntity = SpySearchRankingMetricQuery::create()->findOneByName($name);
         $this->assertNotNull($metricEntity);
-
-        $this->metricEntities[] = $metricEntity;
 
         return $metricEntity;
     }

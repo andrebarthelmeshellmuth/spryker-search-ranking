@@ -36,20 +36,6 @@ use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingPr
  */
 class ProductAbstractSkuToIdProductAbstractStepTest extends Unit
 {
-    /**
-     * @var array<\Orm\Zed\Product\Persistence\SpyProductAbstract>
-     */
-    protected array $productAbstractEntities = [];
-
-    protected function _after(): void
-    {
-        foreach ($this->productAbstractEntities as $productAbstractEntity) {
-            $productAbstractEntity->delete();
-        }
-
-        parent::_after();
-    }
-
     public function testExecuteResolvesAnExistingSkuToItsRealId(): void
     {
         // Arrange
@@ -90,8 +76,6 @@ class ProductAbstractSkuToIdProductAbstractStepTest extends Unit
         $productAbstractEntity->setSku($sku)
             ->setAttributes('{}')
             ->save();
-
-        $this->productAbstractEntities[] = $productAbstractEntity;
 
         return $productAbstractEntity;
     }

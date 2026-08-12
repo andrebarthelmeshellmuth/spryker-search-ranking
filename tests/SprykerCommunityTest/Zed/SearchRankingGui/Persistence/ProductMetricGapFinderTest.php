@@ -43,38 +43,6 @@ use SprykerCommunity\Zed\SearchRankingGui\Persistence\ProductMetricGapFinder;
  */
 class ProductMetricGapFinderTest extends Unit
 {
-    /**
-     * @var array<\Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric>
-     */
-    protected array $metricEntities = [];
-
-    /**
-     * @var array<\Orm\Zed\Product\Persistence\SpyProductAbstract>
-     */
-    protected array $productAbstractEntities = [];
-
-    /**
-     * @var array<\Orm\Zed\SearchRanking\Persistence\SpySearchRankingProductMetric>
-     */
-    protected array $productMetricEntities = [];
-
-    protected function _after(): void
-    {
-        foreach ($this->productMetricEntities as $productMetricEntity) {
-            $productMetricEntity->delete();
-        }
-
-        foreach ($this->productAbstractEntities as $productAbstractEntity) {
-            $productAbstractEntity->delete();
-        }
-
-        foreach ($this->metricEntities as $metricEntity) {
-            $metricEntity->delete();
-        }
-
-        parent::_after();
-    }
-
     public function testFindGapsAcrossAllMetricsWhenNoMetricIsSelected(): void
     {
         // Arrange — metric names use "mtr", product SKUs use "prd": two disjoint tokens, see class docblock.
@@ -295,9 +263,7 @@ class ProductMetricGapFinderTest extends Unit
 
         // "active for the queried scope" now requires a real spy_search_ranking_metric_store_config row
         // (see ProductMetricGapFinder's own Phase-8 docblock note) — seeded for both real stores this
-        // file's tests query against (DE by default, AT for the store/locale-scoping regression test)
-        // so cascade-delete on the tracked metric entity in _after() cleans these up too, no separate
-        // tracking needed.
+        // file's tests query against (DE by default, AT for the store/locale-scoping regression test).
         foreach (['DE' => 'de_DE', 'AT' => 'de_AT'] as $storeName => $localeName) {
             SpySearchRankingMetricStoreConfigQuery::create()
                 ->filterByFkSearchRankingMetric($metricEntity->getIdSearchRankingMetric())
@@ -308,8 +274,6 @@ class ProductMetricGapFinderTest extends Unit
                 ->setIsActive(true)
                 ->save();
         }
-
-        $this->metricEntities[] = $metricEntity;
 
         return $metricEntity;
     }
@@ -323,8 +287,6 @@ class ProductMetricGapFinderTest extends Unit
         $productAbstractEntity->setSku($sku)
             ->setAttributes('{}')
             ->save();
-
-        $this->productAbstractEntities[] = $productAbstractEntity;
 
         return $productAbstractEntity;
     }
@@ -349,8 +311,6 @@ class ProductMetricGapFinderTest extends Unit
             ->setRawValue(5.0)
             ->setNormalizedValue(0.5)
             ->save();
-
-        $this->productMetricEntities[] = $productMetricEntity;
 
         return $productMetricEntity;
     }
