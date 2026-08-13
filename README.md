@@ -1460,6 +1460,7 @@ SKUs at all, or coincidentally-matching SKUs get some other shop's numbers.
 | `composer check-floors` (PHP 8.3, 8.4) | the declared dependency floors are real |
 | `rector` dry-run (PHP 8.3, 8.4) | no unapplied Rector rule set drifts in |
 | `phpmd` (`phpmd.xml` + `phpmd-public-methods.xml`) | cyclomatic/NPath complexity, method/class length stay reasonable — run as two separate invocations because PHPMD merges every loaded ruleset's `exclude-pattern` into one global file list per run, and only the public-method-count rule should skip Facades/Factories (Spryker's own DI convention gives each one method per capability/collaborator, not a design problem this package can fix) |
+| `portable tests` (PHP 8.3, 8.4) | this package's own `@group Portable` test subset actually passes — see "Test suite" below |
 
 `check-floors` is the one worth understanding. This package's `require` constraints are a promise about
 which Spryker versions an adopter may install — and that promise is exactly what a development shop
@@ -1489,9 +1490,36 @@ that was actually false — every `spryker/propel-orm` release resolvable under 
 
 ### Test suite
 
+Every test class carries a portability `@group`, so `codecept run -g <tag>` tells you what a given test
+actually needs:
+
+| tag | needs | where it runs |
+|---|---|---|
+| `Portable` | nothing beyond `Generated\Shared\Transfer\*` | standalone — CI runs exactly this, see below |
+| `NeedsDatabase` | a real Propel connection | host shop only |
+| `NeedsSearch` | a real Elasticsearch/OpenSearch | host shop only |
+| `NeedsProject` | this package's own installation diagnostics, deliberately coupled — see their own docblocks | host shop only |
+
+`Portable` tests run standalone in CI on every push, via `tests/codeception.portable.yml` +
+`tests/_ci-standalone/` — no host shop, no live database, no search engine. The recipe: a direct
+`TransferBusinessFactory` call generates `Generated\Shared\Transfer\*` into `src/Generated/` (gitignored,
+exactly like a real project already gitignores its own — regenerated every run), and
+`tests/_ci-standalone/Generated/Shared/Search/PageIndexMap.php` is a checked-in, point-in-time snapshot of
+the one generated artifact this package cannot produce alone (its content is a project-wide aggregate
+across every installed sibling package — see that file's own docblock for the full reasoning and how to
+regenerate it). Run it yourself the same way CI does:
+
+```bash
+composer install
+php tests/_ci-standalone/generate-transfers.php
+vendor/bin/codecept run -c tests/codeception.portable.yml -g Portable
+```
+
 **299 tests, 1670 assertions** across seven Codeception suites (`Zed/SearchRanking`,
 `Zed/SearchRankingStorage`, `Zed/SearchRankingGui`, `Zed/SearchRankingDataImport`, `Client/SearchRanking`,
-`Client/SearchRankingStorage`, `Yves/SearchRankingWidget`). From a shop that has the package installed:
+`Client/SearchRankingStorage`, `Yves/SearchRankingWidget`) make up the full suite, `Portable` and
+non-`Portable` alike. The rest — `NeedsDatabase`/`NeedsSearch`/`NeedsProject` — runs **inside a host
+shop** that has the package installed:
 
 ```bash
 vendor/bin/codecept build -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRanking

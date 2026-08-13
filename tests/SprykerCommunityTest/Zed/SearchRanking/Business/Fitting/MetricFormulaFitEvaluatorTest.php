@@ -27,6 +27,7 @@ use SprykerCommunity\Zed\SearchRanking\SearchRankingConfig;
  * @group Fitting
  * @group MetricFormulaFitEvaluatorTest
  * Add your own group annotations below this line
+ * @group Portable
  */
 class MetricFormulaFitEvaluatorTest extends Unit
 {

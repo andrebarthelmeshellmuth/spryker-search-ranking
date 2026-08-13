@@ -28,6 +28,7 @@ use SprykerCommunity\Client\SearchRankingStorage\Reader\ConfigurationStorageRead
  * Add your own group annotations below this line
  *
  * @property \SprykerCommunityTest\Client\SearchRankingStorage\SearchRankingStorageClientTester $tester
+ * @group Portable
  */
 class ConfigurationStorageReaderTest extends Unit
 {

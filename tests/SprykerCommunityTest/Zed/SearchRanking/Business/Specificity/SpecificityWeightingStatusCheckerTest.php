@@ -23,6 +23,7 @@ use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRa
  * @group Specificity
  * @group SpecificityWeightingStatusCheckerTest
  * Add your own group annotations below this line
+ * @group Portable
  */
 class SpecificityWeightingStatusCheckerTest extends Unit
 {

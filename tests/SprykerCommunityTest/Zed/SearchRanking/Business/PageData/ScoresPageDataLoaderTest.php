@@ -27,6 +27,7 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  * Add your own group annotations below this line
  *
  * @property \SprykerCommunityTest\Zed\SearchRanking\SearchRankingZedTester $tester
+ * @group Portable
  */
 class ScoresPageDataLoaderTest extends Unit
 {

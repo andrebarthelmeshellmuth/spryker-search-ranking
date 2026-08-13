@@ -22,6 +22,7 @@ use SprykerCommunity\Client\SearchRanking\SearchRankingConfig;
  * @group Client
  * @group SearchRanking
  * @group SearchRankingConfigTest
+ * @group Portable
  */
 class SearchRankingConfigTest extends Unit
 {

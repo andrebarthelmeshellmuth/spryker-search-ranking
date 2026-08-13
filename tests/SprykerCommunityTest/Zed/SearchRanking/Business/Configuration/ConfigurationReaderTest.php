@@ -29,6 +29,7 @@ use SprykerCommunity\Zed\SearchRanking\SearchRankingConfig;
  * Add your own group annotations below this line
  *
  * @property \SprykerCommunityTest\Zed\SearchRanking\SearchRankingZedTester $tester
+ * @group Portable
  */
 class ConfigurationReaderTest extends Unit
 {

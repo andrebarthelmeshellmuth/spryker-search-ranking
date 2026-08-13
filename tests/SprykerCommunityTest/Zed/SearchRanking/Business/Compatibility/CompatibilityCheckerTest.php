@@ -25,6 +25,7 @@ use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRa
  * @group Compatibility
  * @group CompatibilityCheckerTest
  * Add your own group annotations below this line
+ * @group Portable
  */
 class CompatibilityCheckerTest extends Unit
 {

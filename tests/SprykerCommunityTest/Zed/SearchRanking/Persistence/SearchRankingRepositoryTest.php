@@ -35,6 +35,7 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepository;
  * @group SearchRankingRepositoryTest
  *
  * @property \SprykerCommunityTest\Zed\SearchRanking\SearchRankingZedTester $tester
+ * @group NeedsDatabase
  */
 class SearchRankingRepositoryTest extends Unit
 {

@@ -29,6 +29,7 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterf
  * @group ScopeCopy
  * @group ScopeConfigCopierTest
  * Add your own group annotations below this line
+ * @group Portable
  */
 class ScopeConfigCopierTest extends Unit
 {

@@ -76,6 +76,7 @@ use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingPr
  * @group FullPipelineTest
  *
  * @property \SprykerCommunityTest\Zed\SearchRanking\SearchRankingZedTester $tester
+ * @group NeedsDatabase
  */
 class FullPipelineTest extends Unit
 {

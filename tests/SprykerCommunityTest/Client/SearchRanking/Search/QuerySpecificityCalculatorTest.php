@@ -18,6 +18,7 @@ use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculator;
  * @group SearchRanking
  * @group Search
  * @group QuerySpecificityCalculatorTest
+ * @group Portable
  */
 class QuerySpecificityCalculatorTest extends Unit
 {

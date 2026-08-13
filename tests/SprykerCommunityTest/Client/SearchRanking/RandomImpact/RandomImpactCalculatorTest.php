@@ -19,6 +19,7 @@ use SprykerCommunity\Client\SearchRanking\RandomImpact\RandomImpactCalculator;
  * @group SearchRanking
  * @group RandomImpact
  * @group RandomImpactCalculatorTest
+ * @group Portable
  */
 class RandomImpactCalculatorTest extends Unit
 {

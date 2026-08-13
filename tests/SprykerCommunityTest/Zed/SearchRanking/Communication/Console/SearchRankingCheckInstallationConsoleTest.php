@@ -41,6 +41,7 @@ use Symfony\Component\Console\Tester\CommandTester;
  * @group Communication
  * @group Console
  * @group SearchRankingCheckInstallationConsoleTest
+ * @group NeedsProject
  */
 class SearchRankingCheckInstallationConsoleTest extends Unit
 {

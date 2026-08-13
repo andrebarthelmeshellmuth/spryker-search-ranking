@@ -36,6 +36,7 @@ use SprykerCommunity\Shared\SearchDebug\SearchDebugConfig;
  * Add your own group annotations below this line
  *
  * @property \SprykerCommunityTest\Client\SearchRanking\SearchRankingClientTester $tester
+ * @group Portable
  */
 class SearchRankingProductDebugDataExpanderPluginTest extends Unit
 {

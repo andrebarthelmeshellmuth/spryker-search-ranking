@@ -33,23 +33,10 @@ use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingPr
  * Add your own group annotations below this line
  *
  * @property \SprykerCommunityTest\Zed\SearchRankingDataImport\SearchRankingDataImportZedTester $tester
+ * @group NeedsDatabase
  */
 class ProductAbstractSkuToIdProductAbstractStepTest extends Unit
 {
-    /**
-     * @var array<\Orm\Zed\Product\Persistence\SpyProductAbstract>
-     */
-    protected array $productAbstractEntities = [];
-
-    protected function _after(): void
-    {
-        foreach ($this->productAbstractEntities as $productAbstractEntity) {
-            $productAbstractEntity->delete();
-        }
-
-        parent::_after();
-    }
-
     public function testExecuteResolvesAnExistingSkuToItsRealId(): void
     {
         // Arrange
@@ -90,8 +77,6 @@ class ProductAbstractSkuToIdProductAbstractStepTest extends Unit
         $productAbstractEntity->setSku($sku)
             ->setAttributes('{}')
             ->save();
-
-        $this->productAbstractEntities[] = $productAbstractEntity;
 
         return $productAbstractEntity;
     }

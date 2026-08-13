@@ -34,23 +34,10 @@ use SprykerCommunity\Zed\SearchRankingDataImport\Business\Writer\SearchRankingPr
  * Add your own group annotations below this line
  *
  * @property \SprykerCommunityTest\Zed\SearchRankingDataImport\SearchRankingDataImportZedTester $tester
+ * @group NeedsDatabase
  */
 class MetricNameToIdSearchRankingMetricStepTest extends Unit
 {
-    /**
-     * @var array<\Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric>
-     */
-    protected array $metricEntities = [];
-
-    protected function _after(): void
-    {
-        foreach ($this->metricEntities as $metricEntity) {
-            $metricEntity->delete();
-        }
-
-        parent::_after();
-    }
-
     public function testExecuteResolvesAnExistingMetricNameToItsRealId(): void
     {
         // Arrange
@@ -91,8 +78,6 @@ class MetricNameToIdSearchRankingMetricStepTest extends Unit
         $metricEntity->setName($name)
             ->setIsHigherBetter(true)
             ->save();
-
-        $this->metricEntities[] = $metricEntity;
 
         return $metricEntity;
     }

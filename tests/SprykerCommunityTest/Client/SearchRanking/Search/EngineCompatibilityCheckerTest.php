@@ -39,6 +39,7 @@ use SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityChecker;
  * @group SearchRanking
  * @group Search
  * @group EngineCompatibilityCheckerTest
+ * @group NeedsSearch
  */
 class EngineCompatibilityCheckerTest extends Unit
 {

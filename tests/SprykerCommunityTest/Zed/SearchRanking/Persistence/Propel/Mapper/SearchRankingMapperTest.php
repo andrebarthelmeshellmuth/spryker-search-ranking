@@ -35,6 +35,7 @@ use SprykerCommunity\Zed\SearchRanking\Persistence\Propel\Mapper\SearchRankingMa
  * Add your own group annotations below this line
  *
  * @property \SprykerCommunityTest\Zed\SearchRanking\SearchRankingZedTester $tester
+ * @group NeedsDatabase
  */
 class SearchRankingMapperTest extends Unit
 {
