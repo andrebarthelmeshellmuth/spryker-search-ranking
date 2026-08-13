@@ -1,0 +1,4 @@
+name,weight,formula,is_active,store,locale
+pdp_impressions,0.3,atan(x / avg) / (pi() / 2),1,DE,"de_DE,en_US"
+top_seller,0.5,x / max,1,DE,"de_DE,en_US"
+random,0.2,random(),1,DE,"de_DE,en_US"
