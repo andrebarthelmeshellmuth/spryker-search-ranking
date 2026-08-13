@@ -12,7 +12,7 @@ namespace SprykerCommunityTest\Client\SearchRanking\Plugin\SearchFeedback;
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use SprykerCommunity\Client\SearchRanking\Plugin\SearchFeedback\SearchFeedbackTermVectorSnapshotProviderPlugin;
-use SprykerCommunity\Client\SearchRanking\SearchRankingClientInterface;
+use SprykerCommunity\Client\SearchRanking\SearchRankingClient;
 
 /**
  * @group SprykerCommunityTest
@@ -28,7 +28,7 @@ class SearchFeedbackTermVectorSnapshotProviderPluginTest extends Unit
     public function testReturnsNullWhenSpecificityWeightingDidNotRunThisRequest(): void
     {
         // Arrange
-        $clientMock = $this->createMock(SearchRankingClientInterface::class);
+        $clientMock = $this->createMock(SearchRankingClient::class);
         $clientMock->method('getLastSpecificityWeightingResult')->willReturn(null);
 
         $plugin = new SearchFeedbackTermVectorSnapshotProviderPlugin();
@@ -50,7 +50,7 @@ class SearchFeedbackTermVectorSnapshotProviderPluginTest extends Unit
             ->setSpecificityWeightExponent(2.0)
             ->setSpecificityWeightShiftMagnitude(0.4);
 
-        $clientMock = $this->createMock(SearchRankingClientInterface::class);
+        $clientMock = $this->createMock(SearchRankingClient::class);
         $clientMock->method('getLastSpecificityWeightingResult')->willReturn($resultTransfer);
 
         $plugin = new SearchFeedbackTermVectorSnapshotProviderPlugin();

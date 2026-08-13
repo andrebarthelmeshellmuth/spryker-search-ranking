@@ -27,7 +27,8 @@ class SearchFeedbackTermVectorSnapshotProviderPlugin extends AbstractPlugin impl
      * {@inheritDoc}
      * - Returns null when specificity weighting didn't run for this request's search (disabled via
      *   `isSpecificityWeightingEnabled()`, or the search had no search string) — same "nothing to report"
-     *   case {@see SearchRankingProductDebugDataExpanderPlugin} already handles identically.
+     *   case {@see \SprykerCommunity\Client\SearchRanking\Plugin\SearchDebug\SearchRankingProductDebugDataExpanderPlugin}
+     *   already handles identically.
      *
      * @api
      */
@@ -39,6 +40,8 @@ class SearchFeedbackTermVectorSnapshotProviderPlugin extends AbstractPlugin impl
             return null;
         }
 
-        return json_encode($specificityWeightingResult->toArray()) ?: null;
+        // camelCased: toArray()'s default is snake_case, which would be the only snake_case JSON payload
+        // in an otherwise camelCase transfer (SearchFeedbackTicketSrpSnapshot's own fields).
+        return json_encode($specificityWeightingResult->toArray(true, true)) ?: null;
     }
 }

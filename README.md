@@ -1320,6 +1320,27 @@ Reaching the page at all already proves the Client-side half of the permission w
 resolves through `Pyz\Client\Permission\PermissionDependencyProvider`, so a permission-denied response can
 equally mean the plugin was registered in Zed only. The denied page says so.
 
+#### 14c. Optional: register the search-feedback frozen-replay integration
+
+With spryker-community/search-feedback installed AND its own [frozen-replay wiring](https://github.com/andrebarthelmeshellmuth/spryker-search-feedback#installation)
+registered, extend its client dependency provider on project level
+(`Pyz\Client\SearchFeedback\SearchFeedbackDependencyProvider`):
+
+```php
+use SprykerCommunity\Client\SearchRanking\Plugin\SearchFeedback\SearchFeedbackTermVectorSnapshotProviderPlugin;
+
+protected function getTermVectorSnapshotProviderPlugins(): array
+{
+    return [
+        new SearchFeedbackTermVectorSnapshotProviderPlugin(),
+    ];
+}
+```
+
+Without this, a filed ticket's frozen SRP snapshot still works — it just never carries the
+specificity-weighting result this package computed for the request. Same "silently absent, not broken"
+posture as 14/14a above: nothing errors, the snapshot's `hasTermVectorSnapshot` flag just stays `false`.
+
 ### 15. Schedule the scope-copy-sync cron
 
 E.g. daily, in `Pyz\Zed\SymfonyScheduler\SymfonySchedulerConfig::getCronJobs()`:
@@ -1608,6 +1629,23 @@ static guarantees; the test suite is run against a real shop before a release.
 > for the negative permission-gate tests). Point either at a different shop and most of it will simply fail
 > on missing data, not on a real defect. They exist to catch UI regressions while developing this package,
 > not as something adopters are expected to run.
+
+**Reproducing the fixture on a fresh clone of this demoshop.** `spencor.hopkin@acme.com`
+(`customer_reference` `DE--1`) is already a base-fixture member of the `test-company` company with no
+company-role assignment — that's the negative-test account, nothing to add. The permitted account
+(`search-admin@test-company.example`) is not a base fixture; add it to
+`data/import/common/common/`:
+
+- `customer.csv`: `SearchAdmin--1,en_US,,search-admin@test-company.example,Mr,Search,Admin,,Male,,$2y$12$CUw8PyVm4isuM.ugzQhZ0.os.n1nlGJOA61SEd7cgjXivzt5LqJ2.,2026-08-10`
+  (that hash is `change123`, the password the Yves Tester expects)
+- `company_user.csv`: `SearchAdmin--1,SearchAdmin--1,test-company,true`
+- `company_business_unit_user.csv`: `SearchAdmin--1,test-business-unit-1`
+- `company_user_role.csv`: `test-company_Admin,SearchAdmin--1`
+- `company_role_permission.csv`: `test-company_Admin,SeeSearchRankingRandomImpactPermissionPlugin,`
+
+Then re-import: `vendor/bin/console data:import customer company-user company-business-unit-user
+company-user-role company-role-permission`. The Zed suite's `admin@spryker.com` login and the metric
+id `1` distribution digest are both standard seeded state in this demoshop and need no extra fixture.
 
 Two suites, split by layer:
 
