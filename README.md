@@ -422,6 +422,14 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   same constant search-debug's own overlay numbers use, so the whole page shows one consistent
   precision; see that package's README for details. Rounding happens only at this display step — the
   underlying floats used for the actual ranking calculation stay full-precision throughout.
+- **search-feedback frozen-replay integration** (optional, needs
+  [spryker-community/search-feedback](https://github.com/andrebarthelmeshellmuth/spryker-search-feedback)):
+  `SearchFeedbackTermVectorSnapshotProviderPlugin` implements that package's
+  `TermVectorSnapshotProviderPluginInterface`, exposing the specificity-weighting result this package
+  already computed for the current request (via `getLastSpecificityWeightingResult()`) so a filed ticket's
+  frozen SRP snapshot can carry it too — zero extra work, no new Elasticsearch call, just reading data this
+  package produces anyway. Same soft-`suggest`-only coupling direction as the search-debug integration
+  above; neither package requires the other.
 - **Scope Copy** (`/search-ranking-gui/scope-copy`) — bootstraps a newly expanded market from an
   established one. One shared source/target Store+Locale picker drives a single combined action that
   copies every metric weight, setting, and `formula`/`isActive`/curve `shape` **explicitly saved** for the

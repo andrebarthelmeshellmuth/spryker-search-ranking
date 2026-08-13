@@ -49,16 +49,22 @@
         "phpunit/phpunit": "^10.0.0 || ^11.0.0",
         "rector/rector": "^2.0",
         "spryker-community/search-debug": "dev-main",
+        "spryker-community/search-feedback": "dev-main",
         "spryker/code-sniffer": "^0.17.30"
     },
     "suggest": {
         "spryker-community/search-debug": "Adds a business-signal score breakdown section to the search-debug SRP overlay (SearchRankingProductDebugDataExpanderPlugin).",
+        "spryker-community/search-feedback": "Lets a filed ticket's frozen SRP snapshot also carry the specificity-weighting result that scored it (SearchFeedbackTermVectorSnapshotProviderPlugin).",
         "spryker/symfony-scheduler": "Lets check-installation verify that this package's cron jobs are actually scheduled. Not required: cron registration is project config either way, and the check degrades to a warning without it."
     },
     "repositories": [
         {
             "type": "vcs",
             "url": "https://github.com/andrebarthelmeshellmuth/spryker-search-debugger"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/andrebarthelmeshellmuth/spryker-search-feedback"
         }
     ],
     "scripts": {
@@ -102,7 +108,7 @@
     "minimum-stability": "stable",
     "extra": {
         "branch-alias": {
-            "dev-feature/locale-scoped-formula": "1.3.x-dev"
+            "dev-main": "2.2.x-dev"
         }
     },
     "homepage": "https://github.com/andrebarthelmeshellmuth/spryker-search-ranking",
