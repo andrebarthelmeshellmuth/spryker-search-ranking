@@ -1337,9 +1337,15 @@ protected function getTermVectorSnapshotProviderPlugins(): array
 }
 ```
 
-Without this, a filed ticket's frozen SRP snapshot still works — it just never carries the
-specificity-weighting result this package computed for the request. Same "silently absent, not broken"
-posture as 14/14a above: nothing errors, the snapshot's `hasTermVectorSnapshot` flag just stays `false`.
+This alone isn't enough to produce anything: [specificity-aware relevance weighting](#specificity-aware-relevance-weighting-opt-in)
+itself is **off by default**, a project-level override of
+`Pyz\Client\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled()`. Without that flag on, the
+plugin above is registered but every call returns `null` — harmless, not an error.
+
+Without this registered, or without specificity weighting turned on, a filed ticket's frozen SRP snapshot
+still works — it just never carries the specificity-weighting result this package computed for the
+request. Same "silently absent, not broken" posture as 14/14a above: nothing errors, the snapshot's
+`hasTermVectorSnapshot` flag just stays `false`.
 
 ### 15. Schedule the scope-copy-sync cron
 
