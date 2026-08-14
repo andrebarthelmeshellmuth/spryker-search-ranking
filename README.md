@@ -906,7 +906,25 @@ found.
 
 ### 1. Install the package
 
-Not yet published on Packagist — install from a path repository:
+Not published on Packagist under the `spryker-community` vendor namespace — install from a VCS
+repository instead:
+
+```json
+"repositories": [
+    {
+        "type": "vcs",
+        "url": "https://github.com/andrebarthelmeshellmuth/spryker-search-ranking"
+    }
+]
+```
+
+```bash
+composer require spryker-community/search-ranking:^2.3
+```
+
+Working inside this demoshop's own monorepo instead of a separate project? Use a `path` repository
+pointed at the local checkout and `:@dev` instead, so edits are picked up without a round trip through
+GitHub:
 
 ```json
 "repositories": [
