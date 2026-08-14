@@ -48,8 +48,8 @@
         "phpstan/phpstan": "^2.0.0",
         "phpunit/phpunit": "^10.0.0 || ^11.0.0",
         "rector/rector": "^2.0",
-        "spryker-community/search-debug": "dev-main",
-        "spryker-community/search-feedback": "dev-main",
+        "spryker-community/search-debug": "^1.2",
+        "spryker-community/search-feedback": "^1.4",
         "spryker/code-sniffer": "^0.17.30"
     },
     "suggest": {
@@ -108,7 +108,7 @@
     "minimum-stability": "stable",
     "extra": {
         "branch-alias": {
-            "dev-main": "2.2.x-dev"
+            "dev-main": "2.3.x-dev"
         }
     },
     "homepage": "https://github.com/andrebarthelmeshellmuth/spryker-search-ranking",
