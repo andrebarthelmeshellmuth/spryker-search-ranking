@@ -56,11 +56,9 @@ class SearchFeedbackTermVectorSnapshotRestorerPluginTest extends Unit
         $restorerClientMock = $this->createMock(SearchRankingClient::class);
         $restorerClientMock->expects($this->once())
             ->method('rememberLastSpecificityWeightingResult')
-            ->with($this->callback(function (SearchRankingSpecificityWeightingResultTransfer $restoredTransfer): bool {
-                return $restoredTransfer->getRelevanceWeight() === 0.01
-                    && $restoredTransfer->getConfiguredRelevanceWeight() === 0.5
-                    && $restoredTransfer->getNormalizedSpecificity() === 0.463;
-            }));
+            ->with($this->callback(fn (SearchRankingSpecificityWeightingResultTransfer $restoredTransfer): bool => $restoredTransfer->getRelevanceWeight() === 0.01
+                && $restoredTransfer->getConfiguredRelevanceWeight() === 0.5
+                && $restoredTransfer->getNormalizedSpecificity() === 0.463));
 
         $restorerPlugin = new SearchFeedbackTermVectorSnapshotRestorerPlugin();
         $restorerPlugin->setClient($restorerClientMock);
