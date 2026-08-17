@@ -11,9 +11,7 @@ the eventual `function_score` ranking is meant to stay fully inspectable in the 
 
 The standout piece: a data-driven normalization-authoring GUI. As you type a formula, the server
 evaluates it against the metric's own real distribution and draws the curve live, alongside ranked
-closed-form curve-fit suggestions — no guessing what shape a business signal should take:
-
-![The metric edit page: a live, labeled-axis SVG preview of the typed normalization formula (with a legend distinguishing it from the metric's own empirical-CDF reference line) plotted against the metric's own real distribution, with ranked closed-form curve-fit suggestions (atan, saturating-ratio, log, sigmoid, power, linear) each showing their R² fit and a one-click "use this formula" action](docs/screenshots/normalization-authoring.png)
+closed-form curve-fit suggestions — no guessing what shape a business signal should take.
 
 *Part of the [Search Relevance](https://search-relevance.dev/) project — explore the interactive ranking-formula walkthrough there.*
 
@@ -259,8 +257,6 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   purely informational today (nothing acts on it differently per locale yet).
 - **Zed UI**:
 
-  ![The metrics list: ID, name, weight, formula, active/inactive status, and edit/delete actions for every configured business signal](docs/screenshots/metrics-list.png)
-
   Every scoped page below (Metrics, Product Values, Product Value Gaps, Settings) has an explicit
   **Store + Locale selector** at the top — a plain GET dropdown pair, not a Symfony form, since it's a
   view filter rather than a mutating action. Whichever scope is selected carries through create/edit/
@@ -272,8 +268,6 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
     uniqueness. Deletion is a CSRF-protected POST.
   - `/search-ranking-gui/product-metric` — read-only, searchable table of all product values
     (abstract SKU, metric, raw value, normalized value, last update).
-
-    ![The Product Values page: raw and normalized value per (abstract SKU, metric) pair, paginated across the whole catalog](docs/screenshots/product-values.png)
   - `/search-ranking-gui/product-metric-gap` (linked from the Product Values page's "View Gaps" button)
     — a read-only, searchable table of every (product abstract, active metric) pair with **no
     `spy_search_ranking_product_metric` row at all** — never imported, or imported then deleted. With
@@ -307,8 +301,6 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
     history row intentionally keeps no hard foreign key). No filtering by metric or date range yet; add
     a `?id-search-ranking-metric=` query-string constraint here if that becomes necessary once the table
     grows.
-
-    ![The Metric History page: newest-first rows showing each config change's formula, weight, active status, direction, fit quality (R²), whether it was a real change or check-only snapshot, and when it was recorded](docs/screenshots/metric-history.png)
   - **Normalization-authoring preview** (on the metric edit page): as you type a formula, a debounced
     request asks the server to evaluate it at ~100 sample points spanning the metric's own real
     distribution (never a JS reimplementation of the expression-language math) and draws the resulting
@@ -492,8 +484,6 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   search results themselves — for permitted search-admins only, the same convention search-debug's own
   overlay data uses.
 
-  ![The "Show random impact" checkbox and its help text above a row of search results, with three +X/-X badges tucked into the bottom-right corner of their product images](docs/screenshots/random-impact.png)
-
   Deliberately **zero coupling with spryker-community/search-debug** in either direction — its own
   permission plugin (duplicating the shape of `SeeSearchDebugInfoPermissionPlugin`, not reusing the class:
   permission plugins are meant to be one-per-package by design), its own Yves widget module
@@ -511,8 +501,6 @@ relevanceWeight × (_score / (_score + relevanceSaturationPoint)) + (1 - relevan
 
 Both `relevanceWeight` and `relevanceSaturationPoint` are Zed-editable at
 `/search-ranking-gui/settings` and synced to key-value storage like the metric weights.
-
-![The Ranking Formula Settings page: relevanceWeight and relevanceSaturationPoint, each with inline help text explaining what it controls and how to pick a value](docs/screenshots/settings.png)
 
 **Why not just multiply, e.g. `(1 + sqrt(_score)) × (signals + baseline)`?** An earlier version of
 this package did exactly that, with an additive `signalBaseline` constant keeping products without
