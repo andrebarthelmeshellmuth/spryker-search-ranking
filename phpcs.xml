@@ -72,6 +72,9 @@
     <rule ref="SlevomatCodingStandard.TypeHints.ParameterTypeHint.UselessAnnotation">
         <severity>0</severity>
     </rule>
+    <rule ref="SprykerStrict.TypeHints.ParameterTypeHint.UselessAnnotation">
+        <severity>0</severity>
+    </rule>
 
     <rule ref="SlevomatCodingStandard.ControlStructures.DisallowNullSafeObjectOperator">
         <severity>0</severity>
