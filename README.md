@@ -6,7 +6,7 @@ alone. Based on Spryker's
 [data-driven ranking best practice](https://docs.spryker.com/docs/pbc/all/search/latest/base-shop/best-practices/data-driven-ranking).
 
 Designed as the companion package to
-[spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debugger) —
+[spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debug) —
 the eventual `function_score` ranking is meant to stay fully inspectable in the search-debug overlay.
 
 The standout piece: a data-driven normalization-authoring GUI. As you type a formula, the server
@@ -406,7 +406,7 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   (`RankingConfigurationStorageWriter`) — see [Ranking formula](#ranking-formula) for why. The raw values
   in `spy_search_ranking_metric_weight` are untouched; only each scope's published copy is normalized.
 - **search-debug overlay integration** (optional, needs
-  [spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debugger)):
+  [spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debug)):
   `SearchRankingProductDebugDataExpanderPlugin` adds a "Business signals" section to the per-product SRP
   overlay — one `signal × weight = contribution` line per metric and their total — plus, distributed
   across a few other dedicated spots in the same overlay (not all bundled into that one section): the
@@ -892,7 +892,7 @@ value from the same formula — not just consistent with each other, but confirm
 Elasticsearch 7.x has not been run against real output, but sits inside the verified range: it is the
 fork point OpenSearch 1.x descends from, and both neighbours on either side are verified. Same
 Apache-2.0-fork-point reasoning as [spryker-community/search-debug's own engine-compatibility
-section](https://github.com/andrebarthelmeshellmuth/spryker-search-debugger#search-engine-compatibility) —
+section](https://github.com/andrebarthelmeshellmuth/spryker-search-debug#search-engine-compatibility) —
 this package's own painless usage (`doc['field'].value`, `containsKey`, `size()`) is bog-standard,
 available on both lineages since well before the fork, so no engine-specific behavior was expected or
 found.
