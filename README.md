@@ -1,5 +1,10 @@
 # Spryker Search Ranking
 
+[![CI](https://github.com/andrebarthelmeshellmuth/spryker-search-ranking/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/andrebarthelmeshellmuth/spryker-search-ranking/actions/workflows/ci.yml)
+[![PHP](https://img.shields.io/badge/php-%E2%89%A5%208.3-777bb4)](composer.json)
+[![PHPStan](https://img.shields.io/badge/PHPStan-level%208-2a6b2a)](phpstan.neon)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 Data-driven search ranking for Spryker Commerce OS: rank search results by **business signals**
 (PDP impressions, sales, or anything else you can measure) instead of relying on string matching
 alone. Based on Spryker's
