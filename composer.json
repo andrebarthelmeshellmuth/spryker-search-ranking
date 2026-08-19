@@ -48,9 +48,11 @@
         "phpstan/phpstan": "^2.0.0",
         "phpunit/phpunit": "^10.0.0 || ^11.0.0",
         "rector/rector": "^2.0",
+        "slevomat/coding-standard": "8.22.1",
         "spryker-community/search-debug": "^1.2",
         "spryker-community/search-feedback": "^1.4",
-        "spryker/code-sniffer": "^0.17.30"
+        "spryker/code-sniffer": "0.17.35",
+        "squizlabs/php_codesniffer": "3.13.6"
     },
     "suggest": {
         "spryker-community/search-debug": "Adds a business-signal score breakdown section to the search-debug SRP overlay (SearchRankingProductDebugDataExpanderPlugin).",
