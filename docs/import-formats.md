@@ -2,8 +2,6 @@
 
 CSV shapes accepted by the data importers.
 
-## Import file formats
-
 `search_ranking_metric.csv` — `store`/`locale` scope which store×locale this row's `weight` applies to;
 `name`/`formula`/`is_active` are global identity fields shared across every scope, so a metric imported
 for two stores appears as two rows with the same `name` but different `weight`/`store`/`locale`:

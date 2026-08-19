@@ -2,8 +2,6 @@
 
 How this package is tested, which suites need a host shop, and what CI runs.
 
-## Testing and CI
-
 ### Automated checks
 
 `.github/workflows/ci.yml` runs on every push and pull request:

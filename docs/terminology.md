@@ -2,8 +2,6 @@
 
 The vocabulary this package uses, and how each term maps to the code.
 
-## Terminology
-
 A quick reference for terms this README reuses across many sections. Each is explained in full where
 it's first introduced in context — this is a lookup index, not a replacement for those explanations.
 

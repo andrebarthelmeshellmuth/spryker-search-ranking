@@ -2,8 +2,6 @@
 
 How a final score is computed: the formula, specificity-aware relevance weighting, and the normalization curves.
 
-## Ranking formula
-
 The final ranking score blends normalized text relevance and the weighted business signals:
 
 ```

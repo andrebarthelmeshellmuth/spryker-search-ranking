@@ -124,7 +124,7 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   in ]0;1]** derived from it. Unique per pair, removed by cascade with either parent.
 - **Metric history** (`spy_search_ranking_metric_history`): every time a metric's formula, weight,
   active flag or direction actually changes — via the Zed edit form, or any other process that saves
-  through the facade — a snapshot is appended: the new config, the metric's [digest](docs/terminology.md#terminology) at that moment
+  through the facade — a snapshot is appended: the new config, the metric's [digest](docs/terminology.md#digest) at that moment
   (min/max/mean/median/percentiles, null if none existed yet), and the new formula's R² against that
   digest. Append-only, never updated; deliberately **not** a hard foreign key to the live metric row, so
   history outlives a later rename or deletion. A save that changes nothing (a re-submitted, unmodified
@@ -287,7 +287,7 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   their ordering) and silently steps aside when no configuration is synchronized or no active metric
   has a non-zero weight.
 - **Ranking configuration in key-value storage**: active metric weights + the two blend constants
-  ([`relevanceWeight`](docs/terminology.md#terminology), [`relevanceSaturationPoint`](docs/terminology.md#terminology)) live
+  ([`relevanceWeight`](docs/terminology.md#relevanceweight), [`relevanceSaturationPoint`](docs/terminology.md#relevancesaturationpoint)) live
   in **one dictionary document per (store, locale)** (`kv:search_ranking_configuration:{store}:{locale}`,
   lowercased), published from Zed through a storage table with the `synchronization` Propel behavior's own
   `store`/`locale` parameters. Metric CRUD, the settings form, and the cron all republish **every**
