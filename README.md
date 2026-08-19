@@ -1,12 +1,17 @@
 # Spryker Search Ranking
 
+[![CI](https://github.com/andrebarthelmeshellmuth/spryker-search-ranking/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/andrebarthelmeshellmuth/spryker-search-ranking/actions/workflows/ci.yml)
+[![PHP](https://img.shields.io/badge/php-%E2%89%A5%208.3-777bb4)](composer.json)
+[![PHPStan](https://img.shields.io/badge/PHPStan-level%208-2a6b2a)](phpstan.neon)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 Data-driven search ranking for Spryker Commerce OS: rank search results by **business signals**
 (PDP impressions, sales, or anything else you can measure) instead of relying on string matching
 alone. Based on Spryker's
 [data-driven ranking best practice](https://docs.spryker.com/docs/pbc/all/search/latest/base-shop/best-practices/data-driven-ranking).
 
 Designed as the companion package to
-[spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debugger) —
+[spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debug) —
 the eventual `function_score` ranking is meant to stay fully inspectable in the search-debug overlay.
 
 The standout piece: a data-driven normalization-authoring GUI. As you type a formula, the server
@@ -15,129 +20,25 @@ closed-form curve-fit suggestions — no guessing what shape a business signal s
 
 *Part of the [Search Relevance](https://search-relevance.dev/) project — explore the interactive ranking-formula walkthrough there.*
 
+> **Not an official Spryker project.** `spryker-community/*` is an independent, community-built
+> package namespace with no affiliation to, sponsorship by, or endorsement from Spryker Systems GmbH.
+> The name describes what these packages are (community contributions for Spryker Commerce OS), not who
+> maintains them. The matching Packagist namespace is held by an unrelated GitHub organization, which is
+> why installation goes through a VCS repository entry rather than a plain `composer require` — see
+> [Installation](#installation).
+
 ## Contents
 
-- [Terminology](#terminology)
 - [Status](#status)
 - [Before you start: this needs real business-signal data](#before-you-start-this-needs-real-business-signal-data)
 - [What it does](#what-it-does)
-- [Ranking formula](#ranking-formula)
-- [Specificity-aware relevance weighting (opt-in)](#specificity-aware-relevance-weighting-opt-in)
-- [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update)
-- [Why hourly batch normalization, not an immediate per-value hook](#why-hourly-batch-normalization-not-an-immediate-per-value-hook)
-- [Normalization formulas](#normalization-formulas)
 - [Modules](#modules)
 - [Requirements](#requirements)
-  - [Search engine compatibility](#search-engine-compatibility)
 - [Installation](#installation)
-  - [1. Install the package](#1-install-the-package)
-  - [2. Register the core namespace](#2-register-the-core-namespace)
-  - [3. Register the console commands](#3-register-the-console-commands)
-  - [4. Register the data import plugins](#4-register-the-data-import-plugins)
-  - [5. Add the import entities to your data-import YAML](#5-add-the-import-entities-to-your-data-import-yaml)
-  - [6. Translations for the Zed GUI](#6-translations-for-the-zed-gui)
-  - [7. Register the Zed navigation entry](#7-register-the-zed-navigation-entry)
-  - [8. Schedule the normalization cron](#8-schedule-the-normalization-cron)
-  - [9. Register the Elasticsearch export plugins](#9-register-the-elasticsearch-export-plugins)
-  - [10. Register the package's search schema directory](#10-register-the-packages-search-schema-directory)
-  - [11. Register the ranking-configuration sync queue](#11-register-the-ranking-configuration-sync-queue)
-  - [12. Register the ranking-configuration publish event listener](#12-register-the-ranking-configuration-publish-event-listener)
-  - [13. Register the function_score query expander](#13-register-the-function_score-query-expander)
-  - [14. Optional: register the search-debug overlay section](#14-optional-register-the-search-debug-overlay-section)
-  - [14a. Optional: register the random-impact admin preview](#14a-optional-register-the-random-impact-admin-preview)
-  - [15. Schedule the scope-copy-sync cron](#15-schedule-the-scope-copy-sync-cron)
-  - [16. Build](#16-build)
-  - [17. Verify the installation](#17-verify-the-installation)
-- [Import file formats](#import-file-formats)
 - [Limitations](#limitations)
-- [Testing and CI](#testing-and-ci)
-  - [Automated checks](#automated-checks)
-  - [Test suite](#test-suite)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
-
-## Terminology
-
-A quick reference for terms this README reuses across many sections. Each is explained in full where
-it's first introduced in context — this is a lookup index, not a replacement for those explanations.
-
-For the full store/locale scoping picture across every field this package manages — walked through
-formula term by term, plus a quick-reference table — see [SCOPING.md](SCOPING.md).
-
-### metric
-
-A named business signal (e.g. `pdp_impressions`, `top_seller`) with its own weight, normalization
-formula, active flag, and direction. See [What it does](#what-it-does).
-
-A metric's fields have two different scopes, not one: `name`/`isHigherBetter` (direction) are global —
-the same everywhere the metric exists at all, since they're definitional (what the metric IS/MEANS).
-`formula`/`isActive`/curve `shape`/`weight` all live at (store, locale) tier
-(`spy_search_ranking_metric_store_config` and `spy_search_ranking_metric_weight`, one row per metric ×
-store × locale unconditionally) — but whether sibling locale rows of the same store are kept identical or
-allowed to genuinely diverge is a single per-metric decision, the global `isLocaleScoped` flag (default
-`false`), not something baked into the storage shape itself. A brand-new store gets its own
-formula/active/shape via the Scope Copy page's combined copy action (see [What it does](#what-it-does)),
-not a database migration — the columns that once held a single global formula/isActive/shape on
-`spy_search_ranking_metric` itself were removed entirely once every part of this package migrated onto
-the (store, locale)-scoped table (a breaking change; see [CHANGELOG](CHANGELOG.md) for the release that
-shipped it).
-
-`isLocaleScoped` (default `false`) answers one question once, and the answer cascades through formula,
-isActive, shape, AND weight together — never one flag per concern:
-- **`false`** (default, most metrics): this metric is a store-wide fact (e.g. `top_seller`, driven by
-  sales/stock data that doesn't vary by language) rather than a language-dependent one — saving
-  formula/isActive/weight for any one locale of a store fans it out to every real locale of that store
-  automatically, so the admin only ever edits one value per store instead of keeping N locale copies in
-  sync by hand.
-- **`true`** (rare — evidence first via `evaluateCurrentMetricFitAcrossLocales()`, see
-  [Metric history](#what-it-does) below): this metric genuinely differs per locale (the classic case: a
-  signal whose raw-value distribution differs by language, needing e.g. `2 * atan(x)` in one locale and
-  `3 * atan(x)` in another to normalize comparably) — formula, isActive, shape, and weight are then
-  authored and stored independently per locale, no fan-out.
-
-The metric list's "Scope" column shows which mode each metric is in. See
-[SCOPING.md](SCOPING.md) for the full field-by-field breakdown.
-
-### weight
-
-How much one metric's signal contributes to the combined business-signal score, relative to the other
-active metrics. See [Ranking formula](#ranking-formula).
-
-For an `isLocaleScoped=false` metric (most metrics — see [metric](#metric) above), weight is still the
-mechanism for suppressing one metric in just ONE locale of a store without touching `isActive` (which
-stays store-wide, fanned out with everything else): set that locale's weight to `0`. The query-time blend
-is literally `weight * scores.metric`, so a `0` weight contributes nothing to that locale's ranking. (For
-an `isLocaleScoped=true` metric, `isActive` is itself per-locale, so this trick isn't needed — just
-uncheck Active for that one locale directly.) A `0` weight for a locale whose underlying data you distrust
-(e.g. missing/broken tracking for that market) and a `0` weight that's simply never been configured look
-identical today; there is no flag distinguishing "deliberately suppressed" from "unconfigured".
-
-### raw value / normalized value
-
-The real-world number for one metric on one product (e.g. "8,250 impressions"), and the `]0;1]` value
-its formula maps that number to. See [What it does](#what-it-does).
-
-### signal
-
-A metric's own normalized value — used interchangeably with "metric" once normalization, not the raw
-real-world number behind it, is the topic.
-
-### digest
-
-A metric's precomputed distribution snapshot — min/max/mean/median plus a 101-point percentile/empirical-CDF
-backbone — rebuilt by the normalization cron and read by the normalization-authoring GUI's live preview
-and curve-fit suggestions, so neither ever touches the raw per-product rows directly. See
-[What it does](#what-it-does).
-
-### relevanceWeight
-
-Shorthand `α`. The single knob for how much of the final score comes from normalized text relevance vs.
-the combined business-signal score. See [Ranking formula](#ranking-formula).
-
-### relevanceSaturationPoint
-
-Shorthand `k`. The raw Elasticsearch `_score` at which normalized relevance reaches exactly 0.5 — a
-search-infra tuning constant, not a business knob. See [Ranking formula](#ranking-formula).
+- [Documentation](#documentation)
 
 ## Status
 
@@ -154,7 +55,7 @@ import, the normalization cron, the export of normalized signals into the Elasti
 (`scores` field), the **`function_score` ranking itself**: catalog searches are re-scored by
 `relevanceWeight × normalizedRelevance + (1 - relevanceWeight) × Σ weightᵢ × signalᵢ`, with the metric
 weights and the two blend constants editable in Zed and synchronized to key-value storage — see
-[Ranking formula](#ranking-formula) for the full rationale — and a **data-driven normalization-authoring
+[Ranking formula](docs/ranking-formula.md) for the full rationale — and a **data-driven normalization-authoring
 GUI**: a live preview of the typed formula against the metric's own real distribution, plotted alongside
 the theoretical max-discrimination reference curve, with ranked closed-form curve-fit suggestions.
 
@@ -216,14 +117,14 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   data; it only steers which curve-fit suggestions the normalization GUI offers below, never the formula
   itself. A fourth global flag, **`isLocaleScoped`** (default `false`), decides whether formula/active/
   weight together need genuine per-locale granularity for this metric, or stay fanned out identically
-  across a store's locales — see [Terminology](#terminology) for the full scope breakdown and what
+  across a store's locales — see [Terminology](docs/terminology.md) for the full scope breakdown and what
   turning it on does.
 - **Product values** (`spy_search_ranking_product_metric`): one row per (metric, abstract product)
   pair holding the **raw real-world value** (e.g. "8,250 impressions") and the **normalized value
   in ]0;1]** derived from it. Unique per pair, removed by cascade with either parent.
 - **Metric history** (`spy_search_ranking_metric_history`): every time a metric's formula, weight,
   active flag or direction actually changes — via the Zed edit form, or any other process that saves
-  through the facade — a snapshot is appended: the new config, the metric's [digest](#digest) at that moment
+  through the facade — a snapshot is appended: the new config, the metric's [digest](docs/terminology.md#digest) at that moment
   (min/max/mean/median/percentiles, null if none existed yet), and the new formula's R² against that
   digest. Append-only, never updated; deliberately **not** a hard foreign key to the live metric row, so
   history outlives a later rename or deletion. A save that changes nothing (a re-submitted, unmodified
@@ -247,7 +148,7 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   metric's CURRENT formula fit its CURRENT digest right now" read for one given locale — never writes a
   history row, safe to call as often as needed), `evaluateCurrentMetricFitAcrossLocales()` (the same
   check, once per real locale of a store, keyed by locale name — the evidence for whether a metric should
-  be flagged `isLocaleScoped=true` in the first place, see [Terminology](#terminology)'s `metric` entry,
+  be flagged `isLocaleScoped=true` in the first place, see [Terminology](docs/terminology.md)'s `metric` entry,
   as well as the ongoing diagnostic for whether a store-wide formula still fits every locale's own real
   data comparably well once it's set), and `recordCheckOnly()`
   (appends the `isChange = false` row itself once a check has run). This package makes no decision about
@@ -355,7 +256,7 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   shortly after — nightly is frequent enough to keep ties from calcifying into a permanent order without
   looking unstable. Also accepts `--store`/`--locale`, same semantics as `:normalize` above. Reuses the
   same full-republish path as every other score update; see
-  [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update).
+  [Why full republish, not a partial score-only ES update](docs/design-decisions.md).
 - **`search-ranking:check-compatibility`**: probes the live search engine's ACTUAL capabilities —
   never a version-string comparison, since OpenSearch and Elasticsearch report incompatible version
   identifiers under the same API surface (this stack self-reports `distribution: opensearch, 1.3.4`; a
@@ -375,18 +276,18 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   field. After normalizing, the cron triggers `Product.product_abstract.publish` events (chunked)
   for all scored products so the documents refresh; `--skip-publish` suppresses that — a full
   product-page republish rather than a partial score-only write, deliberately; see
-  [Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update).
+  [Why full republish, not a partial score-only ES update](docs/design-decisions.md).
 - **function_score ranking**: a `QueryExpanderPlugin` wraps the catalog search query in a
   `function_score` with the painless script
   `params.relevanceWeight * (_score / (_score + params.relevanceSaturationPoint)) + (1 - params.relevanceWeight) * (params.w0 * doc['scores.metric'] + …)` —
   `boost_mode: replace`, weights and both blend constants as script params, every doc-value access
   guarded against missing fields, and metric names validated against a strict pattern before being
-  embedded (import data cannot inject script code). See [Ranking formula](#ranking-formula) for why
+  embedded (import data cannot inject script code). See [Ranking formula](docs/ranking-formula.md) for why
   it's shaped this way. It only acts on queries **with a search string** (category/browse pages keep
   their ordering) and silently steps aside when no configuration is synchronized or no active metric
   has a non-zero weight.
 - **Ranking configuration in key-value storage**: active metric weights + the two blend constants
-  ([`relevanceWeight`](#relevanceweight), [`relevanceSaturationPoint`](#relevancesaturationpoint)) live
+  ([`relevanceWeight`](docs/terminology.md#relevanceweight), [`relevanceSaturationPoint`](docs/terminology.md#relevancesaturationpoint)) live
   in **one dictionary document per (store, locale)** (`kv:search_ranking_configuration:{store}:{locale}`,
   lowercased), published from Zed through a storage table with the `synchronization` Propel behavior's own
   `store`/`locale` parameters. Metric CRUD, the settings form, and the cron all republish **every**
@@ -396,10 +297,10 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   everything is cheap enough not to bother optimizing. Both blend constants are Zed-editable at
   `/search-ranking-gui/settings`, scoped per (store, locale) via that page's own Store+Locale selector.
   Metric weights are **normalized to sum to 1 at publish time, independently per scope**
-  (`RankingConfigurationStorageWriter`) — see [Ranking formula](#ranking-formula) for why. The raw values
+  (`RankingConfigurationStorageWriter`) — see [Ranking formula](docs/ranking-formula.md) for why. The raw values
   in `spy_search_ranking_metric_weight` are untouched; only each scope's published copy is normalized.
 - **search-debug overlay integration** (optional, needs
-  [spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debugger)):
+  [spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debug)):
   `SearchRankingProductDebugDataExpanderPlugin` adds a "Business signals" section to the per-product SRP
   overlay — one `signal × weight = contribution` line per metric and their total — plus, distributed
   across a few other dedicated spots in the same overlay (not all bundled into that one section): the
@@ -429,7 +330,7 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   too, rather than writing an explicit copy of its code-level default.
   `spy_search_ranking_product_metric`/`_metric_digest` — real, scope-local behavioral data — are never
   copied, so a freshly bootstrapped market still shows its own honest gaps on the Product Value Gaps page.
-  For an `isLocaleScoped=false` metric (most metrics — see [Terminology](#terminology)'s own `metric`
+  For an `isLocaleScoped=false` metric (most metrics — see [Terminology](docs/terminology.md)'s own `metric`
   entry), weight/formula/isActive/shape all fan out to every real locale of the target store regardless of
   which one target locale was picked; only for an `isLocaleScoped=true` metric does the write stay scoped
   to just the one (target store, target locale) pair picked here. Copying between two locales of the
@@ -491,344 +392,6 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   search-debug's own on the same product tile. Installing and registering search-debug is not required for
   this feature to work.
 
-## Ranking formula
-
-The final ranking score blends normalized text relevance and the weighted business signals:
-
-```
-relevanceWeight × (_score / (_score + relevanceSaturationPoint)) + (1 - relevanceWeight) × Σ weightᵢ × signalᵢ
-```
-
-Both `relevanceWeight` and `relevanceSaturationPoint` are Zed-editable at
-`/search-ranking-gui/settings` and synced to key-value storage like the metric weights.
-
-**Why not just multiply, e.g. `(1 + sqrt(_score)) × (signals + baseline)`?** An earlier version of
-this package did exactly that, with an additive `signalBaseline` constant keeping products without
-business signals from being multiplied towards zero. The problem: Elasticsearch's raw `_score` is
-unbounded and query-shape-dependent — a query matching more terms, or rarer terms, produces a much
-higher score than one matching a single common term, with no ceiling — while business signals are
-normalized to `[0;1]` by design. Combining an unbounded, query-dependent number with a bounded one
-directly means the *relative* influence of business signals over text relevance drifts unpredictably
-from query to query, and the additive baseline has no principled value — it's tuned by eye until
-results look right.
-
-That said, the old formula wasn't all bad: `sqrt(_score)` never saturates, it keeps growing (slowly) as
-`_score` grows, so on long, specific queries where many rare terms match and `_score` gets large, weight
-naturally drifted back toward text relevance instead of staying pinned to the business signals — a
-property the saturating curve below deliberately gives up, since it caps `_score`'s contribution at
-`[0;1)` no matter how large `_score` gets. Recovering that upside on purpose, rather than as a side effect
-of an otherwise unpredictable formula, needs real additional machinery — some way to read how specific a
-query's own text is. [Specificity-aware relevance weighting](#specificity-aware-relevance-weighting-opt-in)
-below is exactly that machinery, opt-in and off by default, built for a related but distinct purpose
-(deciding how much a query should lean on business signals at all, not recovering this specific upside) —
-the general shape of what "reading the query" looks like in this package now exists, even though it
-doesn't reintroduce the old formula.
-
-**`relevanceWeight` and `relevanceSaturationPoint` fix that by normalizing first.**
-`_score / (_score + relevanceSaturationPoint)` is the same saturating-curve shape BM25 itself uses for
-term-frequency saturation (also known from Michaelis-Menten kinetics): it maps the unbounded `_score`
-onto `[0;1)`, reaching exactly 0.5 when `_score == relevanceSaturationPoint`. With both sides of the
-blend now on the same `[0;1]` scale, `relevanceWeight` becomes one single, interpretable knob — "how
-much of the final score comes from text relevance vs. business signals" — rather than an implicit
-multiplicative interaction plus an unexplainable additive constant.
-
-The two constants play different roles operationally:
-- **`relevanceWeight`** is a **business knob**. It's a genuine 0–1 tradeoff someone might reasonably
-  A/B test — how much should business performance move the needle relative to text match.
-- **`relevanceSaturationPoint`** is a **search-infra tuning constant**. It has no universal correct
-  value — it depends entirely on this shop's own field boosts and typical query shapes. It should be
-  set once from real `_score` values (the search-debug overlay's "Text match raw score" line is
-  exactly the number to sample) and rarely touched afterwards, not guessed.
-
-**Default `relevanceWeight` is `0.75`, not a neutral `0.5`.** Two reasons, both rooted in the
-multiplicative-formula history above: (1) the old `(1 + sqrt(_score)) × (signals + baseline)` shape gave
-text relevance an *unbounded* multiplier — for this catalog's typical scores (roughly 4-20, see
-`relevanceSaturationPoint` above), that term swung roughly 2x-5x across weak-to-strong matches, so text
-relevance was structurally dominant in practice, not a 50/50 partner with business signals. A flat `0.5`
-split on the current (correctly bounded) formula would be a real behavior change, not a like-for-like
-fix — it under-weights text relevance relative to what this package used to do. (2) it matches
-established field guidance (e.g. Turnbull & Berryman, *Relevant Search*): text relevance should stay the
-*primary* ranking signal, with business/popularity signals refining and tiebreaking rather than competing
-as an equal partner — an equal-weight blend risks letting a popular-but-off-target result outrank an
-exact/obviously-right match, a common and easily user-visible relevance failure. This is still a starting
-point, not a measured optimum — this package deliberately scopes itself to *using* business signals to
-rank, not deciding what the weights *should* be (see [What it does](#what-it-does)); an `nDCG`-style
-evaluation against real rated queries, run by separate tooling on top of this one, is one principled way
-to validate or refine this value once enough ratings exist.
-
-One practical constraint shaped this design: `script_score` inside `function_score` runs *per
-document*, with no visibility into the score distribution of the other candidates in the result set.
-A saturating function only ever needs the current document's own `_score`, so it drops into the
-existing single-pass query without any architecture change — true min-max/percentile normalization
-across the whole candidate set would need a two-stage rescore pipeline instead.
-
-One visible consequence: the final `_score` is now always in `[0;1]` (a weighted blend of two `[0;1]`
-terms), rather than the "few units" range the old multiplicative formula produced — purely cosmetic,
-not a ranking-correctness change.
-
-**The business-signal term also needs to genuinely stay in `[0;1]` for any of this to hold — which
-depends on the metric weights, and those are Zed-editable with no upper bound.** The metric form only
-constrains a single weight to be `>= 0` (see `MetricForm`); nothing stops an admin from giving three
-active metrics a weight of 1.0 each, which would let `Σ weightᵢ × signalᵢ` reach 3 and swamp
-`relevanceWeight`'s intended meaning. The fix: **active metric weights are normalized to sum to 1
-before publishing** (`RankingConfigurationStorageWriter::normalizeMetricWeights()`) —
-`usedWeightᵢ = enteredWeightᵢ / Σⱼ enteredWeightⱼ`. Since each metric's own normalized signal is
-already clamped into `]0;1]`, and the used weights now sum to exactly 1, `Σ usedWeightᵢ × signalᵢ` is a
-genuine **convex combination** of values already inside `]0;1]` — guaranteed to stay in that interval,
-not just usually fine. With a single active metric this always normalizes to 1 regardless of the raw
-number entered (it's 100% of the active-weight sum either way); with several, e.g. `top_seller = 3.0`
-and `pdp_impressions = 1.0` both active, they publish as `0.75` and `0.25`. Normalization happens once,
-at publish time — not independently in `FunctionScoreBuilder` and `ScoreSectionBuilder` — so the live
-ranking query and the search-debug overlay can never silently disagree on the numbers, and the debug
-overlay's `signal × weight = contribution` lines show the real, effective weight actually used, not
-whatever raw number was typed into the Zed form. All-zero (or zero active metrics) is left as-is rather
-than dividing by zero — `FunctionScoreBuilder` already treats that as "no usable business signal" and
-steps aside to pure text relevance.
-
-## Specificity-aware relevance weighting (opt-in)
-
-**Off by default.** A single global `relevanceWeight` is a reasonable default, but it can't tell an
-exact-SKU-style query ("SKU-12345", a query whose own text is already unambiguous) apart from a
-category-style query ("office chairs", a query so generic that business signals are what should actually
-decide the order). This feature derives `relevanceWeight` per query instead of using one static value for
-every search.
-
-**An earlier version of this feature measured the SHAPE of the top-N `_score` distribution (Shannon
-entropy) instead — that approach was replaced.** Verified live against this package's own real catalog: an
-ordinary multi-term/browsy query's top-10 raw BM25 `_score`s cluster within roughly 7% of each other
-regardless of how generic the query actually is, so normalized entropy came back ≈`0.9998` — numerically
-indistinguishable from the theoretical maximum — for nearly every query tried, browsy or not. Only a
-literal single-hit query ever produced a meaningfully different reading. In other words, entropy over
-`_score` was measuring "did this query match more than one document," not "how specific is this query,"
-so it couldn't actually grade the "somewhat vs. very generic" middle ground the feature exists for.
-
-**The mechanism now measures the QUERY TEXT itself, not the resulting scores.** With the flag enabled,
-`SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculator` fires ONE ADDITIONAL,
-lightweight `_termvectors` probe per catalog search — an artificial document containing the search string,
-probed against the same fields the real query searches (with `per_field_analyzer` forcing the SAME
-search-time tokenization the real query uses, since `_termvectors` otherwise defaults to a field's
-INDEX-time analyzer) — never a real catalog query at all, unlike the entropy-era probe this replaces. From
-the response it reads each query term's real corpus document frequency (`doc_freq`) and corpus size
-(`N`), derives `idf = ln(N / doc_freq)` per term (a term with zero real corpus evidence is skipped, not
-treated as maximally specific), and blends the terms into one raw specificity value:
-
-```
-rawSpecificity = specificityBlendWeight × max(idf) + (1 − specificityBlendWeight) × harmonicMean(idf)
-```
-
-`max` alone would reward a single rare term even in an otherwise generic query (e.g. a SKU trailing a
-common word); `harmonicMean` alone would punish a query as soon as ANY term is common, even alongside a
-very rare one. Blending the two (default `specificityBlendWeight = 0.7`, favoring `max`) keeps a query
-with one genuinely rare term reading as specific, while still letting an all-common-words query read as
-unspecific. Real, verified idf values from this package's own catalog (`N = 1064`, `ln(N/df)`): `office`
-→ `0.68`, `office chair` → `2.33`, `chair` → `2.86`, `topstar chair` → `3.57`, `topstar` → `3.71`,
-`topstar M11480` → `5.79`, `M11480` (an exact SKU) → `6.28` — a sensible, continuously-graded ordering
-from generic to specific, unlike the old entropy signal's two-extremes-only behavior.
-
-The unbounded `rawSpecificity` is then normalized into `[0;1[` the same saturating way `relevanceWeight`'s
-own text-relevance term already is, generalized to a Hill/Michaelis-Menten curve:
-
-```
-normalizedSpecificity = rawSpecificity^curveExponent / (rawSpecificity^curveExponent + specificitySaturationPoint^curveExponent)
-```
-
-`curveExponent = 1.0` (the default) reproduces the original `rawSpecificity / (rawSpecificity +
-specificitySaturationPoint)` formula exactly. At `rawSpecificity == specificitySaturationPoint` the result
-is always exactly `0.5` for any `curveExponent > 0` — the pivot never moves, only how sharply the curve
-transitions around it does. A `curveExponent` above `1.0` sharpens the transition (near-binary
-specific-vs-unspecific); below `1.0` flattens it (more gradual grading across the whole range).
-
-**The configured `relevanceWeight` is a baseline the specificity result shifts, never fully replaces.** A
-highly specific query shifts it up toward text relevance, an unspecific/browsy query shifts it down toward
-business signals, by up to a configured maximum in either direction; a query with average specificity
-(`normalizedSpecificity` exactly `0.5`, i.e. raw specificity exactly at the calibrated saturation point)
-leaves the baseline untouched:
-
-```
-signedDeviation = 2 × normalizedSpecificity − 1              // −1 at 0, 0 at 0.5, +1 at 1
-shapedDeviation = sign(signedDeviation) × |signedDeviation|^exponent
-relevanceWeight = clamp(configuredRelevanceWeight + shiftMagnitude × shapedDeviation, 0, 1)
-```
-
-The exponent is applied to the deviation's magnitude, not to `normalizedSpecificity` directly — that
-keeps `0.5` an exact neutral point regardless of the exponent's value, rather than moving it.
-
-> [!NOTE]
-> **`field_statistics.doc_count` (the `N` in `ln(N/df)`) is index-wide across every locale, not
-> locale-scoped** — `_termvectors` has no way to scope it to one locale. This is an accepted approximation:
-> a shop indexing one page document per store-locale per abstract product has a uniform duplication factor
-> across every product, so the constant multiplicative inflation of both `N` and `df` cancels out in the
-> `ln(N/df)` ratio. If your shop has uneven per-product locale coverage, this approximation may not hold —
-> verify against your own catalog before relying on it.
-
-**Five Zed-editable settings, at `/search-ranking-gui/settings`** (alongside `relevanceWeight` and
-`relevanceSaturationPoint` — see [Ranking formula](#ranking-formula)) — all only take effect once the
-code-level flag below is on:
-- **Specificity blend weight** (default `0.7`) — `specificityBlendWeight` (α) above. Also tunable via
-  `spryker-community/search-ranking-optimizer`'s own blackbox-optimizer search (e.g. CMA-ES).
-- **Specificity saturation point** — `specificitySaturationPoint` (k) above. Calibration-tunable only
-  (like `relevanceSaturationPoint`), not tunable by the blackbox-optimizer search — see
-  `spryker-community/search-ranking-optimizer`'s Calibration feature. Needs a real value sampled from your
-  own catalog before trusting the default; a placeholder chosen without that data could be wildly wrong.
-- **Specificity curve exponent** (default `1.0`) — `curveExponent` above, how sharply
-  `normalizedSpecificity` transitions around the saturation point. Also tunable via
-  `spryker-community/search-ranking-optimizer`'s own blackbox-optimizer search (e.g. CMA-ES).
-- **Specificity weight exponent** (default `1.0`) — how sharply the shift ramps up away from the neutral
-  point.
-- **Specificity weight shift magnitude** (default `0.25`) — the maximum shift in either direction. Sized
-  to match the `0.75` `relevanceWeight` baseline: `shiftMagnitude = 1 - relevanceWeight`. A baseline above
-  `0.5` has less headroom upward (toward `1.0`) than downward (toward `0.0`) before clamping;
-  `relevanceWeight` itself cannot leave `[0;1]`, so this isn't a formula flaw, just where a bounded knob
-  sitting near its own edge runs out of room. Sizing the magnitude to the *tighter* side means a maximally
-  specific query (`normalizedSpecificity = 1`) reaches exactly `1.0` — pure text relevance — with no
-  clamped/wasted resolution, while a maximally unspecific query (`normalizedSpecificity = 0`) floors at
-  exactly `0.75 - 0.25 = 0.5`: the OLD global default, never lower. If you change the `relevanceWeight`
-  baseline, re-derive this value as `1 - relevanceWeight` again rather than leaving it fixed.
-
-**Why the ON/OFF switch is code-level, not one of the settings above:** it's the one control that decides
-whether a second live `_termvectors` probe fires on every catalog search at all — flipping it should take
-a project deploy, not just a Zed form save. Enable it in your project's
-`Pyz\Client\SearchRanking\SearchRankingConfig` by overriding `isSpecificityWeightingEnabled(): bool` to
-return `true`; the tuning settings become meaningful once that's done. **This is the only override point
-that actually works** — `Shared\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled()` is a
-plain hardcoded `return false;`, not a project-overridable `AbstractSharedConfig`, so overriding a
-`Pyz\Shared\SearchRanking\SearchRankingConfig` class has no effect. Other code that needs to ask whether
-specificity weighting is live for this project — e.g. a different package reimplementing this formula for
-its own evaluation tooling — should call `SearchRankingClientInterface::isSpecificityWeightingEnabled()`
-rather than referencing either config class directly; it resolves through this same, genuinely
-project-override-aware Client config.
-
-**Also override `getSpecificityProbeFieldSearchAnalyzers(): array`** on the same Client config class if
-your project's own `page.json` schema declares a custom search-time analyzer for its fulltext fields (this
-package's own demo shop does, for synonym handling). The package's own default maps the two standard
-Spryker fulltext fields to Elasticsearch/OpenSearch's built-in `standard` analyzer — safe on a vanilla
-install, but almost certainly wrong once a project adds its own custom search-time analyzer, since
-`_termvectors` would then tokenize differently than the real query does.
-
-**Why it's opt-in at all:** it doubles the number of Elasticsearch/OpenSearch round trips per catalog
-search. That's a real, permanent cost — worth it once you have a mixed catalog with both exact-match and
-browsy query patterns, not worth paying on every search by default.
-
-**Safety:** a failing or empty probe (no query term with real corpus evidence, a transient engine hiccup)
-is caught and falls back to the configured static `relevanceWeight` unchanged — this feature can degrade
-to "as if it were off" but never breaks or blocks the real search it's attached to. The same fallback
-covers a KV-storage payload published before this feature existed: a project that enables the flag before
-its first post-upgrade Zed save still gets sane defaults, not an exception.
-
-**Visible in the search-debug overlay.** `SearchRankingFunctionScoreQueryExpanderPlugin` hands its
-`SpecificityWeightingResult` off to `SearchRankingClient` (the one instance the Locator guarantees stays
-the same across this package's plugins for the whole request), so
-`SearchRankingProductDebugDataExpanderPlugin` can read the SAME result back later, when building the
-overlay — not an independent, stale config lookup. Two effects:
-
-- The overlay's "Relevance weight (α)" line and the closing combination formula use the per-query
-  effective weight specificity weighting actually applied, not the static configured one — the formula
-  stays reproducible-by-eye against the real final score even with specificity weighting on.
-- A second "Specificity weighting" section appears (only when the feature actually ran for that query),
-  directly above the "Relevance weight (α)" line it explains the shift for, listing the configured
-  baseline, the measured normalized specificity, the shift, and the resulting effective weight — so the
-  debug overlay explains *why* `relevanceWeight` moved, right next to its new value, not just the value
-  itself elsewhere on the page.
-
-## Why full republish, not a partial score-only ES update
-
-After normalizing, the cron re-triggers the standard `Product.product_abstract.publish` event for every
-scored product — the same full product-page export every other product change (price, stock, category)
-already goes through — rather than writing just the changed `scores.*` values directly into Elasticsearch.
-**We do full updates always for business score updates because:**
-
-- **A partial ES update isn't actually cheap at the storage layer.** Lucene segments are immutable, so
-  there is no such thing as patching one field of an existing document in place — Elasticsearch's own
-  `_update` API internally does a read-modify-write: fetch the current `_source`, merge the given fields
-  in, delete the old Lucene document, index a new one. The write cost on the Elasticsearch side is
-  essentially the same as a full document replace either way. Whatever is saved by "only touching scores"
-  is saved entirely on the **Zed side** (skipping the Propel queries and the other `ProductPageSearch`
-  plugins for price/images/categories/stock), not on the Elasticsearch side.
-- **The publish/queue pipeline's resilience would otherwise be lost.** `Product.product_abstract.publish`
-  goes through Spryker's normal event → queue → consumer path — retryable, store-aware, already the
-  well-tested mechanism every other republish need in this shop relies on. A direct Zed-side ES write
-  (raw Elastica, same landmine as firing search queries from Zed) would be a synchronous call with no
-  retry: one failure mid-batch leaves the run partially stale with no recovery path.
-- **The full republish quietly self-heals other drift for scored products.** Re-collecting the whole
-  product document from Propel on every normalize run also picks up anything else that changed since the
-  last export (price, stock, category) for that product. A scores-only write would not — it would become
-  a second, silently-diverging write path for the same document.
-- **A partial update racing a concurrent full republish is a real lost-update risk.** `_update`'s
-  read-then-merge reads whatever `_source` happens to be current at that moment; without optimistic
-  concurrency control (`_seq_no`/`_primary_term`), a scores-only write that read a stale document could
-  overwrite a concurrent price/stock change's fields back to what it saw, even though neither write was
-  "wrong" on its own. Always re-collecting a fresh document from Propel sidesteps this entirely.
-
-**You should change this if** the update cadence stops being "hourly cron over the scored subset" and
-becomes near-real-time (every few minutes) at a high scored-product count, to the point where the Zed-side
-data-collection cost (not the Elasticsearch write cost, which will not improve) is the actual bottleneck.
-Even then, the right design is not a raw synchronous Zed → Elasticsearch call: it is a dedicated, lightweight
-synchronization resource + queue consumer carrying just `{idProductAbstract: scores}`, reusing the exact
-pattern this package already uses for its own ranking-configuration document
-(`spy_search_ranking_configuration_storage` / `SearchRankingConfigurationSynchronizationDataPlugin`) —
-same queue-based resilience and store-awareness, just a narrower payload than the full product page. That
-is real new infrastructure, not a quick tweak, and is not worth building ahead of an actual need for it.
-
-## Why hourly batch normalization, not an immediate per-value hook
-
-Raw values only ever get normalized and published once an hour, via `search-ranking:normalize` — never
-the instant a raw value is written. This is a deliberate choice, not an oversight:
-
-- **`normalizedValue` is a function of the metric's aggregate stats** (`min`/`max`/`avg`/`count`, from
-  `getMetricStatistics()`), which by definition need every row for that metric, not just the one that
-  changed. A single raw value cannot be correctly normalized in isolation — at best it could be evaluated
-  against the *last known* (already slightly stale) aggregate stats, not freshly correct ones.
-- **There is no single-value write path to hook onto.** The only writer of raw values is CSV import
-  (`SearchRankingMetricWriterStep`/`SearchRankingProductMetricWriterStep` — see
-  [Data import](#what-it-does)), which is inherently bulk: one import run can touch thousands of
-  rows. Firing an immediate normalize-and-publish per row would mean thousands of individual publish
-  events instead of the current few chunked ones — plausibly worse than the hourly batch — and every one
-  of those rows would be published *again* an hour later once real stats catch up. The "Product Values"
-  Zed page is read-only specifically because there is no single-row edit action this would attach to.
-- **The underlying signals are ETL-style, refreshed once a day upstream by design** — Spryker's own
-  data-driven-ranking best practice this package is based on assumes these get recomputed nightly from a
-  data warehouse. If raw values only change once a day via import, "picked up within the hour" is already
-  same-day freshness; shaving that hour down further has little practical payoff without a genuinely
-  real-time upstream data source.
-
-**A real hybrid is buildable if this ever changes**: on a raw-value write, evaluate that one row against
-the metric's *currently cached* stats and publish just that one product abstract, while the hourly cron
-keeps doing the full stats refresh + full re-normalization + reconciliation publish for everything the fast
-path only approximated. Worth building the moment there is an actual single-value write path (e.g. a
-future Zed editor for individual product-metric values) to hang it on — not before, since bulk CSV import
-is a poor fit for a per-row hook regardless of how cheap the hook itself is.
-
-## Normalization formulas
-
-Formulas are [symfony/expression-language](https://symfony.com/doc/current/components/expression_language.html)
-expressions, evaluated in PHP by the cron — never shipped to Elasticsearch or the browser. Per
-product row these variables are available:
-
-| Variable | Meaning |
-| --- | --- |
-| `x` | the row's raw value |
-| `min`, `max`, `avg`, `count` | aggregates of the metric's raw values across all products, computed once per metric and run |
-
-Registered functions: `atan`, `tanh`, `log`, `log10`, `sqrt`, `exp`, `abs`, `pi`, `pow`, `round`,
-`min`, `max` (all delegating to the PHP natives) and `random()` — uniform in ]0;1], ignores `x`.
-The demo `random` metric is therefore not a special case anywhere in the *formula* code: its formula is
-literally `random()`. It IS special-cased one level up, in scheduling: `search-ranking:normalize` (the
-hourly cron above) skips whichever metric is configured as the random tie-breaker, and a separate
-`search-ranking:randomize` cron refreshes only that one, nightly — see
-[What it does](#what-it-does) and
-[Why full republish, not a partial score-only ES update](#why-full-republish-not-a-partial-score-only-es-update).
-
-Examples:
-
-```
-atan(x / avg) / (pi() / 2)   # saturating curve, ~0.5 at the average, approaches 1 for outliers
-x / max                      # linear scaling relative to the best performer
-random()                     # random tie-breaker signal in ]0;1]
-```
-
-Every result is clamped into ]0;1] (lower bound `1.0E-6`, see `SearchRankingConfig`), so a
-misbehaving formula cannot poison the data with zeros, negatives, `NaN` or `INF`.
-
 ## Modules
 
 | Module | Purpose |
@@ -885,7 +448,7 @@ value from the same formula — not just consistent with each other, but confirm
 Elasticsearch 7.x has not been run against real output, but sits inside the verified range: it is the
 fork point OpenSearch 1.x descends from, and both neighbours on either side are verified. Same
 Apache-2.0-fork-point reasoning as [spryker-community/search-debug's own engine-compatibility
-section](https://github.com/andrebarthelmeshellmuth/spryker-search-debugger#search-engine-compatibility) —
+section](https://github.com/andrebarthelmeshellmuth/spryker-search-debug#search-engine-compatibility) —
 this package's own painless usage (`doc['field'].value`, `containsKey`, `size()`) is bog-standard,
 available on both lineages since well before the fork, so no engine-specific behavior was expected or
 found.
@@ -1343,7 +906,7 @@ protected function getTermVectorSnapshotProviderPlugins(): array
 }
 ```
 
-This alone isn't enough to produce anything: [specificity-aware relevance weighting](#specificity-aware-relevance-weighting-opt-in)
+This alone isn't enough to produce anything: [specificity-aware relevance weighting](docs/ranking-formula.md#specificity-aware-relevance-weighting-opt-in)
 itself is **off by default**, a project-level override of
 `Pyz\Client\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled()`. Without that flag on, the
 plugin above is registered but every call returns `null` — harmless, not an error.
@@ -1411,60 +974,6 @@ configured weights — those need a real storefront search request, not a CLI pr
 `search-ranking:check-compatibility`: that command asks "does this engine support what the package
 needs", this one asks "is this installation wired up correctly."
 
-## Import file formats
-
-`search_ranking_metric.csv` — `store`/`locale` scope which store×locale this row's `weight` applies to;
-`name`/`formula`/`is_active` are global identity fields shared across every scope, so a metric imported
-for two stores appears as two rows with the same `name` but different `weight`/`store`/`locale`:
-
-```csv
-name,weight,formula,is_active,store,locale
-pdp_impressions,0.3,atan(x / avg) / (pi() / 2),1,DE,de_DE
-top_seller,0.5,x / max,1,DE,de_DE
-random,0.2,random(),1,DE,de_DE
-```
-
-`search_ranking_product_metric.csv` (raw values only — normalized values are computed by the cron;
-`store`/`locale` scope the raw value itself, same convention as above):
-
-```csv
-abstract_sku,metric_name,raw_value,store,locale
-001,pdp_impressions,8250,DE,de_DE
-001,top_seller,132,DE,de_DE
-001,random,0,DE,de_DE
-```
-
-> **Breaking change (since the store/locale scoping migration):** both CSVs now require `store`/`locale`
-> columns. A pre-migration CSV without them fails at import time — `is_active`/`weight` were always
-> required columns too, so a missing `store`/`locale` column surfaces the same way any other missing
-> required column always has.
-
-`locale` in either CSV also accepts a comma-separated list (e.g. `de_DE,en_US`) — the same convention
-Spryker core itself uses for multi-value import cells (e.g. `ProductAbstractSkusToIdsConditionResolver`'s
-`explode(',', $conditionValue)`). For a metric that doesn't genuinely vary by locale — a store-wide fact
-like sales or stock, the kind of metric `isLocaleScoped=false` fits (see [Terminology](#terminology)) —
-list every locale it applies to in one row instead of duplicating the whole row per locale; the importer
-writes the identical `weight`/`raw_value` into each listed locale:
-
-```csv
-name,weight,formula,is_active,store,locale
-top_seller,0.5,x / max,1,DE,"de_DE,en_US"
-```
-
-Quoting the cell (`"de_DE,en_US"`) is required, not optional — the reader is a plain RFC 4180 CSV parser
-(`SplFileObject::READ_CSV`, comma delimiter, `"` enclosure — see Spryker core's
-`CsvReaderConfiguration`), so an unquoted comma inside a cell is indistinguishable from a real column
-boundary and will silently shift every column after it.
-
-Example files ship in this package under `data/import/`, formatted correctly but **populated with this
-package's own development shop's real catalog SKUs and metric values** — they exist to prove the import
-mechanics work end-to-end against a real catalog, not as generic/portable seed data. Copy the format, not
-the rows: replace every `abstract_sku` with your own shop's own abstract SKUs (and real
-`pdp_impressions`/`top_seller` values, or your own metric names entirely — `random` is the only metric this
-package assumes nothing about) before importing into a different Spryker installation. Importing them
-as-is elsewhere will not error, but will silently do nothing useful — either no rows match your catalog's
-SKUs at all, or coincidentally-matching SKUs get some other shop's numbers.
-
 ## Limitations
 
 - The `function_score` applies to the **main catalog search query only** — suggest-as-you-type and
@@ -1488,228 +997,18 @@ SKUs at all, or coincidentally-matching SKUs get some other shop's numbers.
   inverted formulas — there's no first-class merchandiser pinning, and OpenSearch itself has no
   `pinned` query to build one on top of.
 
-## Testing and CI
+## Documentation
 
-### Automated checks
+Reference material lives in [`docs/`](docs/) so this page stays focused on deciding whether to use
+the package and getting it installed:
 
-`.github/workflows/ci.yml` runs on every push and pull request:
-
-| check | what it protects |
+| Document | What's in it |
 |---|---|
-| `composer validate` | the manifest stays well-formed |
-| `phpcs` (PHP 8.3, 8.4) | coding standard, via this package's own `phpcs.xml` |
-| `composer check-floors` (PHP 8.3, 8.4) | the declared dependency floors are real |
-| `rector` dry-run (PHP 8.3, 8.4) | no unapplied Rector rule set drifts in |
-| `phpmd` (`phpmd.xml` + `phpmd-public-methods.xml`) | cyclomatic/NPath complexity, method/class length stay reasonable — run as two separate invocations because PHPMD merges every loaded ruleset's `exclude-pattern` into one global file list per run, and only the public-method-count rule should skip Facades/Factories (Spryker's own DI convention gives each one method per capability/collaborator, not a design problem this package can fix) |
-| `phpstan` (PHP 8.3, 8.4) | static analysis, level 8, standalone CI variant — see "Static analysis" below |
-| `portable tests` (PHP 8.3, 8.4) | this package's own `@group Portable` test subset actually passes — see "Test suite" below |
-
-`check-floors` is the one worth understanding. This package's `require` constraints are a promise about
-which Spryker versions an adopter may install — and that promise is exactly what a development shop
-cannot verify, because a full demo shop has every Spryker module present regardless of what this package
-declares. A missing declaration only surfaces on a leaner shop, as a fatal, after installation.
-
-So the check resolves every constraint to its **oldest** allowed version (`composer update
---prefer-lowest --prefer-stable --no-dev`) and then asserts that every vendor symbol used in `src/`
-actually exists in that tree. It exits non-zero if not. Run it locally the same way:
-
-```bash
-composer check-floors
-```
-
-It reports three categories: resolved, host-generated (`Generated\*` transfer classes from
-`transfer:generate`, and `Orm\*` Propel classes from `propel:install` — both build artifacts of the host
-project, correctly absent from any vendor tree), and optional-absent (symbols from the `suggest`ed
-`spryker-community/search-debug`, whose every use — `ScoreSectionBuilder`,
-`SearchRankingProductDebugDataExpanderPlugin` — is guarded by that package never being autoloaded/wired
-unless a project deliberately installs and registers both).
-
-This audit is what caught two real, otherwise-invisible problems: an undeclared dependency on
-`spryker/catalog` (needed a floor of `^5.7.0` specifically — versions below that still construct Elastica's
-`Match` query class by its pre-PHP-8 name, a hard parse error under PHP 8.3+), and a `php >= 8.2` claim
-that was actually false — every `spryker/propel-orm` release resolvable under `minimum-stability: stable`
-(the ones depending on a real, non-beta `propel/propel`) requires PHP >= 8.3.
-
-### Test suite
-
-Every test class carries a portability `@group`, so `codecept run -g <tag>` tells you what a given test
-actually needs:
-
-| tag | needs | where it runs |
-|---|---|---|
-| `Portable` | nothing beyond `Generated\Shared\Transfer\*` | standalone — CI runs exactly this, see below |
-| `NeedsDatabase` | a real Propel connection | host shop only |
-| `NeedsSearch` | a real Elasticsearch/OpenSearch | host shop only |
-| `NeedsProject` | this package's own installation diagnostics, deliberately coupled — see their own docblocks | host shop only |
-
-`Portable` tests run standalone in CI on every push, via `tests/codeception.portable.yml` +
-`tests/_ci-standalone/` — no host shop, no live database, no search engine. The recipe: a direct
-`TransferBusinessFactory` call generates `Generated\Shared\Transfer\*`, and a direct
-`spryker/search-elasticsearch` `IndexMapGenerator` call generates `Generated\Shared\Search\PageIndexMap`
-(merging that package's own default `page` mapping with this package's own `Schema/page.json` addition) —
-both into `src/Generated/` (gitignored, exactly like a real project already gitignores its own —
-regenerated every run, never committed). Run it yourself the same way CI does:
-
-```bash
-composer install
-php tests/_ci-standalone/generate-transfers.php
-php tests/_ci-standalone/generate-index-map.php
-vendor/bin/codecept run -c tests/codeception.portable.yml -g Portable
-```
-
-**299 tests, 1670 assertions** across seven Codeception suites (`Zed/SearchRanking`,
-`Zed/SearchRankingStorage`, `Zed/SearchRankingGui`, `Zed/SearchRankingDataImport`, `Client/SearchRanking`,
-`Client/SearchRankingStorage`, `Yves/SearchRankingWidget`) make up the full suite, `Portable` and
-non-`Portable` alike. The rest — `NeedsDatabase`/`NeedsSearch`/`NeedsProject` — runs **inside a host
-shop** that has the package installed:
-
-```bash
-vendor/bin/codecept build -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRanking
-vendor/bin/codecept run -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRanking
-```
-
-Covers the formula evaluator (functions, `random()` range, division-by-zero/unknown-function
-failures, validation messages), the normalizer (clamping, batch paging, per-metric error isolation, and
-that the random tie-breaker metric is skipped entirely regardless of its active flag), the page-data
-loader (per-payload score mapping), the publish trigger (event chunking), the function_score builder
-(script shape, zero-weight skipping, script-injection guarding, null on empty configuration), the
-distribution-digest builder (percentile-backbone correctness, order-independence), the curve fitter (a
-linearly-spread digest recovers a near-perfect linear fit, a saturating digest fits clearly better than
-linear, `isHigherBetter=false` swaps in the decay candidate), the formula-preview builder backing the
-normalization-authoring GUI's live SVG preview (the "no digest yet" error, the happy path building
-CDF/formula points and curve-fit candidates, and formula-evaluation failure returning a fresh error
-transfer rather than a half-populated chart), the metric randomizer (no-op when the metric is missing or
-inactive, re-normalizes and republishes only when it is active), the shared R² calculator and per-formula
-fit evaluator (both feeding the metric-history snapshot), the metric writer's history recording (an
-initial row for a brand-new metric, no row when nothing tracked actually changed, the digest snapshot and
-fit quality captured correctly when a formula change has an existing digest to compare against, and
-`shape` derivation: a saved formula that matches a fresh fit candidate gets that candidate's slug, a
-freeform formula or a brand-new metric with no digest yet leaves it null), and the standalone
-current-fit evaluator backing the read-only drift-detection primitive (metric missing, no digest yet,
-and the happy path delegating to the shared fit evaluator) as pure unit tests — no database needed. The
-Client suite lives at
-`tests/SprykerCommunityTest/Client/SearchRanking`.
-
-Several tests in that Client suite are real integration tests, not unit tests: `FunctionScoreExecutionTest`
-builds a real `function_score` and executes it against real documents in a test-owned index,
-`EngineCompatibilityCheckerTest` runs `EngineCompatibilityChecker`'s real `_validate/query` probes against
-the actual cluster, and `QueryTermFrequencyFetcherTest` fires real `_termvectors` probes against a
-test-owned index (including one deliberately using a mismatched index-time analyzer, to prove
-`per_field_analyzer` actually overrides it) — all three need a reachable search engine, though still no
-database. `QuerySpecificityCalculator`'s own blend/normalize formula and `SpecificityWeightCalculator`'s
-own shift/fallback orchestration are covered separately as plain unit tests (plain arrays/stubbed IO, no
-engine needed) in `QuerySpecificityCalculatorTest`/`SpecificityWeightCalculatorTest`. The [random-impact
-preview](#what-it-does)'s own delta math is covered the same way: `RandomImpactCalculatorTest` (pure unit,
-the subtract-and-resort formula plus the "no signal of its own defaults to zero"/"unchanged position
-renders nothing" edge cases) and `RandomImpactResultFormatterPluginTest` (mocks the factory the same way
-`SearchDebugResultFormatterPluginTest` does, covering the permission gate and the "not active" short
-circuit) — neither needs a search engine.
-
-`Zed/SearchRankingGui` (`ProductMetricGapFinderTest`) is the mirror case on the database side: real raw
-SQL (the `CROSS JOIN` + `LEFT JOIN` + `IS NULL` — see [What it does](#what-it-does) for why this one query
-isn't built through Propel), seeded with real metrics and product abstracts, then torn down — a mocked
-connection could confirm the PHP shaped a query string, never that the join actually returns the right
-rows, that parameters actually bind correctly, or that the sort-column whitelist actually blocks SQL
-injection rather than just looking like it does.
-
-`Zed/SearchRankingDataImport` covers the four data-import steps against a real database: the metric
-writer's upsert-by-name (create, update-not-duplicate, and the metric-name pattern rejection that keeps
-an unusable name from ever being persisted — see [Data import](#what-it-does) for why that fails the row
-immediately rather than deferring like a bad formula), the two name/SKU-to-ID resolver steps (real
-resolution plus the "not found" failure a project sees when it imports product metrics before the metrics
-themselves), and the product-metric writer's upsert-by-foreign-keys (create, and that re-importing an
-existing pair updates only `rawValue`, never touching an already-normalized `normalizedValue` — normalization
-only ever happens downstream, in the normalize cron).
-
-Coverage (Codeception + pcov): the Zed suite covers 90% of classes / 95.97% of lines; the uncovered
-remainder is almost entirely Spryker's own Facade/Factory DI-wiring boilerplate (thin delegation, not
-meaningfully unit-testable — the same convention `phpmd`'s public-method-count rule already exempts them
-from) plus a handful of deep floating-point edge cases in the curve-fitter's grid-search fallback.
-
-For that reason the suites are **not** part of CI: a clean runner has neither a Spryker shop nor a search
-cluster, and standing both up per build would cost far more than it returns. CI therefore covers the
-static guarantees; the test suite is run against a real shop before a release.
-
-### Browser (Presentation) suite
-
-> **These suites are a development tool for this package's own reference demoshop — not something
-> to install or run against YOUR shop.** The Zed suite logs in as `admin@spryker.com`, drives the real Zed
-> GUI through a store/locale scope this demoshop seeds (`DE`/`de_DE`), and asserts against an existing
-> metric (id `1`) that already has a distribution digest for the normalization-preview check. The Yves
-> suite logs in as `search-admin@test-company.example` (the one account this demoshop's fixtures grant
-> `SeeSearchRankingRandomImpactPermissionPlugin` to) and `spencor.hopkin@acme.com` (same company, no role,
-> for the negative permission-gate tests). Point either at a different shop and most of it will simply fail
-> on missing data, not on a real defect. They exist to catch UI regressions while developing this package,
-> not as something adopters are expected to run.
-
-**Reproducing the fixture on a fresh clone of this demoshop.** `spencor.hopkin@acme.com`
-(`customer_reference` `DE--1`) is already a base-fixture member of the `test-company` company with no
-company-role assignment — that's the negative-test account, nothing to add. The permitted account
-(`search-admin@test-company.example`) is not a base fixture; add it to
-`data/import/common/common/`:
-
-- `customer.csv`: `SearchAdmin--1,en_US,,search-admin@test-company.example,Mr,Search,Admin,,Male,,$2y$12$CUw8PyVm4isuM.ugzQhZ0.os.n1nlGJOA61SEd7cgjXivzt5LqJ2.,2026-08-10`
-  (that hash is `change123`, the password the Yves Tester expects)
-- `company_user.csv`: `SearchAdmin--1,SearchAdmin--1,test-company,true`
-- `company_business_unit_user.csv`: `SearchAdmin--1,test-business-unit-1`
-- `company_user_role.csv`: `test-company_Admin,SearchAdmin--1`
-- `company_role_permission.csv`: `test-company_Admin,SeeSearchRankingRandomImpactPermissionPlugin,`
-
-Then re-import: `vendor/bin/console data:import customer company-user company-business-unit-user
-company-user-role company-role-permission`. The Zed suite's `admin@spryker.com` login and the metric
-id `1` distribution digest are both standard seeded state in this demoshop and need no extra fixture.
-
-Two suites, split by layer:
-
-- `tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation/` (15 tests) — the Zed GUI: the metric list (scoped
-  by store/locale, plus a full create → edit → delete round trip through the real forms), the "Normalize
-  active weights" action, the Edit form's live normalization preview (smoke-level only — the curve-fit
-  math itself is already covered by the unit suite above), the Settings form (including that every
-  configured field, `specificityCurveExponent` among them, actually renders), the Scope Copy page (loads
-  with its combined picker and both Copy now/Lock actions present), the Product Values table and its Gaps
-  view, and the Metric History table. It is kept as its own module directory rather than nested under
-  `Zed/SearchRankingGui/` because that module's `Zed` suite scans its whole directory tree recursively — a
-  nested WebDriver suite there would break it.
-- `tests/SprykerCommunityTest/Yves/SearchRankingWidgetPresentation/` (9 tests) — the [random-impact admin
-  preview](#what-it-does): the permission gate (two negative-test accounts plus an anonymous-shopper
-  check, mirroring `spryker-community/search-ranking-optimizer`'s own `PermissionGateCest`), and that the
-  checkbox toggles every badge's visibility on and back off client-side with no second request, and that
-  every rendered badge carries exactly one of the two sign/color classes (asserted via a live DOM count,
-  not just "at least one exists"). Deltas are real, live data — today's randomized signal values, refreshed
-  daily by the `search-ranking:randomize` cron — so this suite deliberately never asserts a *specific*
-  delta value or count, only "at least one badge is visible", to stay green across that daily reshuffle.
-
-```bash
-vendor/bin/codecept build -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation
-vendor/bin/codecept run   -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Zed/SearchRankingGuiPresentation
-vendor/bin/codecept build -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Yves/SearchRankingWidgetPresentation
-vendor/bin/codecept run   -c packages/spryker-community/search-ranking/tests/SprykerCommunityTest/Yves/SearchRankingWidgetPresentation
-```
-
-Like the rest of the test suite, neither is part of CI — both need a real running shop plus the Selenium/
-chromedriver service already provisioned in this demoshop's `docker-compose.yml`.
-
-### Static analysis
-
-Static analysis (`phpstan`, level 8) runs in two variants:
-
-- **`composer phpstan-ci`** (config [`phpstan.ci.neon`](phpstan.ci.neon)) — what CI runs on every push,
-  standalone. Same transfer/index-map generation recipe as the `Portable` test subset above, and treats one
-  category of class as out of scope rather than faking it: Propel's generated `Orm\Zed\*\Persistence\*`
-  entity/query/map classes (need a real schema + database, via `propel:model:build`) and the aggregated
-  `Generated\{Zed,Yves,Client,Service}\Ide\AutoCompletion` stub.
-- **`composer phpstan`** (config [`phpstan.neon`](phpstan.neon)) — the full check, run from a host shop:
-  it needs the generated `Generated\Shared\Transfer\*` classes, which only exist once a project has run
-  `transfer:generate`, and it needs the shop's `Ide/AutoCompletion` stub freshly regenerated
-  (`console dev:ide-auto-completion:generate`) so the magic `Locator` calls in this package's
-  DependencyProviders resolve instead of reporting as undefined methods — so it stays the authoritative
-  check for adopters even though CI can't run it.
-
-```bash
-vendor/bin/console dev:ide-auto-completion:generate
-vendor/bin/phpstan clear-result-cache -c vendor/spryker-community/search-ranking/phpstan.neon
-vendor/bin/phpstan analyse -c vendor/spryker-community/search-ranking/phpstan.neon vendor/spryker-community/search-ranking/src
-```
+| [Ranking formula](docs/ranking-formula.md) | How a final score is computed: the formula itself, specificity-aware relevance weighting, and the normalization curves. |
+| [Terminology](docs/terminology.md) | The vocabulary this package uses and how each term maps to the code. |
+| [Design decisions](docs/design-decisions.md) | Why the publish and normalization pipelines work the way they do, rather than the more obvious alternatives. |
+| [Import file formats](docs/import-formats.md) | CSV shapes accepted by the data importers. |
+| [Testing and CI](docs/testing.md) | How this package is tested, which suites need a host shop, and what CI runs. |
 
 ## License
 
