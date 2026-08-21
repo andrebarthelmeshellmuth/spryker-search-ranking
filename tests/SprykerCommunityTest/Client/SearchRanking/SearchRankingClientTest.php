@@ -10,7 +10,11 @@ declare(strict_types = 1);
 namespace SprykerCommunityTest\Client\SearchRanking;
 
 use Codeception\Test\Unit;
+use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
+use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
+use SprykerCommunity\Client\SearchRanking\Search\EngineCompatibilityCheckerInterface;
+use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInterface;
 use SprykerCommunity\Client\SearchRanking\SearchRankingClient;
 use SprykerCommunity\Client\SearchRanking\SearchRankingConfig;
 use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;
@@ -108,5 +112,53 @@ class SearchRankingClientTest extends Unit
 
         // Act & Assert
         $this->assertSame($fieldToSearchAnalyzer, $client->getSpecificityProbeFieldSearchAnalyzers());
+    }
+
+    public function testCheckEngineCompatibilityDelegatesToTheFactoryBuiltChecker(): void
+    {
+        // Arrange
+        $compatibilityTransfer = (new SearchRankingEngineCompatibilityTransfer())->setDistribution('opensearch')->setVersion('2.11.0');
+
+        $checkerMock = $this->createMock(EngineCompatibilityCheckerInterface::class);
+        $checkerMock->method('checkCompatibility')->willReturn($compatibilityTransfer);
+
+        $factoryMock = $this->createMock(SearchRankingFactory::class);
+        $factoryMock->method('createEngineCompatibilityChecker')->willReturn($checkerMock);
+
+        $client = new SearchRankingClient();
+        $client->setFactory($factoryMock);
+
+        // Act & Assert
+        $this->assertSame($compatibilityTransfer, $client->checkEngineCompatibility());
+    }
+
+    public function testCreateFunctionScoreBuilderReturnsTheFactoryBuiltInstance(): void
+    {
+        // Arrange
+        $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
+
+        $factoryMock = $this->createMock(SearchRankingFactory::class);
+        $factoryMock->method('createFunctionScoreBuilder')->willReturn($functionScoreBuilderMock);
+
+        $client = new SearchRankingClient();
+        $client->setFactory($factoryMock);
+
+        // Act & Assert
+        $this->assertSame($functionScoreBuilderMock, $client->createFunctionScoreBuilder());
+    }
+
+    public function testCreateQuerySpecificityCalculatorReturnsTheFactoryBuiltInstance(): void
+    {
+        // Arrange
+        $querySpecificityCalculatorMock = $this->createMock(QuerySpecificityCalculatorInterface::class);
+
+        $factoryMock = $this->createMock(SearchRankingFactory::class);
+        $factoryMock->method('createQuerySpecificityCalculator')->willReturn($querySpecificityCalculatorMock);
+
+        $client = new SearchRankingClient();
+        $client->setFactory($factoryMock);
+
+        // Act & Assert
+        $this->assertSame($querySpecificityCalculatorMock, $client->createQuerySpecificityCalculator());
     }
 }
