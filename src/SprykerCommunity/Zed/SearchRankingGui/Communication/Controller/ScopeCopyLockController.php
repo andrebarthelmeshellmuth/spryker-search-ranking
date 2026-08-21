@@ -9,8 +9,6 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRankingGui\Communication\Controller;
 
-use Spryker\Zed\Kernel\Communication\Controller\AbstractController;
-use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 use SprykerCommunity\Zed\SearchRankingGui\Communication\Form\ScopeCopyActionForm;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,35 +23,16 @@ use Symfony\Component\HttpFoundation\Request;
  *
  * @method \SprykerCommunity\Zed\SearchRankingGui\Communication\SearchRankingGuiCommunicationFactory getFactory()
  */
-class ScopeCopyLockController extends AbstractController
+class ScopeCopyLockController extends AbstractScopeCopyController
 {
-    /**
-     * @var string
-     */
-    protected const URL_SCOPE_COPY = '/search-ranking-gui/scope-copy';
-
     /**
      * @param \Symfony\Component\HttpFoundation\Request $request
      */
     public function indexAction(Request $request): RedirectResponse
     {
-        $sourceStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SOURCE_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
-        $sourceLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_SOURCE_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
-        $targetStoreName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_TARGET_STORE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_STORE_NAME);
-        $targetLocaleName = $this->resolveQueryParam($request, ScopeCopyController::PARAM_TARGET_LOCALE_NAME, SharedSearchRankingConfig::DEFAULT_SCOPE_LOCALE_NAME);
+        [$sourceStoreName, $sourceLocaleName, $targetStoreName, $targetLocaleName] = $this->resolveScopeCopyParamsFromQuery($request);
 
-        $redirectUrl = sprintf(
-            '%s?%s=%s&%s=%s&%s=%s&%s=%s',
-            static::URL_SCOPE_COPY,
-            ScopeCopyController::PARAM_SOURCE_STORE_NAME,
-            $sourceStoreName,
-            ScopeCopyController::PARAM_SOURCE_LOCALE_NAME,
-            $sourceLocaleName,
-            ScopeCopyController::PARAM_TARGET_STORE_NAME,
-            $targetStoreName,
-            ScopeCopyController::PARAM_TARGET_LOCALE_NAME,
-            $targetLocaleName,
-        );
+        $redirectUrl = $this->buildScopeCopyRedirectUrl($sourceStoreName, $sourceLocaleName, $targetStoreName, $targetLocaleName);
 
         $actionForm = $this->getFactory()->createScopeCopyActionForm()->handleRequest($request);
 
@@ -101,19 +80,5 @@ class ScopeCopyLockController extends AbstractController
         ));
 
         return $this->redirectResponse($redirectUrl);
-    }
-
-    /**
-     * Extracted purely to keep indexAction()'s own size/complexity down — every one of this controller's
-     * several query params follows the identical "explicit value or fall back to a default" resolution,
-     * no behavioral change from inlining it.
-     *
-     * @param \Symfony\Component\HttpFoundation\Request $request
-     * @param string $paramName
-     * @param string $defaultValue
-     */
-    protected function resolveQueryParam(Request $request, string $paramName, string $defaultValue): string
-    {
-        return (string)$request->query->get($paramName, '') ?: $defaultValue;
     }
 }
