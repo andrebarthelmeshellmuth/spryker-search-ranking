@@ -168,6 +168,18 @@
         <column name="target_locale_name" type="VARCHAR" size="16" required="true"/>
         <column name="is_active" type="BOOLEAN" required="true" defaultValue="true" description="False once unlocked. Rows are never deleted, only deactivated — an append-only log of lock episodes, so the active-locks page can show history. A scope's eligibility as source/target for a NEW lock is a point-in-time check against is_active=true rows only: once unlocked, a scope is fully free again for either role, there is no permanent lifetime tag."/>
         <column name="deactivated_at" type="TIMESTAMP" required="false" description="When this lock was unlocked; null while is_active is true."/>
+        <!--
+            "{targetStoreName}:{targetLocaleName}" while is_active is true, null once deactivated —
+            NEVER read directly, only backstops the UNIQUE index below against the exact race
+            ScopeCopyLockValidator::validate()'s own read-then-write check cannot close on its own: two
+            concurrent createScopeCopyLock() calls for the SAME target scope can both pass that read
+            before either INSERT lands. MySQL's UNIQUE index treats NULLs as distinct from each other, so
+            any number of deactivated rows can coexist for the same target scope, but only ONE active row
+            ever can — the second concurrent INSERT fails at the database instead of silently creating a
+            second active lock for the same target. Same mechanism as search-index-alias's own
+            active_scope_key column; see SearchRankingEntityManager::applyActiveTargetScopeKey().
+        -->
+        <column name="active_target_scope_key" type="VARCHAR" size="192" required="false"/>
 
         <behavior name="timestampable"/>
         <id-method-parameter value="spy_search_ranking_scope_copy_lock_pk_seq"/>
@@ -185,6 +197,10 @@
             <index-column name="target_store_name"/>
             <index-column name="target_locale_name"/>
         </index>
+
+        <unique name="unique-spy_srscl-active_target_scope_key">
+            <unique-column name="active_target_scope_key"/>
+        </unique>
     </table>
 
     <table name="spy_search_ranking_metric_history" idMethod="native" identifierQuoting="true">

@@ -97,6 +97,8 @@ interface SearchRankingEntityManagerInterface
      * creates a fresh row, it never reactivates the old one.
      *
      * @param \Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer $scopeCopyLockTransfer
+     *
+     * @throws \SprykerCommunity\Zed\SearchRanking\Persistence\Exception\ConcurrentScopeCopyLockException
      */
     public function createScopeCopyLock(SearchRankingScopeCopyLockTransfer $scopeCopyLockTransfer): SearchRankingScopeCopyLockTransfer;
 

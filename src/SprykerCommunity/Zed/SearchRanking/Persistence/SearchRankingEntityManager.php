@@ -20,8 +20,10 @@ use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetric;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistory;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingScopeCopyLock;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingSettingHistory;
+use Propel\Runtime\Exception\PropelException;
 use Spryker\Zed\Kernel\Persistence\AbstractEntityManager;
 use Spryker\Zed\Kernel\Persistence\EntityManager\TransactionTrait;
+use SprykerCommunity\Zed\SearchRanking\Persistence\Exception\ConcurrentScopeCopyLockException;
 
 /**
  * @method \SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingPersistenceFactory getFactory()
@@ -29,6 +31,16 @@ use Spryker\Zed\Kernel\Persistence\EntityManager\TransactionTrait;
 class SearchRankingEntityManager extends AbstractEntityManager implements SearchRankingEntityManagerInterface
 {
     use TransactionTrait;
+
+    /**
+     * MySQL's own duplicate-entry error code -- used to distinguish "the active_target_scope_key unique
+     * index rejected this insert" from any other PropelException, since Propel does not expose a typed
+     * exception for constraint violations specifically. Same mechanism search-index-alias's own
+     * SearchIndexAliasEntityManager uses for its active_scope_key column.
+     *
+     * @var string
+     */
+    protected const MYSQL_DUPLICATE_ENTRY_SQLSTATE = '23000';
 
     /**
      * Writes the metric's global identity (name/isHigherBetter) here, then its formula/isActive/shape
@@ -227,7 +239,13 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
      * Always inserts a new row — history is append-only, never updated or upserted, unlike every other
      * write in this class.
      *
+     * `active_target_scope_key`'s own UNIQUE index is the real backstop against two concurrent calls
+     * targeting the same scope — ScopeCopyLockValidator's own read-then-write check cannot close that race
+     * on its own (see that class's docblock). A rejected insert here means a concurrent request won it.
+     *
      * @param \Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer $scopeCopyLockTransfer
+     *
+     * @throws \SprykerCommunity\Zed\SearchRanking\Persistence\Exception\ConcurrentScopeCopyLockException
      */
     public function createScopeCopyLock(SearchRankingScopeCopyLockTransfer $scopeCopyLockTransfer): SearchRankingScopeCopyLockTransfer
     {
@@ -235,7 +253,21 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
 
         $mapper = $this->getFactory()->createSearchRankingMapper();
         $scopeCopyLockEntity = $mapper->mapScopeCopyLockTransferToEntity($scopeCopyLockTransfer, $scopeCopyLockEntity);
-        $scopeCopyLockEntity->save();
+        $this->applyActiveTargetScopeKey($scopeCopyLockEntity);
+
+        try {
+            $scopeCopyLockEntity->save();
+        } catch (PropelException $propelException) {
+            if ($this->isDuplicateActiveTargetScopeKey($propelException)) {
+                throw new ConcurrentScopeCopyLockException(sprintf(
+                    '%s/%s is already the target of an active lock.',
+                    $scopeCopyLockTransfer->getTargetStoreNameOrFail(),
+                    $scopeCopyLockTransfer->getTargetLocaleNameOrFail(),
+                ), 0, $propelException);
+            }
+
+            throw $propelException;
+        }
 
         return $mapper->mapScopeCopyLockEntityToTransfer($scopeCopyLockEntity, $scopeCopyLockTransfer);
     }
@@ -255,7 +287,41 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
 
         $scopeCopyLockEntity->setIsActive(false);
         $scopeCopyLockEntity->setDeactivatedAt(new DateTime());
+        $this->applyActiveTargetScopeKey($scopeCopyLockEntity);
         $scopeCopyLockEntity->save();
+    }
+
+    /**
+     * @param \Orm\Zed\SearchRanking\Persistence\SpySearchRankingScopeCopyLock $scopeCopyLockEntity
+     */
+    protected function applyActiveTargetScopeKey(SpySearchRankingScopeCopyLock $scopeCopyLockEntity): void
+    {
+        if (!$scopeCopyLockEntity->getIsActive()) {
+            $scopeCopyLockEntity->setActiveTargetScopeKey(null);
+
+            return;
+        }
+
+        $scopeCopyLockEntity->setActiveTargetScopeKey(sprintf(
+            '%s:%s',
+            $scopeCopyLockEntity->getTargetStoreName(),
+            $scopeCopyLockEntity->getTargetLocaleName(),
+        ));
+    }
+
+    /**
+     * @param \Propel\Runtime\Exception\PropelException $propelException
+     */
+    protected function isDuplicateActiveTargetScopeKey(PropelException $propelException): bool
+    {
+        $previous = $propelException->getPrevious();
+
+        if ($previous === null) {
+            return false;
+        }
+
+        return $previous->getCode() === static::MYSQL_DUPLICATE_ENTRY_SQLSTATE
+            && str_contains($previous->getMessage(), 'active_target_scope_key');
     }
 
     /**

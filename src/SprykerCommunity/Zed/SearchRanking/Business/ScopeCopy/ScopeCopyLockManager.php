@@ -12,6 +12,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Business\ScopeCopy;
 use Generated\Shared\Transfer\SearchRankingFullScopeCopyResultTransfer;
 use Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
+use SprykerCommunity\Zed\SearchRanking\Persistence\Exception\ConcurrentScopeCopyLockException;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingEntityManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Persistence\SearchRankingRepositoryInterface;
 
@@ -84,14 +85,24 @@ class ScopeCopyLockManager implements ScopeCopyLockManagerInterface
             return $copyResultTransfer;
         }
 
-        $this->entityManager->createScopeCopyLock(
-            (new SearchRankingScopeCopyLockTransfer())
-                ->setSourceStoreName($sourceStoreName)
-                ->setSourceLocaleName($sourceLocaleName)
-                ->setTargetStoreName($targetStoreName)
-                ->setTargetLocaleName($targetLocaleName)
-                ->setIsActive(true),
-        );
+        // ScopeCopyLockValidator::validate() above already checked no active lock targets this scope —
+        // but that read-then-write check cannot close the race between two concurrent calls for the SAME
+        // target (see that class's own docblock). The database's active_target_scope_key unique index is
+        // the real backstop: a rejected insert here means a concurrent request won it in between.
+        try {
+            $this->entityManager->createScopeCopyLock(
+                (new SearchRankingScopeCopyLockTransfer())
+                    ->setSourceStoreName($sourceStoreName)
+                    ->setSourceLocaleName($sourceLocaleName)
+                    ->setTargetStoreName($targetStoreName)
+                    ->setTargetLocaleName($targetLocaleName)
+                    ->setIsActive(true),
+            );
+        } catch (ConcurrentScopeCopyLockException $concurrentScopeCopyLockException) {
+            return (new SearchRankingFullScopeCopyResultTransfer())
+                ->setIsSuccess(false)
+                ->setErrorMessage($concurrentScopeCopyLockException->getMessage());
+        }
 
         return $copyResultTransfer;
     }

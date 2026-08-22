@@ -26,6 +26,12 @@ interface ScopeCopyLockManagerInterface
      * block never leaves an orphaned lock with no data behind it. Only the recurring daily resync
      * ({@see runDailySync()}) stays weight/setting-only.
      *
+     * The validator's own check cannot fully close the race between two concurrent calls locking the SAME
+     * target scope — a database unique index on the lock row's active target scope is the real backstop
+     * (see `SearchRankingEntityManager::createScopeCopyLock()`); losing that race comes back as a normal
+     * `isSuccess=false` result here, same shape as any other validation failure, never an uncaught
+     * exception.
+     *
      * @param string $sourceStoreName
      * @param string $sourceLocaleName
      * @param string $targetStoreName
