@@ -14,7 +14,9 @@
     "require": {
         "php": ">=8.3",
         "spryker/acl": "^3.27.0",
+        "spryker/api-platform": "^1.22.0",
         "spryker/catalog": "^5.7.0",
+        "spryker/catalog-search-rest-api": "^2.13.0",
         "spryker/data-import": "^1.18.0",
         "spryker/event": "^2.2.0",
         "spryker/gui": "^3.30.0 || ^5.0.0",

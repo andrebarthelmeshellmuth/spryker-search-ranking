@@ -989,6 +989,57 @@ configured weights — those need a real storefront search request, not a CLI pr
 `search-ranking:check-compatibility`: that command asks "does this engine support what the package
 needs", this one asks "is this installation wired up correctly."
 
+### 18. Optional: Glue REST API — `randomImpact` on `catalog-search`
+
+This package ships an additive Glue API Platform schema
+([`resources/api/storefront/catalog-search.resource.yml`](resources/api/storefront/catalog-search.resource.yml))
+that adds a `randomImpact` property to core's `catalog-search` resource
+(`spryker/catalog-search-rest-api`) — the same permission-gated payload the SRP badge above reads
+(`_view.randomImpact`), now also on `GET /catalog-search`. It only carries the `properties:` addition;
+core's own `shortName`/`operations`/`provider`/etc. are left alone (see the file's own comment for why —
+those are scalar keys that would silently clobber whichever layer merges last, so only one place should
+ever set them).
+
+**Requires one project-level step, shared with spryker-community/search-debug's own `searchDebug`
+property** (register once even if you have both packages installed):
+
+`src/Pyz/Glue/CatalogSearchRestApi/resources/api/storefront/catalog-search.resource.yml` — the
+project-level layer (highest merge precedence) that points `provider:` at a small Pyz override:
+
+```yaml
+resource:
+    name: CatalogSearch
+    provider: Pyz\Glue\CatalogSearchRestApi\Api\Storefront\Provider\CatalogSearchStorefrontProvider
+```
+
+`src/Pyz/Glue/CatalogSearchRestApi/Api/Storefront/Provider/CatalogSearchStorefrontProvider.php` —
+extends core's own `CatalogSearchStorefrontProvider`, duplicates its short `provideCollection()` body (the
+raw `$searchResult` array — the same one `RandomImpactResultFormatterPlugin` and search-debug's
+`SearchDebugResultFormatterPlugin` already populate for Yves — is only reachable there, before it's mapped
+into resource data), and injects both packages' keys before denormalizing:
+
+```php
+$resourceData['randomImpact'] = $searchResult[SearchRankingConfig::RANDOM_IMPACT_RESULT_KEY] ?? [];
+$resourceData['searchDebug'] = $searchResult[SearchDebugConfig::SEARCH_RESULT_KEY] ?? [];
+```
+
+Then regenerate:
+
+```bash
+vendor/bin/glue api:generate storefront
+```
+
+**If you're on a project where `spryker-community/*` packages are installed via composer path
+repositories** (symlinked into `vendor/spryker-community/*`): see
+[spryker-community/search-debug's own README](https://github.com/spryker-shop/search-debug#glue-api),
+"Glue API" section, for the symlink-traversal issue and its fix (a small `SchemaFinder`/
+`ValidationSchemaFinder` override with `->followLinks()`) — shared across every community package, not
+specific to `randomImpact`, so documented once there rather than duplicated here.
+
+`randomImpact` is present (as `[]`, both keys absent — same convention as the Yves formatter) for any
+requester without `SeeSearchRankingRandomImpactPermissionPlugin`, or when no ranking configuration is
+synchronized for the current (store, locale); anonymous Glue requests will always see the empty shape.
+
 ## Limitations
 
 - The `function_score` applies to the **main catalog search query only** — suggest-as-you-type and
