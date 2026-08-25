@@ -169,6 +169,24 @@ class SearchRankingConfig extends AbstractBundleConfig
 
     /**
      * Specification:
+     * - Default blend weight (alpha) combining normalized text relevance with the semantic (kNN cosine
+     *   similarity) term, when none was saved in Zed yet.
+     * - **1.0, 100% lexical** — deliberately the neutral/off value: a shop that never touches this setting
+     *   sees byte-identical scoring to before hybrid search existed (see
+     *   {@see \SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder}, which skips the semantic
+     *   term entirely — no script complexity added — whenever `alpha == 1.0` or no query vector was
+     *   resolved). Not exposed in the Zed GUI yet; tune by writing the setting directly until a measured
+     *   basis for a form field exists.
+     *
+     * @api
+     */
+    public function getDefaultAlpha(): float
+    {
+        return 1.0;
+    }
+
+    /**
+     * Specification:
      * - Number of product abstract publish events triggered per bulk when re-publishing scored products.
      *
      * @api
@@ -216,5 +234,40 @@ class SearchRankingConfig extends AbstractBundleConfig
     public function getRandomMetricName(): string
     {
         return 'random';
+    }
+
+    /**
+     * Specification:
+     * - Base URL of the self-hosted Text Embeddings Inference (TEI) service used by
+     *   {@see \SprykerCommunity\Client\SearchRanking\Semantic\TextEmbeddingsInferenceClient} — the internal
+     *   Docker network hostname/port the `embeddings` custom service (`deploy.dev.yml`) is reachable at,
+     *   e.g. `http://embeddings:80`.
+     * - Overridable via the `SEARCH_RANKING_EMBEDDING_SERVICE_URL` environment variable, e.g. for a project
+     *   that hosts the embedding service elsewhere, or points it at a mock during tests.
+     *
+     * @api
+     */
+    public function getEmbeddingServiceUrl(): string
+    {
+        $envUrl = getenv('SEARCH_RANKING_EMBEDDING_SERVICE_URL');
+
+        return $envUrl !== false ? $envUrl : 'http://embeddings:80';
+    }
+
+    /**
+     * Specification:
+     * - Identifier of the embedding model the offline `search-ranking:embeddings:generate` job requests
+     *   from the embedding service, stored alongside each vector in `spy_search_ranking_embedding.model_id`
+     *   so a later model change can be detected and re-embedded rather than silently mixing vectors from
+     *   two different models in the same kNN field.
+     * - Must match the `MODEL_ID` environment variable the `embeddings` custom service (`deploy.dev.yml`)
+     *   was started with, and its dimension must match the `embedding` field's `dimension` in `page.json`
+     *   (384 for `sentence-transformers/all-MiniLM-L6-v2`).
+     *
+     * @api
+     */
+    public function getEmbeddingModelId(): string
+    {
+        return 'BAAI/bge-base-en-v1.5';
     }
 }

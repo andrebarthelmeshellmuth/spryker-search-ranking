@@ -17,6 +17,7 @@ use Spryker\Client\Kernel\AbstractPlugin;
 use Spryker\Client\SearchExtension\Dependency\Plugin\QueryExpanderPluginInterface;
 use Spryker\Client\SearchExtension\Dependency\Plugin\QueryInterface;
 use Spryker\Client\SearchExtension\Dependency\Plugin\SearchStringGetterInterface;
+use SprykerCommunity\Client\SearchRanking\Semantic\EmbeddingUnavailableException;
 
 /**
  * @method \SprykerCommunity\Client\SearchRanking\SearchRankingFactory getFactory()
@@ -98,10 +99,12 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
         }
 
         $configurationTransfer = $this->applySpecificityWeighting($configurationTransfer, $searchString);
+        $queryVector = $this->resolveQueryVector($searchString, $configurationTransfer);
 
         $functionScore = $this->getFactory()->createFunctionScoreBuilder()->build(
             $wrappedQuery,
             $configurationTransfer,
+            $queryVector,
         );
 
         if ($functionScore === null) {
@@ -145,6 +148,60 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
         $this->getClient()->rememberLastSpecificityWeightingResult($specificityWeightingResult);
 
         return (clone $configurationTransfer)->setRelevanceWeight($specificityWeightingResult->getRelevanceWeightOrFail());
+    }
+
+    /**
+     * Resolves the query's semantic embedding for the hybrid-search blend — cache first, then the live
+     * embedding service on a miss. Returns `null` (never throws) whenever no vector can usefully be used:
+     * `alpha == 1.0` (the configured default — 100% lexical, no point paying for an embedding that would
+     * never be blended in), a cache miss followed by any {@see EmbeddingUnavailableException} (embedding
+     * service down/timed out/misconfigured), or a malformed cached value. `FunctionScoreBuilder::build()`
+     * degrades to exactly today's lexical-only formula whenever this returns `null` — this is the
+     * mandatory graceful-degradation path, not an afterthought: a shopper must never see a 500 or an empty
+     * result set just because the (optional, best-effort) embedding service is unreachable.
+     *
+     * This package deliberately has no logging convention anywhere else (verified: no PSR logger is
+     * injected or used by any other class here) — an embedding failure is therefore swallowed silently,
+     * consistent with how every other best-effort/optional signal in this plugin already behaves (e.g.
+     * a missing ranking configuration also just steps aside without logging).
+     *
+     * @param string $searchString
+     * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
+     *
+     * @return array<int, float>|null
+     */
+    protected function resolveQueryVector(
+        string $searchString,
+        SearchRankingConfigurationStorageTransfer $configurationTransfer,
+    ): ?array {
+        $alpha = $configurationTransfer->getAlpha();
+
+        // A null alpha (no explicit setAlpha() call) is treated the same as the documented default of
+        // 1.0 — see FunctionScoreBuilder::buildTextComponent()'s own matching guard.
+        if ($alpha === null || $alpha >= 1.0) {
+            return null;
+        }
+
+        $modelId = $this->getFactory()->getConfig()->getEmbeddingModelId();
+        $embeddingCache = $this->getFactory()->createSemanticQueryEmbeddingCache();
+
+        $cachedVector = $embeddingCache->get($searchString, $modelId);
+
+        if ($cachedVector !== null) {
+            return $cachedVector;
+        }
+
+        $queryText = $this->getFactory()->getConfig()->getEmbeddingQueryInstructionPrefix() . $searchString;
+
+        try {
+            $vector = $this->getFactory()->createEmbeddingClient()->embed($queryText);
+        } catch (EmbeddingUnavailableException) {
+            return null;
+        }
+
+        $embeddingCache->set($searchString, $modelId, $vector);
+
+        return $vector;
     }
 
     /**

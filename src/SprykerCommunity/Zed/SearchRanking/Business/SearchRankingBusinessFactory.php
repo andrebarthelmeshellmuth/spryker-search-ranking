@@ -10,12 +10,15 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Zed\SearchRanking\Business;
 
 use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
+use SprykerCommunity\Client\SearchRanking\Semantic\TextEmbeddingsInferenceClient;
 use SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityChecker;
 use SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityCheckerInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Configuration\ConfigurationReader;
 use SprykerCommunity\Zed\SearchRanking\Business\Configuration\ConfigurationReaderInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilder;
 use SprykerCommunity\Zed\SearchRanking\Business\Digest\MetricDigestBuilderInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Embedding\EmbeddingGenerator;
+use SprykerCommunity\Zed\SearchRanking\Business\Embedding\EmbeddingGeneratorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\CurrentMetricFitEvaluator;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\CurrentMetricFitEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Fitting\MetricFormulaFitEvaluator;
@@ -32,6 +35,10 @@ use SprykerCommunity\Zed\SearchRanking\Business\Metric\WeightNormalizer;
 use SprykerCommunity\Zed\SearchRanking\Business\Metric\WeightNormalizerInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizer;
 use SprykerCommunity\Zed\SearchRanking\Business\Normalizer\ProductMetricNormalizerInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\PageData\EmbeddingPageDataLoader;
+use SprykerCommunity\Zed\SearchRanking\Business\PageData\EmbeddingPageDataLoaderInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\PageData\ProductEmbeddingFinder;
+use SprykerCommunity\Zed\SearchRanking\Business\PageData\ProductEmbeddingFinderInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\PageData\ScoresPageDataLoader;
 use SprykerCommunity\Zed\SearchRanking\Business\PageData\ScoresPageDataLoaderInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Preview\FormulaPreviewBuilder;
@@ -115,6 +122,32 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
     public function createScoresPageDataLoader(): ScoresPageDataLoaderInterface
     {
         return new ScoresPageDataLoader($this->getRepository());
+    }
+
+    public function createEmbeddingPageDataLoader(): EmbeddingPageDataLoaderInterface
+    {
+        return new EmbeddingPageDataLoader($this->getRepository(), $this->getConfig());
+    }
+
+    public function createProductEmbeddingFinder(): ProductEmbeddingFinderInterface
+    {
+        return new ProductEmbeddingFinder($this->getRepository(), $this->getConfig());
+    }
+
+    public function createEmbeddingClient(): TextEmbeddingsInferenceClient
+    {
+        return new TextEmbeddingsInferenceClient($this->getConfig()->getEmbeddingServiceUrl());
+    }
+
+    public function createEmbeddingGenerator(): EmbeddingGeneratorInterface
+    {
+        return new EmbeddingGenerator(
+            $this->createEmbeddingClient(),
+            $this->getRepository(),
+            $this->getEntityManager(),
+            $this->getStoreFacade(),
+            $this->getConfig(),
+        );
     }
 
     public function createProductAbstractScorePublisher(): ProductAbstractScorePublisherInterface

@@ -18,6 +18,7 @@ use SprykerCommunity\Client\SearchRanking\Debug\ScoreSectionBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocaleClientInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToPermissionClientInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface;
+use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStorageClientInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
@@ -31,6 +32,10 @@ use SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyFetcher;
 use SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyFetcherInterface;
 use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculator;
 use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculatorInterface;
+use SprykerCommunity\Client\SearchRanking\Semantic\EmbeddingClientInterface;
+use SprykerCommunity\Client\SearchRanking\Semantic\SemanticQueryEmbeddingCache;
+use SprykerCommunity\Client\SearchRanking\Semantic\SemanticQueryEmbeddingCacheInterface;
+use SprykerCommunity\Client\SearchRanking\Semantic\TextEmbeddingsInferenceClient;
 
 /**
  * @method \SprykerCommunity\Client\SearchRanking\SearchRankingConfig getConfig()
@@ -119,5 +124,20 @@ class SearchRankingFactory extends AbstractFactory
     public function createSearchElasticsearchConfig(): SearchElasticsearchConfig
     {
         return new SearchElasticsearchConfig();
+    }
+
+    public function createEmbeddingClient(): EmbeddingClientInterface
+    {
+        return new TextEmbeddingsInferenceClient($this->getConfig()->getEmbeddingServiceUrl());
+    }
+
+    public function createSemanticQueryEmbeddingCache(): SemanticQueryEmbeddingCacheInterface
+    {
+        return new SemanticQueryEmbeddingCache($this->getStorageClient());
+    }
+
+    public function getStorageClient(): SearchRankingToStorageClientInterface
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::CLIENT_STORAGE);
     }
 }

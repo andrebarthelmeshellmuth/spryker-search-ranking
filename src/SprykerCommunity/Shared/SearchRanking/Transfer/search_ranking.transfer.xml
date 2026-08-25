@@ -310,6 +310,17 @@
         <property name="metricWeights" type="array" singular="metricWeight" associative="true"/>
         <property name="relevanceWeight" type="float"/>
         <property name="relevanceSaturationPoint" type="float"/>
+        <!-- Blend weight (alpha) combining normalized text relevance with the semantic (kNN cosine
+             similarity) term inside FunctionScoreBuilder's text-relevance component itself — distinct
+             from relevanceWeight, which blends text relevance (this whole component) against business
+             signals. `alpha = 1.0` (default) means 100% lexical: the semantic term is never computed and
+             the script is byte-identical to the pre-hybrid-search formula. Lower values blend in
+             `(1 - alpha)` share of `(cosineSimilarity(queryVector, doc['embedding']) + 1) / 2` — only when
+             a query vector was actually resolved at query time; per-document, a product with no stored
+             embedding still falls back to alpha=1.0 for that one document regardless of this configured
+             value, since there is no semantic signal to blend in for it. Not exposed in the Zed GUI yet —
+             see FunctionScoreBuilder for the exact formula. -->
+        <property name="alpha" type="float"/>
         <!-- Names whichever `metricWeights` key SearchRankingConfig::getRandomMetricName() designates as
              the project's random tie-breaker (default 'random') — lets Yves-reachable code (e.g. a
              random-impact simulation) identify that one metric without hardcoding its name. Project-wide,
@@ -371,14 +382,30 @@
 
     <transfer name="ProductPayload">
         <property name="searchRankingScores" type="array" singular="searchRankingScores" associative="true"/>
+        <!-- Flat semantic embedding vector (float list, NOT associative) bulk-loaded from
+             spy_search_ranking_embedding for this product abstract's (store, locale, modelId), carried
+             from EmbeddingPageDataLoader through SearchRankingEmbeddingDataExpanderPlugin. Unset/empty
+             when no stored vector exists for this product yet (offline generation job hasn't run, or the
+             embeddings service was unavailable when it did). -->
+        <property name="embedding" type="array" singular="embedding"/>
     </transfer>
 
     <transfer name="ProductPageSearch">
         <property name="scores" type="array" singular="scores" associative="true"/>
+        <!-- Same flat vector as ProductPayload.embedding, copied across by
+             SearchRankingEmbeddingDataExpanderPlugin so it flows into the search document via this
+             transfer's generic toArray() -> ProductAbstractSearchDataMapper::mapProductDataToSearchData()
+             path, the same way `scores` already does. -->
+        <property name="embedding" type="array" singular="embedding"/>
     </transfer>
 
     <transfer name="PageMap">
         <property name="scores" type="array" singular="scores" associative="true"/>
+        <!-- The semantic embedding vector as actually written to the page document's `embedding` field
+             (a flat float list, NOT associative — matches the `knn_vector` mapping in page.json); products
+             without a stored vector get no `embedding` field at all, mirroring how `scores` is
+             omitted-not-empty. See SearchRankingEmbeddingMapExpanderPlugin. -->
+        <property name="embedding" type="array" singular="embedding"/>
     </transfer>
 
     <!-- One capability probe result: a named search-engine construct this package uses today or could use

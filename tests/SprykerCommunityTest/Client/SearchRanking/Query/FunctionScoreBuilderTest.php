@@ -123,4 +123,83 @@ class FunctionScoreBuilderTest extends Unit
         // Assert
         $this->assertArrayHasKey('bool', $functionScore->toArray()['function_score']['query']);
     }
+
+    /**
+     * Regression guard: `alpha = 1.0` (the documented default) with no query vector must produce a
+     * script byte-identical to the pre-hybrid-search formula — no added complexity, no `alpha`/
+     * `queryVector` params at all.
+     */
+    public function testProducesByteIdenticalScriptWhenAlphaIsDefaultAndNoQueryVectorGiven(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
+            ->setMetricWeights(['top_seller' => 0.5])
+            ->setRelevanceWeight(0.6)
+            ->setRelevanceSaturationPoint(12.0)
+            ->setAlpha(1.0);
+
+        // Act
+        $functionScoreWithoutAlphaConcept = (new FunctionScoreBuilder())->build(
+            new BoolQuery(),
+            (new SearchRankingConfigurationStorageTransfer())
+                ->setMetricWeights(['top_seller' => 0.5])
+                ->setRelevanceWeight(0.6)
+                ->setRelevanceSaturationPoint(12.0),
+        );
+        $functionScoreWithDefaultAlpha = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer);
+        $functionScoreWithVectorButDefaultAlpha = (new FunctionScoreBuilder())->build(
+            new BoolQuery(),
+            $configurationTransfer,
+            [0.1, 0.2, 0.3],
+        );
+
+        // Assert
+        $scriptWithoutAlphaConcept = $functionScoreWithoutAlphaConcept->toArray()['function_score']['functions'][0]['script_score']['script'];
+        $scriptWithDefaultAlpha = $functionScoreWithDefaultAlpha->toArray()['function_score']['functions'][0]['script_score']['script'];
+        $scriptWithVectorButDefaultAlpha = $functionScoreWithVectorButDefaultAlpha->toArray()['function_score']['functions'][0]['script_score']['script'];
+
+        $this->assertSame($scriptWithoutAlphaConcept, $scriptWithDefaultAlpha);
+        $this->assertSame($scriptWithoutAlphaConcept, $scriptWithVectorButDefaultAlpha);
+        $this->assertArrayNotHasKey('alpha', $scriptWithVectorButDefaultAlpha['params']);
+        $this->assertArrayNotHasKey('queryVector', $scriptWithVectorButDefaultAlpha['params']);
+        $this->assertStringNotContainsString('cosineSimilarity', $scriptWithVectorButDefaultAlpha['source']);
+    }
+
+    public function testBlendsInSemanticTermWhenQueryVectorGivenAndAlphaBelowOne(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
+            ->setMetricWeights(['top_seller' => 0.5])
+            ->setRelevanceWeight(0.6)
+            ->setRelevanceSaturationPoint(12.0)
+            ->setAlpha(0.4);
+
+        // Act
+        $functionScore = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer, [0.1, -0.2, 0.3]);
+
+        // Assert
+        $script = $functionScore->toArray()['function_score']['functions'][0]['script_score']['script'];
+        $this->assertSame(0.4, $script['params']['alpha']);
+        $this->assertSame([0.1, -0.2, 0.3], $script['params']['queryVector']);
+        $this->assertStringContainsString("cosineSimilarity(params.queryVector, doc['embedding'])", $script['source']);
+        $this->assertStringContainsString("doc.containsKey('embedding') && doc['embedding'].size() > 0", $script['source']);
+        // Per-document fallback: a product without a stored embedding still gets pure saturated _score.
+        $this->assertStringContainsString('_score / (_score + params.relevanceSaturationPoint)) : (', $script['source']);
+    }
+
+    public function testIgnoresQueryVectorWhenNoUsableSignalTermsRemainEvenBelowDefaultAlpha(): void
+    {
+        // Arrange — no active metrics: build() already returns null before the semantic term matters.
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
+            ->setMetricWeights(['muted' => 0.0])
+            ->setRelevanceWeight(0.6)
+            ->setRelevanceSaturationPoint(12.0)
+            ->setAlpha(0.4);
+
+        // Act
+        $functionScore = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer, [0.1, 0.2]);
+
+        // Assert
+        $this->assertNull($functionScore);
+    }
 }

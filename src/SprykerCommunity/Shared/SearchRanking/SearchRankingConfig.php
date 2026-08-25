@@ -35,6 +35,29 @@ class SearchRankingConfig
 
     /**
      * Specification:
+     * - Registration key of the embedding data-expander plugin in the ProductPageSearch plugin stack.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const PLUGIN_SEARCH_RANKING_EMBEDDING_DATA = 'PLUGIN_SEARCH_RANKING_EMBEDDING_DATA';
+
+    /**
+     * Specification:
+     * - Name of the Elasticsearch/OpenSearch page-document field holding the semantic embedding vector (a
+     *   flat float list), as defined in this project's own `page.json` schema (`knn_vector` mapping). Set
+     *   by {@see \SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSearch\SearchRankingEmbeddingMapExpanderPlugin}
+     *   only for products with a stored vector — omitted entirely otherwise.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const PAGE_INDEX_FIELD_EMBEDDING = 'embedding';
+
+    /**
+     * Specification:
      * - {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\RandomImpactResultFormatterPlugin::getName()}'s
      *   own registration key in the Catalog client's `ResultFormatterPlugin` stack — the `_view` key its
      *   payload surfaces under in Yves (`_view.randomImpact.*`).
@@ -92,6 +115,19 @@ class SearchRankingConfig
      * @var string
      */
     public const SETTING_KEY_RELEVANCE_SATURATION_POINT = 'relevance_saturation_point';
+
+    /**
+     * Specification:
+     * - Setting key of the blend weight (alpha) combining normalized text relevance with the semantic
+     *   (kNN cosine similarity) term, inside FunctionScoreBuilder's text-relevance component. `1.0`
+     *   (default) means 100% lexical — see {@see \SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder}
+     *   for the exact formula.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const SETTING_KEY_ALPHA = 'alpha';
 
     /**
      * Specification:

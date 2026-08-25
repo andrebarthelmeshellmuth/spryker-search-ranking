@@ -49,14 +49,26 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
     protected const METRIC_NAME_PATTERN = '/^[a-z][a-z0-9_]*$/';
 
     /**
+     * The `page.json` field the semantic (kNN) product vector is stored in — validated against
+     * {@see METRIC_NAME_PATTERN} at runtime (defense-in-depth: it's a fixed literal here, not user input,
+     * but the metric field paths right above it get the same treatment, so this stays consistent with
+     * them rather than being a silent exception).
+     *
+     * @var string
+     */
+    protected const EMBEDDING_FIELD = 'embedding';
+
+    /**
      * @param \Elastica\Query\AbstractQuery $wrappedQuery
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
+     * @param array<int, float>|null $queryVector
      */
     public function build(
         AbstractQuery $wrappedQuery,
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
+        ?array $queryVector = null,
     ): ?FunctionScore {
-        $script = $this->buildScript($configurationTransfer);
+        $script = $this->buildScript($configurationTransfer, $queryVector);
 
         if ($script === null) {
             return null;
@@ -73,8 +85,9 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
 
     /**
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
+     * @param array<int, float>|null $queryVector
      */
-    protected function buildScript(SearchRankingConfigurationStorageTransfer $configurationTransfer): ?Script
+    protected function buildScript(SearchRankingConfigurationStorageTransfer $configurationTransfer, ?array $queryVector = null): ?Script
     {
         $signalTerms = [];
         $scriptParams = [];
@@ -112,11 +125,66 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
         $scriptParams['relevanceWeight'] = (float)$configurationTransfer->getRelevanceWeight();
         $scriptParams['relevanceSaturationPoint'] = (float)$configurationTransfer->getRelevanceSaturationPoint();
 
+        $textComponent = $this->buildTextComponent($configurationTransfer, $queryVector, $scriptParams);
+
         $source = sprintf(
-            'params.relevanceWeight * (_score / (_score + params.relevanceSaturationPoint)) + (1 - params.relevanceWeight) * (%s)',
+            'params.relevanceWeight * (%s) + (1 - params.relevanceWeight) * (%s)',
+            $textComponent,
             implode(' + ', $signalTerms),
         );
 
         return new Script($source, $scriptParams);
+    }
+
+    /**
+     * Builds the text-relevance component of the blend. When a query vector was resolved AND `alpha` is
+     * below `1.0`, extends the plain saturated `_score` term with a semantic (kNN cosine similarity) term
+     * — guarded per-document, since not every product necessarily has a stored embedding:
+     *
+     *   (doc has 'embedding')
+     *     ? alpha * (_score / (_score + relevanceSaturationPoint))
+     *       + (1 - alpha) * ((cosineSimilarity(queryVector, doc['embedding']) + 1) / 2)
+     *     : (_score / (_score + relevanceSaturationPoint))
+     *
+     * When no query vector is available (embedding failure/empty search string at query time) or
+     * `alpha == 1.0` (the default — 100% lexical), returns exactly the original, unextended term with NO
+     * added script complexity — this is the mandatory degrade-to-today's-formula path.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
+     * @param array<int, float>|null $queryVector
+     * @param array<string, mixed> $scriptParams
+     */
+    protected function buildTextComponent(
+        SearchRankingConfigurationStorageTransfer $configurationTransfer,
+        ?array $queryVector,
+        array &$scriptParams,
+    ): string {
+        $saturatedScoreTerm = '_score / (_score + params.relevanceSaturationPoint)';
+
+        $alpha = $configurationTransfer->getAlpha();
+
+        // A null alpha (transfer built without an explicit setAlpha() call — never happens on the real
+        // KV-read path, which always fills a default, but can happen on a hand-built transfer) is treated
+        // the same as the documented default of 1.0: 100% lexical, no semantic term.
+        if ($queryVector === null || $queryVector === [] || $alpha === null || $alpha >= 1.0 || !preg_match(static::METRIC_NAME_PATTERN, static::EMBEDDING_FIELD)) {
+            return $saturatedScoreTerm;
+        }
+
+        $scriptParams['alpha'] = $alpha;
+        $scriptParams['queryVector'] = array_values($queryVector);
+
+        $semanticTerm = sprintf(
+            "(cosineSimilarity(params.queryVector, doc['%s']) + 1) / 2",
+            static::EMBEDDING_FIELD,
+        );
+
+        return sprintf(
+            "(doc.containsKey('%s') && doc['%s'].size() > 0) ? (params.alpha * (%s) + (1 - params.alpha) * (%s)) : (%s)",
+            static::EMBEDDING_FIELD,
+            static::EMBEDDING_FIELD,
+            $saturatedScoreTerm,
+            $semanticTerm,
+            $saturatedScoreTerm,
+        );
     }
 }
