@@ -325,4 +325,54 @@ class SearchRankingConfig
     {
         return false;
     }
+
+    /**
+     * Specification:
+     * - Entity `type` segment for the SKU entity lookup (abstract + concrete SKUs) — the only type Pass 1
+     *   ships.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const ENTITY_LOOKUP_TYPE_SKU = 'sku';
+
+    /**
+     * Specification:
+     * - Entity `type` segment for the brand entity lookup (Pass 2) — real `brand` product-attribute values
+     *   (see `data/import/common/common/product_attribute_key.csv`), read from
+     *   `spy_product_abstract_localized_attributes.attributes`.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const ENTITY_LOOKUP_TYPE_BRAND = 'brand';
+
+    /**
+     * Specification:
+     * - Entity `type` segment for the category entity lookup (Pass 2) — real `spy_category_attribute.name`
+     *   values.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const ENTITY_LOOKUP_TYPE_CATEGORY = 'category';
+
+    /**
+     * Specification:
+     * - Elasticsearch/OpenSearch source identifier (the segment `IndexNameResolver`/this package's own
+     *   Zed-side index-name builders append after the store name) for the slim `completion`-suggester
+     *   index {@see \SprykerCommunity\Client\SearchRanking\Intent\SuggestIndexEntityLookup} reads —
+     *   deliberately a SEPARATE, much smaller index from the heavy `page`/catalog content index (which
+     *   carries images, prices, full descriptions — the wrong tool for a microsecond existence/prefix
+     *   check). One index holds all three entity types (`sku`/`brand`/`category`), distinguished by the
+     *   `type` field — see `Schema/entity-lookup.json`.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const ENTITY_LOOKUP_SUGGEST_INDEX_SOURCE_IDENTIFIER = 'entity-lookup';
 }

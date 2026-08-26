@@ -341,6 +341,20 @@
         <property name="specificityCurveExponent" type="float"/>
         <property name="specificityWeightExponent" type="float"/>
         <property name="specificityWeightShiftMagnitude" type="float"/>
+        <!-- Intent-Aware Alpha, Pass 3: ADDITIVE shifts to relevanceWeight, applied only when the
+             corresponding signal is present on the query's SearchRankingQueryContextTransfer
+             (detectedBrand / detectedCategory non-null — see NavigationalRelevanceWeightShiftCalculator),
+             composed on top of whatever relevanceWeight specificity weighting already produced. Both
+             default to 0.0 (unconfigured) so this feature is fully inert unless a project deliberately
+             sets a nonzero value — same "not exposed in the Zed GUI yet, still functions" precedent as
+             `alpha`. brandMatchRelevanceWeightShift is conventionally POSITIVE when configured (a
+             detected brand is evidence of a navigational query — shift toward text relevance), per this
+             package's own v2 architecture reasoning; categoryMatchRelevanceWeightShift is a genuinely
+             open, sign-agnostic question (a detected category could argue for either direction) and is
+             deliberately left unmeasured/untuned here — see NavigationalRelevanceWeightShiftCalculator's
+             own docblock. -->
+        <property name="brandMatchRelevanceWeightShift" type="float"/>
+        <property name="categoryMatchRelevanceWeightShift" type="float"/>
     </transfer>
 
     <!-- Immutable snapshot of one SpecificityWeightCalculatorInterface::calculateWeightingResult() outcome
@@ -378,6 +392,45 @@
         <!-- The curveExponent normalizedSpecificity was actually shaped with — same reasoning as
              specificityWeightExponent. -->
         <property name="specificityCurveExponent" type="float"/>
+    </transfer>
+
+    <!-- Per-request query-time intent signal, built once per live catalog search by running the active
+         QueryAnalyzerInterface stack (see SearchRankingFactory::getQueryAnalyzers()) and remembered on
+         SearchRankingClientInterface::rememberQueryContext() the same way (and for the same reason) the
+         specificity weighting result used to be remembered on its own — a stale value from an earlier
+         query in the same request must never leak into the next one. Analyzers must not read each other's
+         signals off this transfer while it is being built (independence trap) — they only ever WRITE their
+         own field(s). isIdentifierMatch/matchedIdentifierValue are written by SkuIdentifierAnalyzer;
+         specificityWeightingResult is written by the (today still inline, see FunctionScoreQueryExpanderPlugin)
+         specificity-weighting logic. -->
+    <transfer name="SearchRankingQueryContext" strict="true">
+        <property name="searchString" type="string"/>
+        <property name="storeName" type="string"/>
+        <property name="localeName" type="string"/>
+        <!-- Whether SkuIdentifierAnalyzer recognized `searchString` as an exact product identifier (SKU/
+             model number) for this (store, locale) — dictionary hit or shape-regex fallback match. When
+             true, FunctionScoreBuilder forces the effective hybrid-search alpha to 1.0 (pure lexical) for
+             this one query, overriding whatever alpha a project has configured: semantic similarity
+             actively hurts identifier lookups, it doesn't help them. -->
+        <!-- No default="false" here: verified this generator does not actually initialize a plain
+             property's default value (only the getter's PHPDoc return type gains `|null` either way) —
+             every builder of this transfer (SearchRankingFunctionScoreQueryExpanderPlugin::buildQueryContext(),
+             every test fixture) sets this explicitly instead. -->
+        <property name="isIdentifierMatch" type="bool"/>
+        <!-- The real SKU value `searchString` matched, for debuggability/search-debug consumption — null
+             when isIdentifierMatch is false, or (shape-regex tier) when a shape matched but no single real
+             SKU value did. -->
+        <property name="matchedIdentifierValue" type="string"/>
+        <!-- Pass 2 of "Intent-Aware Alpha": the real brand name BrandAnalyzer detected as a word-boundary
+             match WITHIN `searchString` (not a whole-string match, unlike `matchedIdentifierValue` above —
+             a query like "Topstar swivel chair" detects "Topstar" here while `searchString` stays the full
+             free-text query). Null when no known brand was found. Deliberately read by NOTHING else yet —
+             see BrandAnalyzer's own docblock: detection only, no scoring behavior wired to this field in
+             Pass 2. -->
+        <property name="detectedBrand" type="string"/>
+        <!-- Same contract as `detectedBrand`, for CategoryAnalyzer / real category names. -->
+        <property name="detectedCategory" type="string"/>
+        <property name="specificityWeightingResult" type="SearchRankingSpecificityWeightingResult"/>
     </transfer>
 
     <transfer name="ProductPayload">

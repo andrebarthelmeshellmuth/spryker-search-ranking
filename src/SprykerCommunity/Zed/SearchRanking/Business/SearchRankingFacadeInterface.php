@@ -443,6 +443,44 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
+     * - Backs `search-ranking:entity-lookup:suggest-index:rebuild` — Pass 2 of "Intent-Aware Alpha"'s
+     *   large-adopter-scale sibling of {@see rebuildEntityLookup()}: full rebuild of the OpenSearch
+     *   `completion`-suggester-backed entity dictionary
+     *   {@see \SprykerCommunity\Client\SearchRanking\Intent\SuggestIndexEntityLookup} reads at query time,
+     *   reading the exact same underlying corpus as the KV tier.
+     *
+     * @api
+     *
+     * @param string $type
+     * @param string|null $storeName
+     * @param string|null $localeName
+     *
+     * @return array<string, int> Store name => number of documents written for it.
+     */
+    public function rebuildSuggestIndexEntityLookup(string $type, ?string $storeName = null, ?string $localeName = null): array;
+
+    /**
+     * Specification:
+     * - The event-pipeline near-live sync mode for Pass 2's entity-lookup index — the incremental
+     *   counterpart to {@see rebuildSuggestIndexEntityLookup()}'s full cron/manual rebuild. Backs
+     *   {@see \SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSearch\SearchRankingEntityLookupSyncPlugin}.
+     * - A no-op when {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::isEntityLookupEventSyncEnabled()}
+     *   is `false` (its default) — the plugin checks this itself before calling here, but this method does
+     *   NOT re-check it, so any other caller gets a real sync unconditionally.
+     * - See {@see \SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityLookupIncrementalSyncerInterface::sync()}
+     *   for the exact per-product/per-store/per-type behavior, including the active/sellable
+     *   upsert-vs-remove rule.
+     *
+     * @api
+     *
+     * @param array<int> $idProductAbstracts
+     *
+     * @return void
+     */
+    public function syncEntityLookupForProductAbstracts(array $idProductAbstracts): void;
+
+    /**
+     * Specification:
      * - Looks up a single product's stored semantic embedding vector for a REAL, caller-supplied
      *   (store, locale) — unlike {@see expandProductPageLoadTransferWithEmbeddings()}, which bulk-loads
      *   at the product-page-search DATA LOADER stage, a pipeline step that runs before per-locale

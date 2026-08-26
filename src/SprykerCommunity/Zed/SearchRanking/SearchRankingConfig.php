@@ -270,4 +270,77 @@ class SearchRankingConfig extends AbstractBundleConfig
     {
         return 'BAAI/bge-base-en-v1.5';
     }
+
+    /**
+     * Specification:
+     * - Whether {@see \SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSearch\SearchRankingEntityLookupSyncPlugin}
+     *   actually does any work when it fires. OFF by default — the SAME "off/inert until a project opts
+     *   in" pattern this package uses everywhere else (e.g. {@see \SprykerCommunity\Shared\SearchRanking\SearchRankingConfig::isSpecificityWeightingEnabled()}).
+     * - Registering the plugin in a project's own `Pyz\Zed\ProductPageSearch\ProductPageSearchDependencyProvider::getDataLoaderPlugins()`
+     *   is a SEPARATE decision from this flag — the plugin is safe to register unconditionally (it no-ops
+     *   here when this returns `false`), which is deliberate: it lets `search-ranking:check-installation`
+     *   tell "plugin class registered but sync mode not declared" apart from "plugin class never
+     *   registered at all" (see `checkEntityLookupSyncConfiguration()` on that console), instead of a
+     *   silently-absent plugin looking identical to a deliberately-off one.
+     * - Entity-lookup has TWO independent, adopter's-choice sync mechanisms — this flag turns on the
+     *   event-pipeline (near-live) one; {@see isEntityLookupCronConfigured()} is the other (periodic full
+     *   rebuild). Turning both on is a misconfiguration `search-ranking:check-installation` reports as an
+     *   error (redundant/conflicting), not a supported "belt and suspenders" combination — pick one.
+     *
+     * @api
+     */
+    public function isEntityLookupEventSyncEnabled(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Specification:
+     * - Self-declared: `true` once a project has its OWN periodic job invoking
+     *   `search-ranking:entity-lookup:suggest-index:rebuild` (README's "Entity-lookup sync" section) —
+     *   `search-ranking:check-installation` cannot always verify a real external cron on its own (see that
+     *   console's own docblock on {@see \SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckInstallationConsole::findRegisteredCronJobs()}
+     *   for when it CAN, via `Pyz\Zed\SymfonyScheduler\SymfonySchedulerConfig::getCronJobs()`), so this flag
+     *   is the fallback signal for a project that schedules jobs another way (this package must stay
+     *   installable without `spryker/symfony-scheduler` — see composer.json's `suggest`).
+     * - OFF by default, mirroring {@see isEntityLookupEventSyncEnabled()} — see that method's own docblock
+     *   for the adopter's-choice, mutually-exclusive relationship between the two sync mechanisms.
+     *
+     * @api
+     */
+    public function isEntityLookupCronConfigured(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Specification:
+     * - Recommended cron expression for `search-ranking:entity-lookup:suggest-index:rebuild --type=sku`
+     *   (README's "Entity-lookup sync" section) — hourly, since SKUs are cheap to read/write and a new
+     *   product's SKU should become findable through Pass 2's suggester reasonably soon when cron mode is
+     *   the adopter's chosen mechanism (as opposed to the near-live event-hook).
+     * - Purely advisory: this package never schedules anything itself (see {@see isEntityLookupCronConfigured()}'s
+     *   own docblock) — a project copies this into its own scheduler configuration.
+     *
+     * @api
+     */
+    public function getEntityLookupSkuRebuildCronCadence(): string
+    {
+        return '0 * * * *';
+    }
+
+    /**
+     * Specification:
+     * - Recommended cron expression for `search-ranking:entity-lookup:suggest-index:rebuild --type=brand`
+     *   and `--type=category` — daily, since brand/category assignments change far less often than a
+     *   catalog's SKU set, and each rebuild scans every active product-abstract in the store (a heavier
+     *   query than the SKU reader's own).
+     * - Purely advisory, same as {@see getEntityLookupSkuRebuildCronCadence()}.
+     *
+     * @api
+     */
+    public function getEntityLookupBrandCategoryRebuildCronCadence(): string
+    {
+        return '0 3 * * *';
+    }
 }

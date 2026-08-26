@@ -9,8 +9,12 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Business;
 
+use Spryker\Shared\SearchElasticsearch\SearchElasticsearchConfig as SharedSearchElasticsearchConfig;
 use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
+use Spryker\Zed\SearchElasticsearch\SearchElasticsearchConfig as ZedSearchElasticsearchConfig;
 use SprykerCommunity\Client\SearchRanking\Semantic\TextEmbeddingsInferenceClient;
+use SprykerCommunity\Zed\SearchRanking\Business\Client\ElasticaClientProvider;
+use SprykerCommunity\Zed\SearchRanking\Business\Client\ElasticaClientProviderInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityChecker;
 use SprykerCommunity\Zed\SearchRanking\Business\Compatibility\CompatibilityCheckerInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Configuration\ConfigurationReader;
@@ -29,6 +33,23 @@ use SprykerCommunity\Zed\SearchRanking\Business\Fitting\RSquaredCalculator;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluator;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\FormulaEvaluatorInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Formula\MathFunctionProvider;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\BrandCorpusReader;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\BrandCorpusReaderInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\CategoryCorpusReader;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\CategoryCorpusReaderInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityCorpusReaderPluginInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityLookupIncrementalSyncer;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityLookupIncrementalSyncerInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityLookupSuggestIndexNameResolver;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityLookupSuggestIndexNameResolverInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\ProductAbstractStoreResolver;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\ProductAbstractStoreResolverInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\SkuCorpusReader;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\SkuCorpusReaderInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\SuggestIndexEntityLookupIndexer;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\SuggestIndexEntityLookupIndexerInterface;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\SuggestIndexEntityLookupRebuilder;
+use SprykerCommunity\Zed\SearchRanking\Business\Intent\SuggestIndexEntityLookupRebuilderInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriter;
 use SprykerCommunity\Zed\SearchRanking\Business\Metric\MetricWriterInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Metric\WeightNormalizer;
@@ -62,7 +83,9 @@ use SprykerCommunity\Zed\SearchRanking\Business\Setting\SettingManagerInterface;
 use SprykerCommunity\Zed\SearchRanking\Business\Specificity\SpecificityWeightingStatusChecker;
 use SprykerCommunity\Zed\SearchRanking\Business\Specificity\SpecificityWeightingStatusCheckerInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientInterface;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToStorageClientInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToLocaleFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\SearchRankingDependencyProvider;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
@@ -257,6 +280,118 @@ class SearchRankingBusinessFactory extends AbstractBusinessFactory
     public function getStoreFacade(): SearchRankingToStoreFacadeInterface
     {
         return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_STORE);
+    }
+
+    public function getStorageClient(): SearchRankingToStorageClientInterface
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::CLIENT_STORAGE);
+    }
+
+    public function createSkuCorpusReader(): SkuCorpusReaderInterface&EntityCorpusReaderPluginInterface
+    {
+        return new SkuCorpusReader();
+    }
+
+    public function createBrandCorpusReader(): BrandCorpusReaderInterface&EntityCorpusReaderPluginInterface
+    {
+        return new BrandCorpusReader();
+    }
+
+    public function createCategoryCorpusReader(): CategoryCorpusReaderInterface&EntityCorpusReaderPluginInterface
+    {
+        return new CategoryCorpusReader();
+    }
+
+    public function createSuggestIndexEntityLookupRebuilder(): SuggestIndexEntityLookupRebuilderInterface
+    {
+        return new SuggestIndexEntityLookupRebuilder(
+            $this->getEntityCorpusReaders(),
+            $this->createSuggestIndexEntityLookupIndexer(),
+            $this->getStoreFacade(),
+            $this->getLocaleFacade(),
+            $this->createEntityLookupSuggestIndexNameResolver(),
+        );
+    }
+
+    /**
+     * Backs {@see \SprykerCommunity\Zed\SearchRanking\Business\SearchRankingFacadeInterface::syncEntityLookupForProductAbstracts()}
+     * — the event-pipeline near-live sync mode counterpart to {@see createSuggestIndexEntityLookupRebuilder()}'s
+     * cron/manual full rebuild.
+     */
+    public function createEntityLookupIncrementalSyncer(): EntityLookupIncrementalSyncerInterface
+    {
+        return new EntityLookupIncrementalSyncer(
+            $this->getEntityCorpusReaders(),
+            $this->createSuggestIndexEntityLookupIndexer(),
+            $this->getStoreFacade(),
+            $this->createEntityLookupSuggestIndexNameResolver(),
+            $this->createProductAbstractStoreResolver(),
+        );
+    }
+
+    public function createEntityLookupSuggestIndexNameResolver(): EntityLookupSuggestIndexNameResolverInterface
+    {
+        return new EntityLookupSuggestIndexNameResolver($this->createSearchElasticsearchConfig());
+    }
+
+    public function createProductAbstractStoreResolver(): ProductAbstractStoreResolverInterface
+    {
+        return new ProductAbstractStoreResolver();
+    }
+
+    /**
+     * The active {@see \SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityCorpusReaderPluginInterface}
+     * stack for {@see createSuggestIndexEntityLookupRebuilder()} — this package's own built-in default
+     * (sku/brand/category) plus whatever a project registered via
+     * {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingDependencyProvider::PLUGINS_ENTITY_CORPUS_READER}.
+     * The SAME "built-ins + array_merge(DependencyProvider plugins)" shape this package's Client-layer
+     * {@see \SprykerCommunity\Client\SearchRanking\SearchRankingFactory::getQueryAnalyzers()} already uses.
+     *
+     * @return array<\SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityCorpusReaderPluginInterface>
+     */
+    public function getEntityCorpusReaders(): array
+    {
+        return array_merge(
+            [
+                $this->createSkuCorpusReader(),
+                $this->createBrandCorpusReader(),
+                $this->createCategoryCorpusReader(),
+            ],
+            $this->getEntityCorpusReaderPlugins(),
+        );
+    }
+
+    /**
+     * @return array<\SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityCorpusReaderPluginInterface>
+     */
+    public function getEntityCorpusReaderPlugins(): array
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::PLUGINS_ENTITY_CORPUS_READER);
+    }
+
+    public function createSuggestIndexEntityLookupIndexer(): SuggestIndexEntityLookupIndexerInterface
+    {
+        return new SuggestIndexEntityLookupIndexer($this->createElasticaClientProvider()->getClient());
+    }
+
+    public function createElasticaClientProvider(): ElasticaClientProviderInterface
+    {
+        return new ElasticaClientProvider($this->createZedSearchElasticsearchConfig());
+    }
+
+    public function createSearchElasticsearchConfig(): SharedSearchElasticsearchConfig
+    {
+        return new SharedSearchElasticsearchConfig();
+    }
+
+    public function createZedSearchElasticsearchConfig(): ZedSearchElasticsearchConfig
+    {
+        return new ZedSearchElasticsearchConfig();
+    }
+
+    public function getLocaleFacade(): SearchRankingToLocaleFacadeInterface
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::FACADE_LOCALE);
     }
 
     public function createScopeConfigCopier(): ScopeConfigCopierInterface

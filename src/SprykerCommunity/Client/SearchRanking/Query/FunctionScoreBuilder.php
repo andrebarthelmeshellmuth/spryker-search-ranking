@@ -13,6 +13,7 @@ use Elastica\Query\AbstractQuery;
 use Elastica\Query\FunctionScore;
 use Elastica\Script\Script;
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
+use Generated\Shared\Transfer\SearchRankingQueryContextTransfer;
 
 /**
  * Builds the business-signal function_score wrapper — a weighted blend of normalized text relevance
@@ -62,13 +63,15 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
      * @param \Elastica\Query\AbstractQuery $wrappedQuery
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
      * @param array<int, float>|null $queryVector
+     * @param \Generated\Shared\Transfer\SearchRankingQueryContextTransfer|null $queryContextTransfer
      */
     public function build(
         AbstractQuery $wrappedQuery,
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
         ?array $queryVector = null,
+        ?SearchRankingQueryContextTransfer $queryContextTransfer = null,
     ): ?FunctionScore {
-        $script = $this->buildScript($configurationTransfer, $queryVector);
+        $script = $this->buildScript($configurationTransfer, $queryVector, $queryContextTransfer);
 
         if ($script === null) {
             return null;
@@ -86,9 +89,13 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
     /**
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
      * @param array<int, float>|null $queryVector
+     * @param \Generated\Shared\Transfer\SearchRankingQueryContextTransfer|null $queryContextTransfer
      */
-    protected function buildScript(SearchRankingConfigurationStorageTransfer $configurationTransfer, ?array $queryVector = null): ?Script
-    {
+    protected function buildScript(
+        SearchRankingConfigurationStorageTransfer $configurationTransfer,
+        ?array $queryVector = null,
+        ?SearchRankingQueryContextTransfer $queryContextTransfer = null,
+    ): ?Script {
         $signalTerms = [];
         $scriptParams = [];
         $metricIndex = 0;
@@ -125,7 +132,7 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
         $scriptParams['relevanceWeight'] = (float)$configurationTransfer->getRelevanceWeight();
         $scriptParams['relevanceSaturationPoint'] = (float)$configurationTransfer->getRelevanceSaturationPoint();
 
-        $textComponent = $this->buildTextComponent($configurationTransfer, $queryVector, $scriptParams);
+        $textComponent = $this->buildTextComponent($configurationTransfer, $queryVector, $scriptParams, $queryContextTransfer);
 
         $source = sprintf(
             'params.relevanceWeight * (%s) + (1 - params.relevanceWeight) * (%s)',
@@ -153,15 +160,26 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
      * @param array<int, float>|null $queryVector
      * @param array<string, mixed> $scriptParams
+     * @param \Generated\Shared\Transfer\SearchRankingQueryContextTransfer|null $queryContextTransfer
      */
     protected function buildTextComponent(
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
         ?array $queryVector,
         array &$scriptParams,
+        ?SearchRankingQueryContextTransfer $queryContextTransfer = null,
     ): string {
         $saturatedScoreTerm = '_score / (_score + params.relevanceSaturationPoint)';
 
         $alpha = $configurationTransfer->getAlpha();
+
+        // Intent-Aware Alpha, Pass 1: a query recognized as an exact product identifier (SKU/model
+        // number) forces pure-lexical scoring for THIS query, overriding whatever alpha a project has
+        // configured — semantic similarity actively hurts identifier lookups (a shopper who typed a real
+        // SKU wants that exact product, not something merely semantically close to it), it never helps
+        // them. See SkuIdentifierAnalyzer.
+        if ($queryContextTransfer !== null && $queryContextTransfer->getIsIdentifierMatch()) {
+            $alpha = 1.0;
+        }
 
         // A null alpha (transfer built without an explicit setAlpha() call — never happens on the real
         // KV-read path, which always fills a default, but can happen on a hand-built transfer) is treated

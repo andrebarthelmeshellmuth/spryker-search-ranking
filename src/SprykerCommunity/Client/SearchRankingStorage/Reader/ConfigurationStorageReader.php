@@ -68,6 +68,16 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     protected const KEY_RANDOM_METRIC_NAME = 'random_metric_name';
 
     /**
+     * @var string
+     */
+    protected const KEY_BRAND_MATCH_RELEVANCE_WEIGHT_SHIFT = 'brand_match_relevance_weight_shift';
+
+    /**
+     * @var string
+     */
+    protected const KEY_CATEGORY_MATCH_RELEVANCE_WEIGHT_SHIFT = 'category_match_relevance_weight_shift';
+
+    /**
      * Matches `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getRandomMetricName()`'s own
      * default, so a payload published before this key existed still resolves to the same metric name a
      * fresh Zed save would produce.
@@ -151,6 +161,23 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     protected const DEFAULT_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE = 0.25;
 
     /**
+     * Intent-Aware Alpha, Pass 3: a payload published before these keys existed must keep behaving
+     * exactly as it did before — `0.0` for both is the fully-inert value (see
+     * `SearchRankingConfigurationStorageTransfer`'s own docblock), so an absent key here is
+     * indistinguishable from an explicitly-configured `0.0`.
+     *
+     * @var float
+     */
+    protected const DEFAULT_BRAND_MATCH_RELEVANCE_WEIGHT_SHIFT = 0.0;
+
+    /**
+     * Same reasoning as `DEFAULT_BRAND_MATCH_RELEVANCE_WEIGHT_SHIFT`.
+     *
+     * @var float
+     */
+    protected const DEFAULT_CATEGORY_MATCH_RELEVANCE_WEIGHT_SHIFT = 0.0;
+
+    /**
      * Memoized per request, keyed by `"{$storeName}:{$localeName}"`; a missing key = not read yet for
      * that scope (null is a valid "no document" result for a scope). `static`, not instance-level,
      * matching Spryker core's own client-reader caching convention — safe under the traditional
@@ -219,6 +246,8 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
             ->setSpecificityCurveExponent((float)($configurationData[static::KEY_SPECIFICITY_CURVE_EXPONENT] ?? static::DEFAULT_SPECIFICITY_CURVE_EXPONENT))
             ->setSpecificityWeightExponent((float)($configurationData[static::KEY_SPECIFICITY_WEIGHT_EXPONENT] ?? static::DEFAULT_SPECIFICITY_WEIGHT_EXPONENT))
             ->setSpecificityWeightShiftMagnitude((float)($configurationData[static::KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE] ?? static::DEFAULT_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE))
-            ->setRandomMetricName((string)($configurationData[static::KEY_RANDOM_METRIC_NAME] ?? static::DEFAULT_RANDOM_METRIC_NAME));
+            ->setRandomMetricName((string)($configurationData[static::KEY_RANDOM_METRIC_NAME] ?? static::DEFAULT_RANDOM_METRIC_NAME))
+            ->setBrandMatchRelevanceWeightShift((float)($configurationData[static::KEY_BRAND_MATCH_RELEVANCE_WEIGHT_SHIFT] ?? static::DEFAULT_BRAND_MATCH_RELEVANCE_WEIGHT_SHIFT))
+            ->setCategoryMatchRelevanceWeightShift((float)($configurationData[static::KEY_CATEGORY_MATCH_RELEVANCE_WEIGHT_SHIFT] ?? static::DEFAULT_CATEGORY_MATCH_RELEVANCE_WEIGHT_SHIFT));
     }
 }

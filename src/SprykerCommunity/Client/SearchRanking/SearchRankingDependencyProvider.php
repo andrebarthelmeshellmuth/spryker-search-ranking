@@ -45,6 +45,32 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
     public const CLIENT_STORAGE = 'CLIENT_STORAGE';
 
     /**
+     * Specification:
+     * - Additional {@see \SprykerCommunity\Client\SearchRanking\Intent\QueryAnalyzerInterface} instances
+     *   a project wants to run, layered ON TOP of this package's own built-in default (today: just
+     *   {@see \SprykerCommunity\Client\SearchRanking\Intent\SkuIdentifierAnalyzer} — see
+     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingFactory::getQueryAnalyzers()}). Empty by
+     *   default — the same "empty array, project extends" pattern this codebase already uses for its other
+     *   optional plugin stacks. This is the seam a later pass (e.g. a brand/category analyzer, or a
+     *   project-specific one) plugs into without touching this package.
+     *
+     * @var string
+     */
+    public const PLUGINS_QUERY_ANALYZER = 'PLUGINS_QUERY_ANALYZER';
+
+    /**
+     * Specification:
+     * - Additional {@see \SprykerCommunity\Client\SearchRanking\Intent\MsearchProbeRegistrarPluginInterface}
+     *   instances a project wants to ride the shared `_msearch` batch
+     *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
+     *   builds every request. Empty by default — the SAME "empty array, project extends" pattern this
+     *   package already uses for {@see PLUGINS_QUERY_ANALYZER}.
+     *
+     * @var string
+     */
+    public const PLUGINS_MSEARCH_PROBE_REGISTRAR = 'PLUGINS_MSEARCH_PROBE_REGISTRAR';
+
+    /**
      * @param \Spryker\Client\Kernel\Container $container
      */
     #[\Override]
@@ -56,8 +82,50 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
         $container = $this->addLocaleClient($container);
         $container = $this->addPermissionClient($container);
         $container = $this->addStorageClient($container);
+        $container = $this->addQueryAnalyzerPlugins($container);
+        $container = $this->addMsearchProbeRegistrarPlugins($container);
 
         return $container;
+    }
+
+    /**
+     * @param \Spryker\Client\Kernel\Container $container
+     */
+    protected function addQueryAnalyzerPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_QUERY_ANALYZER, function (): array {
+            return $this->getQueryAnalyzerPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @return array<\SprykerCommunity\Client\SearchRanking\Intent\QueryAnalyzerInterface>
+     */
+    protected function getQueryAnalyzerPlugins(): array
+    {
+        return [];
+    }
+
+    /**
+     * @param \Spryker\Client\Kernel\Container $container
+     */
+    protected function addMsearchProbeRegistrarPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_MSEARCH_PROBE_REGISTRAR, function (): array {
+            return $this->getMsearchProbeRegistrarPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @return array<\SprykerCommunity\Client\SearchRanking\Intent\MsearchProbeRegistrarPluginInterface>
+     */
+    protected function getMsearchProbeRegistrarPlugins(): array
+    {
+        return [];
     }
 
     /**

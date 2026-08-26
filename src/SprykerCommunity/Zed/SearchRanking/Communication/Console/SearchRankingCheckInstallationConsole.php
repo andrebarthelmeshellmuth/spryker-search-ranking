@@ -16,16 +16,19 @@ use Generated\Shared\Transfer\DataImportConfigurationActionTransfer;
 use Generated\Shared\Transfer\DataImportConfigurationTransfer;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionMethod;
 use SimpleXMLElement;
 use Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig;
 use Spryker\Shared\Config\Config;
 use Spryker\Shared\Kernel\KernelConstants;
 use Spryker\Shared\SearchElasticsearch\ElasticaClient\ElasticaClientFactory;
 use Spryker\Zed\Kernel\ClassResolver\Config\BundleConfigResolver;
+use Spryker\Zed\Kernel\ClassResolver\DependencyProvider\DependencyProviderResolver;
 use Spryker\Zed\Kernel\Communication\Console\Console;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingEvents;
 use SprykerCommunity\Shared\SearchRankingStorage\SearchRankingStorageConfig;
+use SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSearch\SearchRankingEntityLookupSyncPlugin;
 use SprykerCommunity\Zed\SearchRankingDataImport\SearchRankingDataImportConfig;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -60,7 +63,7 @@ class SearchRankingCheckInstallationConsole extends Console
     /**
      * @var string
      */
-    public const COMMAND_DESCRIPTION = 'Diagnoses a search-ranking installation: core namespace, sibling console command registration, data-import plugin registration, ranking-configuration publish event listener and sync queue, Zed translations, search engine reachability, page index shape, and configured metrics.';
+    public const COMMAND_DESCRIPTION = 'Diagnoses a search-ranking installation: core namespace, sibling console command registration, data-import plugin registration, ranking-configuration publish event listener and sync queue, Zed translations, search engine reachability, page index shape, configured metrics, and entity-lookup sync mode.';
 
     /**
      * @var string
@@ -112,6 +115,16 @@ class SearchRankingCheckInstallationConsole extends Console
      * @var string
      */
     protected const SCHEDULER_CONFIG_CLASS = 'Spryker\\Zed\\SymfonyScheduler\\SymfonySchedulerConfig';
+
+    /**
+     * Referenced as a string for the same reason as {@see SCHEDULER_CONFIG_CLASS}: resolved via
+     * {@see \Spryker\Zed\Kernel\ClassResolver\DependencyProvider\DependencyProviderResolver} to find
+     * whichever project namespace's own override exists (falling back to core's own, which registers
+     * nothing of this package's) — see {@see isEntityLookupSyncPluginRegistered()}.
+     *
+     * @var string
+     */
+    protected const PRODUCT_PAGE_SEARCH_DEPENDENCY_PROVIDER_CLASS = 'Spryker\\Zed\\ProductPageSearch\\ProductPageSearchDependencyProvider';
 
     /**
      * This package's own navigation.xml, relative to this console's directory — the source of truth for
@@ -198,6 +211,7 @@ class SearchRankingCheckInstallationConsole extends Console
         $this->checkSearchEngine($output);
         $this->checkActiveMetrics($output);
         $this->checkCronJobsRegistered($output);
+        $this->checkEntityLookupSyncConfiguration($output);
         $this->checkNavigationRegistered($output);
         $this->checkBackOfficeAccess($output);
         $this->checkZedTranslationCatalogComplete($output);
@@ -601,6 +615,127 @@ class SearchRankingCheckInstallationConsole extends Console
         }
 
         return $schedulerConfig->getCronJobs();
+    }
+
+    /**
+     * Pass 2's entity-lookup index has TWO independent, adopter's-choice sync mechanisms (README
+     * "Entity-lookup sync"): a periodic cron rebuild, or the near-live
+     * {@see \SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSearch\SearchRankingEntityLookupSyncPlugin}
+     * event-hook. Exactly one must be active:
+     * - NEITHER configured → the index silently goes stale forever, same failure shape as an un-run cron
+     *   elsewhere in this class — reported as a FAILURE.
+     * - BOTH configured → redundant/conflicting, not a supported "belt and suspenders" combination —
+     *   reported as a FAILURE too, so a project notices before wondering why the same product looks
+     *   double-synced.
+     * - Exactly ONE configured → a PASS, with a warning naming which mechanism is NOT active (purely
+     *   informational — nothing is wrong).
+     *
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    protected function checkEntityLookupSyncConfiguration(OutputInterface $output): void
+    {
+        $cronConfigured = $this->isEntityLookupCronConfigured();
+        $eventHookRegistered = $this->isEntityLookupSyncPluginRegistered();
+
+        if ($eventHookRegistered === null) {
+            $this->warnings[] = 'Could not introspect Pyz\Zed\ProductPageSearch\ProductPageSearchDependencyProvider to check whether SearchRankingEntityLookupSyncPlugin is registered (spryker/product-page-search may not be installed). Confirm by hand, or rely on cron mode instead.';
+            $eventHookRegistered = false;
+        }
+
+        if ($cronConfigured && $eventHookRegistered) {
+            $this->failures[] = 'Entity-lookup sync is configured TWICE: isEntityLookupCronConfigured() returns true AND SearchRankingEntityLookupSyncPlugin is registered. Pick exactly one mechanism (README "Entity-lookup sync") — running both is redundant/conflicting.';
+
+            return;
+        }
+
+        if (!$cronConfigured && !$eventHookRegistered) {
+            $this->failures[] = 'Entity-lookup sync is NOT configured: isEntityLookupCronConfigured() returns false AND SearchRankingEntityLookupSyncPlugin is not registered/wired. Pass 2\'s entity-lookup index will silently go stale forever. Pick one (README "Entity-lookup sync"): schedule search-ranking:entity-lookup:suggest-index:rebuild and override isEntityLookupCronConfigured() to return true, OR register SearchRankingEntityLookupSyncPlugin in ProductPageSearchDependencyProvider::getDataLoaderPlugins() and override isEntityLookupEventSyncEnabled() to return true.';
+
+            return;
+        }
+
+        if ($cronConfigured) {
+            $output->writeln('<info>✓</info> entity-lookup sync: cron mode declared (isEntityLookupCronConfigured() = true)');
+            $this->warnings[] = 'Entity-lookup event-hook sync is not active (SearchRankingEntityLookupSyncPlugin not registered, or isEntityLookupEventSyncEnabled() is false). This is expected since cron mode is declared — ignore unless you meant to use the near-live event-hook instead.';
+
+            return;
+        }
+
+        $output->writeln('<info>✓</info> entity-lookup sync: event-hook mode wired (SearchRankingEntityLookupSyncPlugin registered)');
+        $this->warnings[] = 'Entity-lookup cron sync is not declared (isEntityLookupCronConfigured() returns false). This is expected since event-hook mode is wired — ignore unless you meant to rely on a periodic rebuild cron instead.';
+    }
+
+    /**
+     * The "declared cron" signal for {@see checkEntityLookupSyncConfiguration()}. Prefers the SAME real
+     * introspection {@see findRegisteredCronJobs()} already does for this package's other cron commands —
+     * if `search-ranking:entity-lookup:suggest-index:rebuild` shows up in the resolved scheduler config,
+     * cron mode is genuinely wired, not just declared. Falls back to
+     * {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::isEntityLookupCronConfigured()}'s
+     * self-declared flag when the scheduler config isn't resolvable (module absent, or a project schedules
+     * jobs another way entirely) — see that method's own docblock.
+     */
+    protected function isEntityLookupCronConfigured(): bool
+    {
+        if ($this->getFactory()->getConfig()->isEntityLookupCronConfigured()) {
+            return true;
+        }
+
+        $cronJobs = $this->findRegisteredCronJobs();
+
+        if ($cronJobs === null) {
+            return false;
+        }
+
+        $registeredCommands = implode(' ', array_column($cronJobs, 'command'));
+
+        return str_contains($registeredCommands, SearchRankingSuggestIndexEntityLookupRebuildConsole::COMMAND_NAME);
+    }
+
+    /**
+     * The "verified event-hook wiring" signal for {@see checkEntityLookupSyncConfiguration()} — real
+     * introspection of the resolved `Pyz\Zed\ProductPageSearch\ProductPageSearchDependencyProvider::getDataLoaderPlugins()`
+     * plugin stack (a protected method, reached via {@see \ReflectionMethod} the same way core's own
+     * bootstrap invokes it — there is no public API to list a bundle's registered plugins), NOT the
+     * `isEntityLookupEventSyncEnabled()` config flag: a registered-but-disabled plugin and an
+     * enabled-but-never-registered flag both mean the event-hook does nothing, but only THIS check can
+     * tell "class registered" apart from "class never wired at all", which is the failure this package can
+     * actually help a project catch (a stale config flag alone cannot).
+     *
+     * Null means "cannot tell" (module absent, or the resolved provider couldn't be reflected into) —
+     * deliberately treated as "not registered" by the caller, same as {@see findRegisteredCronJobs()}'s own
+     * null-vs-empty distinction elsewhere in this class.
+     */
+    protected function isEntityLookupSyncPluginRegistered(): ?bool
+    {
+        if (!class_exists(static::PRODUCT_PAGE_SEARCH_DEPENDENCY_PROVIDER_CLASS)) {
+            return null;
+        }
+
+        try {
+            $dependencyProvider = (new DependencyProviderResolver())->resolve(static::PRODUCT_PAGE_SEARCH_DEPENDENCY_PROVIDER_CLASS);
+
+            if (!method_exists($dependencyProvider, 'getDataLoaderPlugins')) {
+                return null;
+            }
+
+            $reflectionMethod = new ReflectionMethod($dependencyProvider, 'getDataLoaderPlugins');
+            $reflectionMethod->setAccessible(true);
+            $dataLoaderPlugins = $reflectionMethod->invoke($dependencyProvider);
+        } catch (Throwable) {
+            return null;
+        }
+
+        if (!is_array($dataLoaderPlugins)) {
+            return null;
+        }
+
+        foreach ($dataLoaderPlugins as $dataLoaderPlugin) {
+            if ($dataLoaderPlugin instanceof SearchRankingEntityLookupSyncPlugin) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -73,6 +73,7 @@ class SearchRankingCheckInstallationConsoleTest extends Unit
         $this->assertStringContainsString('core namespace "SprykerCommunity" is registered', $commandTester->getDisplay());
         $this->assertStringContainsString('all 3 sibling console commands are registered', $commandTester->getDisplay());
         $this->assertStringContainsString('all 2 data-import plugins are registered', $commandTester->getDisplay());
+        $this->assertStringContainsString('entity-lookup sync: event-hook mode wired', $commandTester->getDisplay());
         $this->assertStringContainsString('a listener is registered for the ranking-configuration publish event', $commandTester->getDisplay());
         $this->assertStringContainsString('the ranking-configuration sync queue is registered', $commandTester->getDisplay());
         $this->assertStringContainsString('the Zed GUI translation catalog is loaded', $commandTester->getDisplay());

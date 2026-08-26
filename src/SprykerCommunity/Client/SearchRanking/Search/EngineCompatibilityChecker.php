@@ -52,6 +52,16 @@ class EngineCompatibilityChecker implements EngineCompatibilityCheckerInterface
     protected const CAPABILITY_RANK_EVAL = '_rank_eval endpoint';
 
     /**
+     * @var string
+     */
+    protected const CAPABILITY_COMPLETION_SUGGESTER = 'completion suggester field type';
+
+    /**
+     * @var string
+     */
+    protected const PROBE_INDEX_NAME = 'search_ranking_capability_probe_completion_suggester';
+
+    /**
      * Root-cause exception types seen when `_all/_rank_eval` is NOT a recognized endpoint at all: the
      * request falls through to an unrelated, decades-old routing fallback (the legacy `{index}/{type}`
      * mapping API) and fails on something that has nothing to do with rank_eval — confirmed live by
@@ -117,8 +127,39 @@ class EngineCompatibilityChecker implements EngineCompatibilityCheckerInterface
         ));
 
         $compatibilityTransfer->addCapability($this->probeRankEval());
+        $compatibilityTransfer->addCapability($this->probeCompletionSuggesterCapability());
 
         return $compatibilityTransfer;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function probeCompletionSuggesterCapability(): SearchRankingEngineCapabilityTransfer
+    {
+        // Best-effort cleanup of a stale probe index left behind by a previous run that crashed between
+        // the PUT and the DELETE below — never allowed to fail this probe.
+        $this->requestData(static::PROBE_INDEX_NAME, Request::DELETE, []);
+
+        $responseData = $this->requestData(static::PROBE_INDEX_NAME, Request::PUT, [
+            'mappings' => [
+                'properties' => [
+                    'term' => ['type' => 'completion'],
+                ],
+            ],
+        ]);
+
+        $isSupported = (bool)($responseData['acknowledged'] ?? false);
+        $errorData = is_array($responseData['error'] ?? null) ? $responseData['error'] : [];
+        $detail = $isSupported
+            ? 'Index accepted a `completion`-typed field mapping.'
+            : (string)($errorData['reason'] ?? $responseData['error'] ?? 'Rejected the `completion` field mapping (no further detail returned).');
+
+        $this->requestData(static::PROBE_INDEX_NAME, Request::DELETE, []);
+
+        return $this->buildCapabilityTransfer(static::CAPABILITY_COMPLETION_SUGGESTER, $isSupported, $detail);
     }
 
     protected function buildEngineIdentification(): SearchRankingEngineCompatibilityTransfer
