@@ -62,9 +62,7 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
                 ->findOneByIdSearchRankingMetric($metricTransfer->getIdSearchRankingMetric());
         }
 
-        if ($metricEntity === null) {
-            $metricEntity = new SpySearchRankingMetric();
-        }
+        $metricEntity ??= new SpySearchRankingMetric();
 
         $mapper = $this->getFactory()->createSearchRankingMapper();
         $metricEntity = $mapper->mapMetricTransferToEntity($metricTransfer, $metricEntity);
