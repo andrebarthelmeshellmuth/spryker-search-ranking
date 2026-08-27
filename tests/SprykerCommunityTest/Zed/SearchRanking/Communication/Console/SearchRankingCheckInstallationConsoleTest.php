@@ -20,6 +20,7 @@ use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckC
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckInstallationConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingNormalizeConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingRandomizeConsole;
+use SprykerCommunityTest\Zed\SearchRanking\Communication\Console\Fixture\GlueApiResourceFixture;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -113,6 +114,91 @@ class SearchRankingCheckInstallationConsoleTest extends Unit
         $this->assertStringContainsString('No active metrics are configured', $commandTester->getDisplay());
     }
 
+    public function testWarnsAndNamesTheRemedyWhenTheSchemaMergeHasNotHappened(): void
+    {
+        // Arrange — a class name nothing ever defines, standing in for the merged schema never having been generated.
+        $commandTester = $this->createCommandTesterWithGlueApiWiring(
+            resourceClassName: 'Generated\\Api\\Storefront\\DoesNotExistResource' . uniqid(),
+            overrideFilePath: sys_get_temp_dir() . '/does-not-exist-' . uniqid() . '.php',
+        );
+
+        // Act
+        $exitCode = $commandTester->execute([]);
+
+        // Assert — optional (a project may not run Glue Storefront at all), so still CODE_SUCCESS.
+        $this->assertSame(SearchRankingCheckInstallationConsole::CODE_SUCCESS, $exitCode);
+        $this->assertStringContainsString('does not have a getRandomImpact() accessor yet', $commandTester->getDisplay());
+        $this->assertStringNotContainsString('schema merge:', $commandTester->getDisplay());
+        $this->assertStringNotContainsString('wires randomImpact into the Glue response', $commandTester->getDisplay());
+    }
+
+    public function testWarnsAndNamesTheRemedyWhenTheSchemaMergedButNoOverrideExists(): void
+    {
+        // Arrange
+        $commandTester = $this->createCommandTesterWithGlueApiWiring(
+            resourceClassName: GlueApiResourceFixture::class,
+            overrideFilePath: sys_get_temp_dir() . '/does-not-exist-' . uniqid() . '.php',
+        );
+
+        // Act
+        $exitCode = $commandTester->execute([]);
+
+        // Assert
+        $this->assertSame(SearchRankingCheckInstallationConsole::CODE_SUCCESS, $exitCode);
+        $this->assertStringContainsString('has a randomImpact property', $commandTester->getDisplay());
+        $this->assertStringContainsString('no project-level', $commandTester->getDisplay());
+        $this->assertStringContainsString('override exists', $commandTester->getDisplay());
+        $this->assertStringNotContainsString('wires randomImpact into the Glue response', $commandTester->getDisplay());
+    }
+
+    public function testWarnsAndNamesTheRemedyWhenTheOverrideExistsButDoesNotReferenceRandomImpact(): void
+    {
+        // Arrange
+        $overrideFilePath = $this->createOverrideFileFixture('<?php class CatalogSearchStorefrontProvider {}');
+
+        try {
+            $commandTester = $this->createCommandTesterWithGlueApiWiring(
+                resourceClassName: GlueApiResourceFixture::class,
+                overrideFilePath: $overrideFilePath,
+            );
+
+            // Act
+            $exitCode = $commandTester->execute([]);
+
+            // Assert
+            $this->assertSame(SearchRankingCheckInstallationConsole::CODE_SUCCESS, $exitCode);
+            $this->assertStringContainsString('exists but does not reference "randomImpact"', $commandTester->getDisplay());
+            $this->assertStringNotContainsString('wires randomImpact into the Glue response', $commandTester->getDisplay());
+        } finally {
+            unlink($overrideFilePath);
+        }
+    }
+
+    public function testSucceedsWithoutWarningWhenTheGlueApiWiringIsComplete(): void
+    {
+        // Arrange
+        $overrideFilePath = $this->createOverrideFileFixture('<?php class CatalogSearchStorefrontProvider { public function provideCollection() { $resourceData["randomImpact"] = $searchResult[SearchRankingConfig::RANDOM_IMPACT_RESULT_KEY] ?? []; } }');
+
+        try {
+            $commandTester = $this->createCommandTesterWithGlueApiWiring(
+                resourceClassName: GlueApiResourceFixture::class,
+                overrideFilePath: $overrideFilePath,
+            );
+
+            // Act
+            $exitCode = $commandTester->execute([]);
+
+            // Assert
+            $this->assertSame(SearchRankingCheckInstallationConsole::CODE_SUCCESS, $exitCode);
+            $this->assertStringContainsString('has a randomImpact property', $commandTester->getDisplay());
+            $this->assertStringContainsString('wires randomImpact into the Glue response', $commandTester->getDisplay());
+            $this->assertStringNotContainsString('does not have a getRandomImpact', $commandTester->getDisplay());
+            $this->assertStringNotContainsString('no project-level', $commandTester->getDisplay());
+        } finally {
+            unlink($overrideFilePath);
+        }
+    }
+
     /**
      * @param int $count
      */
@@ -154,5 +240,65 @@ class SearchRankingCheckInstallationConsoleTest extends Unit
         $command = $application->find(SearchRankingCheckInstallationConsole::COMMAND_NAME);
 
         return new CommandTester($command);
+    }
+
+    /**
+     * All sibling commands registered and one active metric, same happy-path shape as
+     * {@see createCommandTester()}, but with an anonymous subclass overriding
+     * {@see SearchRankingCheckInstallationConsole::getGlueApiResourceClassName()} and
+     * {@see SearchRankingCheckInstallationConsole::getGlueApiProviderOverrideFilePath()} so the Glue API
+     * wiring check tests fixtures instead of this host shop's real generated resource / real project
+     * override file.
+     */
+    protected function createCommandTesterWithGlueApiWiring(string $resourceClassName, string $overrideFilePath): CommandTester
+    {
+        $facadeMock = $this->getMockBuilder(SearchRankingFacade::class)
+            ->onlyMethods(['getActiveMetricCollection'])
+            ->getMock();
+        $facadeMock->method('getActiveMetricCollection')->willReturn($this->createActiveMetricCollection(1));
+
+        $console = new class ($resourceClassName, $overrideFilePath) extends SearchRankingCheckInstallationConsole {
+            public function __construct(protected string $resourceClassName, protected string $overrideFilePath)
+            {
+                parent::__construct();
+            }
+
+            protected function getGlueApiResourceClassName(): string
+            {
+                return $this->resourceClassName;
+            }
+
+            protected function getGlueApiProviderOverrideFilePath(): string
+            {
+                return $this->overrideFilePath;
+            }
+        };
+        $console->setFacade($facadeMock);
+
+        $application = new Application();
+        $application->add($console);
+        $application->add(new SearchRankingNormalizeConsole());
+        $application->add(new SearchRankingRandomizeConsole());
+        $application->add(new SearchRankingCheckCompatibilityConsole());
+
+        $command = $application->find(SearchRankingCheckInstallationConsole::COMMAND_NAME);
+
+        return new CommandTester($command);
+    }
+
+    /**
+     * Writes a throwaway PHP file standing in for a project's
+     * `src/Pyz/Glue/CatalogSearchRestApi/Api/Storefront/Provider/CatalogSearchStorefrontProvider.php`
+     * override — the console only ever reads this file's contents with `file_get_contents()`, it never
+     * includes/parses it, so the contents don't need to be autoload-safe PHP, just contain (or not
+     * contain) the literal string `randomImpact`.
+     */
+    protected function createOverrideFileFixture(string $contents): string
+    {
+        $overrideFilePath = tempnam(sys_get_temp_dir(), 'catalog-search-storefront-provider-override-fixture-');
+
+        file_put_contents($overrideFilePath, $contents);
+
+        return $overrideFilePath;
     }
 }

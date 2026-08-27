@@ -129,6 +129,24 @@ class SearchRankingCheckInstallationConsole extends Console
     protected const PACKAGE_ROOT_RELATIVE_PATH = '/../../../../../..';
 
     /**
+     * This package only ADDITIVELY merges a `randomImpact` property onto core's `catalog-search` resource
+     * (spryker/catalog-search-rest-api) — the merged schema is what this class name check confirms exists.
+     *
+     * @var string
+     */
+    protected const GLUE_API_RESOURCE_CLASS_NAME = 'Generated\\Api\\Storefront\\CatalogSearchStorefrontResource';
+
+    /**
+     * README, "Glue REST API": the merge alone is not enough — a project-level Provider override is
+     * required to actually copy the value into the response (the merged schema only describes SHAPE).
+     * Relative to `APPLICATION_ROOT_DIR`, shared with spryker-community/search-debug's own `searchDebug`
+     * property (both packages document registering this same override once).
+     *
+     * @var string
+     */
+    protected const GLUE_API_PROVIDER_OVERRIDE_RELATIVE_PATH = '/src/Pyz/Glue/CatalogSearchRestApi/Api/Storefront/Provider/CatalogSearchStorefrontProvider.php';
+
+    /**
      * The locale whose catalog defines the expected key set; the others are kept at parity with it.
      *
      * @var string
@@ -183,6 +201,7 @@ class SearchRankingCheckInstallationConsole extends Console
         $this->checkNavigationRegistered($output);
         $this->checkBackOfficeAccess($output);
         $this->checkZedTranslationCatalogComplete($output);
+        $this->checkGlueApiWiring($output);
 
         $output->writeln('');
 
@@ -856,6 +875,87 @@ class SearchRankingCheckInstallationConsole extends Console
             static::TRANSLATION_REFERENCE_LOCALE,
             implode('", "', array_slice($missingKeys, 0, 8)) . (count($missingKeys) > 8 ? '", ...' : ''),
         );
+    }
+
+    /**
+     * Two independent things have to both be true for `randomImpact` to actually appear on
+     * `GET /catalog-search` (README, "Glue REST API"), and only the FIRST is something core/this
+     * package's own composer install guarantees:
+     *
+     * 1. The additive schema merge ran: `Generated\Api\Storefront\CatalogSearchStorefrontResource` (core's
+     *    resource, merged with this package's own `resources/api/storefront/catalog-search.resource.yml`)
+     *    has a `getRandomImpact()` accessor. A project on a composer PATH REPOSITORY install (this
+     *    demoshop's own setup) can silently fail this even with everything else correct — Symfony's
+     *    `Finder` does not descend into symlinked directories without `->followLinks()`, so this package's
+     *    schema file is invisible to `glue api:generate` unless the project registered
+     *    `Pyz\Glue\ApiPlatformSymlinkFix\{SchemaFinder,ValidationSchemaFinder}` (see search-debug's README,
+     *    "Glue REST API", for the full analysis — shared across every community package).
+     * 2. A project-level Provider override actually copies the value in at request time — the merged
+     *    schema only describes SHAPE, nothing in either package populates the response without it. Not
+     *    optional in the sense frozen replay is optional elsewhere in this command family: a project that
+     *    has done step 1 almost certainly intends `randomImpact` to actually work, so a missing override
+     *    here is worth a WARNING either way — but neither half can be a FAILURE, since a project that does
+     *    not run a Glue Storefront application at all is a legitimate, common configuration.
+     *
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     */
+    protected function checkGlueApiWiring(OutputInterface $output): void
+    {
+        $resourceClassName = $this->getGlueApiResourceClassName();
+
+        if (!class_exists($resourceClassName) || !method_exists($resourceClassName, 'getRandomImpact')) {
+            $this->warnings[] = sprintf(
+                '%s does not have a getRandomImpact() accessor yet: either `vendor/bin/glue api:generate storefront` has not been run since this package was installed, or (on a composer path-repository install) the Finder symlink-traversal fix from search-debug\'s README, "Glue REST API" is missing. GET /catalog-search will not include randomImpact until this is resolved. Skip this if your project does not run a Glue Storefront application.',
+                $resourceClassName,
+            );
+
+            return;
+        }
+
+        $output->writeln(sprintf('<info>✓</info> Glue API schema merge: %s has a randomImpact property', $resourceClassName));
+
+        $overrideFilePath = $this->getGlueApiProviderOverrideFilePath();
+
+        if (!is_readable($overrideFilePath)) {
+            $this->warnings[] = sprintf(
+                'The schema merge is in place, but no project-level %s override exists (README, "Glue REST API"). The merged schema only describes SHAPE — without this override, randomImpact is silently omitted from every GET /catalog-search response.',
+                static::GLUE_API_PROVIDER_OVERRIDE_RELATIVE_PATH,
+            );
+
+            return;
+        }
+
+        $overrideFileContents = (string)file_get_contents($overrideFilePath);
+
+        if (!str_contains($overrideFileContents, SearchRankingConfig::RANDOM_IMPACT_RESULT_KEY)) {
+            $this->warnings[] = sprintf(
+                '%s exists but does not reference "%s" — randomImpact is still silently omitted from GET /catalog-search (README, "Glue REST API").',
+                static::GLUE_API_PROVIDER_OVERRIDE_RELATIVE_PATH,
+                SearchRankingConfig::RANDOM_IMPACT_RESULT_KEY,
+            );
+
+            return;
+        }
+
+        $output->writeln('<info>✓</info> project-level CatalogSearchStorefrontProvider override wires randomImpact into the Glue response');
+    }
+
+    /**
+     * Isolated as its own method so a test can override it to point at a fixture class name instead of
+     * this host shop's real generated Glue resource.
+     */
+    protected function getGlueApiResourceClassName(): string
+    {
+        return static::GLUE_API_RESOURCE_CLASS_NAME;
+    }
+
+    /**
+     * Isolated as its own method so a test can override it to point at a fixture file instead of this
+     * host shop's real `src/Pyz/Glue/CatalogSearchRestApi/Api/Storefront/Provider/CatalogSearchStorefrontProvider.php`.
+     */
+    protected function getGlueApiProviderOverrideFilePath(): string
+    {
+        return APPLICATION_ROOT_DIR . static::GLUE_API_PROVIDER_OVERRIDE_RELATIVE_PATH;
     }
 
     /**

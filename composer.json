@@ -101,7 +101,8 @@
     "autoload": {
         "psr-4": {
             "SprykerCommunity\\": "src/SprykerCommunity/",
-            "SprykerCommunityTest\\Client\\SearchRanking\\Fixture\\": "tests/SprykerCommunityTest/Client/SearchRanking/Fixture/"
+            "SprykerCommunityTest\\Client\\SearchRanking\\Fixture\\": "tests/SprykerCommunityTest/Client/SearchRanking/Fixture/",
+            "SprykerCommunityTest\\Zed\\SearchRanking\\Communication\\Console\\Fixture\\": "tests/SprykerCommunityTest/Zed/SearchRanking/Communication/Console/Fixture/"
         }
     },
     "autoload-dev": {
