@@ -11,7 +11,7 @@ alone. Based on Spryker's
 [data-driven ranking best practice](https://docs.spryker.com/docs/pbc/all/search/latest/base-shop/best-practices/data-driven-ranking).
 
 Designed as the companion package to
-[spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debug) —
+[spryker-community/search-debug](https://github.com/spryker-community/search-debug) —
 the eventual `function_score` ranking is meant to stay fully inspectable in the search-debug overlay.
 
 The standout piece: a data-driven normalization-authoring GUI. As you type a formula, the server
@@ -311,7 +311,7 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   (`RankingConfigurationStorageWriter`) — see [Ranking formula](docs/ranking-formula.md) for why. The raw values
   in `spy_search_ranking_metric_weight` are untouched; only each scope's published copy is normalized.
 - **search-debug overlay integration** (optional, needs
-  [spryker-community/search-debug](https://github.com/andrebarthelmeshellmuth/spryker-search-debug)):
+  [spryker-community/search-debug](https://github.com/spryker-community/search-debug)):
   `SearchRankingProductDebugDataExpanderPlugin` adds a "Business signals" section to the per-product SRP
   overlay — one `signal × weight = contribution` line per metric and their total — plus, distributed
   across a few other dedicated spots in the same overlay (not all bundled into that one section): the
@@ -327,7 +327,7 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   precision; see that package's README for details. Rounding happens only at this display step — the
   underlying floats used for the actual ranking calculation stay full-precision throughout.
 - **search-feedback frozen-replay integration** (optional, needs
-  [spryker-community/search-feedback](https://github.com/andrebarthelmeshellmuth/spryker-search-feedback)):
+  [spryker-community/search-feedback](https://github.com/spryker-community/search-feedback)):
   `SearchFeedbackTermVectorSnapshotProviderPlugin` implements that package's
   `TermVectorSnapshotProviderPluginInterface`, exposing the specificity-weighting result this package
   already computed for the current request (via `getLastSpecificityWeightingResult()`) so a filed ticket's
@@ -462,7 +462,7 @@ value from the same formula — not just consistent with each other, but confirm
 Elasticsearch 7.x has not been run against real output, but sits inside the verified range: it is the
 fork point OpenSearch 1.x descends from, and both neighbours on either side are verified. Same
 Apache-2.0-fork-point reasoning as [spryker-community/search-debug's own engine-compatibility
-section](https://github.com/andrebarthelmeshellmuth/spryker-search-debug#search-engine-compatibility) —
+section](https://github.com/spryker-community/search-debug#search-engine-compatibility) —
 this package's own painless usage (`doc['field'].value`, `containsKey`, `size()`) is bog-standard,
 available on both lineages since well before the fork, so no engine-specific behavior was expected or
 found.
@@ -913,7 +913,7 @@ equally mean the plugin was registered in Zed only. The denied page says so.
 
 #### 14c. Optional: register the search-feedback frozen-replay integration
 
-With spryker-community/search-feedback installed AND its own [frozen-replay wiring](https://github.com/andrebarthelmeshellmuth/spryker-search-feedback#installation)
+With spryker-community/search-feedback installed AND its own [frozen-replay wiring](https://github.com/spryker-community/search-feedback#installation)
 registered, extend its client dependency provider on project level
 (`Pyz\Client\SearchFeedback\SearchFeedbackDependencyProvider`):
 

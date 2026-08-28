@@ -70,11 +70,11 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/andrebarthelmeshellmuth/spryker-search-debug"
+            "url": "https://github.com/spryker-community/search-debug"
         },
         {
             "type": "vcs",
-            "url": "https://github.com/andrebarthelmeshellmuth/spryker-search-feedback"
+            "url": "https://github.com/spryker-community/search-feedback"
         }
     ],
     "scripts": {
