@@ -14,6 +14,7 @@ use Spryker\Client\Kernel\Container;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocaleClientBridge;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToPermissionClientBridge;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientBridge;
+use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStorageClientBridge;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientBridge;
 
 class SearchRankingDependencyProvider extends AbstractDependencyProvider
@@ -39,6 +40,51 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
     public const CLIENT_PERMISSION = 'CLIENT_PERMISSION';
 
     /**
+     * @var string
+     */
+    public const CLIENT_STORAGE = 'CLIENT_STORAGE';
+
+    /**
+     * Specification:
+     * - Additional {@see \SprykerCommunity\Client\SearchRanking\Intent\QueryAnalyzerInterface} instances
+     *   a project wants to run, layered ON TOP of this package's own built-in default (today: just
+     *   {@see \SprykerCommunity\Client\SearchRanking\Intent\SkuIdentifierAnalyzer} — see
+     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingFactory::getQueryAnalyzers()}). Empty by
+     *   default — the same "empty array, project extends" pattern this codebase already uses for its other
+     *   optional plugin stacks. This is the seam a later pass (e.g. a brand/category analyzer, or a
+     *   project-specific one) plugs into without touching this package.
+     *
+     * @var string
+     */
+    public const PLUGINS_QUERY_ANALYZER = 'PLUGINS_QUERY_ANALYZER';
+
+    /**
+     * Specification:
+     * - Additional {@see \SprykerCommunity\Client\SearchRanking\Intent\MsearchProbeRegistrarPluginInterface}
+     *   instances a project wants to ride the shared `_msearch` batch
+     *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
+     *   builds every request. Empty by default — the SAME "empty array, project extends" pattern this
+     *   package already uses for {@see PLUGINS_QUERY_ANALYZER}.
+     *
+     * @var string
+     */
+    public const PLUGINS_MSEARCH_PROBE_REGISTRAR = 'PLUGINS_MSEARCH_PROBE_REGISTRAR';
+
+    /**
+     * Specification:
+     * - Additional {@see \SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface}
+     *   instances a project wants to make selectable, layered ON TOP of this package's own built-in
+     *   default ({@see \SprykerCommunity\Client\SearchRanking\Strategy\AdaptiveFormulaStrategy} — see
+     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingFactory::getRankingStrategies()}). Empty
+     *   by default — the SAME "empty array, project extends" pattern this package already uses for
+     *   {@see PLUGINS_QUERY_ANALYZER}. This is the seam a later pass (a hybrid strategy, a neural rerank
+     *   strategy) plugs into without touching this package.
+     *
+     * @var string
+     */
+    public const PLUGINS_RANKING_STRATEGY = 'PLUGINS_RANKING_STRATEGY';
+
+    /**
      * @param \Spryker\Client\Kernel\Container $container
      */
     #[\Override]
@@ -49,8 +95,66 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
         $container = $this->addStoreClient($container);
         $container = $this->addLocaleClient($container);
         $container = $this->addPermissionClient($container);
+        $container = $this->addStorageClient($container);
+        $container = $this->addQueryAnalyzerPlugins($container);
+        $container = $this->addMsearchProbeRegistrarPlugins($container);
+        $container = $this->addRankingStrategyPlugins($container);
 
         return $container;
+    }
+
+    /**
+     * @param \Spryker\Client\Kernel\Container $container
+     */
+    protected function addRankingStrategyPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_RANKING_STRATEGY, fn (): array => $this->getRankingStrategyPlugins());
+
+        return $container;
+    }
+
+    /**
+     * @return array<\SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface>
+     */
+    protected function getRankingStrategyPlugins(): array
+    {
+        return [];
+    }
+
+    /**
+     * @param \Spryker\Client\Kernel\Container $container
+     */
+    protected function addQueryAnalyzerPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_QUERY_ANALYZER, fn (): array => $this->getQueryAnalyzerPlugins());
+
+        return $container;
+    }
+
+    /**
+     * @return array<\SprykerCommunity\Client\SearchRanking\Intent\QueryAnalyzerInterface>
+     */
+    protected function getQueryAnalyzerPlugins(): array
+    {
+        return [];
+    }
+
+    /**
+     * @param \Spryker\Client\Kernel\Container $container
+     */
+    protected function addMsearchProbeRegistrarPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_MSEARCH_PROBE_REGISTRAR, fn (): array => $this->getMsearchProbeRegistrarPlugins());
+
+        return $container;
+    }
+
+    /**
+     * @return array<\SprykerCommunity\Client\SearchRanking\Intent\MsearchProbeRegistrarPluginInterface>
+     */
+    protected function getMsearchProbeRegistrarPlugins(): array
+    {
+        return [];
     }
 
     /**
@@ -96,6 +200,18 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
     {
         $container->set(static::CLIENT_PERMISSION, fn (Container $container) => new SearchRankingToPermissionClientBridge(
             $container->getLocator()->permission()->client(),
+        ));
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Client\Kernel\Container $container
+     */
+    protected function addStorageClient(Container $container): Container
+    {
+        $container->set(static::CLIENT_STORAGE, fn (Container $container) => new SearchRankingToStorageClientBridge(
+            $container->getLocator()->storage()->client(),
         ));
 
         return $container;

@@ -364,6 +364,56 @@ class SearchRankingFacade extends AbstractFacade implements SearchRankingFacadeI
      *
      * @api
      */
+    public function expandProductPageLoadTransferWithEmbeddings(ProductPageLoadTransfer $productPageLoadTransfer): ProductPageLoadTransfer
+    {
+        return $this->getFactory()->createEmbeddingPageDataLoader()->expandProductPageLoadTransfer($productPageLoadTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function generateEmbeddings(?string $storeName = null, ?string $localeName = null): array
+    {
+        return $this->getFactory()->createEmbeddingGenerator()->generate($storeName, $localeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function rebuildSuggestIndexEntityLookup(string $type, ?string $storeName = null, ?string $localeName = null): array
+    {
+        return $this->getFactory()->createSuggestIndexEntityLookupRebuilder()->rebuild($type, $storeName, $localeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function syncEntityLookupForProductAbstracts(array $idProductAbstracts): void
+    {
+        $this->getFactory()->createEntityLookupIncrementalSyncer()->sync($idProductAbstracts);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function findEmbeddingForProduct(int $idProductAbstract, string $storeName, string $localeName): ?array
+    {
+        return $this->getFactory()->createProductEmbeddingFinder()->find($idProductAbstract, $storeName, $localeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function publishScoredProductAbstracts(): int
     {
         return $this->getFactory()->createProductAbstractScorePublisher()->publishScoredProductAbstracts();

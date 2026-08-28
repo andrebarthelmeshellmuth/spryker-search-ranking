@@ -17,6 +17,7 @@ use Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer;
 use Generated\Shared\Transfer\SearchRankingMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingProductMetricTransfer;
 use Generated\Shared\Transfer\SearchRankingScopeCopyLockTransfer;
+use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingEmbeddingTableMap;
 use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingMetricStoreConfigTableMap;
 use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingMetricTableMap;
 use Orm\Zed\SearchRanking\Persistence\Map\SpySearchRankingProductMetricTableMap;
@@ -581,6 +582,76 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
     /**
      * @param string $storeName
      */
+
+    /**
+     * @param array<int> $productAbstractIds
+     * @param string $storeName
+     * @param string $localeName
+     * @param string $modelId
+     *
+     * @return array<int, array<int, float>>
+     */
+    public function getEmbeddingsGroupedByIdProductAbstract(
+        array $productAbstractIds,
+        string $storeName,
+        string $localeName,
+        string $modelId,
+    ): array {
+        if ($productAbstractIds === []) {
+            return [];
+        }
+
+        $embeddingRows = $this->getFactory()
+            ->createSearchRankingEmbeddingQuery()
+            ->filterByFkProductAbstract_In($productAbstractIds)
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
+            ->filterByModelId($modelId)
+            ->select([
+                SpySearchRankingEmbeddingTableMap::COL_FK_PRODUCT_ABSTRACT,
+                SpySearchRankingEmbeddingTableMap::COL_VECTOR,
+            ])
+            ->find();
+
+        $embeddingsByIdProductAbstract = [];
+
+        foreach ($embeddingRows as $embeddingRow) {
+            $idProductAbstract = (int)$embeddingRow[SpySearchRankingEmbeddingTableMap::COL_FK_PRODUCT_ABSTRACT];
+            $vector = json_decode((string)$embeddingRow[SpySearchRankingEmbeddingTableMap::COL_VECTOR], true);
+
+            if (!is_array($vector)) {
+                continue;
+            }
+
+            $embeddingsByIdProductAbstract[$idProductAbstract] = array_map(static fn (mixed $value): float => (float)$value, $vector);
+        }
+
+        return $embeddingsByIdProductAbstract;
+    }
+
+    /**
+     * @param int $idProductAbstract
+     * @param string $storeName
+     * @param string $localeName
+     * @param string $modelId
+     */
+    public function findEmbeddingTextHash(
+        int $idProductAbstract,
+        string $storeName,
+        string $localeName,
+        string $modelId,
+    ): ?string {
+        $embeddingEntity = $this->getFactory()
+            ->createSearchRankingEmbeddingQuery()
+            ->filterByFkProductAbstract($idProductAbstract)
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
+            ->filterByModelId($modelId)
+            ->findOne();
+
+        return $embeddingEntity?->getTextHash();
+    }
+
     public function hasStoreConfiguration(string $storeName): bool
     {
         return $this->getFactory()

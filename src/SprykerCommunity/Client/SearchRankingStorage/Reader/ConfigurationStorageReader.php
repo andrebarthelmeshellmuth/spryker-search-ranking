@@ -35,6 +35,11 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     /**
      * @var string
      */
+    protected const KEY_ALPHA = 'alpha';
+
+    /**
+     * @var string
+     */
     protected const KEY_SPECIFICITY_BLEND_WEIGHT = 'specificity_blend_weight';
 
     /**
@@ -61,6 +66,16 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
      * @var string
      */
     protected const KEY_RANDOM_METRIC_NAME = 'random_metric_name';
+
+    /**
+     * @var string
+     */
+    protected const KEY_BRAND_MATCH_RELEVANCE_WEIGHT_SHIFT = 'brand_match_relevance_weight_shift';
+
+    /**
+     * @var string
+     */
+    protected const KEY_CATEGORY_MATCH_RELEVANCE_WEIGHT_SHIFT = 'category_match_relevance_weight_shift';
 
     /**
      * Matches `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getRandomMetricName()`'s own
@@ -93,6 +108,16 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
      * @var float
      */
     protected const DEFAULT_RELEVANCE_SATURATION_POINT = 12.0;
+
+    /**
+     * Defaults for a KV payload published before this feature existed — matches
+     * `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultAlpha()`: `1.0`, 100% lexical, so
+     * a payload predating this key degrades to exactly the pre-hybrid-search formula (no semantic term is
+     * ever computed when alpha == 1.0 — see `FunctionScoreBuilder`), not an arbitrary blend.
+     *
+     * @var float
+     */
+    protected const DEFAULT_ALPHA = 1.0;
 
     /**
      * Defaults for a KV payload published before this feature existed — matches
@@ -134,6 +159,23 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
      * @var float
      */
     protected const DEFAULT_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE = 0.25;
+
+    /**
+     * Intent-Aware Alpha, Pass 3: a payload published before these keys existed must keep behaving
+     * exactly as it did before — `0.0` for both is the fully-inert value (see
+     * `SearchRankingConfigurationStorageTransfer`'s own docblock), so an absent key here is
+     * indistinguishable from an explicitly-configured `0.0`.
+     *
+     * @var float
+     */
+    protected const DEFAULT_BRAND_MATCH_RELEVANCE_WEIGHT_SHIFT = 0.0;
+
+    /**
+     * Same reasoning as `DEFAULT_BRAND_MATCH_RELEVANCE_WEIGHT_SHIFT`.
+     *
+     * @var float
+     */
+    protected const DEFAULT_CATEGORY_MATCH_RELEVANCE_WEIGHT_SHIFT = 0.0;
 
     /**
      * Memoized per request, keyed by `"{$storeName}:{$localeName}"`; a missing key = not read yet for
@@ -198,11 +240,14 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
             ->setMetricWeights($configurationData[static::KEY_METRIC_WEIGHTS] ?? [])
             ->setRelevanceWeight((float)($configurationData[static::KEY_RELEVANCE_WEIGHT] ?? static::DEFAULT_RELEVANCE_WEIGHT))
             ->setRelevanceSaturationPoint((float)($configurationData[static::KEY_RELEVANCE_SATURATION_POINT] ?? static::DEFAULT_RELEVANCE_SATURATION_POINT))
+            ->setAlpha((float)($configurationData[static::KEY_ALPHA] ?? static::DEFAULT_ALPHA))
             ->setSpecificityBlendWeight((float)($configurationData[static::KEY_SPECIFICITY_BLEND_WEIGHT] ?? static::DEFAULT_SPECIFICITY_BLEND_WEIGHT))
             ->setSpecificitySaturationPoint((float)($configurationData[static::KEY_SPECIFICITY_SATURATION_POINT] ?? static::DEFAULT_SPECIFICITY_SATURATION_POINT))
             ->setSpecificityCurveExponent((float)($configurationData[static::KEY_SPECIFICITY_CURVE_EXPONENT] ?? static::DEFAULT_SPECIFICITY_CURVE_EXPONENT))
             ->setSpecificityWeightExponent((float)($configurationData[static::KEY_SPECIFICITY_WEIGHT_EXPONENT] ?? static::DEFAULT_SPECIFICITY_WEIGHT_EXPONENT))
             ->setSpecificityWeightShiftMagnitude((float)($configurationData[static::KEY_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE] ?? static::DEFAULT_SPECIFICITY_WEIGHT_SHIFT_MAGNITUDE))
-            ->setRandomMetricName((string)($configurationData[static::KEY_RANDOM_METRIC_NAME] ?? static::DEFAULT_RANDOM_METRIC_NAME));
+            ->setRandomMetricName((string)($configurationData[static::KEY_RANDOM_METRIC_NAME] ?? static::DEFAULT_RANDOM_METRIC_NAME))
+            ->setBrandMatchRelevanceWeightShift((float)($configurationData[static::KEY_BRAND_MATCH_RELEVANCE_WEIGHT_SHIFT] ?? static::DEFAULT_BRAND_MATCH_RELEVANCE_WEIGHT_SHIFT))
+            ->setCategoryMatchRelevanceWeightShift((float)($configurationData[static::KEY_CATEGORY_MATCH_RELEVANCE_WEIGHT_SHIFT] ?? static::DEFAULT_CATEGORY_MATCH_RELEVANCE_WEIGHT_SHIFT));
     }
 }

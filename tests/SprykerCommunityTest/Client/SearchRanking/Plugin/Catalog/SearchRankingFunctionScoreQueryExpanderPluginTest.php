@@ -14,18 +14,30 @@ use Elastica\Query;
 use Elastica\Query\FunctionScore;
 use Elastica\Query\MatchAll;
 use Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer;
+use Generated\Shared\Transfer\SearchRankingQueryContextTransfer;
 use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use Generated\Shared\Transfer\StoreTransfer;
 use Spryker\Client\SearchExtension\Dependency\Plugin\QueryInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToLocaleClientInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface;
 use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStoreClientInterface;
+use SprykerCommunity\Client\SearchRanking\Intent\MsearchProbeRegistrarPluginInterface;
+use SprykerCommunity\Client\SearchRanking\Intent\QueryAnalyzerInterface;
 use SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin;
+use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
+use SprykerCommunity\Client\SearchRanking\Search\MsearchProbeBatcherInterface;
+use SprykerCommunity\Client\SearchRanking\Search\NavigationalRelevanceWeightShiftCalculator;
 use SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculatorInterface;
 use SprykerCommunity\Client\SearchRanking\SearchRankingClient;
 use SprykerCommunity\Client\SearchRanking\SearchRankingConfig;
 use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;
+use SprykerCommunity\Client\SearchRanking\Semantic\EmbeddingClientInterface;
+use SprykerCommunity\Client\SearchRanking\Semantic\EmbeddingUnavailableException;
+use SprykerCommunity\Client\SearchRanking\Semantic\SemanticQueryEmbeddingCacheInterface;
+use SprykerCommunity\Client\SearchRanking\Strategy\AdaptiveFormulaStrategy;
+use SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyExecutionMode;
+use SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface;
 
 /**
  * Auto-generated group annotations
@@ -74,12 +86,13 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
         $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
 
         $specificityCalculatorMock = $this->createMock(SpecificityWeightCalculatorInterface::class);
-        $specificityCalculatorMock->expects($this->never())->method('calculateWeightingResult');
+        $specificityCalculatorMock->expects($this->never())->method('registerProbes');
+        $specificityCalculatorMock->expects($this->never())->method('consumeProbes');
 
         $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
         $functionScoreBuilderMock->expects($this->once())
             ->method('build')
-            ->with($this->isInstanceOf(MatchAll::class), $configurationTransfer)
+            ->with($this->isInstanceOf(MatchAll::class), $configurationTransfer, null)
             ->willReturn(null);
 
         $client = new SearchRankingClient();
@@ -117,9 +130,10 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
         $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
 
         $specificityCalculatorMock = $this->createMock(SpecificityWeightCalculatorInterface::class);
+        $specificityCalculatorMock->expects($this->once())->method('registerProbes');
         $specificityCalculatorMock->expects($this->once())
-            ->method('calculateWeightingResult')
-            ->with('gadget', $configurationTransfer)
+            ->method('consumeProbes')
+            ->with($this->anything(), $this->anything(), 'gadget', $configurationTransfer)
             ->willReturn($specificityWeightingResult);
 
         $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
@@ -130,6 +144,7 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
                 $this->callback(
                     static fn (SearchRankingConfigurationStorageTransfer $transfer): bool => $transfer->getRelevanceWeight() === 0.9,
                 ),
+                null,
             )
             ->willReturn(null);
 
@@ -155,6 +170,64 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
         // The original configuration transfer passed into findRankingConfiguration() must stay untouched
         // (a clone carries the adjusted weight, per applySpecificityWeighting()'s docblock).
         $this->assertSame(0.75, $configurationTransfer->getRelevanceWeight());
+    }
+
+    /**
+     * The finished wiring for {@see MsearchProbeRegistrarPluginInterface}: a project-registered plugin
+     * must actually be resolved via {@see SearchRankingFactory::getMsearchProbeRegistrarPlugins()} and
+     * invoked during the register phase, with the SAME request-scoped fields a
+     * {@see QueryAnalyzerInterface} reads.
+     */
+    public function testInvokesARegisteredMsearchProbeRegistrarPluginDuringTheRegisterPhase(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())->setRelevanceWeight(0.75);
+
+        $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
+        $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
+
+        $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
+        $functionScoreBuilderMock->method('build')->willReturn(new FunctionScore());
+
+        $receivedQueryContextTransfers = [];
+        $registrarPluginMock = $this->createMock(MsearchProbeRegistrarPluginInterface::class);
+        $registrarPluginMock->expects($this->once())
+            ->method('registerProbes')
+            ->with(
+                $this->isInstanceOf(MsearchProbeBatcherInterface::class),
+                $this->callback(function (SearchRankingQueryContextTransfer $transfer) use (&$receivedQueryContextTransfers): bool {
+                    $receivedQueryContextTransfers[] = $transfer;
+
+                    return true;
+                }),
+            );
+
+        $client = new SearchRankingClient();
+
+        $plugin = $this->createPlugin(
+            $client,
+            $storageClientMock,
+            $functionScoreBuilderMock,
+            null,
+            false,
+            null,
+            null,
+            null,
+            [$registrarPluginMock],
+        );
+
+        $searchQueryMock = $this->createMock(QueryInterface::class);
+        $searchQueryMock->method('getSearchQuery')->willReturn(new Query(new MatchAll()));
+
+        // Act
+        $plugin->expandQuery($searchQueryMock, ['q' => 'gadget']);
+
+        // Assert — the plugin was actually invoked (the mock expectation above), with the real request's
+        // search string/store/locale reaching it.
+        $this->assertCount(1, $receivedQueryContextTransfers);
+        $this->assertSame('gadget', $receivedQueryContextTransfers[0]->getSearchString());
+        $this->assertSame('DE', $receivedQueryContextTransfers[0]->getStoreName());
+        $this->assertSame('de_DE', $receivedQueryContextTransfers[0]->getLocaleName());
     }
 
     /**
@@ -192,11 +265,328 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
     }
 
     /**
+     * On any embedding failure, the plugin must NOT propagate the exception and must produce the same
+     * query it would have without hybrid search at all — the mandatory graceful-degradation path.
+     */
+    public function testDegradesToLexicalOnlyWhenEmbeddingServiceThrows(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
+            ->setRelevanceWeight(0.75)
+            ->setAlpha(0.4);
+
+        $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
+        $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
+
+        $embeddingCacheMock = $this->createMock(SemanticQueryEmbeddingCacheInterface::class);
+        $embeddingCacheMock->method('get')->willReturn(null);
+        $embeddingCacheMock->expects($this->never())->method('set');
+
+        $embeddingClientMock = $this->createMock(EmbeddingClientInterface::class);
+        $embeddingClientMock->method('embed')->willThrowException(new EmbeddingUnavailableException('down'));
+
+        $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
+        $functionScoreBuilderMock->expects($this->once())
+            ->method('build')
+            ->with($this->isInstanceOf(MatchAll::class), $configurationTransfer, null)
+            ->willReturn(null);
+
+        $plugin = $this->createPlugin(
+            new SearchRankingClient(),
+            $storageClientMock,
+            $functionScoreBuilderMock,
+            null,
+            false,
+            $embeddingClientMock,
+            $embeddingCacheMock,
+        );
+
+        $searchQueryMock = $this->createMock(QueryInterface::class);
+        $searchQueryMock->method('getSearchQuery')->willReturn(new Query(new MatchAll()));
+
+        // Act
+        $result = $plugin->expandQuery($searchQueryMock, ['q' => 'gadget']);
+
+        // Assert — no exception propagated, original query object returned untouched by the crash.
+        $this->assertSame($searchQueryMock, $result);
+    }
+
+    /**
+     * `alpha == 1.0` (unset counts as the same default) must never even ask the embedding cache/client —
+     * paying for an embedding that could never be blended in would be pure waste.
+     */
+    public function testNeverResolvesAQueryVectorWhenAlphaIsAtItsDefault(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())->setRelevanceWeight(0.75);
+
+        $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
+        $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
+
+        $embeddingCacheMock = $this->createMock(SemanticQueryEmbeddingCacheInterface::class);
+        $embeddingCacheMock->expects($this->never())->method('get');
+
+        $embeddingClientMock = $this->createMock(EmbeddingClientInterface::class);
+        $embeddingClientMock->expects($this->never())->method('embed');
+
+        $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
+        $functionScoreBuilderMock->method('build')->willReturn(null);
+
+        $plugin = $this->createPlugin(
+            new SearchRankingClient(),
+            $storageClientMock,
+            $functionScoreBuilderMock,
+            null,
+            false,
+            $embeddingClientMock,
+            $embeddingCacheMock,
+        );
+
+        $searchQueryMock = $this->createMock(QueryInterface::class);
+        $searchQueryMock->method('getSearchQuery')->willReturn(new Query(new MatchAll()));
+
+        // Act
+        $plugin->expandQuery($searchQueryMock, ['q' => 'gadget']);
+    }
+
+    /**
+     * A resolved query vector (cache hit, no embedding-service round trip needed) reaches
+     * `FunctionScoreBuilder::build()` as its third argument.
+     */
+    public function testPassesACachedQueryVectorIntoTheFunctionScoreBuilder(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
+            ->setRelevanceWeight(0.75)
+            ->setAlpha(0.4);
+
+        $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
+        $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
+
+        $embeddingCacheMock = $this->createMock(SemanticQueryEmbeddingCacheInterface::class);
+        $embeddingCacheMock->method('get')->willReturn([0.1, 0.2, 0.3]);
+        $embeddingCacheMock->expects($this->never())->method('set');
+
+        $embeddingClientMock = $this->createMock(EmbeddingClientInterface::class);
+        $embeddingClientMock->expects($this->never())->method('embed');
+
+        $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
+        $functionScoreBuilderMock->expects($this->once())
+            ->method('build')
+            ->with($this->isInstanceOf(MatchAll::class), $configurationTransfer, [0.1, 0.2, 0.3])
+            ->willReturn(null);
+
+        $plugin = $this->createPlugin(
+            new SearchRankingClient(),
+            $storageClientMock,
+            $functionScoreBuilderMock,
+            null,
+            false,
+            $embeddingClientMock,
+            $embeddingCacheMock,
+        );
+
+        $searchQueryMock = $this->createMock(QueryInterface::class);
+        $searchQueryMock->method('getSearchQuery')->willReturn(new Query(new MatchAll()));
+
+        // Act
+        $plugin->expandQuery($searchQueryMock, ['q' => 'gadget']);
+    }
+
+    /**
+     * With both navigational shift fields left at their real default (unset / 0.0), a detected brand must
+     * change NOTHING — the feature is inert unless a project deliberately configures a nonzero shift.
+     */
+    public function testIsANoOpWhenABrandIsDetectedButNoShiftIsConfigured(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())->setRelevanceWeight(0.75);
+
+        $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
+        $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
+
+        $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
+        $functionScoreBuilderMock->expects($this->once())
+            ->method('build')
+            ->with(
+                $this->isInstanceOf(MatchAll::class),
+                $this->callback(
+                    static fn (SearchRankingConfigurationStorageTransfer $transfer): bool => $transfer->getRelevanceWeight() === 0.75,
+                ),
+                null,
+            )
+            ->willReturn(null);
+
+        $plugin = $this->createPlugin(
+            new SearchRankingClient(),
+            $storageClientMock,
+            $functionScoreBuilderMock,
+            null,
+            false,
+            null,
+            null,
+            $this->createBrandDetectingAnalyzer('Topstar'),
+        );
+
+        $searchQueryMock = $this->createMock(QueryInterface::class);
+        $searchQueryMock->method('getSearchQuery')->willReturn(new Query(new MatchAll()));
+
+        // Act
+        $plugin->expandQuery($searchQueryMock, ['q' => 'Topstar swivel chair']);
+    }
+
+    /**
+     * The core of the wiring: a configured, nonzero `brandMatchRelevanceWeightShift` actually reaches
+     * `FunctionScoreBuilder` as an adjusted `relevanceWeight` once a brand is detected on the query.
+     */
+    public function testAppliesTheConfiguredBrandShiftWhenABrandIsDetected(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
+            ->setRelevanceWeight(0.75)
+            ->setBrandMatchRelevanceWeightShift(0.1);
+
+        $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
+        $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
+
+        $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
+        $functionScoreBuilderMock->expects($this->once())
+            ->method('build')
+            ->with(
+                $this->isInstanceOf(MatchAll::class),
+                $this->callback(
+                    static fn (SearchRankingConfigurationStorageTransfer $transfer): bool => $transfer->getRelevanceWeight() === 0.85,
+                ),
+                null,
+            )
+            ->willReturn(null);
+
+        $plugin = $this->createPlugin(
+            new SearchRankingClient(),
+            $storageClientMock,
+            $functionScoreBuilderMock,
+            null,
+            false,
+            null,
+            null,
+            $this->createBrandDetectingAnalyzer('Topstar'),
+        );
+
+        $searchQueryMock = $this->createMock(QueryInterface::class);
+        $searchQueryMock->method('getSearchQuery')->willReturn(new Query(new MatchAll()));
+
+        // Act
+        $plugin->expandQuery($searchQueryMock, ['q' => 'Topstar swivel chair']);
+
+        // Assert — the original configuration transfer must stay untouched, same discipline as
+        // applySpecificityWeighting()'s own clone.
+        $this->assertSame(0.75, $configurationTransfer->getRelevanceWeight());
+    }
+
+    /**
+     * With no project strategy registered, {@see AdaptiveFormulaStrategy} is always the resolved
+     * strategy and the query is expanded exactly as before the seam existed — the mocked
+     * {@see FunctionScoreBuilderInterface} (reached through the real `AdaptiveFormulaStrategy` wrapper
+     * the test helper wires) still receives the same arguments.
+     */
+    public function testResolvesTheAdaptiveFormulaStrategyByDefaultAndExpandsTheQueryThroughIt(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())->setRelevanceWeight(0.75);
+
+        $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
+        $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
+
+        $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
+        $functionScoreBuilderMock->expects($this->once())
+            ->method('build')
+            ->with($this->isInstanceOf(MatchAll::class), $configurationTransfer, null)
+            ->willReturn(new FunctionScore());
+
+        $plugin = $this->createPlugin(new SearchRankingClient(), $storageClientMock, $functionScoreBuilderMock);
+
+        $query = new Query(new MatchAll());
+
+        $searchQueryMock = $this->createMock(QueryInterface::class);
+        $searchQueryMock->method('getSearchQuery')->willReturn($query);
+
+        // Act
+        $plugin->expandQuery($searchQueryMock, ['q' => 'gadget']);
+
+        // Assert — the query body was replaced with the strategy's function_score.
+        $this->assertInstanceOf(FunctionScore::class, $query->getQuery());
+    }
+
+    /**
+     * An out-of-band strategy that {@see RankingStrategyInterface::supports()} the crafted context wins
+     * over the always-`true` {@see AdaptiveFormulaStrategy} fallback, and the expander plugin then leaves
+     * the query body untouched (the out-of-band execution path — v2 Phase 5 — is not built yet).
+     */
+    public function testLeavesTheQueryUnmutatedWhenAnActiveStrategyIsOutOfBand(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())->setRelevanceWeight(0.75);
+
+        $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
+        $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
+
+        $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
+        $functionScoreBuilderMock->expects($this->never())->method('build');
+
+        $outOfBandStrategyMock = $this->createMock(RankingStrategyInterface::class);
+        $outOfBandStrategyMock->method('getName')->willReturn('neural_rerank');
+        $outOfBandStrategyMock->method('supports')->willReturn(true);
+        $outOfBandStrategyMock->method('getExecutionMode')->willReturn(RankingStrategyExecutionMode::MODE_OUT_OF_BAND);
+        $outOfBandStrategyMock->expects($this->never())->method('build');
+
+        $plugin = $this->createPlugin(
+            new SearchRankingClient(),
+            $storageClientMock,
+            $functionScoreBuilderMock,
+            null,
+            false,
+            null,
+            null,
+            null,
+            null,
+            $outOfBandStrategyMock,
+        );
+
+        $matchAll = new MatchAll();
+        $query = new Query($matchAll);
+
+        $searchQueryMock = $this->createMock(QueryInterface::class);
+        $searchQueryMock->method('getSearchQuery')->willReturn($query);
+
+        // Act
+        $result = $plugin->expandQuery($searchQueryMock, ['q' => 'gadget']);
+
+        // Assert — query body is the original MatchAll, never wrapped in a function_score.
+        $this->assertSame($searchQueryMock, $result);
+        $this->assertSame($matchAll, $query->getQuery());
+    }
+
+    protected function createBrandDetectingAnalyzer(string $detectedBrand): QueryAnalyzerInterface
+    {
+        $analyzerMock = $this->createMock(QueryAnalyzerInterface::class);
+        $analyzerMock->method('analyze')->willReturnCallback(
+            static fn (SearchRankingQueryContextTransfer $transfer): SearchRankingQueryContextTransfer => $transfer->setDetectedBrand($detectedBrand),
+        );
+
+        return $analyzerMock;
+    }
+
+    /**
      * @param \SprykerCommunity\Client\SearchRanking\SearchRankingClient $client
      * @param \SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToSearchRankingStorageClientInterface|null $storageClient
      * @param \SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface|null $functionScoreBuilder
      * @param \SprykerCommunity\Client\SearchRanking\Search\SpecificityWeightCalculatorInterface|null $specificityCalculator
      * @param bool $isSpecificityWeightingEnabled
+     * @param \SprykerCommunity\Client\SearchRanking\Semantic\EmbeddingClientInterface|null $embeddingClient
+     * @param \SprykerCommunity\Client\SearchRanking\Semantic\SemanticQueryEmbeddingCacheInterface|null $embeddingCache
+     * @param \SprykerCommunity\Client\SearchRanking\Intent\QueryAnalyzerInterface|null $queryAnalyzer
+     * @param array<\SprykerCommunity\Client\SearchRanking\Intent\MsearchProbeRegistrarPluginInterface>|null $msearchProbeRegistrarPlugins
+     * @param \SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface|null $rankingStrategy
      */
     protected function createPlugin(
         SearchRankingClient $client,
@@ -204,9 +594,15 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
         ?FunctionScoreBuilderInterface $functionScoreBuilder = null,
         ?SpecificityWeightCalculatorInterface $specificityCalculator = null,
         bool $isSpecificityWeightingEnabled = false,
+        ?EmbeddingClientInterface $embeddingClient = null,
+        ?SemanticQueryEmbeddingCacheInterface $embeddingCache = null,
+        ?QueryAnalyzerInterface $queryAnalyzer = null,
+        ?array $msearchProbeRegistrarPlugins = null,
+        ?RankingStrategyInterface $rankingStrategy = null,
     ): SearchRankingFunctionScoreQueryExpanderPlugin {
         $configMock = $this->createMock(SearchRankingConfig::class);
         $configMock->method('isSpecificityWeightingEnabled')->willReturn($isSpecificityWeightingEnabled);
+        $configMock->method('getEmbeddingModelId')->willReturn('sentence-transformers/all-MiniLM-L6-v2');
 
         $storeClientMock = $this->createMock(SearchRankingToStoreClientInterface::class);
         $storeClientMock->method('getCurrentStore')->willReturn((new StoreTransfer())->setName('DE'));
@@ -227,9 +623,33 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
             $factoryMock->method('createFunctionScoreBuilder')->willReturn($functionScoreBuilder);
         }
 
+        // The strategy seam: unless the test supplies its own strategy, the plugin resolves the real
+        // AdaptiveFormulaStrategy wrapping whatever FunctionScoreBuilder this helper was given (a mock in
+        // most tests, a real one otherwise) — so every existing `build(...)` assertion still holds, the
+        // call just now travels through the strategy's verbatim delegation.
+        $factoryMock->method('resolveRankingStrategy')->willReturn(
+            $rankingStrategy ?? new AdaptiveFormulaStrategy($functionScoreBuilder ?? new FunctionScoreBuilder()),
+        );
+
         if ($specificityCalculator !== null) {
             $factoryMock->method('createSpecificityWeightCalculator')->willReturn($specificityCalculator);
         }
+
+        // Real instance, not a mock: it's a pure, side-effect-free calculator, and with the configuration
+        // transfers every existing test builds (no brand/category shift configured) it's a guaranteed
+        // no-op — see NavigationalRelevanceWeightShiftCalculatorTest for its own dedicated coverage.
+        $factoryMock->method('createNavigationalRelevanceWeightShiftCalculator')->willReturn(new NavigationalRelevanceWeightShiftCalculator());
+
+        if ($embeddingClient !== null) {
+            $factoryMock->method('createEmbeddingClient')->willReturn($embeddingClient);
+        }
+
+        if ($embeddingCache !== null) {
+            $factoryMock->method('createSemanticQueryEmbeddingCache')->willReturn($embeddingCache);
+        }
+
+        $factoryMock->method('getQueryAnalyzers')->willReturn($queryAnalyzer !== null ? [$queryAnalyzer] : []);
+        $factoryMock->method('getMsearchProbeRegistrarPlugins')->willReturn($msearchProbeRegistrarPlugins ?? []);
 
         $plugin = new SearchRankingFunctionScoreQueryExpanderPlugin();
         $plugin->setFactory($factoryMock);

@@ -52,6 +52,41 @@ class EngineCompatibilityChecker implements EngineCompatibilityCheckerInterface
     protected const CAPABILITY_RANK_EVAL = '_rank_eval endpoint';
 
     /**
+     * @var string
+     */
+    protected const CAPABILITY_COMPLETION_SUGGESTER = 'completion suggester field type';
+
+    /**
+     * @var string
+     */
+    protected const CAPABILITY_HYBRID_QUERY = 'hybrid query';
+
+    /**
+     * @var string
+     */
+    protected const CAPABILITY_NEURAL_QUERY = 'neural query';
+
+    /**
+     * @var string
+     */
+    protected const CAPABILITY_SEARCH_PIPELINE = '_search/pipeline endpoint';
+
+    /**
+     * @var string
+     */
+    protected const CAPABILITY_ML_PLUGIN = '_plugins/_ml endpoint (ML Commons)';
+
+    /**
+     * @var string
+     */
+    protected const CAPABILITY_LTR_PLUGIN = '_plugins/_ltr endpoint (Learning To Rank)';
+
+    /**
+     * @var string
+     */
+    protected const PROBE_INDEX_NAME = 'search_ranking_capability_probe_completion_suggester';
+
+    /**
      * Root-cause exception types seen when `_all/_rank_eval` is NOT a recognized endpoint at all: the
      * request falls through to an unrelated, decades-old routing fallback (the legacy `{index}/{type}`
      * mapping API) and fails on something that has nothing to do with rank_eval — confirmed live by
@@ -63,6 +98,21 @@ class EngineCompatibilityChecker implements EngineCompatibilityCheckerInterface
         'invalid_type_name_exception',
         'invalid_index_name_exception',
         'no_handler_found_for_uri_exception',
+    ];
+
+    /**
+     * Error-shape markers seen when a bare-path endpoint (e.g. `_search/pipeline`, `_plugins/_ml/stats`,
+     * `_plugins/_ltr`) is NOT a recognized route at all: the engine either answers with a structured
+     * `no_handler_found_for_uri_exception`, or falls through to the legacy `{index}` routing and fails on
+     * an index-name/lookup error for the pseudo-index it thinks was requested. Same discipline as
+     * {@see RANK_EVAL_UNRECOGNIZED_MARKERS}, for probes that go through {@see probeEndpointRecognition()}.
+     *
+     * @var array<string>
+     */
+    protected const ENDPOINT_UNRECOGNIZED_MARKERS = [
+        'no_handler_found_for_uri_exception',
+        'invalid_index_name_exception',
+        'index_not_found_exception',
     ];
 
     /**
@@ -117,8 +167,72 @@ class EngineCompatibilityChecker implements EngineCompatibilityCheckerInterface
         ));
 
         $compatibilityTransfer->addCapability($this->probeRankEval());
+        $compatibilityTransfer->addCapability($this->probeCompletionSuggesterCapability());
+
+        // OpenSearch 3.x semantic/hybrid retrieval surface (v2 implementation plan, Phase 4). All
+        // forward-looking: nothing in this package depends on them yet, they are probed so an operator can
+        // see at a glance what the live engine can actually do before the v2 work is switched on.
+        $compatibilityTransfer->addCapability($this->probeQuery(
+            static::CAPABILITY_HYBRID_QUERY,
+            ['query' => ['hybrid' => ['queries' => [['match_all' => (object)[]]]]]],
+        ));
+
+        $compatibilityTransfer->addCapability($this->probeQuery(
+            static::CAPABILITY_NEURAL_QUERY,
+            [
+                'query' => [
+                    'neural' => [
+                        'search_ranking_compatibility_probe_field' => [
+                            'query_text' => 'search ranking compatibility probe',
+                            'model_id' => 'search_ranking_compatibility_probe_model',
+                            'k' => 1,
+                        ],
+                    ],
+                ],
+            ],
+        ));
+
+        $compatibilityTransfer->addCapability(
+            $this->probeEndpointRecognition(static::CAPABILITY_SEARCH_PIPELINE, '_search/pipeline'),
+        );
+        $compatibilityTransfer->addCapability(
+            $this->probeEndpointRecognition(static::CAPABILITY_ML_PLUGIN, '_plugins/_ml/stats'),
+        );
+        $compatibilityTransfer->addCapability(
+            $this->probeEndpointRecognition(static::CAPABILITY_LTR_PLUGIN, '_plugins/_ltr'),
+        );
 
         return $compatibilityTransfer;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function probeCompletionSuggesterCapability(): SearchRankingEngineCapabilityTransfer
+    {
+        // Best-effort cleanup of a stale probe index left behind by a previous run that crashed between
+        // the PUT and the DELETE below — never allowed to fail this probe.
+        $this->requestData(static::PROBE_INDEX_NAME, Request::DELETE, []);
+
+        $responseData = $this->requestData(static::PROBE_INDEX_NAME, Request::PUT, [
+            'mappings' => [
+                'properties' => [
+                    'term' => ['type' => 'completion'],
+                ],
+            ],
+        ]);
+
+        $isSupported = (bool)($responseData['acknowledged'] ?? false);
+        $errorData = is_array($responseData['error'] ?? null) ? $responseData['error'] : [];
+        $detail = $isSupported
+            ? 'Index accepted a `completion`-typed field mapping.'
+            : (string)($errorData['reason'] ?? $responseData['error'] ?? 'Rejected the `completion` field mapping (no further detail returned).');
+
+        $this->requestData(static::PROBE_INDEX_NAME, Request::DELETE, []);
+
+        return $this->buildCapabilityTransfer(static::CAPABILITY_COMPLETION_SUGGESTER, $isSupported, $detail);
     }
 
     protected function buildEngineIdentification(): SearchRankingEngineCompatibilityTransfer
@@ -179,6 +293,49 @@ class EngineCompatibilityChecker implements EngineCompatibilityCheckerInterface
             : (string)($errorData['reason'] ?? $responseData['error'] ?? 'Endpoint was not recognized.');
 
         return $this->buildCapabilityTransfer(static::CAPABILITY_RANK_EVAL, $isSupported, $detail);
+    }
+
+    /**
+     * Recognition probe for capabilities that are neither a query-DSL clause (so `_validate/query` cannot
+     * see them) nor reachable through Elastica's search body — `_search/pipeline` management, the ML
+     * Commons plugin, the Learning-To-Rank plugin. Fires a plain read at the bare endpoint and inspects
+     * the outcome with the same discipline {@see probeRankEval()} uses: a clean (error-free) response
+     * means the route exists; an engine that does not know the route answers with a
+     * `no_handler_found_for_uri_exception` (structured form) or a bare `"no handler found for uri …"`
+     * string (older wire format), or falls through to `{index}` routing and fails on an index-name error
+     * (see {@see ENDPOINT_UNRECOGNIZED_MARKERS}). Any other error shape is treated as "not supported"
+     * rather than thrown — best-effort, like every other probe here.
+     *
+     * @param string $capabilityName
+     * @param string $path
+     */
+    protected function probeEndpointRecognition(string $capabilityName, string $path): SearchRankingEngineCapabilityTransfer
+    {
+        $responseData = $this->requestData($path, Request::GET, []);
+        $error = $responseData['error'] ?? null;
+
+        if ($error === null) {
+            return $this->buildCapabilityTransfer(
+                $capabilityName,
+                true,
+                sprintf('`GET %s` answered without an error — the endpoint is recognized.', $path),
+            );
+        }
+
+        if (is_string($error)) {
+            $isSupported = !str_contains(strtolower($error), 'no handler found for uri');
+
+            return $this->buildCapabilityTransfer($capabilityName, $isSupported, $error);
+        }
+
+        $errorData = is_array($error) ? $error : [];
+        $rootCauseType = (string)($errorData['root_cause'][0]['type'] ?? $errorData['type'] ?? '');
+        $isSupported = $rootCauseType !== '' && !in_array($rootCauseType, static::ENDPOINT_UNRECOGNIZED_MARKERS, true);
+        $detail = $isSupported
+            ? sprintf('`GET %s` is recognized (rejected the probe on its own validation logic, as expected).', $path)
+            : (string)($errorData['reason'] ?? $errorData['root_cause'][0]['reason'] ?? 'Endpoint was not recognized.');
+
+        return $this->buildCapabilityTransfer($capabilityName, $isSupported, $detail);
     }
 
     /**

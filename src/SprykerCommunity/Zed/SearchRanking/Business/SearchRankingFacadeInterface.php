@@ -408,6 +408,99 @@ interface SearchRankingFacadeInterface
 
     /**
      * Specification:
+     * - Bulk-loads each product's stored semantic embedding vector (for this package's configured
+     *   embedding model, default store/locale scope) for the products referenced by
+     *   `ProductPageLoadTransfer.productAbstractIds`.
+     * - Sets the vector on each payload transfer; leaves the field unset (not an empty array) for a
+     *   product with no stored vector — an offline generation run hasn't produced one yet, or every
+     *   attempt to embed it failed.
+     *
+     * @api
+     *
+     * @param \Generated\Shared\Transfer\ProductPageLoadTransfer $productPageLoadTransfer
+     */
+    public function expandProductPageLoadTransferWithEmbeddings(ProductPageLoadTransfer $productPageLoadTransfer): ProductPageLoadTransfer;
+
+    /**
+     * Specification:
+     * - Backs `search-ranking:embeddings:generate`. Iterates product abstracts per store/locale
+     *   (`$storeName`/`$localeName` are an optional filter — `null`, the default, fans out over every
+     *   store×locale), pulls each one's name + description directly from Propel, skips products whose
+     *   text is unchanged since the last run, and calls the configured
+     *   {@see \SprykerCommunity\Client\SearchRanking\Semantic\EmbeddingClientInterface} to (re-)embed the
+     *   rest, upserting the result into `spy_search_ranking_embedding`.
+     * - A failure embedding one product (embedding service unreachable/timeout/malformed response) is
+     *   recorded and skipped, never aborting the run for the remaining products.
+     *
+     * @api
+     *
+     * @param string|null $storeName
+     * @param string|null $localeName
+     *
+     * @return array{generated: int, skipped: int, failed: int, failures: array<int, string>}
+     */
+    public function generateEmbeddings(?string $storeName = null, ?string $localeName = null): array;
+
+    /**
+     * Specification:
+     * - Backs `search-ranking:entity-lookup:suggest-index:rebuild` — Pass 2 of "Intent-Aware Alpha"'s
+     *   large-adopter-scale sibling of {@see rebuildEntityLookup()}: full rebuild of the OpenSearch
+     *   `completion`-suggester-backed entity dictionary
+     *   {@see \SprykerCommunity\Client\SearchRanking\Intent\SuggestIndexEntityLookup} reads at query time,
+     *   reading the exact same underlying corpus as the KV tier.
+     *
+     * @api
+     *
+     * @param string $type
+     * @param string|null $storeName
+     * @param string|null $localeName
+     *
+     * @return array<string, int> Store name => number of documents written for it.
+     */
+    public function rebuildSuggestIndexEntityLookup(string $type, ?string $storeName = null, ?string $localeName = null): array;
+
+    /**
+     * Specification:
+     * - The event-pipeline near-live sync mode for Pass 2's entity-lookup index — the incremental
+     *   counterpart to {@see rebuildSuggestIndexEntityLookup()}'s full cron/manual rebuild. Backs
+     *   {@see \SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSearch\SearchRankingEntityLookupSyncPlugin}.
+     * - A no-op when {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::isEntityLookupEventSyncEnabled()}
+     *   is `false` (its default) — the plugin checks this itself before calling here, but this method does
+     *   NOT re-check it, so any other caller gets a real sync unconditionally.
+     * - See {@see \SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityLookupIncrementalSyncerInterface::sync()}
+     *   for the exact per-product/per-store/per-type behavior, including the active/sellable
+     *   upsert-vs-remove rule.
+     *
+     * @api
+     *
+     * @param array<int> $idProductAbstracts
+     */
+    public function syncEntityLookupForProductAbstracts(array $idProductAbstracts): void;
+
+    /**
+     * Specification:
+     * - Looks up a single product's stored semantic embedding vector for a REAL, caller-supplied
+     *   (store, locale) — unlike {@see expandProductPageLoadTransferWithEmbeddings()}, which bulk-loads
+     *   at the product-page-search DATA LOADER stage, a pipeline step that runs before per-locale
+     *   iteration and therefore has no locale to scope by at all (`ProductPageLoadTransfer` carries no
+     *   store/locale property — confirmed against the core transfer definition). This method exists for
+     *   the corresponding MAP EXPANDER stage instead, which DOES receive a real `LocaleTransfer` per
+     *   product, so it can ask for the correct-language vector directly rather than trusting whatever the
+     *   locale-blind bulk loader happened to prefetch.
+     * - Returns `null` when no vector is stored for this exact (product, store, locale, configured model).
+     *
+     * @api
+     *
+     * @param int $idProductAbstract
+     * @param string $storeName
+     * @param string $localeName
+     *
+     * @return array<int, float>|null
+     */
+    public function findEmbeddingForProduct(int $idProductAbstract, string $storeName, string $localeName): ?array;
+
+    /**
+     * Specification:
      * - Triggers `Product.product_abstract.publish` events (in chunks) for every product abstract
      *   that has at least one normalized value of an active metric, so their search documents get
      *   re-exported with fresh scores.

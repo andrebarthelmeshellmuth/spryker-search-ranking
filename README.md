@@ -448,6 +448,7 @@ tree. PHP 8.2 is *not* supported — every `spryker/propel-orm` release that res
 |---|---|---|
 | OpenSearch 1.3.4 | 8.10.1 | ✅ |
 | OpenSearch 2.11.0 | 9.7.0 | ✅ |
+| OpenSearch 3.5.0 | 10.3.2 | ✅ |
 | Elasticsearch 8.11.0 | 9.8.0 | ✅ |
 
 The verification: a throwaway index with a `full-text` text field and a `scores` object (the same shape
@@ -465,6 +466,13 @@ section](https://github.com/andrebarthelmeshellmuth/spryker-search-debug#search-
 this package's own painless usage (`doc['field'].value`, `containsKey`, `size()`) is bog-standard,
 available on both lineages since well before the fork, so no engine-specific behavior was expected or
 found.
+
+**OpenSearch 3.5** (Lucene 10.3.2) was verified live end-to-end: demoshop upgraded from 1.3.4, full
+re-export/reindex, `check-compatibility` re-probed, live kNN and lexical queries confirmed. The ranking
+formula is byte-identical; `check-compatibility` picks up two capabilities the 1.x line never had (`hybrid`
+query and `_search/pipeline`). The environment work the upgrade needs — mostly for the optional
+`knn_vector` semantic-blend feature — is written up in
+[Migrating to OpenSearch 3.x](docs/opensearch-3.x-migration.md).
 
 ## Installation
 
@@ -527,6 +535,7 @@ use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckI
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingNormalizeConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingRandomizeConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingScopeCopySyncConsole;
+use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingSuggestIndexEntityLookupRebuildConsole;
 use SprykerCommunity\Zed\SearchRankingDataImport\SearchRankingDataImportConfig;
 
 new SearchRankingNormalizeConsole(),
@@ -534,6 +543,8 @@ new SearchRankingRandomizeConsole(),
 new SearchRankingCheckCompatibilityConsole(),
 new SearchRankingCheckInstallationConsole(),
 new SearchRankingScopeCopySyncConsole(),
+// optional — only if you use the entity-lookup sync feature (Intent-Aware Alpha Pass 2), see step 15a:
+new SearchRankingSuggestIndexEntityLookupRebuildConsole(),
 // optional per-entity import commands:
 new DataImportConsole(DataImportConsole::DEFAULT_NAME . static::COMMAND_SEPARATOR . SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_METRIC),
 new DataImportConsole(DataImportConsole::DEFAULT_NAME . static::COMMAND_SEPARATOR . SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_PRODUCT_METRIC),
@@ -945,6 +956,86 @@ E.g. daily, in `Pyz\Zed\SymfonyScheduler\SymfonySchedulerConfig::getCronJobs()`:
 Re-copies every active [Scope Copy](#what-it-does) lock's source scope onto its target scope. A safe
 no-op to leave scheduled even with zero active locks.
 
+### 15a. Optional: entity-lookup sync (Pass 2)
+
+Only relevant if you use the OpenSearch `completion`-suggester-backed entity dictionary
+(`SprykerCommunity\Client\SearchRanking\Intent\SuggestIndexEntityLookup`) — the SKU/brand/category
+identifier lookup behind "Intent-Aware Alpha" Pass 2. It ships with a manual/scheduled full-rebuild
+console, `search-ranking:entity-lookup:suggest-index:rebuild --type=sku|brand|category`, but that console
+never runs itself — you choose ONE of two ways to keep it current, and `search-ranking:check-installation`
+enforces that choice:
+
+| # configured | Result |
+| --- | --- |
+| 0 (neither) | **Failure.** The index silently goes stale forever — nothing else notices. |
+| 1 (exactly one) | **Pass**, with an informational note naming which mechanism is NOT active. Nothing to fix. |
+| 2 (both) | **Failure.** Redundant/conflicting, not a supported combination — pick one. |
+
+**Option A — cron (simple, bounded staleness, zero pipeline dependency).** Schedule the rebuild console
+per type, then declare it so the installation check can see it. Recommended cadence — SKUs change often
+and are cheap to rebuild; brand/category assignments change rarely and each rebuild scans the whole active
+catalog:
+
+```php
+'search-ranking-entity-lookup-sku-rebuild' => [
+    'command' => '$PHP_BIN vendor/bin/console search-ranking:entity-lookup:suggest-index:rebuild --type=sku',
+    'schedule' => '0 * * * *',       // SearchRankingConfig::getEntityLookupSkuRebuildCronCadence()
+],
+'search-ranking-entity-lookup-brand-rebuild' => [
+    'command' => '$PHP_BIN vendor/bin/console search-ranking:entity-lookup:suggest-index:rebuild --type=brand',
+    'schedule' => '0 3 * * *',       // SearchRankingConfig::getEntityLookupBrandCategoryRebuildCronCadence()
+],
+'search-ranking-entity-lookup-category-rebuild' => [
+    'command' => '$PHP_BIN vendor/bin/console search-ranking:entity-lookup:suggest-index:rebuild --type=category',
+    'schedule' => '0 3 * * *',
+],
+```
+
+If your project uses `spryker/symfony-scheduler`, the installation check finds these on its own once
+they're registered above — same introspection it already does for the normalization/randomize/scope-copy
+crons. If it doesn't, self-declare instead:
+
+```php
+// Pyz\Zed\SearchRanking\SearchRankingConfig
+public function isEntityLookupCronConfigured(): bool
+{
+    return true; // set only once your own scheduler actually runs the rebuild console periodically
+}
+```
+
+**Option B — event-hook (near-live, depends on a healthy publish pipeline).** Register the plugin
+unconditionally — it no-ops on its own until you flip the config flag, which is what lets the installation
+check tell "registered but off" apart from "never wired at all":
+
+```php
+// Pyz\Zed\ProductPageSearch\ProductPageSearchDependencyProvider::getDataLoaderPlugins()
+return [
+    // ...
+    new SearchRankingEntityLookupSyncPlugin(),
+];
+```
+
+```php
+// Pyz\Zed\SearchRanking\SearchRankingConfig
+public function isEntityLookupEventSyncEnabled(): bool
+{
+    return true;
+}
+```
+
+Once both are in place, publishing a product-abstract (create, update, or a `spy_product.is_active`
+flip) incrementally upserts or removes just that product's terms — no full rebuild involved. A SKU is
+always unique to one product, so removing it on deactivation is unconditionally safe; a shared term
+(brand/category) is only removed once no OTHER active product still carries it.
+
+Event-hook mode is only as fresh as your publish pipeline. If products stop showing up (or dropping out
+of) the entity-lookup index shortly after you toggle them, verify `publish:trigger-events` and your queue
+worker are actually processing product-abstract events end to end before suspecting this package — a
+batch publish loop that never re-enables Propel's instance pool after disabling it for performance is a
+known, generic way for a publish pipeline to silently start serving stale/duplicate data for large
+batches; if you've applied a fix along those lines in your own `ProductAbstractPagePublisher` override,
+this is exactly the kind of regression to check for first.
+
 ### 16. Build
 
 ```bash
@@ -1074,6 +1165,7 @@ the package and getting it installed:
 | [Terminology](docs/terminology.md) | The vocabulary this package uses and how each term maps to the code. |
 | [Design decisions](docs/design-decisions.md) | Why the publish and normalization pipelines work the way they do, rather than the more obvious alternatives. |
 | [Import file formats](docs/import-formats.md) | CSV shapes accepted by the data importers. |
+| [Migrating to OpenSearch 3.x](docs/opensearch-3.x-migration.md) | The capability delta vs 1.x, and the environment changes the semantic-blend feature needs on OpenSearch 3.x (k-NN engine, `index.knn` static setting, request-size limit, the neural-search empty-`properties` trap). |
 | [Testing and CI](docs/testing.md) | How this package is tested, which suites need a host shop, and what CI runs. |
 
 ## License

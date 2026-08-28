@@ -18,6 +18,8 @@ use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInter
 use SprykerCommunity\Client\SearchRanking\SearchRankingClient;
 use SprykerCommunity\Client\SearchRanking\SearchRankingConfig;
 use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;
+use SprykerCommunity\Client\SearchRanking\Strategy\AdaptiveFormulaStrategy;
+use SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface;
 
 /**
  * Auto-generated group annotations
@@ -160,5 +162,48 @@ class SearchRankingClientTest extends Unit
 
         // Act & Assert
         $this->assertSame($querySpecificityCalculatorMock, $client->createQuerySpecificityCalculator());
+    }
+
+    /**
+     * With no project-registered strategy plugins (the demoshop default), the only active strategy is
+     * this package's own built-in {@see AdaptiveFormulaStrategy}, so its stable `adaptive_formula`
+     * identity is the sole name a consumer like search-ranking-optimizer sees.
+     */
+    public function testGetRegisteredRankingStrategyNamesReturnsAdaptiveFormulaByDefault(): void
+    {
+        // Arrange
+        $factoryMock = $this->createMock(SearchRankingFactory::class);
+        $factoryMock->method('getRankingStrategies')->willReturn([
+            new AdaptiveFormulaStrategy($this->createMock(FunctionScoreBuilderInterface::class)),
+        ]);
+
+        $client = new SearchRankingClient();
+        $client->setFactory($factoryMock);
+
+        // Act & Assert
+        $this->assertSame(['adaptive_formula'], $client->getRegisteredRankingStrategyNames());
+    }
+
+    /**
+     * Every registered strategy's identity is reported, in registration order — a project that adds its
+     * own strategy plugin surfaces here alongside the built-in default.
+     */
+    public function testGetRegisteredRankingStrategyNamesReportsEveryRegisteredStrategy(): void
+    {
+        // Arrange
+        $projectStrategyMock = $this->createMock(RankingStrategyInterface::class);
+        $projectStrategyMock->method('getName')->willReturn('hybrid');
+
+        $factoryMock = $this->createMock(SearchRankingFactory::class);
+        $factoryMock->method('getRankingStrategies')->willReturn([
+            new AdaptiveFormulaStrategy($this->createMock(FunctionScoreBuilderInterface::class)),
+            $projectStrategyMock,
+        ]);
+
+        $client = new SearchRankingClient();
+        $client->setFactory($factoryMock);
+
+        // Act & Assert
+        $this->assertSame(['adaptive_formula', 'hybrid'], $client->getRegisteredRankingStrategyNames());
     }
 }

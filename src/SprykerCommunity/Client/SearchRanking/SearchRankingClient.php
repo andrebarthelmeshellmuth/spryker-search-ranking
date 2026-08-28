@@ -10,17 +10,19 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking;
 
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
+use Generated\Shared\Transfer\SearchRankingQueryContextTransfer;
 use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use Spryker\Client\Kernel\AbstractClient;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInterface;
+use SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface;
 
 /**
  * @method \SprykerCommunity\Client\SearchRanking\SearchRankingFactory getFactory()
  */
 class SearchRankingClient extends AbstractClient implements SearchRankingClientInterface
 {
-    protected ?SearchRankingSpecificityWeightingResultTransfer $lastSpecificityWeightingResult = null;
+    protected ?SearchRankingQueryContextTransfer $queryContext = null;
 
     /**
      * {@inheritDoc}
@@ -79,18 +81,64 @@ class SearchRankingClient extends AbstractClient implements SearchRankingClientI
     /**
      * {@inheritDoc}
      *
-     * @param \Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer|null $specificityWeightingResult
+     * @api
+     *
+     * @return array<int, string>
      */
-    public function rememberLastSpecificityWeightingResult(?SearchRankingSpecificityWeightingResultTransfer $specificityWeightingResult): void
+    public function getRegisteredRankingStrategyNames(): array
     {
-        $this->lastSpecificityWeightingResult = $specificityWeightingResult;
+        return array_map(
+            static fn (RankingStrategyInterface $rankingStrategy): string => $rankingStrategy->getName(),
+            $this->getFactory()->getRankingStrategies(),
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingQueryContextTransfer|null $queryContextTransfer
+     */
+    public function rememberQueryContext(?SearchRankingQueryContextTransfer $queryContextTransfer): void
+    {
+        $this->queryContext = $queryContextTransfer;
     }
 
     /**
      * {@inheritDoc}
      */
+    public function getQueryContext(): ?SearchRankingQueryContextTransfer
+    {
+        return $this->queryContext;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated Use {@see rememberQueryContext()} instead.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer|null $specificityWeightingResult
+     */
+    public function rememberLastSpecificityWeightingResult(?SearchRankingSpecificityWeightingResultTransfer $specificityWeightingResult): void
+    {
+        if ($specificityWeightingResult === null) {
+            if ($this->queryContext !== null) {
+                $this->queryContext = $this->queryContext->setSpecificityWeightingResult(null);
+            }
+
+            return;
+        }
+
+        $this->queryContext = ($this->queryContext ?? new SearchRankingQueryContextTransfer())
+            ->setSpecificityWeightingResult($specificityWeightingResult);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated Use {@see getQueryContext()} instead.
+     */
     public function getLastSpecificityWeightingResult(): ?SearchRankingSpecificityWeightingResultTransfer
     {
-        return $this->lastSpecificityWeightingResult;
+        return $this->queryContext?->getSpecificityWeightingResult();
     }
 }

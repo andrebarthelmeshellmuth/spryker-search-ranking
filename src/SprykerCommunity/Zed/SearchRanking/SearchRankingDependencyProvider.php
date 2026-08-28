@@ -12,9 +12,11 @@ namespace SprykerCommunity\Zed\SearchRanking;
 use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
 use Spryker\Zed\Kernel\Container;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToSearchRankingClientBridge;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Client\SearchRankingToStorageClientBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToAclFacadeBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToDataImportFacadeBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeBridge;
+use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToLocaleFacadeBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToSearchRankingStorageFacadeBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToStoreFacadeBridge;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToSynchronizationFacadeBridge;
@@ -46,6 +48,14 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
     public const FACADE_STORE = 'FACADE_STORE';
 
     /**
+     * Used by {@see \SprykerCommunity\Zed\SearchRanking\Business\Intent\SuggestIndexEntityLookupRebuilder}
+     * to resolve a `--locale` option's name to an `idLocale` for category-name scoping.
+     *
+     * @var string
+     */
+    public const FACADE_LOCALE = 'FACADE_LOCALE';
+
+    /**
      * @var string
      */
     public const FACADE_SYNCHRONIZATION = 'FACADE_SYNCHRONIZATION';
@@ -70,6 +80,33 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
     public const FACADE_ACL = 'FACADE_ACL';
 
     /**
+     * Zed writing directly to key-value storage (Valkey/Redis) — the same bridge shape
+     * `spryker-community/search-signals`' own Zed layer already uses for the same reason: `entity-lookup:
+     * rebuild` writes the SKU dictionary `SkuIdentifierAnalyzer` (Client layer) reads at query time, and
+     * there is no other channel from a Zed console into that same KV store.
+     *
+     * @var string
+     */
+    public const CLIENT_STORAGE = 'CLIENT_STORAGE';
+
+    /**
+     * Specification:
+     * - Additional {@see \SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityCorpusReaderPluginInterface}
+     *   instances a project wants {@see \SprykerCommunity\Zed\SearchRanking\Business\Intent\SuggestIndexEntityLookupRebuilder}
+     *   to run, layered ON TOP of this package's own built-in default ({@see \SprykerCommunity\Zed\SearchRanking\Business\Intent\SkuCorpusReader},
+     *   {@see \SprykerCommunity\Zed\SearchRanking\Business\Intent\BrandCorpusReader},
+     *   {@see \SprykerCommunity\Zed\SearchRanking\Business\Intent\CategoryCorpusReader} — see
+     *   {@see \SprykerCommunity\Zed\SearchRanking\Business\SearchRankingBusinessFactory::getEntityCorpusReaders()}).
+     *   Empty by default — the SAME "empty array, project extends" pattern this package's Client-layer
+     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingDependencyProvider::PLUGINS_QUERY_ANALYZER}
+     *   already uses for its own optional plugin stack. This is the seam a project plugs a NEW entity type
+     *   into without forking this package's own `sku`/`brand`/`category` readers.
+     *
+     * @var string
+     */
+    public const PLUGINS_ENTITY_CORPUS_READER = 'PLUGINS_ENTITY_CORPUS_READER';
+
+    /**
      * @param \Spryker\Zed\Kernel\Container $container
      */
     #[\Override]
@@ -79,6 +116,51 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
         $container = $this->addEventFacade($container);
         $container = $this->addSearchRankingClient($container);
         $container = $this->addStoreFacade($container);
+        $container = $this->addStorageClient($container);
+        $container = $this->addLocaleFacade($container);
+        $container = $this->addEntityCorpusReaderPlugins($container);
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     */
+    protected function addEntityCorpusReaderPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_ENTITY_CORPUS_READER, fn (): array => $this->getEntityCorpusReaderPlugins());
+
+        return $container;
+    }
+
+    /**
+     * @return array<\SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityCorpusReaderPluginInterface>
+     */
+    protected function getEntityCorpusReaderPlugins(): array
+    {
+        return [];
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     */
+    protected function addLocaleFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_LOCALE, fn (Container $container) => new SearchRankingToLocaleFacadeBridge(
+            $container->getLocator()->locale()->facade(),
+        ));
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     */
+    protected function addStorageClient(Container $container): Container
+    {
+        $container->set(static::CLIENT_STORAGE, fn (Container $container) => new SearchRankingToStorageClientBridge(
+            $container->getLocator()->storage()->client(),
+        ));
 
         return $container;
     }

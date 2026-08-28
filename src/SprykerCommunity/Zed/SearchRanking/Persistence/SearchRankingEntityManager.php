@@ -340,4 +340,37 @@ class SearchRankingEntityManager extends AbstractEntityManager implements Search
 
         return $mapper->mapMetricStoreConfigEntityToTransfer($metricStoreConfigEntity, $metricStoreConfigTransfer);
     }
+
+    /**
+     * @param int $idProductAbstract
+     * @param string $storeName
+     * @param string $localeName
+     * @param string $modelId
+     * @param array<int, float> $vector
+     * @param string $textHash
+     */
+    public function upsertEmbedding(
+        int $idProductAbstract,
+        string $storeName,
+        string $localeName,
+        string $modelId,
+        array $vector,
+        string $textHash,
+    ): void {
+        $embeddingEntity = $this->getFactory()
+            ->createSearchRankingEmbeddingQuery()
+            ->filterByFkProductAbstract($idProductAbstract)
+            ->filterByStoreName($storeName)
+            ->filterByLocaleName($localeName)
+            ->filterByModelId($modelId)
+            ->findOneOrCreate();
+
+        $embeddingEntity->setFkProductAbstract($idProductAbstract);
+        $embeddingEntity->setStoreName($storeName);
+        $embeddingEntity->setLocaleName($localeName);
+        $embeddingEntity->setModelId($modelId);
+        $embeddingEntity->setVector(json_encode($vector, JSON_THROW_ON_ERROR));
+        $embeddingEntity->setTextHash($textHash);
+        $embeddingEntity->save();
+    }
 }

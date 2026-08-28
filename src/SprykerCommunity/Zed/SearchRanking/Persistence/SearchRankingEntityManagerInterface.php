@@ -121,4 +121,25 @@ interface SearchRankingEntityManagerInterface
      * @param \Generated\Shared\Transfer\SearchRankingMetricStoreConfigTransfer $metricStoreConfigTransfer
      */
     public function saveMetricStoreConfig(SearchRankingMetricStoreConfigTransfer $metricStoreConfigTransfer): SearchRankingMetricStoreConfigTransfer;
+
+    /**
+     * Upserts by `(fkProductAbstract, storeName, localeName, modelId)` — one embedding row per product per
+     * scope per model, overwritten wholesale on regeneration (mirrors {@see saveMetricDigest()}'s own
+     * upsert shape). `$vector` is JSON-encoded before being written to the `vector` column.
+     *
+     * @param int $idProductAbstract
+     * @param string $storeName
+     * @param string $localeName
+     * @param string $modelId
+     * @param array<int, float> $vector
+     * @param string $textHash
+     */
+    public function upsertEmbedding(
+        int $idProductAbstract,
+        string $storeName,
+        string $localeName,
+        string $modelId,
+        array $vector,
+        string $textHash,
+    ): void;
 }

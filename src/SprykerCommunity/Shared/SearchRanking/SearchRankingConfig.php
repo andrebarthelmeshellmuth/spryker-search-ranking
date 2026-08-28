@@ -35,6 +35,29 @@ class SearchRankingConfig
 
     /**
      * Specification:
+     * - Registration key of the embedding data-expander plugin in the ProductPageSearch plugin stack.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const PLUGIN_SEARCH_RANKING_EMBEDDING_DATA = 'PLUGIN_SEARCH_RANKING_EMBEDDING_DATA';
+
+    /**
+     * Specification:
+     * - Name of the Elasticsearch/OpenSearch page-document field holding the semantic embedding vector (a
+     *   flat float list), as defined in this project's own `page.json` schema (`knn_vector` mapping). Set
+     *   by {@see \SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSearch\SearchRankingEmbeddingMapExpanderPlugin}
+     *   only for products with a stored vector — omitted entirely otherwise.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const PAGE_INDEX_FIELD_EMBEDDING = 'embedding';
+
+    /**
+     * Specification:
      * - {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\RandomImpactResultFormatterPlugin::getName()}'s
      *   own registration key in the Catalog client's `ResultFormatterPlugin` stack — the `_view` key its
      *   payload surfaces under in Yves (`_view.randomImpact.*`).
@@ -92,6 +115,19 @@ class SearchRankingConfig
      * @var string
      */
     public const SETTING_KEY_RELEVANCE_SATURATION_POINT = 'relevance_saturation_point';
+
+    /**
+     * Specification:
+     * - Setting key of the blend weight (alpha) combining normalized text relevance with the semantic
+     *   (kNN cosine similarity) term, inside FunctionScoreBuilder's text-relevance component. `1.0`
+     *   (default) means 100% lexical — see {@see \SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder}
+     *   for the exact formula.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const SETTING_KEY_ALPHA = 'alpha';
 
     /**
      * Specification:
@@ -289,4 +325,54 @@ class SearchRankingConfig
     {
         return false;
     }
+
+    /**
+     * Specification:
+     * - Entity `type` segment for the SKU entity lookup (abstract + concrete SKUs) — the only type Pass 1
+     *   ships.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const ENTITY_LOOKUP_TYPE_SKU = 'sku';
+
+    /**
+     * Specification:
+     * - Entity `type` segment for the brand entity lookup (Pass 2) — real `brand` product-attribute values
+     *   (see `data/import/common/common/product_attribute_key.csv`), read from
+     *   `spy_product_abstract_localized_attributes.attributes`.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const ENTITY_LOOKUP_TYPE_BRAND = 'brand';
+
+    /**
+     * Specification:
+     * - Entity `type` segment for the category entity lookup (Pass 2) — real `spy_category_attribute.name`
+     *   values.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const ENTITY_LOOKUP_TYPE_CATEGORY = 'category';
+
+    /**
+     * Specification:
+     * - Elasticsearch/OpenSearch source identifier (the segment `IndexNameResolver`/this package's own
+     *   Zed-side index-name builders append after the store name) for the slim `completion`-suggester
+     *   index {@see \SprykerCommunity\Client\SearchRanking\Intent\SuggestIndexEntityLookup} reads —
+     *   deliberately a SEPARATE, much smaller index from the heavy `page`/catalog content index (which
+     *   carries images, prices, full descriptions — the wrong tool for a microsecond existence/prefix
+     *   check). One index holds all three entity types (`sku`/`brand`/`category`), distinguished by the
+     *   `type` field — see `Schema/entity-lookup.json`.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const ENTITY_LOOKUP_SUGGEST_INDEX_SOURCE_IDENTIFIER = 'entity-lookup';
 }
