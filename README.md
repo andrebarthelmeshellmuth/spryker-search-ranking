@@ -48,8 +48,8 @@ Feature-complete: business-signal search ranking, including the normalization-au
 data-driven curve-fitting workflow.
 
 Verified: dependency floors resolved and checked at their oldest allowed versions (`composer
-check-floors`), the ranking formula's `function_score`/`script_score` cross-validated across three
-engines and two Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 238
+check-floors`), the ranking formula's `function_score`/`script_score` cross-validated across four
+engines and three Lucene generations (see [Search engine compatibility](#search-engine-compatibility)), 238
 tests, phpcs and phpstan level 8 clean.
 
 This package's own mechanism is complete: the metric/value data model, the Zed management UI, CSV data
@@ -448,6 +448,7 @@ tree. PHP 8.2 is *not* supported — every `spryker/propel-orm` release that res
 |---|---|---|
 | OpenSearch 1.3.4 | 8.10.1 | ✅ |
 | OpenSearch 2.11.0 | 9.7.0 | ✅ |
+| OpenSearch 3.5.0 | 10.3.2 | ✅ |
 | Elasticsearch 8.11.0 | 9.8.0 | ✅ |
 
 The verification: a throwaway index with a `full-text` text field and a `scores` object (the same shape
@@ -465,6 +466,12 @@ section](https://github.com/andrebarthelmeshellmuth/spryker-search-debug#search-
 this package's own painless usage (`doc['field'].value`, `containsKey`, `size()`) is bog-standard,
 available on both lineages since well before the fork, so no engine-specific behavior was expected or
 found.
+
+**OpenSearch 3.5.0** (Lucene 10.3.2) was verified live end-to-end: a demoshop upgraded from 1.3.4, full
+re-export/reindex, `check-compatibility` re-run, live lexical queries confirmed. The ranking formula is
+byte-identical and this package needs **no code change**. The environment work the upgrade itself
+involves — all core-Spryker and project/deployment level — is written up in
+[Migrating to OpenSearch 3.x](docs/opensearch-3.x-migration.md).
 
 ## Installation
 
@@ -1074,6 +1081,7 @@ the package and getting it installed:
 | [Terminology](docs/terminology.md) | The vocabulary this package uses and how each term maps to the code. |
 | [Design decisions](docs/design-decisions.md) | Why the publish and normalization pipelines work the way they do, rather than the more obvious alternatives. |
 | [Import file formats](docs/import-formats.md) | CSV shapes accepted by the data importers. |
+| [Migrating to OpenSearch 3.x](docs/opensearch-3.x-migration.md) | The capability delta vs 1.x, and the core- and project-level environment changes an OpenSearch 3.x upgrade involves (k-NN engine, the `index.knn` static setting, the request-size limit, the neural-search empty-`properties` trap). |
 | [Testing and CI](docs/testing.md) | How this package is tested, which suites need a host shop, and what CI runs. |
 
 ## License
