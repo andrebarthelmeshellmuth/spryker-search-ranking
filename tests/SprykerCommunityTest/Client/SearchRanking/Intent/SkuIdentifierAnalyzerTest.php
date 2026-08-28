@@ -81,16 +81,21 @@ class SkuIdentifierAnalyzerTest extends Unit
             {
             }
 
+            // phpcs:disable SlevomatCodingStandard.Functions.UnusedParameter -- signature is fixed by EntityLookupInterface.
+
             public function exists(string $term): bool
             {
+                // phpcs:enable SlevomatCodingStandard.Functions.UnusedParameter
                 return $this->dictionaryHit;
             }
 
             /**
              * @return array<int, string>
              */
+            // phpcs:disable SlevomatCodingStandard.Functions.UnusedParameter -- signature is fixed by EntityLookupInterface.
             public function suggest(string $prefix, int $limit): array
             {
+                // phpcs:enable SlevomatCodingStandard.Functions.UnusedParameter
                 return [];
             }
         };

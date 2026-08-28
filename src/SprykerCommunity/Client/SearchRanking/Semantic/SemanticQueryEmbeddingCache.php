@@ -58,7 +58,7 @@ class SemanticQueryEmbeddingCache implements SemanticQueryEmbeddingCacheInterfac
             }
         }
 
-        return array_map('floatval', array_values($decoded));
+        return array_map(static fn (mixed $value): float => (float)$value, array_values($decoded));
     }
 
     /**

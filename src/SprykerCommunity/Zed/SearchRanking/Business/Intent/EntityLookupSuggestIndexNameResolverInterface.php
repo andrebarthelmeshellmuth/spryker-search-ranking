@@ -17,8 +17,6 @@ interface EntityLookupSuggestIndexNameResolverInterface
      *   `{prefix}_{store}_{sourceIdentifier}` scheme the Client-side resolver uses.
      *
      * @param string $storeName
-     *
-     * @return string
      */
     public function resolveIndexName(string $storeName): string;
 }

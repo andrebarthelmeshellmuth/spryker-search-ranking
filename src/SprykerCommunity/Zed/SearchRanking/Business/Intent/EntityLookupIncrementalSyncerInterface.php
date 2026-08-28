@@ -30,8 +30,6 @@ interface EntityLookupIncrementalSyncerInterface
      *   {@see SuggestIndexEntityLookupIndexerInterface::upsertTerms()}/{@see SuggestIndexEntityLookupIndexerInterface::removeTerms()}.
      *
      * @param array<int> $idProductAbstracts
-     *
-     * @return void
      */
     public function sync(array $idProductAbstracts): void;
 }

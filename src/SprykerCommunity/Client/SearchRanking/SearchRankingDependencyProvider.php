@@ -71,6 +71,20 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
     public const PLUGINS_MSEARCH_PROBE_REGISTRAR = 'PLUGINS_MSEARCH_PROBE_REGISTRAR';
 
     /**
+     * Specification:
+     * - Additional {@see \SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface}
+     *   instances a project wants to make selectable, layered ON TOP of this package's own built-in
+     *   default ({@see \SprykerCommunity\Client\SearchRanking\Strategy\AdaptiveFormulaStrategy} — see
+     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingFactory::getRankingStrategies()}). Empty
+     *   by default — the SAME "empty array, project extends" pattern this package already uses for
+     *   {@see PLUGINS_QUERY_ANALYZER}. This is the seam a later pass (a hybrid strategy, a neural rerank
+     *   strategy) plugs into without touching this package.
+     *
+     * @var string
+     */
+    public const PLUGINS_RANKING_STRATEGY = 'PLUGINS_RANKING_STRATEGY';
+
+    /**
      * @param \Spryker\Client\Kernel\Container $container
      */
     #[\Override]
@@ -84,6 +98,7 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
         $container = $this->addStorageClient($container);
         $container = $this->addQueryAnalyzerPlugins($container);
         $container = $this->addMsearchProbeRegistrarPlugins($container);
+        $container = $this->addRankingStrategyPlugins($container);
 
         return $container;
     }
@@ -91,11 +106,27 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
     /**
      * @param \Spryker\Client\Kernel\Container $container
      */
+    protected function addRankingStrategyPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_RANKING_STRATEGY, fn (): array => $this->getRankingStrategyPlugins());
+
+        return $container;
+    }
+
+    /**
+     * @return array<\SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface>
+     */
+    protected function getRankingStrategyPlugins(): array
+    {
+        return [];
+    }
+
+    /**
+     * @param \Spryker\Client\Kernel\Container $container
+     */
     protected function addQueryAnalyzerPlugins(Container $container): Container
     {
-        $container->set(static::PLUGINS_QUERY_ANALYZER, function (): array {
-            return $this->getQueryAnalyzerPlugins();
-        });
+        $container->set(static::PLUGINS_QUERY_ANALYZER, fn (): array => $this->getQueryAnalyzerPlugins());
 
         return $container;
     }
@@ -113,9 +144,7 @@ class SearchRankingDependencyProvider extends AbstractDependencyProvider
      */
     protected function addMsearchProbeRegistrarPlugins(Container $container): Container
     {
-        $container->set(static::PLUGINS_MSEARCH_PROBE_REGISTRAR, function (): array {
-            return $this->getMsearchProbeRegistrarPlugins();
-        });
+        $container->set(static::PLUGINS_MSEARCH_PROBE_REGISTRAR, fn (): array => $this->getMsearchProbeRegistrarPlugins());
 
         return $container;
     }

@@ -88,6 +88,24 @@ interface SearchRankingClientInterface
     public function createQuerySpecificityCalculator(): QuerySpecificityCalculatorInterface;
 
     /**
+     * Specification:
+     * - The identity ({@see \SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface::getName()})
+     *   of every ranking strategy active in this project — this package's own built-in
+     *   {@see \SprykerCommunity\Client\SearchRanking\Strategy\AdaptiveFormulaStrategy} (`adaptive_formula`,
+     *   always present) plus whatever a project registered via
+     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingDependencyProvider::PLUGINS_RANKING_STRATEGY}.
+     * - Consumers (e.g. spryker-community/search-ranking-optimizer) use it to refuse operations they have
+     *   no support for: strategy selection is per-query (`supports()`), so a consumer that only knows how
+     *   to act on `adaptive_formula` asks this "is any OTHER strategy registered?" before touching live
+     *   configuration.
+     *
+     * @api
+     *
+     * @return array<int, string>
+     */
+    public function getRegisteredRankingStrategyNames(): array;
+
+    /**
      * NOT @api — internal plumbing only. This Client instance is the one object the Locator guarantees
      * stays the SAME single instance across every plugin in this package for the current request, which
      * is exactly what lets {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}

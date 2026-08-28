@@ -20,6 +20,8 @@ use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckC
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckInstallationConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingNormalizeConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingRandomizeConsole;
+use SprykerCommunity\Zed\SearchRanking\Communication\Installation\GlueApiWiringInstallationChecker;
+use SprykerCommunity\Zed\SearchRanking\Communication\Installation\GlueApiWiringInstallationCheckerInterface;
 use SprykerCommunityTest\Zed\SearchRanking\Communication\Console\Fixture\GlueApiResourceFixture;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -246,10 +248,9 @@ class SearchRankingCheckInstallationConsoleTest extends Unit
     /**
      * All sibling commands registered and one active metric, same happy-path shape as
      * {@see createCommandTester()}, but with an anonymous subclass overriding
-     * {@see SearchRankingCheckInstallationConsole::getGlueApiResourceClassName()} and
-     * {@see SearchRankingCheckInstallationConsole::getGlueApiProviderOverrideFilePath()} so the Glue API
-     * wiring check tests fixtures instead of this host shop's real generated resource / real project
-     * override file.
+     * {@see SearchRankingCheckInstallationConsole::getGlueApiWiringInstallationChecker()} to return a
+     * {@see GlueApiWiringInstallationChecker} pointed at fixtures instead of this host shop's real
+     * generated resource / real project override file.
      */
     protected function createCommandTesterWithGlueApiWiring(string $resourceClassName, string $overrideFilePath): CommandTester
     {
@@ -258,20 +259,31 @@ class SearchRankingCheckInstallationConsoleTest extends Unit
             ->getMock();
         $facadeMock->method('getActiveMetricCollection')->willReturn($this->createActiveMetricCollection(1));
 
-        $console = new class ($resourceClassName, $overrideFilePath) extends SearchRankingCheckInstallationConsole {
-            public function __construct(protected string $resourceClassName, protected string $overrideFilePath)
+        $checker = new class ($resourceClassName, $overrideFilePath) extends GlueApiWiringInstallationChecker {
+            public function __construct(protected string $fixtureResourceClassName, protected string $fixtureOverrideFilePath)
+            {
+            }
+
+            protected function getResourceClassName(): string
+            {
+                return $this->fixtureResourceClassName;
+            }
+
+            protected function getProviderOverrideFilePath(): string
+            {
+                return $this->fixtureOverrideFilePath;
+            }
+        };
+
+        $console = new class ($checker) extends SearchRankingCheckInstallationConsole {
+            public function __construct(protected GlueApiWiringInstallationCheckerInterface $fixtureChecker)
             {
                 parent::__construct();
             }
 
-            protected function getGlueApiResourceClassName(): string
+            protected function getGlueApiWiringInstallationChecker(): GlueApiWiringInstallationCheckerInterface
             {
-                return $this->resourceClassName;
-            }
-
-            protected function getGlueApiProviderOverrideFilePath(): string
-            {
-                return $this->overrideFilePath;
+                return $this->fixtureChecker;
             }
         };
         $console->setFacade($facadeMock);

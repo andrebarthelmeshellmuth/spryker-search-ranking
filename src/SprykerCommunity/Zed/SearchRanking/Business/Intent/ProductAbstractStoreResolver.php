@@ -24,7 +24,7 @@ class ProductAbstractStoreResolver implements ProductAbstractStoreResolverInterf
     public function getIdStoresForProductAbstract(int $idProductAbstract): array
     {
         return array_map(
-            'intval',
+            static fn (mixed $value): int => (int)$value,
             SpyProductAbstractStoreQuery::create()
                 ->filterByFkProductAbstract($idProductAbstract)
                 ->select([SpyProductAbstractStoreTableMap::COL_FK_STORE])

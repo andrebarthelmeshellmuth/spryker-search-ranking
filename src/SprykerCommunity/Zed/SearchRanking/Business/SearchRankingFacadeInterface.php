@@ -474,8 +474,6 @@ interface SearchRankingFacadeInterface
      * @api
      *
      * @param array<int> $idProductAbstracts
-     *
-     * @return void
      */
     public function syncEntityLookupForProductAbstracts(array $idProductAbstracts): void;
 

@@ -36,8 +36,6 @@ class EntityLookupSuggestIndexNameResolver implements EntityLookupSuggestIndexNa
      * {@inheritDoc}
      *
      * @param string $storeName
-     *
-     * @return string
      */
     public function resolveIndexName(string $storeName): string
     {

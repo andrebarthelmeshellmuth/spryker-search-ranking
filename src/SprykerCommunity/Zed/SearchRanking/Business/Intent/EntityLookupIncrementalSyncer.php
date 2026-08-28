@@ -33,8 +33,6 @@ class EntityLookupIncrementalSyncer implements EntityLookupIncrementalSyncerInte
      * {@inheritDoc}
      *
      * @param array<int> $idProductAbstracts
-     *
-     * @return void
      */
     public function sync(array $idProductAbstracts): void
     {
@@ -59,8 +57,6 @@ class EntityLookupIncrementalSyncer implements EntityLookupIncrementalSyncerInte
      * @param int $idProductAbstract
      * @param array<\SprykerCommunity\Zed\SearchRanking\Business\Intent\IncrementalEntityCorpusReaderPluginInterface> $incrementalPlugins
      * @param array<int, string> $storeNamesByIdStore
-     *
-     * @return void
      */
     protected function syncOneProductAbstract(int $idProductAbstract, array $incrementalPlugins, array $storeNamesByIdStore): void
     {
@@ -83,8 +79,6 @@ class EntityLookupIncrementalSyncer implements EntityLookupIncrementalSyncerInte
      * @param int $idProductAbstract
      * @param int $idStore
      * @param string $indexName
-     *
-     * @return void
      */
     protected function syncOneTypeForOneProduct(
         IncrementalEntityCorpusReaderPluginInterface $plugin,

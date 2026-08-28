@@ -623,7 +623,7 @@ class SearchRankingRepository extends AbstractRepository implements SearchRankin
                 continue;
             }
 
-            $embeddingsByIdProductAbstract[$idProductAbstract] = array_map('floatval', $vector);
+            $embeddingsByIdProductAbstract[$idProductAbstract] = array_map(static fn (mixed $value): float => (float)$value, $vector);
         }
 
         return $embeddingsByIdProductAbstract;

@@ -47,7 +47,6 @@ class TextEmbeddingsInferenceClientTest extends Unit
     {
         $client = new TextEmbeddingsInferenceClient('http://127.0.0.1:1');
         $method = new ReflectionMethod($client, 'parseResponseBody');
-        $method->setAccessible(true);
 
         $vector = $method->invoke($client, '[[0.1, -0.2, 3]]');
 
@@ -58,7 +57,6 @@ class TextEmbeddingsInferenceClientTest extends Unit
     {
         $client = new TextEmbeddingsInferenceClient('http://127.0.0.1:1');
         $method = new ReflectionMethod($client, 'parseResponseBody');
-        $method->setAccessible(true);
 
         $this->expectException(EmbeddingUnavailableException::class);
 
@@ -69,7 +67,6 @@ class TextEmbeddingsInferenceClientTest extends Unit
     {
         $client = new TextEmbeddingsInferenceClient('http://127.0.0.1:1');
         $method = new ReflectionMethod($client, 'parseResponseBody');
-        $method->setAccessible(true);
 
         $this->expectException(EmbeddingUnavailableException::class);
 

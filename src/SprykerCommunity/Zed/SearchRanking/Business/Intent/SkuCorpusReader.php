@@ -81,7 +81,7 @@ class SkuCorpusReader implements SkuCorpusReaderInterface, IncrementalEntityCorp
     protected function getIdProductAbstractsForStore(int $idStore): array
     {
         return array_map(
-            'intval',
+            static fn (mixed $value): int => (int)$value,
             SpyProductAbstractStoreQuery::create()
                 ->filterByFkStore($idStore)
                 ->select([SpyProductAbstractStoreTableMap::COL_FK_PRODUCT_ABSTRACT])
@@ -117,7 +117,7 @@ class SkuCorpusReader implements SkuCorpusReaderInterface, IncrementalEntityCorp
             $query->filterByFkProductAbstract_In($idProductAbstracts);
         }
 
-        return array_map('intval', $query->find()->getData());
+        return array_map(static fn (mixed $value): int => (int)$value, $query->find()->getData());
     }
 
     /**
@@ -135,7 +135,7 @@ class SkuCorpusReader implements SkuCorpusReaderInterface, IncrementalEntityCorp
             ->select([SpyProductAbstractTableMap::COL_SKU])
             ->filterByIdProductAbstract_In($idProductAbstracts);
 
-        return array_map('strval', $query->find()->getData());
+        return array_map(static fn (mixed $value): string => (string)$value, $query->find()->getData());
     }
 
     /**
@@ -154,7 +154,7 @@ class SkuCorpusReader implements SkuCorpusReaderInterface, IncrementalEntityCorp
             ->filterByFkProductAbstract_In($idProductAbstracts)
             ->select([SpyProductTableMap::COL_SKU]);
 
-        return array_map('strval', $query->find()->getData());
+        return array_map(static fn (mixed $value): string => (string)$value, $query->find()->getData());
     }
 
     /**
@@ -169,7 +169,7 @@ class SkuCorpusReader implements SkuCorpusReaderInterface, IncrementalEntityCorp
     public function getTermsForProductAbstract(int $idProductAbstract): array
     {
         $abstractSkus = array_map(
-            'strval',
+            static fn (mixed $value): string => (string)$value,
             SpyProductAbstractQuery::create()
                 ->select([SpyProductAbstractTableMap::COL_SKU])
                 ->filterByIdProductAbstract($idProductAbstract)
@@ -178,7 +178,7 @@ class SkuCorpusReader implements SkuCorpusReaderInterface, IncrementalEntityCorp
         );
 
         $concreteSkus = array_map(
-            'strval',
+            static fn (mixed $value): string => (string)$value,
             SpyProductQuery::create()
                 ->select([SpyProductTableMap::COL_SKU])
                 ->filterByFkProductAbstract($idProductAbstract)
@@ -197,8 +197,6 @@ class SkuCorpusReader implements SkuCorpusReaderInterface, IncrementalEntityCorp
      * @api
      *
      * @param int $idProductAbstract
-     *
-     * @return bool
      */
     public function isProductAbstractActive(int $idProductAbstract): bool
     {
@@ -217,8 +215,6 @@ class SkuCorpusReader implements SkuCorpusReaderInterface, IncrementalEntityCorp
      * @param string $term
      * @param int $idProductAbstract
      * @param int $idStore
-     *
-     * @return bool
      */
     // phpcs:disable SlevomatCodingStandard.Functions.UnusedParameter -- signature is fixed by IncrementalEntityCorpusReaderPluginInterface.
     public function isTermStillUsedElsewhere(string $term, int $idProductAbstract, int $idStore): bool

@@ -58,7 +58,7 @@ class TextEmbeddingsInferenceClient implements EmbeddingClientInterface
 
         curl_setopt($curlHandle, CURLOPT_URL, $url);
         curl_setopt($curlHandle, CURLOPT_POST, true);
-        curl_setopt($curlHandle, CURLOPT_POSTFIELDS, (string)json_encode(['inputs' => $text], JSON_THROW_ON_ERROR));
+        curl_setopt($curlHandle, CURLOPT_POSTFIELDS, json_encode(['inputs' => $text], JSON_THROW_ON_ERROR));
         curl_setopt($curlHandle, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Accept: application/json']);
         curl_setopt($curlHandle, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curlHandle, CURLOPT_CONNECTTIMEOUT_MS, $this->connectTimeoutMilliseconds);
@@ -67,7 +67,7 @@ class TextEmbeddingsInferenceClient implements EmbeddingClientInterface
         $responseBody = curl_exec($curlHandle);
         $curlErrorNumber = curl_errno($curlHandle);
         $curlError = curl_error($curlHandle);
-        $statusCode = (int)curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
+        $statusCode = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
         curl_close($curlHandle);
 
         if ($curlErrorNumber !== 0) {
@@ -114,6 +114,6 @@ class TextEmbeddingsInferenceClient implements EmbeddingClientInterface
             );
         }
 
-        return array_map('floatval', $decoded[0]);
+        return array_map(static fn (mixed $value): float => (float)$value, $decoded[0]);
     }
 }

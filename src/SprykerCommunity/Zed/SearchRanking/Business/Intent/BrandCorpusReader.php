@@ -102,7 +102,7 @@ class BrandCorpusReader implements BrandCorpusReaderInterface, IncrementalEntity
     protected function getIdProductAbstractsForStore(int $idStore): array
     {
         return array_map(
-            'intval',
+            static fn (mixed $value): int => (int)$value,
             SpyProductAbstractStoreQuery::create()
                 ->filterByFkStore($idStore)
                 ->select([SpyProductAbstractStoreTableMap::COL_FK_PRODUCT_ABSTRACT])
@@ -131,12 +131,9 @@ class BrandCorpusReader implements BrandCorpusReaderInterface, IncrementalEntity
             $query->filterByFkProductAbstract_In($idProductAbstracts);
         }
 
-        return array_map('intval', $query->find()->getData());
+        return array_map(static fn (mixed $value): int => (int)$value, $query->find()->getData());
     }
 
-    /**
-     * @param mixed $attributesJson
-     */
     protected function extractBrand(mixed $attributesJson): ?string
     {
         if (!is_string($attributesJson) || $attributesJson === '') {
@@ -194,8 +191,6 @@ class BrandCorpusReader implements BrandCorpusReaderInterface, IncrementalEntity
      * @api
      *
      * @param int $idProductAbstract
-     *
-     * @return bool
      */
     public function isProductAbstractActive(int $idProductAbstract): bool
     {
@@ -210,8 +205,6 @@ class BrandCorpusReader implements BrandCorpusReaderInterface, IncrementalEntity
      * @param string $term
      * @param int $idProductAbstract
      * @param int $idStore
-     *
-     * @return bool
      */
     public function isTermStillUsedElsewhere(string $term, int $idProductAbstract, int $idStore): bool
     {

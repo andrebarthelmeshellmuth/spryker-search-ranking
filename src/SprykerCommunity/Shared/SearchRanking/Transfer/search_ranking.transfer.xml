@@ -508,4 +508,17 @@
         <property name="restrictedRoleWithAccessCount" type="int"/>
     </transfer>
 
+    <!-- Raw facts behind `search-ranking:check-installation`'s entity-lookup sync check (Pass 2's index
+         has two independent, adopter's-choice sync mechanisms - see
+         SearchRankingCheckInstallationConsole::checkEntityLookupSyncConfiguration() for the 0/1/2
+         pass/notice/error decision built from these). eventHookRegistrationUnknown is true when the
+         event-hook plugin registration could not be introspected at all (module absent, or the resolved
+         provider couldn't be reflected into) - deliberately distinct from a confirmed-false eventHookRegistered,
+         same "cannot tell" vs "no" distinction the console already applies elsewhere. -->
+    <transfer name="SearchRankingEntityLookupSyncDiagnosis" strict="true">
+        <property name="cronConfigured" type="bool"/>
+        <property name="eventHookRegistered" type="bool"/>
+        <property name="eventHookRegistrationUnknown" type="bool"/>
+    </transfer>
+
 </transfers>

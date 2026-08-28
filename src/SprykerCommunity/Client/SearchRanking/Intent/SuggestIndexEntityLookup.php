@@ -150,19 +150,11 @@ class SuggestIndexEntityLookup implements BatchableEntityLookupInterface
         $matches = [];
 
         foreach ($options as $option) {
-            $source = is_array($option['_source'] ?? null) ? $option['_source'] : [];
+            $term = $this->extractMatchingTerm($option, $matches);
 
-            if (($source[static::FIELD_TYPE] ?? null) !== $this->entityType) {
-                continue;
+            if ($term !== null) {
+                $matches[] = $term;
             }
-
-            $term = $source[static::FIELD_TERM] ?? null;
-
-            if (!is_string($term) || $term === '' || in_array($term, $matches, true)) {
-                continue;
-            }
-
-            $matches[] = $term;
 
             if (count($matches) >= $limit) {
                 break;
@@ -170,6 +162,29 @@ class SuggestIndexEntityLookup implements BatchableEntityLookupInterface
         }
 
         return $matches;
+    }
+
+    /**
+     * Returns the suggestion term from a single completion suggester option, or `null` when the option
+     * doesn't belong to this entity type, has no usable term, or duplicates an already-collected match.
+     *
+     * @param array<int, string> $matches
+     */
+    protected function extractMatchingTerm(mixed $option, array $matches): ?string
+    {
+        $source = is_array($option['_source'] ?? null) ? $option['_source'] : [];
+
+        if (($source[static::FIELD_TYPE] ?? null) !== $this->entityType) {
+            return null;
+        }
+
+        $term = $source[static::FIELD_TERM] ?? null;
+
+        if (!is_string($term) || $term === '' || in_array($term, $matches, true)) {
+            return null;
+        }
+
+        return $term;
     }
 
     /**

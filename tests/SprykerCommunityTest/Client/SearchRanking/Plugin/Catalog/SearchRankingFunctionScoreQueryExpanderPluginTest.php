@@ -24,6 +24,7 @@ use SprykerCommunity\Client\SearchRanking\Dependency\Client\SearchRankingToStore
 use SprykerCommunity\Client\SearchRanking\Intent\MsearchProbeRegistrarPluginInterface;
 use SprykerCommunity\Client\SearchRanking\Intent\QueryAnalyzerInterface;
 use SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin;
+use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Search\MsearchProbeBatcherInterface;
 use SprykerCommunity\Client\SearchRanking\Search\NavigationalRelevanceWeightShiftCalculator;
@@ -34,6 +35,9 @@ use SprykerCommunity\Client\SearchRanking\SearchRankingFactory;
 use SprykerCommunity\Client\SearchRanking\Semantic\EmbeddingClientInterface;
 use SprykerCommunity\Client\SearchRanking\Semantic\EmbeddingUnavailableException;
 use SprykerCommunity\Client\SearchRanking\Semantic\SemanticQueryEmbeddingCacheInterface;
+use SprykerCommunity\Client\SearchRanking\Strategy\AdaptiveFormulaStrategy;
+use SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyExecutionMode;
+use SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface;
 
 /**
  * Auto-generated group annotations
@@ -479,6 +483,89 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
         $this->assertSame(0.75, $configurationTransfer->getRelevanceWeight());
     }
 
+    /**
+     * With no project strategy registered, {@see AdaptiveFormulaStrategy} is always the resolved
+     * strategy and the query is expanded exactly as before the seam existed — the mocked
+     * {@see FunctionScoreBuilderInterface} (reached through the real `AdaptiveFormulaStrategy` wrapper
+     * the test helper wires) still receives the same arguments.
+     */
+    public function testResolvesTheAdaptiveFormulaStrategyByDefaultAndExpandsTheQueryThroughIt(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())->setRelevanceWeight(0.75);
+
+        $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
+        $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
+
+        $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
+        $functionScoreBuilderMock->expects($this->once())
+            ->method('build')
+            ->with($this->isInstanceOf(MatchAll::class), $configurationTransfer, null)
+            ->willReturn(new FunctionScore());
+
+        $plugin = $this->createPlugin(new SearchRankingClient(), $storageClientMock, $functionScoreBuilderMock);
+
+        $query = new Query(new MatchAll());
+
+        $searchQueryMock = $this->createMock(QueryInterface::class);
+        $searchQueryMock->method('getSearchQuery')->willReturn($query);
+
+        // Act
+        $plugin->expandQuery($searchQueryMock, ['q' => 'gadget']);
+
+        // Assert — the query body was replaced with the strategy's function_score.
+        $this->assertInstanceOf(FunctionScore::class, $query->getQuery());
+    }
+
+    /**
+     * An out-of-band strategy that {@see RankingStrategyInterface::supports()} the crafted context wins
+     * over the always-`true` {@see AdaptiveFormulaStrategy} fallback, and the expander plugin then leaves
+     * the query body untouched (the out-of-band execution path — v2 Phase 5 — is not built yet).
+     */
+    public function testLeavesTheQueryUnmutatedWhenAnActiveStrategyIsOutOfBand(): void
+    {
+        // Arrange
+        $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())->setRelevanceWeight(0.75);
+
+        $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
+        $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
+
+        $functionScoreBuilderMock = $this->createMock(FunctionScoreBuilderInterface::class);
+        $functionScoreBuilderMock->expects($this->never())->method('build');
+
+        $outOfBandStrategyMock = $this->createMock(RankingStrategyInterface::class);
+        $outOfBandStrategyMock->method('getName')->willReturn('neural_rerank');
+        $outOfBandStrategyMock->method('supports')->willReturn(true);
+        $outOfBandStrategyMock->method('getExecutionMode')->willReturn(RankingStrategyExecutionMode::MODE_OUT_OF_BAND);
+        $outOfBandStrategyMock->expects($this->never())->method('build');
+
+        $plugin = $this->createPlugin(
+            new SearchRankingClient(),
+            $storageClientMock,
+            $functionScoreBuilderMock,
+            null,
+            false,
+            null,
+            null,
+            null,
+            null,
+            $outOfBandStrategyMock,
+        );
+
+        $matchAll = new MatchAll();
+        $query = new Query($matchAll);
+
+        $searchQueryMock = $this->createMock(QueryInterface::class);
+        $searchQueryMock->method('getSearchQuery')->willReturn($query);
+
+        // Act
+        $result = $plugin->expandQuery($searchQueryMock, ['q' => 'gadget']);
+
+        // Assert — query body is the original MatchAll, never wrapped in a function_score.
+        $this->assertSame($searchQueryMock, $result);
+        $this->assertSame($matchAll, $query->getQuery());
+    }
+
     protected function createBrandDetectingAnalyzer(string $detectedBrand): QueryAnalyzerInterface
     {
         $analyzerMock = $this->createMock(QueryAnalyzerInterface::class);
@@ -499,6 +586,7 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
      * @param \SprykerCommunity\Client\SearchRanking\Semantic\SemanticQueryEmbeddingCacheInterface|null $embeddingCache
      * @param \SprykerCommunity\Client\SearchRanking\Intent\QueryAnalyzerInterface|null $queryAnalyzer
      * @param array<\SprykerCommunity\Client\SearchRanking\Intent\MsearchProbeRegistrarPluginInterface>|null $msearchProbeRegistrarPlugins
+     * @param \SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface|null $rankingStrategy
      */
     protected function createPlugin(
         SearchRankingClient $client,
@@ -510,6 +598,7 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
         ?SemanticQueryEmbeddingCacheInterface $embeddingCache = null,
         ?QueryAnalyzerInterface $queryAnalyzer = null,
         ?array $msearchProbeRegistrarPlugins = null,
+        ?RankingStrategyInterface $rankingStrategy = null,
     ): SearchRankingFunctionScoreQueryExpanderPlugin {
         $configMock = $this->createMock(SearchRankingConfig::class);
         $configMock->method('isSpecificityWeightingEnabled')->willReturn($isSpecificityWeightingEnabled);
@@ -533,6 +622,14 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
         if ($functionScoreBuilder !== null) {
             $factoryMock->method('createFunctionScoreBuilder')->willReturn($functionScoreBuilder);
         }
+
+        // The strategy seam: unless the test supplies its own strategy, the plugin resolves the real
+        // AdaptiveFormulaStrategy wrapping whatever FunctionScoreBuilder this helper was given (a mock in
+        // most tests, a real one otherwise) — so every existing `build(...)` assertion still holds, the
+        // call just now travels through the strategy's verbatim delegation.
+        $factoryMock->method('resolveRankingStrategy')->willReturn(
+            $rankingStrategy ?? new AdaptiveFormulaStrategy($functionScoreBuilder ?? new FunctionScoreBuilder()),
+        );
 
         if ($specificityCalculator !== null) {
             $factoryMock->method('createSpecificityWeightCalculator')->willReturn($specificityCalculator);

@@ -128,9 +128,7 @@ class SearchRankingDependencyProvider extends AbstractBundleDependencyProvider
      */
     protected function addEntityCorpusReaderPlugins(Container $container): Container
     {
-        $container->set(static::PLUGINS_ENTITY_CORPUS_READER, function (): array {
-            return $this->getEntityCorpusReaderPlugins();
-        });
+        $container->set(static::PLUGINS_ENTITY_CORPUS_READER, fn (): array => $this->getEntityCorpusReaderPlugins());
 
         return $container;
     }

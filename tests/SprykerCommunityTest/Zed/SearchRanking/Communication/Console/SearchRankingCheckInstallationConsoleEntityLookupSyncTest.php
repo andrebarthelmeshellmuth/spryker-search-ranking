@@ -10,20 +10,26 @@ declare(strict_types = 1);
 namespace SprykerCommunityTest\Zed\SearchRanking\Communication\Console;
 
 use Codeception\Test\Unit;
+use Generated\Shared\Transfer\SearchRankingEntityLookupSyncDiagnosisTransfer;
 use ReflectionMethod;
 use ReflectionProperty;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckInstallationConsole;
+use SprykerCommunity\Zed\SearchRanking\Communication\Installation\EntityLookupSyncInstallationCheckerInterface;
+use SprykerCommunity\Zed\SearchRanking\Communication\SearchRankingCommunicationFactory;
 use Symfony\Component\Console\Output\NullOutput;
 
 /**
  * PORTABLE unit coverage for {@see SearchRankingCheckInstallationConsole::checkEntityLookupSyncConfiguration()}'s
  * 0/1/2 decision logic, isolated from both real Propel/project state — unlike
  * {@see SearchRankingCheckInstallationConsoleTest}, which exercises this same console end-to-end against
- * THIS demoshop's own real wiring (`@group NeedsProject`). Reaches the two protected signal methods
- * ({@see SearchRankingCheckInstallationConsole::isEntityLookupCronConfigured()}/
- * {@see SearchRankingCheckInstallationConsole::isEntityLookupSyncPluginRegistered()}) via an anonymous
- * subclass that overrides them with controlled values, so this test exercises ONLY the combination logic,
- * never real class-resolution/introspection.
+ * THIS demoshop's own real wiring (`@group NeedsProject`). The actual signal computation
+ * (cron/event-hook introspection) lives in
+ * {@see \SprykerCommunity\Zed\SearchRanking\Communication\Installation\EntityLookupSyncInstallationChecker}
+ * now, covered separately by
+ * {@see \SprykerCommunityTest\Zed\SearchRanking\Communication\Installation\EntityLookupSyncInstallationCheckerTest} —
+ * this test stubs that checker out entirely (via an anonymous {@see SearchRankingCommunicationFactory}
+ * subclass returned from an overridden `getFactory()`) with controlled facts, so it exercises ONLY the
+ * combination logic and message wording, never real class-resolution/introspection.
  *
  * @group SprykerCommunityTest
  * @group Zed
@@ -100,33 +106,49 @@ class SearchRankingCheckInstallationConsoleEntityLookupSyncTest extends Unit
      */
     protected function runCheck(bool $cronConfigured, ?bool $eventHookRegistered): array
     {
-        $console = new class extends SearchRankingCheckInstallationConsole {
-            public bool $cronConfiguredOverride = false;
+        $diagnosisTransfer = (new SearchRankingEntityLookupSyncDiagnosisTransfer())
+            ->setCronConfigured($cronConfigured)
+            ->setEventHookRegistered($eventHookRegistered ?? false)
+            ->setEventHookRegistrationUnknown($eventHookRegistered === null);
 
-            public ?bool $eventHookRegisteredOverride = false;
-
-            protected function isEntityLookupCronConfigured(): bool
+        $checker = new class ($diagnosisTransfer) implements EntityLookupSyncInstallationCheckerInterface {
+            public function __construct(protected SearchRankingEntityLookupSyncDiagnosisTransfer $diagnosisTransfer)
             {
-                return $this->cronConfiguredOverride;
             }
 
-            protected function isEntityLookupSyncPluginRegistered(): ?bool
+            public function check(): SearchRankingEntityLookupSyncDiagnosisTransfer
             {
-                return $this->eventHookRegisteredOverride;
+                return $this->diagnosisTransfer;
             }
         };
-        $console->cronConfiguredOverride = $cronConfigured;
-        $console->eventHookRegisteredOverride = $eventHookRegistered;
+
+        $factory = new class ($checker) extends SearchRankingCommunicationFactory {
+            public function __construct(protected EntityLookupSyncInstallationCheckerInterface $checker)
+            {
+            }
+
+            public function createEntityLookupSyncInstallationChecker(): EntityLookupSyncInstallationCheckerInterface
+            {
+                return $this->checker;
+            }
+        };
+
+        $console = new class extends SearchRankingCheckInstallationConsole {
+            public SearchRankingCommunicationFactory $factoryOverride;
+
+            protected function getFactory(): SearchRankingCommunicationFactory
+            {
+                return $this->factoryOverride;
+            }
+        };
+        $console->factoryOverride = $factory;
 
         $reflectionMethod = new ReflectionMethod($console, 'checkEntityLookupSyncConfiguration');
-        $reflectionMethod->setAccessible(true);
         $reflectionMethod->invoke($console, new NullOutput());
 
         $failuresProperty = new ReflectionProperty(SearchRankingCheckInstallationConsole::class, 'failures');
-        $failuresProperty->setAccessible(true);
 
         $warningsProperty = new ReflectionProperty(SearchRankingCheckInstallationConsole::class, 'warnings');
-        $warningsProperty->setAccessible(true);
 
         return [$failuresProperty->getValue($console), $warningsProperty->getValue($console)];
     }

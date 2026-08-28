@@ -448,6 +448,7 @@ tree. PHP 8.2 is *not* supported — every `spryker/propel-orm` release that res
 |---|---|---|
 | OpenSearch 1.3.4 | 8.10.1 | ✅ |
 | OpenSearch 2.11.0 | 9.7.0 | ✅ |
+| OpenSearch 3.5.0 | 10.3.2 | ✅ |
 | Elasticsearch 8.11.0 | 9.8.0 | ✅ |
 
 The verification: a throwaway index with a `full-text` text field and a `scores` object (the same shape
@@ -465,6 +466,13 @@ section](https://github.com/andrebarthelmeshellmuth/spryker-search-debug#search-
 this package's own painless usage (`doc['field'].value`, `containsKey`, `size()`) is bog-standard,
 available on both lineages since well before the fork, so no engine-specific behavior was expected or
 found.
+
+**OpenSearch 3.5** (Lucene 10.3.2) was verified live end-to-end: demoshop upgraded from 1.3.4, full
+re-export/reindex, `check-compatibility` re-probed, live kNN and lexical queries confirmed. The ranking
+formula is byte-identical; `check-compatibility` picks up two capabilities the 1.x line never had (`hybrid`
+query and `_search/pipeline`). The environment work the upgrade needs — mostly for the optional
+`knn_vector` semantic-blend feature — is written up in
+[Migrating to OpenSearch 3.x](docs/opensearch-3.x-migration.md).
 
 ## Installation
 
@@ -527,6 +535,7 @@ use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckI
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingNormalizeConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingRandomizeConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingScopeCopySyncConsole;
+use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingSuggestIndexEntityLookupRebuildConsole;
 use SprykerCommunity\Zed\SearchRankingDataImport\SearchRankingDataImportConfig;
 
 new SearchRankingNormalizeConsole(),
@@ -534,6 +543,8 @@ new SearchRankingRandomizeConsole(),
 new SearchRankingCheckCompatibilityConsole(),
 new SearchRankingCheckInstallationConsole(),
 new SearchRankingScopeCopySyncConsole(),
+// optional — only if you use the entity-lookup sync feature (Intent-Aware Alpha Pass 2), see step 15a:
+new SearchRankingSuggestIndexEntityLookupRebuildConsole(),
 // optional per-entity import commands:
 new DataImportConsole(DataImportConsole::DEFAULT_NAME . static::COMMAND_SEPARATOR . SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_METRIC),
 new DataImportConsole(DataImportConsole::DEFAULT_NAME . static::COMMAND_SEPARATOR . SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_PRODUCT_METRIC),
@@ -1154,6 +1165,7 @@ the package and getting it installed:
 | [Terminology](docs/terminology.md) | The vocabulary this package uses and how each term maps to the code. |
 | [Design decisions](docs/design-decisions.md) | Why the publish and normalization pipelines work the way they do, rather than the more obvious alternatives. |
 | [Import file formats](docs/import-formats.md) | CSV shapes accepted by the data importers. |
+| [Migrating to OpenSearch 3.x](docs/opensearch-3.x-migration.md) | The capability delta vs 1.x, and the environment changes the semantic-blend feature needs on OpenSearch 3.x (k-NN engine, `index.knn` static setting, request-size limit, the neural-search empty-`properties` trap). |
 | [Testing and CI](docs/testing.md) | How this package is tested, which suites need a host shop, and what CI runs. |
 
 ## License

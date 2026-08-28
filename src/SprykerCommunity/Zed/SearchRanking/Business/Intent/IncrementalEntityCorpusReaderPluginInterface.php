@@ -58,8 +58,6 @@ interface IncrementalEntityCorpusReaderPluginInterface extends EntityCorpusReade
      * @api
      *
      * @param int $idProductAbstract
-     *
-     * @return bool
      */
     public function isProductAbstractActive(int $idProductAbstract): bool;
 
@@ -78,8 +76,6 @@ interface IncrementalEntityCorpusReaderPluginInterface extends EntityCorpusReade
      * @param string $term
      * @param int $idProductAbstract
      * @param int $idStore
-     *
-     * @return bool
      */
     public function isTermStillUsedElsewhere(string $term, int $idProductAbstract, int $idStore): bool;
 }

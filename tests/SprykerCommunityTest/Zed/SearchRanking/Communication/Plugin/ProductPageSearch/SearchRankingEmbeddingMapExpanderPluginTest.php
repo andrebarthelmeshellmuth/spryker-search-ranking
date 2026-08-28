@@ -13,7 +13,7 @@ use Codeception\Test\Unit;
 use Generated\Shared\Transfer\LocaleTransfer;
 use Generated\Shared\Transfer\PageMapTransfer;
 use Spryker\Zed\ProductPageSearchExtension\Dependency\PageMapBuilderInterface;
-use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
+use SprykerCommunity\Zed\SearchRanking\Business\SearchRankingFacade;
 use SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSearch\SearchRankingEmbeddingMapExpanderPlugin;
 
 /**
@@ -36,15 +36,25 @@ class SearchRankingEmbeddingMapExpanderPluginTest extends Unit
     public function testWritesTheEmbeddingFieldWhenTheProductDataHoldsAVector(): void
     {
         // Arrange
-        $productData = [SharedSearchRankingConfig::PAGE_INDEX_FIELD_EMBEDDING => [0.1, 0.2, 0.3]];
+        $productData = ['id_product_abstract' => 123, 'store' => 'DE'];
         $pageMapTransfer = new PageMapTransfer();
+        $localeTransfer = (new LocaleTransfer())->setLocaleName('de_DE');
+
+        $facadeMock = $this->createMock(SearchRankingFacade::class);
+        $facadeMock->expects($this->once())
+            ->method('findEmbeddingForProduct')
+            ->with(123, 'DE', 'de_DE')
+            ->willReturn([0.1, 0.2, 0.3]);
+
+        $plugin = new SearchRankingEmbeddingMapExpanderPlugin();
+        $plugin->setFacade($facadeMock);
 
         // Act
-        $result = (new SearchRankingEmbeddingMapExpanderPlugin())->expandProductMap(
+        $result = $plugin->expandProductMap(
             $pageMapTransfer,
             $this->createMock(PageMapBuilderInterface::class),
             $productData,
-            new LocaleTransfer(),
+            $localeTransfer,
         );
 
         // Assert
@@ -58,14 +68,25 @@ class SearchRankingEmbeddingMapExpanderPluginTest extends Unit
     public function testLeavesTheEmbeddingFieldUnsetWhenTheProductDataHasNoVector(): void
     {
         // Arrange
+        $productData = ['id_product_abstract' => 123, 'store' => 'DE'];
         $pageMapTransfer = new PageMapTransfer();
+        $localeTransfer = (new LocaleTransfer())->setLocaleName('de_DE');
+
+        $facadeMock = $this->createMock(SearchRankingFacade::class);
+        $facadeMock->expects($this->once())
+            ->method('findEmbeddingForProduct')
+            ->with(123, 'DE', 'de_DE')
+            ->willReturn(null);
+
+        $plugin = new SearchRankingEmbeddingMapExpanderPlugin();
+        $plugin->setFacade($facadeMock);
 
         // Act
-        $result = (new SearchRankingEmbeddingMapExpanderPlugin())->expandProductMap(
+        $result = $plugin->expandProductMap(
             $pageMapTransfer,
             $this->createMock(PageMapBuilderInterface::class),
-            [],
-            new LocaleTransfer(),
+            $productData,
+            $localeTransfer,
         );
 
         // Assert

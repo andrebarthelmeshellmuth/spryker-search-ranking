@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking;
 
 use Elastica\Client;
+use Generated\Shared\Transfer\SearchRankingQueryContextTransfer;
 use Spryker\Client\Kernel\AbstractFactory;
 use Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig;
 use Spryker\Shared\SearchElasticsearch\ElasticaClient\ElasticaClientFactory;
@@ -46,6 +47,8 @@ use SprykerCommunity\Client\SearchRanking\Semantic\EmbeddingClientInterface;
 use SprykerCommunity\Client\SearchRanking\Semantic\SemanticQueryEmbeddingCache;
 use SprykerCommunity\Client\SearchRanking\Semantic\SemanticQueryEmbeddingCacheInterface;
 use SprykerCommunity\Client\SearchRanking\Semantic\TextEmbeddingsInferenceClient;
+use SprykerCommunity\Client\SearchRanking\Strategy\AdaptiveFormulaStrategy;
+use SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface;
 use SprykerCommunity\Shared\SearchRanking\Intent\QueryWindowExtractor;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig as SharedSearchRankingConfig;
 
@@ -57,6 +60,65 @@ class SearchRankingFactory extends AbstractFactory
     public function createFunctionScoreBuilder(): FunctionScoreBuilderInterface
     {
         return new FunctionScoreBuilder();
+    }
+
+    /**
+     * The active {@see RankingStrategyInterface} stack for the current request — this package's own
+     * built-in default ({@see AdaptiveFormulaStrategy}, always first) plus whatever a project registered
+     * via {@see SearchRankingDependencyProvider::PLUGINS_RANKING_STRATEGY}. Mirrors {@see getQueryAnalyzers()}:
+     * a fresh instance every call, built-in default first, project plugins appended.
+     *
+     * @return array<\SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface>
+     */
+    public function getRankingStrategies(): array
+    {
+        return array_merge(
+            [
+                $this->createAdaptiveFormulaStrategy(),
+            ],
+            $this->getRankingStrategyPlugins(),
+        );
+    }
+
+    public function createAdaptiveFormulaStrategy(): RankingStrategyInterface
+    {
+        return new AdaptiveFormulaStrategy($this->createFunctionScoreBuilder());
+    }
+
+    /**
+     * @return array<\SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface>
+     */
+    public function getRankingStrategyPlugins(): array
+    {
+        return $this->getProvidedDependency(SearchRankingDependencyProvider::PLUGINS_RANKING_STRATEGY);
+    }
+
+    /**
+     * Resolves the strategy for this query: the FIRST registered strategy (other than the built-in
+     * fallback) whose {@see RankingStrategyInterface::supports()} returns `true`, else
+     * {@see AdaptiveFormulaStrategy} — which `supports()` everything and is therefore the guaranteed
+     * last-resort fallback regardless of where it sits in the stack. With no project plugins registered,
+     * {@see AdaptiveFormulaStrategy} is always the resolved strategy, byte-identical to pre-Phase-3.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingQueryContextTransfer $queryContextTransfer
+     */
+    public function resolveRankingStrategy(SearchRankingQueryContextTransfer $queryContextTransfer): RankingStrategyInterface
+    {
+        $fallbackRankingStrategy = null;
+
+        foreach ($this->getRankingStrategies() as $rankingStrategy) {
+            if ($rankingStrategy->getName() === AdaptiveFormulaStrategy::NAME) {
+                $fallbackRankingStrategy = $rankingStrategy;
+
+                continue;
+            }
+
+            if ($rankingStrategy->supports($queryContextTransfer)) {
+                return $rankingStrategy;
+            }
+        }
+
+        return $fallbackRankingStrategy ?? $this->createAdaptiveFormulaStrategy();
     }
 
     public function createRandomImpactCalculator(): RandomImpactCalculatorInterface

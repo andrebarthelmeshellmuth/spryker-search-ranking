@@ -16,19 +16,17 @@ use Generated\Shared\Transfer\DataImportConfigurationActionTransfer;
 use Generated\Shared\Transfer\DataImportConfigurationTransfer;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use ReflectionMethod;
 use SimpleXMLElement;
 use Spryker\Client\SearchElasticsearch\SearchElasticsearchConfig;
 use Spryker\Shared\Config\Config;
 use Spryker\Shared\Kernel\KernelConstants;
 use Spryker\Shared\SearchElasticsearch\ElasticaClient\ElasticaClientFactory;
 use Spryker\Zed\Kernel\ClassResolver\Config\BundleConfigResolver;
-use Spryker\Zed\Kernel\ClassResolver\DependencyProvider\DependencyProviderResolver;
 use Spryker\Zed\Kernel\Communication\Console\Console;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingConfig;
 use SprykerCommunity\Shared\SearchRanking\SearchRankingEvents;
 use SprykerCommunity\Shared\SearchRankingStorage\SearchRankingStorageConfig;
-use SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSearch\SearchRankingEntityLookupSyncPlugin;
+use SprykerCommunity\Zed\SearchRanking\Communication\Installation\GlueApiWiringInstallationCheckerInterface;
 use SprykerCommunity\Zed\SearchRankingDataImport\SearchRankingDataImportConfig;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -117,16 +115,6 @@ class SearchRankingCheckInstallationConsole extends Console
     protected const SCHEDULER_CONFIG_CLASS = 'Spryker\\Zed\\SymfonyScheduler\\SymfonySchedulerConfig';
 
     /**
-     * Referenced as a string for the same reason as {@see SCHEDULER_CONFIG_CLASS}: resolved via
-     * {@see \Spryker\Zed\Kernel\ClassResolver\DependencyProvider\DependencyProviderResolver} to find
-     * whichever project namespace's own override exists (falling back to core's own, which registers
-     * nothing of this package's) — see {@see isEntityLookupSyncPluginRegistered()}.
-     *
-     * @var string
-     */
-    protected const PRODUCT_PAGE_SEARCH_DEPENDENCY_PROVIDER_CLASS = 'Spryker\\Zed\\ProductPageSearch\\ProductPageSearchDependencyProvider';
-
-    /**
      * This package's own navigation.xml, relative to this console's directory — the source of truth for
      * which page keys a project is expected to have copied.
      *
@@ -140,24 +128,6 @@ class SearchRankingCheckInstallationConsole extends Console
      * @var string
      */
     protected const PACKAGE_ROOT_RELATIVE_PATH = '/../../../../../..';
-
-    /**
-     * This package only ADDITIVELY merges a `randomImpact` property onto core's `catalog-search` resource
-     * (spryker/catalog-search-rest-api) — the merged schema is what this class name check confirms exists.
-     *
-     * @var string
-     */
-    protected const GLUE_API_RESOURCE_CLASS_NAME = 'Generated\\Api\\Storefront\\CatalogSearchStorefrontResource';
-
-    /**
-     * README, "Glue REST API": the merge alone is not enough — a project-level Provider override is
-     * required to actually copy the value into the response (the merged schema only describes SHAPE).
-     * Relative to `APPLICATION_ROOT_DIR`, shared with spryker-community/search-debug's own `searchDebug`
-     * property (both packages document registering this same override once).
-     *
-     * @var string
-     */
-    protected const GLUE_API_PROVIDER_OVERRIDE_RELATIVE_PATH = '/src/Pyz/Glue/CatalogSearchRestApi/Api/Storefront/Provider/CatalogSearchStorefrontProvider.php';
 
     /**
      * The locale whose catalog defines the expected key set; the others are kept at parity with it.
@@ -634,12 +604,13 @@ class SearchRankingCheckInstallationConsole extends Console
      */
     protected function checkEntityLookupSyncConfiguration(OutputInterface $output): void
     {
-        $cronConfigured = $this->isEntityLookupCronConfigured();
-        $eventHookRegistered = $this->isEntityLookupSyncPluginRegistered();
+        $diagnosisTransfer = $this->getFactory()->createEntityLookupSyncInstallationChecker()->check();
 
-        if ($eventHookRegistered === null) {
+        $cronConfigured = $diagnosisTransfer->getCronConfiguredOrFail();
+        $eventHookRegistered = $diagnosisTransfer->getEventHookRegisteredOrFail();
+
+        if ($diagnosisTransfer->getEventHookRegistrationUnknownOrFail()) {
             $this->warnings[] = 'Could not introspect Pyz\Zed\ProductPageSearch\ProductPageSearchDependencyProvider to check whether SearchRankingEntityLookupSyncPlugin is registered (spryker/product-page-search may not be installed). Confirm by hand, or rely on cron mode instead.';
-            $eventHookRegistered = false;
         }
 
         if ($cronConfigured && $eventHookRegistered) {
@@ -663,79 +634,6 @@ class SearchRankingCheckInstallationConsole extends Console
 
         $output->writeln('<info>✓</info> entity-lookup sync: event-hook mode wired (SearchRankingEntityLookupSyncPlugin registered)');
         $this->warnings[] = 'Entity-lookup cron sync is not declared (isEntityLookupCronConfigured() returns false). This is expected since event-hook mode is wired — ignore unless you meant to rely on a periodic rebuild cron instead.';
-    }
-
-    /**
-     * The "declared cron" signal for {@see checkEntityLookupSyncConfiguration()}. Prefers the SAME real
-     * introspection {@see findRegisteredCronJobs()} already does for this package's other cron commands —
-     * if `search-ranking:entity-lookup:suggest-index:rebuild` shows up in the resolved scheduler config,
-     * cron mode is genuinely wired, not just declared. Falls back to
-     * {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::isEntityLookupCronConfigured()}'s
-     * self-declared flag when the scheduler config isn't resolvable (module absent, or a project schedules
-     * jobs another way entirely) — see that method's own docblock.
-     */
-    protected function isEntityLookupCronConfigured(): bool
-    {
-        if ($this->getFactory()->getConfig()->isEntityLookupCronConfigured()) {
-            return true;
-        }
-
-        $cronJobs = $this->findRegisteredCronJobs();
-
-        if ($cronJobs === null) {
-            return false;
-        }
-
-        $registeredCommands = implode(' ', array_column($cronJobs, 'command'));
-
-        return str_contains($registeredCommands, SearchRankingSuggestIndexEntityLookupRebuildConsole::COMMAND_NAME);
-    }
-
-    /**
-     * The "verified event-hook wiring" signal for {@see checkEntityLookupSyncConfiguration()} — real
-     * introspection of the resolved `Pyz\Zed\ProductPageSearch\ProductPageSearchDependencyProvider::getDataLoaderPlugins()`
-     * plugin stack (a protected method, reached via {@see \ReflectionMethod} the same way core's own
-     * bootstrap invokes it — there is no public API to list a bundle's registered plugins), NOT the
-     * `isEntityLookupEventSyncEnabled()` config flag: a registered-but-disabled plugin and an
-     * enabled-but-never-registered flag both mean the event-hook does nothing, but only THIS check can
-     * tell "class registered" apart from "class never wired at all", which is the failure this package can
-     * actually help a project catch (a stale config flag alone cannot).
-     *
-     * Null means "cannot tell" (module absent, or the resolved provider couldn't be reflected into) —
-     * deliberately treated as "not registered" by the caller, same as {@see findRegisteredCronJobs()}'s own
-     * null-vs-empty distinction elsewhere in this class.
-     */
-    protected function isEntityLookupSyncPluginRegistered(): ?bool
-    {
-        if (!class_exists(static::PRODUCT_PAGE_SEARCH_DEPENDENCY_PROVIDER_CLASS)) {
-            return null;
-        }
-
-        try {
-            $dependencyProvider = (new DependencyProviderResolver())->resolve(static::PRODUCT_PAGE_SEARCH_DEPENDENCY_PROVIDER_CLASS);
-
-            if (!method_exists($dependencyProvider, 'getDataLoaderPlugins')) {
-                return null;
-            }
-
-            $reflectionMethod = new ReflectionMethod($dependencyProvider, 'getDataLoaderPlugins');
-            $reflectionMethod->setAccessible(true);
-            $dataLoaderPlugins = $reflectionMethod->invoke($dependencyProvider);
-        } catch (Throwable) {
-            return null;
-        }
-
-        if (!is_array($dataLoaderPlugins)) {
-            return null;
-        }
-
-        foreach ($dataLoaderPlugins as $dataLoaderPlugin) {
-            if ($dataLoaderPlugin instanceof SearchRankingEntityLookupSyncPlugin) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -1013,84 +911,35 @@ class SearchRankingCheckInstallationConsole extends Console
     }
 
     /**
-     * Two independent things have to both be true for `randomImpact` to actually appear on
-     * `GET /catalog-search` (README, "Glue REST API"), and only the FIRST is something core/this
-     * package's own composer install guarantees:
-     *
-     * 1. The additive schema merge ran: `Generated\Api\Storefront\CatalogSearchStorefrontResource` (core's
-     *    resource, merged with this package's own `resources/api/storefront/catalog-search.resource.yml`)
-     *    has a `getRandomImpact()` accessor. A project on a composer PATH REPOSITORY install (this
-     *    demoshop's own setup) can silently fail this even with everything else correct — Symfony's
-     *    `Finder` does not descend into symlinked directories without `->followLinks()`, so this package's
-     *    schema file is invisible to `glue api:generate` unless the project registered
-     *    `Pyz\Glue\ApiPlatformSymlinkFix\{SchemaFinder,ValidationSchemaFinder}` (see search-debug's README,
-     *    "Glue REST API", for the full analysis — shared across every community package).
-     * 2. A project-level Provider override actually copies the value in at request time — the merged
-     *    schema only describes SHAPE, nothing in either package populates the response without it. Not
-     *    optional in the sense frozen replay is optional elsewhere in this command family: a project that
-     *    has done step 1 almost certainly intends `randomImpact` to actually work, so a missing override
-     *    here is worth a WARNING either way — but neither half can be a FAILURE, since a project that does
-     *    not run a Glue Storefront application at all is a legitimate, common configuration.
+     * Whether `randomImpact` will actually appear on a `GET /catalog-search` Glue response — the schema
+     * merge and a project-level Provider override both have to be in place. Neither half is ever a
+     * FAILURE (a shop that runs no Glue Storefront app is a legitimate config); an incomplete override
+     * after the merge succeeded is a WARNING. The facts are established by
+     * {@see \SprykerCommunity\Zed\SearchRanking\Communication\Installation\GlueApiWiringInstallationChecker};
+     * this method only renders them.
      *
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      */
     protected function checkGlueApiWiring(OutputInterface $output): void
     {
-        $resourceClassName = $this->getGlueApiResourceClassName();
+        $result = $this->getGlueApiWiringInstallationChecker()->check();
 
-        if (!class_exists($resourceClassName) || !method_exists($resourceClassName, 'getRandomImpact')) {
-            $this->warnings[] = sprintf(
-                '%s does not have a getRandomImpact() accessor yet: either `vendor/bin/glue api:generate storefront` has not been run since this package was installed, or (on a composer path-repository install) the Finder symlink-traversal fix from search-debug\'s README, "Glue REST API" is missing. GET /catalog-search will not include randomImpact until this is resolved. Skip this if your project does not run a Glue Storefront application.',
-                $resourceClassName,
-            );
-
-            return;
+        foreach ($result['messages'] as $message) {
+            $output->writeln(sprintf('<info>✓</info> %s', $message));
         }
 
-        $output->writeln(sprintf('<info>✓</info> Glue API schema merge: %s has a randomImpact property', $resourceClassName));
-
-        $overrideFilePath = $this->getGlueApiProviderOverrideFilePath();
-
-        if (!is_readable($overrideFilePath)) {
-            $this->warnings[] = sprintf(
-                'The schema merge is in place, but no project-level %s override exists (README, "Glue REST API"). The merged schema only describes SHAPE — without this override, randomImpact is silently omitted from every GET /catalog-search response.',
-                static::GLUE_API_PROVIDER_OVERRIDE_RELATIVE_PATH,
-            );
-
-            return;
+        foreach ($result['warnings'] as $warning) {
+            $this->warnings[] = $warning;
         }
-
-        $overrideFileContents = (string)file_get_contents($overrideFilePath);
-
-        if (!str_contains($overrideFileContents, SearchRankingConfig::RANDOM_IMPACT_RESULT_KEY)) {
-            $this->warnings[] = sprintf(
-                '%s exists but does not reference "%s" — randomImpact is still silently omitted from GET /catalog-search (README, "Glue REST API").',
-                static::GLUE_API_PROVIDER_OVERRIDE_RELATIVE_PATH,
-                SearchRankingConfig::RANDOM_IMPACT_RESULT_KEY,
-            );
-
-            return;
-        }
-
-        $output->writeln('<info>✓</info> project-level CatalogSearchStorefrontProvider override wires randomImpact into the Glue response');
     }
 
     /**
-     * Isolated as its own method so a test can override it to point at a fixture class name instead of
-     * this host shop's real generated Glue resource.
+     * Seam: a test overrides this to return a checker pointed at fixtures instead of this host shop's
+     * real generated Glue resource / real project override file.
      */
-    protected function getGlueApiResourceClassName(): string
+    protected function getGlueApiWiringInstallationChecker(): GlueApiWiringInstallationCheckerInterface
     {
-        return static::GLUE_API_RESOURCE_CLASS_NAME;
-    }
-
-    /**
-     * Isolated as its own method so a test can override it to point at a fixture file instead of this
-     * host shop's real `src/Pyz/Glue/CatalogSearchRestApi/Api/Storefront/Provider/CatalogSearchStorefrontProvider.php`.
-     */
-    protected function getGlueApiProviderOverrideFilePath(): string
-    {
-        return APPLICATION_ROOT_DIR . static::GLUE_API_PROVIDER_OVERRIDE_RELATIVE_PATH;
+        return $this->getFactory()->createGlueApiWiringInstallationChecker();
     }
 
     /**

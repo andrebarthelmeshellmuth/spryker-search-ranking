@@ -123,8 +123,6 @@ class SuggestIndexEntityLookupRebuilderTest extends Unit
     /**
      * @param string $entityType
      * @param array<int, string> $terms
-     *
-     * @return \PHPUnit\Framework\MockObject\MockObject|\SprykerCommunity\Zed\SearchRanking\Business\Intent\EntityCorpusReaderPluginInterface
      */
     protected function createEntityCorpusReaderPluginMock(string $entityType, array $terms): EntityCorpusReaderPluginInterface
     {

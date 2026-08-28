@@ -12,6 +12,7 @@ namespace SprykerCommunity\Zed\SearchRanking\Communication\Plugin\ProductPageSea
 use Generated\Shared\Transfer\ProductPageLoadTransfer;
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
 use Spryker\Zed\ProductPageSearchExtension\Dependency\Plugin\ProductPageDataLoaderPluginInterface;
+use Throwable;
 
 /**
  * The event-pipeline hook for Pass 2's entity-lookup near-live sync mode — the ONE plugin interface in the
@@ -52,7 +53,17 @@ class SearchRankingEntityLookupSyncPlugin extends AbstractPlugin implements Prod
             return $productPageLoadTransfer;
         }
 
-        $this->getFacade()->syncEntityLookupForProductAbstracts($productPageLoadTransfer->getProductAbstractIds());
+        try {
+            $this->getFacade()->syncEntityLookupForProductAbstracts($productPageLoadTransfer->getProductAbstractIds());
+        } catch (Throwable) {
+            // The entity-lookup index is a SECONDARY, best-effort structure (SKU/brand/category term
+            // dictionary for query-time intent detection) — it is rebuilt in full by
+            // `search-ranking:suggest-index-entity-lookup:rebuild` and self-heals on the next publish of
+            // each product. A transient failure here (e.g. Elastica marking a connection dead under heavy
+            // reindex load) must never fail the surrounding product-page publish, which owns the primary
+            // `page` search index. Same degrade-silently posture this package already takes for every other
+            // best-effort signal (semantic query-embedding cache, in-memory entity lookup).
+        }
 
         return $productPageLoadTransfer;
     }

@@ -158,8 +158,6 @@ class EntityLookupIncrementalSyncerTest extends Unit
      * @param array<int, string> $terms
      * @param bool $isActive
      * @param bool $isStillUsedElsewhere
-     *
-     * @return \PHPUnit\Framework\MockObject\MockObject|\SprykerCommunity\Zed\SearchRanking\Business\Intent\IncrementalEntityCorpusReaderPluginInterface
      */
     protected function createIncrementalPluginMock(
         string $entityType,

@@ -15,6 +15,7 @@ use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use Spryker\Client\Kernel\AbstractClient;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInterface;
+use SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface;
 
 /**
  * @method \SprykerCommunity\Client\SearchRanking\SearchRankingFactory getFactory()
@@ -75,6 +76,21 @@ class SearchRankingClient extends AbstractClient implements SearchRankingClientI
     public function createQuerySpecificityCalculator(): QuerySpecificityCalculatorInterface
     {
         return $this->getFactory()->createQuerySpecificityCalculator();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @return array<int, string>
+     */
+    public function getRegisteredRankingStrategyNames(): array
+    {
+        return array_map(
+            static fn (RankingStrategyInterface $rankingStrategy): string => $rankingStrategy->getName(),
+            $this->getFactory()->getRankingStrategies(),
+        );
     }
 
     /**

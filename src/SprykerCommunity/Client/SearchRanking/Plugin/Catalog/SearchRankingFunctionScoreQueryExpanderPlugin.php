@@ -19,6 +19,7 @@ use Spryker\Client\SearchExtension\Dependency\Plugin\QueryExpanderPluginInterfac
 use Spryker\Client\SearchExtension\Dependency\Plugin\QueryInterface;
 use Spryker\Client\SearchExtension\Dependency\Plugin\SearchStringGetterInterface;
 use SprykerCommunity\Client\SearchRanking\Semantic\EmbeddingUnavailableException;
+use SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyExecutionMode;
 
 /**
  * @method \SprykerCommunity\Client\SearchRanking\SearchRankingFactory getFactory()
@@ -65,6 +66,14 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
      *   hit's normalized signals without another round trip.
      * - Leaves the query untouched when there is no search string (category/browse pages), when no
      *   ranking configuration is synchronized, or when no active metric has a non-zero weight.
+     * - **Ranking strategy seam (v2 Phase 3)**: the `function_score` above is produced by the
+     *   {@see \SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface} resolved for this
+     *   query (see {@see \SprykerCommunity\Client\SearchRanking\SearchRankingFactory::resolveRankingStrategy()}).
+     *   With no project strategy registered, that is always
+     *   {@see \SprykerCommunity\Client\SearchRanking\Strategy\AdaptiveFormulaStrategy}, which delegates
+     *   verbatim to `FunctionScoreBuilder` — byte-identical to before the seam existed. Only a body-only
+     *   strategy is auto-applied here; an active out-of-band strategy makes this plugin leave the query
+     *   body untouched (a dedicated out-of-band execution path, not yet built, runs it).
      *
      * @api
      *
@@ -119,7 +128,20 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
 
         $queryVector = $this->resolveQueryVector($searchString, $configurationTransfer);
 
-        $functionScore = $this->getFactory()->createFunctionScoreBuilder()->build(
+        $rankingStrategy = $this->getFactory()->resolveRankingStrategy($queryContextTransfer);
+
+        if ($rankingStrategy->getExecutionMode() !== RankingStrategyExecutionMode::MODE_BODY_ONLY) {
+            // TODO out-of-band strategy execution path (v2 Phase 5): an out-of-band strategy (neural
+            // rerank second pass, ML inference, `search_pipeline` URL param, `_plugins/*`) cannot be
+            // applied from a query-expander plugin — Spryker\Client\SearchElasticsearch\Search\Search::
+            // executeQuery() runs `$index->search($query->getSearchQuery())` and never forwards
+            // `$options`, so nothing outside the request body can be set here. Leave the query body
+            // untouched; the (not-yet-built) out-of-band path is responsible for running this strategy.
+            // The query context is still remembered above, so that path can pick the resolved strategy up.
+            return $searchQuery;
+        }
+
+        $functionScore = $rankingStrategy->build(
             $wrappedQuery,
             $configurationTransfer,
             $queryVector,

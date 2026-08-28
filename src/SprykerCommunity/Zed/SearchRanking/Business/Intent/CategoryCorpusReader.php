@@ -79,7 +79,7 @@ class CategoryCorpusReader implements CategoryCorpusReaderInterface, Incremental
         }
 
         $categories = array_filter(
-            array_map('strval', $query->find()->getData()),
+            array_map(static fn (mixed $value): string => (string)$value, $query->find()->getData()),
             static fn (string $category): bool => trim($category) !== '',
         );
 
@@ -94,7 +94,7 @@ class CategoryCorpusReader implements CategoryCorpusReaderInterface, Incremental
     protected function getIdCategoriesForStore(int $idStore): array
     {
         return array_map(
-            'intval',
+            static fn (mixed $value): int => (int)$value,
             SpyCategoryStoreQuery::create()
                 ->filterByFkStore($idStore)
                 ->select([SpyCategoryStoreTableMap::COL_FK_CATEGORY])
@@ -111,7 +111,7 @@ class CategoryCorpusReader implements CategoryCorpusReaderInterface, Incremental
     protected function getIdProductAbstractsForStore(int $idStore): array
     {
         return array_map(
-            'intval',
+            static fn (mixed $value): int => (int)$value,
             SpyProductAbstractStoreQuery::create()
                 ->filterByFkStore($idStore)
                 ->select([SpyProductAbstractStoreTableMap::COL_FK_PRODUCT_ABSTRACT])
@@ -139,7 +139,7 @@ class CategoryCorpusReader implements CategoryCorpusReaderInterface, Incremental
             $query->filterByFkProductAbstract_In($idProductAbstracts);
         }
 
-        return array_map('intval', $query->find()->getData());
+        return array_map(static fn (mixed $value): int => (int)$value, $query->find()->getData());
     }
 
     /**
@@ -162,7 +162,7 @@ class CategoryCorpusReader implements CategoryCorpusReaderInterface, Incremental
         }
 
         $idCategoriesWithActiveProducts = array_map(
-            'intval',
+            static fn (mixed $value): int => (int)$value,
             SpyProductCategoryQuery::create()
                 ->filterByFkProductAbstract_In($activeIdProductAbstracts)
                 ->select([SpyProductCategoryTableMap::COL_FK_CATEGORY])
@@ -195,7 +195,7 @@ class CategoryCorpusReader implements CategoryCorpusReaderInterface, Incremental
     public function getTermsForProductAbstract(int $idProductAbstract): array
     {
         $idCategories = array_map(
-            'intval',
+            static fn (mixed $value): int => (int)$value,
             SpyProductCategoryQuery::create()
                 ->filterByFkProductAbstract($idProductAbstract)
                 ->select([SpyProductCategoryTableMap::COL_FK_CATEGORY])
@@ -209,7 +209,7 @@ class CategoryCorpusReader implements CategoryCorpusReaderInterface, Incremental
         }
 
         $categories = array_filter(
-            array_map('strval', SpyCategoryAttributeQuery::create()
+            array_map(static fn (mixed $value): string => (string)$value, SpyCategoryAttributeQuery::create()
                 ->select([SpyCategoryAttributeTableMap::COL_NAME])
                 ->filterByFkCategory_In($idCategories)
                 ->find()
@@ -226,8 +226,6 @@ class CategoryCorpusReader implements CategoryCorpusReaderInterface, Incremental
      * @api
      *
      * @param int $idProductAbstract
-     *
-     * @return bool
      */
     public function isProductAbstractActive(int $idProductAbstract): bool
     {
@@ -242,8 +240,6 @@ class CategoryCorpusReader implements CategoryCorpusReaderInterface, Incremental
      * @param string $term
      * @param int $idProductAbstract
      * @param int $idStore
-     *
-     * @return bool
      */
     public function isTermStillUsedElsewhere(string $term, int $idProductAbstract, int $idStore): bool
     {
@@ -254,7 +250,7 @@ class CategoryCorpusReader implements CategoryCorpusReaderInterface, Incremental
         }
 
         $categoryNames = array_map(
-            'strval',
+            static fn (mixed $value): string => (string)$value,
             SpyCategoryAttributeQuery::create()
                 ->select([SpyCategoryAttributeTableMap::COL_NAME])
                 ->filterByFkCategory_In($idCategoriesWithOtherActiveProducts)
@@ -286,7 +282,7 @@ class CategoryCorpusReader implements CategoryCorpusReaderInterface, Incremental
         }
 
         $idCategoriesWithActiveProducts = array_map(
-            'intval',
+            static fn (mixed $value): int => (int)$value,
             SpyProductCategoryQuery::create()
                 ->filterByFkProductAbstract_In($otherActiveIdProductAbstracts)
                 ->select([SpyProductCategoryTableMap::COL_FK_CATEGORY])

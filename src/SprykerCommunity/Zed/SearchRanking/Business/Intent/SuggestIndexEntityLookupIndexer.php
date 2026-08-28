@@ -83,8 +83,6 @@ class SuggestIndexEntityLookupIndexer implements SuggestIndexEntityLookupIndexer
      * @param string $indexName
      * @param string $type
      * @param array<int, string> $terms
-     *
-     * @return int
      */
     public function replaceTerms(string $indexName, string $type, array $terms): int
     {
@@ -125,8 +123,6 @@ class SuggestIndexEntityLookupIndexer implements SuggestIndexEntityLookupIndexer
      * @param string $indexName
      * @param string $type
      * @param array<int, string> $terms
-     *
-     * @return int
      */
     public function upsertTerms(string $indexName, string $type, array $terms): int
     {
@@ -159,8 +155,6 @@ class SuggestIndexEntityLookupIndexer implements SuggestIndexEntityLookupIndexer
      * @param string $indexName
      * @param string $type
      * @param array<int, string> $terms
-     *
-     * @return int
      */
     public function removeTerms(string $indexName, string $type, array $terms): int
     {
@@ -168,7 +162,7 @@ class SuggestIndexEntityLookupIndexer implements SuggestIndexEntityLookupIndexer
             return 0;
         }
 
-        $termsNormalized = array_map([EntityTermNormalizer::class, 'normalize'], $terms);
+        $termsNormalized = array_map(EntityTermNormalizer::normalize(...), $terms);
 
         $response = $this->elasticaClient->request($indexName . '/_delete_by_query', Request::POST, [
             'query' => [
