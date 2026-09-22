@@ -169,18 +169,18 @@ class SearchRankingConfig extends AbstractBundleConfig
 
     /**
      * Specification:
-     * - Default blend weight (alpha) combining normalized text relevance with the semantic (kNN cosine
+     * - Default blend weight (beta) combining normalized text relevance with the semantic (kNN cosine
      *   similarity) term, when none was saved in Zed yet.
      * - **1.0, 100% lexical** — deliberately the neutral/off value: a shop that never touches this setting
      *   sees byte-identical scoring to before hybrid search existed (see
      *   {@see \SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder}, which skips the semantic
-     *   term entirely — no script complexity added — whenever `alpha == 1.0` or no query vector was
+     *   term entirely — no script complexity added — whenever `beta == 1.0` or no query vector was
      *   resolved). Not exposed in the Zed GUI yet; tune by writing the setting directly until a measured
      *   basis for a form field exists.
      *
      * @api
      */
-    public function getDefaultAlpha(): float
+    public function getDefaultBeta(): float
     {
         return 1.0;
     }

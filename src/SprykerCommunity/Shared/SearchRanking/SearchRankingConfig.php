@@ -118,16 +118,19 @@ class SearchRankingConfig
 
     /**
      * Specification:
-     * - Setting key of the blend weight (alpha) combining normalized text relevance with the semantic
+     * - Setting key of the blend weight (beta) combining normalized text relevance with the semantic
      *   (kNN cosine similarity) term, inside FunctionScoreBuilder's text-relevance component. `1.0`
      *   (default) means 100% lexical — see {@see \SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilder}
-     *   for the exact formula.
+     *   for the exact formula. Deliberately NOT called `alpha`: {@see SETTING_KEY_RELEVANCE_WEIGHT}'s own
+     *   shorthand is already `α` in this package's docs (see terminology.md) for a different blend
+     *   entirely (text relevance vs. business signals) — reusing the name here would make the two easy to
+     *   conflate.
      *
      * @api
      *
      * @var string
      */
-    public const SETTING_KEY_ALPHA = 'alpha';
+    public const SETTING_KEY_BETA = 'beta';
 
     /**
      * Specification:

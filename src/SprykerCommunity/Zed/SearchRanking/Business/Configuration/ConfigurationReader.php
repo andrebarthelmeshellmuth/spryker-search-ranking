@@ -47,7 +47,7 @@ class ConfigurationReader implements ConfigurationReaderInterface
             ->setMetricWeights($this->getActiveMetricWeights($storeName, $localeName))
             ->setRelevanceWeight($this->settingManager->getRelevanceWeight($storeName, $localeName))
             ->setRelevanceSaturationPoint($this->settingManager->getRelevanceSaturationPoint($storeName, $localeName))
-            ->setAlpha($this->settingManager->getAlpha($storeName, $localeName))
+            ->setBeta($this->settingManager->getBeta($storeName, $localeName))
             ->setSpecificityBlendWeight($this->settingManager->getSpecificityBlendWeight($storeName, $localeName))
             ->setSpecificitySaturationPoint($this->settingManager->getSpecificitySaturationPoint($storeName, $localeName))
             ->setSpecificityCurveExponent($this->settingManager->getSpecificityCurveExponent($storeName, $localeName))

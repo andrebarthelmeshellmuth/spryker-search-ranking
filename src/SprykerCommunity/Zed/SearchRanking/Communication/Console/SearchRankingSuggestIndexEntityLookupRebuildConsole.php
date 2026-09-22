@@ -16,11 +16,13 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Pass 2 of "Intent-Aware Alpha": full rebuild of the OpenSearch `completion`-suggester-backed entity
- * dictionary {@see \SprykerCommunity\Client\SearchRanking\Intent\SuggestIndexEntityLookup} reads at query
- * time — the large-adopter-scale sibling of `search-ranking:entity-lookup:rebuild` (which populates the
- * KV-backed tier instead). Reads the exact same underlying corpus, just writes it to a different place;
- * safe to run repeatedly.
+ * Full rebuild of the OpenSearch `completion`-suggester-backed entity dictionary
+ * {@see \SprykerCommunity\Client\SearchRanking\Intent\SuggestIndexEntityLookup} reads at query time.
+ *
+ * This is NOT the storefront autosuggest-while-typing widget — that dictionary backs a UI-facing
+ * typeahead dropdown. This one is an internal, never-displayed index that query-intent analyzers
+ * (SKU/brand/category detection) use to answer a single yes/no question per incoming search string:
+ * "is this exactly a known identifier?" Full rebuild only, safe to run repeatedly.
  *
  * @method \SprykerCommunity\Zed\SearchRanking\Business\SearchRankingFacadeInterface getFacade()
  */
@@ -34,7 +36,7 @@ class SearchRankingSuggestIndexEntityLookupRebuildConsole extends Console
     /**
      * @var string
      */
-    public const COMMAND_DESCRIPTION = 'Rebuilds the OpenSearch completion-suggester-backed entity dictionary (Pass 2 of Intent-Aware Alpha) from the live catalog. Full rebuild only.';
+    public const COMMAND_DESCRIPTION = 'Rebuilds the internal query-intent entity dictionary (SKU/brand/category exact-match lookup) from the live catalog. Not the storefront autosuggest-while-typing widget. Full rebuild only.';
 
     /**
      * @var string

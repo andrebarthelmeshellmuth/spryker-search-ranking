@@ -106,16 +106,16 @@ class SettingManager implements SettingManagerInterface
      * @param string $storeName
      * @param string $localeName
      */
-    public function getAlpha(string $storeName, string $localeName): float
+    public function getBeta(string $storeName, string $localeName): float
     {
         $settingValue = $this->repository->findSettingValue(
-            SharedSearchRankingConfig::SETTING_KEY_ALPHA,
+            SharedSearchRankingConfig::SETTING_KEY_BETA,
             $storeName,
             $localeName,
         );
 
         if ($settingValue === null) {
-            return $this->config->getDefaultAlpha();
+            return $this->config->getDefaultBeta();
         }
 
         return (float)$settingValue;
@@ -124,15 +124,15 @@ class SettingManager implements SettingManagerInterface
     /**
      * @param string $storeName
      * @param string $localeName
-     * @param float $alpha
+     * @param float $beta
      */
-    public function saveAlpha(string $storeName, string $localeName, float $alpha): void
+    public function saveBeta(string $storeName, string $localeName, float $beta): void
     {
         $this->saveSettingWithHistory(
-            SharedSearchRankingConfig::SETTING_KEY_ALPHA,
+            SharedSearchRankingConfig::SETTING_KEY_BETA,
             $storeName,
             $localeName,
-            (string)$alpha,
+            (string)$beta,
         );
     }
 

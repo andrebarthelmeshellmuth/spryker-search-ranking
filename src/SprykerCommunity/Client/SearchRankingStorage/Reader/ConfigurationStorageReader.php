@@ -35,7 +35,7 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
     /**
      * @var string
      */
-    protected const KEY_ALPHA = 'alpha';
+    protected const KEY_BETA = 'beta';
 
     /**
      * @var string
@@ -111,13 +111,13 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
 
     /**
      * Defaults for a KV payload published before this feature existed — matches
-     * `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultAlpha()`: `1.0`, 100% lexical, so
+     * `SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getDefaultBeta()`: `1.0`, 100% lexical, so
      * a payload predating this key degrades to exactly the pre-hybrid-search formula (no semantic term is
-     * ever computed when alpha == 1.0 — see `FunctionScoreBuilder`), not an arbitrary blend.
+     * ever computed when beta == 1.0 — see `FunctionScoreBuilder`), not an arbitrary blend.
      *
      * @var float
      */
-    protected const DEFAULT_ALPHA = 1.0;
+    protected const DEFAULT_BETA = 1.0;
 
     /**
      * Defaults for a KV payload published before this feature existed — matches
@@ -240,7 +240,7 @@ class ConfigurationStorageReader implements ConfigurationStorageReaderInterface
             ->setMetricWeights($configurationData[static::KEY_METRIC_WEIGHTS] ?? [])
             ->setRelevanceWeight((float)($configurationData[static::KEY_RELEVANCE_WEIGHT] ?? static::DEFAULT_RELEVANCE_WEIGHT))
             ->setRelevanceSaturationPoint((float)($configurationData[static::KEY_RELEVANCE_SATURATION_POINT] ?? static::DEFAULT_RELEVANCE_SATURATION_POINT))
-            ->setAlpha((float)($configurationData[static::KEY_ALPHA] ?? static::DEFAULT_ALPHA))
+            ->setBeta((float)($configurationData[static::KEY_BETA] ?? static::DEFAULT_BETA))
             ->setSpecificityBlendWeight((float)($configurationData[static::KEY_SPECIFICITY_BLEND_WEIGHT] ?? static::DEFAULT_SPECIFICITY_BLEND_WEIGHT))
             ->setSpecificitySaturationPoint((float)($configurationData[static::KEY_SPECIFICITY_SATURATION_POINT] ?? static::DEFAULT_SPECIFICITY_SATURATION_POINT))
             ->setSpecificityCurveExponent((float)($configurationData[static::KEY_SPECIFICITY_CURVE_EXPONENT] ?? static::DEFAULT_SPECIFICITY_CURVE_EXPONENT))

@@ -273,7 +273,7 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
             ->setRelevanceWeight(0.75)
-            ->setAlpha(0.4);
+            ->setBeta(0.4);
 
         $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
         $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);
@@ -312,10 +312,10 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
     }
 
     /**
-     * `alpha == 1.0` (unset counts as the same default) must never even ask the embedding cache/client —
+     * `beta == 1.0` (unset counts as the same default) must never even ask the embedding cache/client —
      * paying for an embedding that could never be blended in would be pure waste.
      */
-    public function testNeverResolvesAQueryVectorWhenAlphaIsAtItsDefault(): void
+    public function testNeverResolvesAQueryVectorWhenBetaIsAtItsDefault(): void
     {
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())->setRelevanceWeight(0.75);
@@ -358,7 +358,7 @@ class SearchRankingFunctionScoreQueryExpanderPluginTest extends Unit
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
             ->setRelevanceWeight(0.75)
-            ->setAlpha(0.4);
+            ->setBeta(0.4);
 
         $storageClientMock = $this->createMock(SearchRankingToSearchRankingStorageClientInterface::class);
         $storageClientMock->method('findRankingConfiguration')->willReturn($configurationTransfer);

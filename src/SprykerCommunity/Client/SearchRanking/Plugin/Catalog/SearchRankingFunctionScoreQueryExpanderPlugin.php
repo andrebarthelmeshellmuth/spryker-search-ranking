@@ -278,7 +278,7 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
      * plain configured value, when specificity weighting is disabled or produced no shift). Runs
      * UNCONDITIONALLY — no separate `isXxxEnabled()` config gate — because both shift magnitudes default
      * to `0.0` (see the transfer's own docblock), making this a no-op by default exactly the same way
-     * `alpha` is value-gated rather than boolean-gated.
+     * `beta` is value-gated rather than boolean-gated.
      *
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
      * @param \Generated\Shared\Transfer\SearchRankingQueryContextTransfer $queryContextTransfer
@@ -299,7 +299,7 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
     /**
      * Resolves the query's semantic embedding for the hybrid-search blend — cache first, then the live
      * embedding service on a miss. Returns `null` (never throws) whenever no vector can usefully be used:
-     * `alpha == 1.0` (the configured default — 100% lexical, no point paying for an embedding that would
+     * `beta == 1.0` (the configured default — 100% lexical, no point paying for an embedding that would
      * never be blended in), a cache miss followed by any {@see EmbeddingUnavailableException} (embedding
      * service down/timed out/misconfigured), or a malformed cached value. `FunctionScoreBuilder::build()`
      * degrades to exactly today's lexical-only formula whenever this returns `null` — this is the
@@ -320,11 +320,11 @@ class SearchRankingFunctionScoreQueryExpanderPlugin extends AbstractPlugin imple
         string $searchString,
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
     ): ?array {
-        $alpha = $configurationTransfer->getAlpha();
+        $beta = $configurationTransfer->getBeta();
 
-        // A null alpha (no explicit setAlpha() call) is treated the same as the documented default of
+        // A null beta (no explicit setBeta() call) is treated the same as the documented default of
         // 1.0 — see FunctionScoreBuilder::buildTextComponent()'s own matching guard.
-        if ($alpha === null || $alpha >= 1.0) {
+        if ($beta === null || $beta >= 1.0) {
             return null;
         }
 

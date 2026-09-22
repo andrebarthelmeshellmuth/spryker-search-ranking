@@ -14,7 +14,7 @@ use Generated\Shared\Transfer\SearchRankingQueryContextTransfer;
 /**
  * @internal Pass 1 of "Intent-Aware Alpha" — a live query-time signal detecting what KIND of query a
  * search string is (today: an exact product identifier), so query-time behavior (e.g. the hybrid-search
- * alpha blend) can react to it. NOT an Extension-namespace plugin interface — this package's own
+ * beta blend) can react to it. NOT an Extension-namespace plugin interface — this package's own
  * {@see \SprykerCommunity\Client\SearchRanking\SearchRankingFactory::getQueryAnalyzers()} resolves the
  * active stack from a plain `SearchRankingDependencyProvider` array constant, the same "empty/default
  * array" pattern this package already uses for its other optional plugin stacks.

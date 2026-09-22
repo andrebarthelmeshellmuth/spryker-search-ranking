@@ -144,17 +144,17 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
     }
 
     /**
-     * Builds the text-relevance component of the blend. When a query vector was resolved AND `alpha` is
+     * Builds the text-relevance component of the blend. When a query vector was resolved AND `beta` is
      * below `1.0`, extends the plain saturated `_score` term with a semantic (kNN cosine similarity) term
      * — guarded per-document, since not every product necessarily has a stored embedding:
      *
      *   (doc has 'embedding')
-     *     ? alpha * (_score / (_score + relevanceSaturationPoint))
-     *       + (1 - alpha) * ((cosineSimilarity(queryVector, doc['embedding']) + 1) / 2)
+     *     ? beta * (_score / (_score + relevanceSaturationPoint))
+     *       + (1 - beta) * ((cosineSimilarity(queryVector, doc['embedding']) + 1) / 2)
      *     : (_score / (_score + relevanceSaturationPoint))
      *
      * When no query vector is available (embedding failure/empty search string at query time) or
-     * `alpha == 1.0` (the default — 100% lexical), returns exactly the original, unextended term with NO
+     * `beta == 1.0` (the default — 100% lexical), returns exactly the original, unextended term with NO
      * added script complexity — this is the mandatory degrade-to-today's-formula path.
      *
      * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
@@ -170,25 +170,25 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
     ): string {
         $saturatedScoreTerm = '_score / (_score + params.relevanceSaturationPoint)';
 
-        $alpha = $configurationTransfer->getAlpha();
+        $beta = $configurationTransfer->getBeta();
 
         // Intent-Aware Alpha, Pass 1: a query recognized as an exact product identifier (SKU/model
-        // number) forces pure-lexical scoring for THIS query, overriding whatever alpha a project has
+        // number) forces pure-lexical scoring for THIS query, overriding whatever beta a project has
         // configured — semantic similarity actively hurts identifier lookups (a shopper who typed a real
         // SKU wants that exact product, not something merely semantically close to it), it never helps
         // them. See SkuIdentifierAnalyzer.
         if ($queryContextTransfer !== null && $queryContextTransfer->getIsIdentifierMatch()) {
-            $alpha = 1.0;
+            $beta = 1.0;
         }
 
-        // A null alpha (transfer built without an explicit setAlpha() call — never happens on the real
+        // A null beta (transfer built without an explicit setBeta() call — never happens on the real
         // KV-read path, which always fills a default, but can happen on a hand-built transfer) is treated
         // the same as the documented default of 1.0: 100% lexical, no semantic term.
-        if ($queryVector === null || $queryVector === [] || $alpha === null || $alpha >= 1.0 || !preg_match(static::METRIC_NAME_PATTERN, static::EMBEDDING_FIELD)) {
+        if ($queryVector === null || $queryVector === [] || $beta === null || $beta >= 1.0 || !preg_match(static::METRIC_NAME_PATTERN, static::EMBEDDING_FIELD)) {
             return $saturatedScoreTerm;
         }
 
-        $scriptParams['alpha'] = $alpha;
+        $scriptParams['beta'] = $beta;
         $scriptParams['queryVector'] = array_values($queryVector);
 
         $semanticTerm = sprintf(
@@ -197,7 +197,7 @@ class FunctionScoreBuilder implements FunctionScoreBuilderInterface
         );
 
         return sprintf(
-            "(doc.containsKey('%s') && doc['%s'].size() > 0) ? (params.alpha * (%s) + (1 - params.alpha) * (%s)) : (%s)",
+            "(doc.containsKey('%s') && doc['%s'].size() > 0) ? (params.beta * (%s) + (1 - params.beta) * (%s)) : (%s)",
             static::EMBEDDING_FIELD,
             static::EMBEDDING_FIELD,
             $saturatedScoreTerm,

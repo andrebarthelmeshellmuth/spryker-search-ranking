@@ -126,61 +126,61 @@ class FunctionScoreBuilderTest extends Unit
     }
 
     /**
-     * Regression guard: `alpha = 1.0` (the documented default) with no query vector must produce a
-     * script byte-identical to the pre-hybrid-search formula — no added complexity, no `alpha`/
+     * Regression guard: `beta = 1.0` (the documented default) with no query vector must produce a
+     * script byte-identical to the pre-hybrid-search formula — no added complexity, no `beta`/
      * `queryVector` params at all.
      */
-    public function testProducesByteIdenticalScriptWhenAlphaIsDefaultAndNoQueryVectorGiven(): void
+    public function testProducesByteIdenticalScriptWhenBetaIsDefaultAndNoQueryVectorGiven(): void
     {
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
             ->setMetricWeights(['top_seller' => 0.5])
             ->setRelevanceWeight(0.6)
             ->setRelevanceSaturationPoint(12.0)
-            ->setAlpha(1.0);
+            ->setBeta(1.0);
 
         // Act
-        $functionScoreWithoutAlphaConcept = (new FunctionScoreBuilder())->build(
+        $functionScoreWithoutBetaConcept = (new FunctionScoreBuilder())->build(
             new BoolQuery(),
             (new SearchRankingConfigurationStorageTransfer())
                 ->setMetricWeights(['top_seller' => 0.5])
                 ->setRelevanceWeight(0.6)
                 ->setRelevanceSaturationPoint(12.0),
         );
-        $functionScoreWithDefaultAlpha = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer);
-        $functionScoreWithVectorButDefaultAlpha = (new FunctionScoreBuilder())->build(
+        $functionScoreWithDefaultBeta = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer);
+        $functionScoreWithVectorButDefaultBeta = (new FunctionScoreBuilder())->build(
             new BoolQuery(),
             $configurationTransfer,
             [0.1, 0.2, 0.3],
         );
 
         // Assert
-        $scriptWithoutAlphaConcept = $functionScoreWithoutAlphaConcept->toArray()['function_score']['functions'][0]['script_score']['script'];
-        $scriptWithDefaultAlpha = $functionScoreWithDefaultAlpha->toArray()['function_score']['functions'][0]['script_score']['script'];
-        $scriptWithVectorButDefaultAlpha = $functionScoreWithVectorButDefaultAlpha->toArray()['function_score']['functions'][0]['script_score']['script'];
+        $scriptWithoutBetaConcept = $functionScoreWithoutBetaConcept->toArray()['function_score']['functions'][0]['script_score']['script'];
+        $scriptWithDefaultBeta = $functionScoreWithDefaultBeta->toArray()['function_score']['functions'][0]['script_score']['script'];
+        $scriptWithVectorButDefaultBeta = $functionScoreWithVectorButDefaultBeta->toArray()['function_score']['functions'][0]['script_score']['script'];
 
-        $this->assertSame($scriptWithoutAlphaConcept, $scriptWithDefaultAlpha);
-        $this->assertSame($scriptWithoutAlphaConcept, $scriptWithVectorButDefaultAlpha);
-        $this->assertArrayNotHasKey('alpha', $scriptWithVectorButDefaultAlpha['params']);
-        $this->assertArrayNotHasKey('queryVector', $scriptWithVectorButDefaultAlpha['params']);
-        $this->assertStringNotContainsString('cosineSimilarity', $scriptWithVectorButDefaultAlpha['source']);
+        $this->assertSame($scriptWithoutBetaConcept, $scriptWithDefaultBeta);
+        $this->assertSame($scriptWithoutBetaConcept, $scriptWithVectorButDefaultBeta);
+        $this->assertArrayNotHasKey('beta', $scriptWithVectorButDefaultBeta['params']);
+        $this->assertArrayNotHasKey('queryVector', $scriptWithVectorButDefaultBeta['params']);
+        $this->assertStringNotContainsString('cosineSimilarity', $scriptWithVectorButDefaultBeta['source']);
     }
 
-    public function testBlendsInSemanticTermWhenQueryVectorGivenAndAlphaBelowOne(): void
+    public function testBlendsInSemanticTermWhenQueryVectorGivenAndBetaBelowOne(): void
     {
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
             ->setMetricWeights(['top_seller' => 0.5])
             ->setRelevanceWeight(0.6)
             ->setRelevanceSaturationPoint(12.0)
-            ->setAlpha(0.4);
+            ->setBeta(0.4);
 
         // Act
         $functionScore = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer, [0.1, -0.2, 0.3]);
 
         // Assert
         $script = $functionScore->toArray()['function_score']['functions'][0]['script_score']['script'];
-        $this->assertSame(0.4, $script['params']['alpha']);
+        $this->assertSame(0.4, $script['params']['beta']);
         $this->assertSame([0.1, -0.2, 0.3], $script['params']['queryVector']);
         $this->assertStringContainsString("cosineSimilarity(params.queryVector, doc['embedding'])", $script['source']);
         $this->assertStringContainsString("doc.containsKey('embedding') && doc['embedding'].size() > 0", $script['source']);
@@ -189,14 +189,14 @@ class FunctionScoreBuilderTest extends Unit
         $this->assertStringContainsString(') : (_score / (_score + params.relevanceSaturationPoint))', $script['source']);
     }
 
-    public function testIgnoresQueryVectorWhenNoUsableSignalTermsRemainEvenBelowDefaultAlpha(): void
+    public function testIgnoresQueryVectorWhenNoUsableSignalTermsRemainEvenBelowDefaultBeta(): void
     {
         // Arrange — no active metrics: build() already returns null before the semantic term matters.
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
             ->setMetricWeights(['muted' => 0.0])
             ->setRelevanceWeight(0.6)
             ->setRelevanceSaturationPoint(12.0)
-            ->setAlpha(0.4);
+            ->setBeta(0.4);
 
         // Act
         $functionScore = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer, [0.1, 0.2]);
@@ -207,17 +207,17 @@ class FunctionScoreBuilderTest extends Unit
 
     /**
      * Pass 1 of "Intent-Aware Alpha", the single most important regression check: an identifier-match
-     * query context forces the effective alpha to 1.0 — no semantic term at all — REGARDLESS of what
-     * alpha the configuration transfer itself says.
+     * query context forces the effective beta to 1.0 — no semantic term at all — REGARDLESS of what
+     * beta the configuration transfer itself says.
      */
-    public function testIdentifierMatchQueryContextForcesAlphaToOneRegardlessOfConfiguredAlpha(): void
+    public function testIdentifierMatchQueryContextForcesBetaToOneRegardlessOfConfiguredBeta(): void
     {
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
             ->setMetricWeights(['top_seller' => 0.5])
             ->setRelevanceWeight(0.6)
             ->setRelevanceSaturationPoint(12.0)
-            ->setAlpha(0.4);
+            ->setBeta(0.4);
 
         $identifierMatchQueryContextTransfer = (new SearchRankingQueryContextTransfer())
             ->setSearchString('M23484')
@@ -226,7 +226,7 @@ class FunctionScoreBuilderTest extends Unit
             ->setIsIdentifierMatch(true)
             ->setMatchedIdentifierValue('M23484');
 
-        // Act — same config/vector as testBlendsInSemanticTermWhenQueryVectorGivenAndAlphaBelowOne(),
+        // Act — same config/vector as testBlendsInSemanticTermWhenQueryVectorGivenAndBetaBelowOne(),
         // just WITH an identifier-match query context this time.
         $functionScoreWithoutQueryContext = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer, [0.1, -0.2, 0.3]);
         $functionScoreWithIdentifierMatch = (new FunctionScoreBuilder())->build(new BoolQuery(), $configurationTransfer, [0.1, -0.2, 0.3], $identifierMatchQueryContextTransfer);
@@ -235,30 +235,30 @@ class FunctionScoreBuilderTest extends Unit
         $scriptWithoutQueryContext = $functionScoreWithoutQueryContext->toArray()['function_score']['functions'][0]['script_score']['script'];
         $scriptWithIdentifierMatch = $functionScoreWithIdentifierMatch->toArray()['function_score']['functions'][0]['script_score']['script'];
 
-        // Without a query context (today's 3-arg call shape), alpha=0.4 blends in the semantic term.
-        $this->assertSame(0.4, $scriptWithoutQueryContext['params']['alpha']);
+        // Without a query context (today's 3-arg call shape), beta=0.4 blends in the semantic term.
+        $this->assertSame(0.4, $scriptWithoutQueryContext['params']['beta']);
         $this->assertStringContainsString('cosineSimilarity', $scriptWithoutQueryContext['source']);
 
         // With an identifier-match query context, the semantic term is gone entirely — byte-identical to
-        // the pure-lexical (alpha=1.0) formula.
-        $this->assertArrayNotHasKey('alpha', $scriptWithIdentifierMatch['params']);
+        // the pure-lexical (beta=1.0) formula.
+        $this->assertArrayNotHasKey('beta', $scriptWithIdentifierMatch['params']);
         $this->assertArrayNotHasKey('queryVector', $scriptWithIdentifierMatch['params']);
         $this->assertStringNotContainsString('cosineSimilarity', $scriptWithIdentifierMatch['source']);
         $this->assertStringContainsString('params.relevanceWeight * (_score / (_score + params.relevanceSaturationPoint))', $scriptWithIdentifierMatch['source']);
     }
 
     /**
-     * A query context that did NOT match an identifier must leave alpha exactly as configured — the
+     * A query context that did NOT match an identifier must leave beta exactly as configured — the
      * override is opt-in per query, never a blanket effect of merely passing a query context.
      */
-    public function testNonIdentifierMatchQueryContextDoesNotAffectConfiguredAlpha(): void
+    public function testNonIdentifierMatchQueryContextDoesNotAffectConfiguredBeta(): void
     {
         // Arrange
         $configurationTransfer = (new SearchRankingConfigurationStorageTransfer())
             ->setMetricWeights(['top_seller' => 0.5])
             ->setRelevanceWeight(0.6)
             ->setRelevanceSaturationPoint(12.0)
-            ->setAlpha(0.4);
+            ->setBeta(0.4);
 
         $nonIdentifierQueryContextTransfer = (new SearchRankingQueryContextTransfer())
             ->setSearchString('gas boiler')
@@ -271,7 +271,7 @@ class FunctionScoreBuilderTest extends Unit
 
         // Assert
         $script = $functionScore->toArray()['function_score']['functions'][0]['script_score']['script'];
-        $this->assertSame(0.4, $script['params']['alpha']);
+        $this->assertSame(0.4, $script['params']['beta']);
         $this->assertStringContainsString('cosineSimilarity', $script['source']);
     }
 }

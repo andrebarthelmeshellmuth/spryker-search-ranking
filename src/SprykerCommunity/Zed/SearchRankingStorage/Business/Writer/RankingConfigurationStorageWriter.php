@@ -43,7 +43,7 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
     /**
      * @var string
      */
-    protected const KEY_ALPHA = 'alpha';
+    protected const KEY_BETA = 'beta';
 
     /**
      * @var string
@@ -130,7 +130,7 @@ class RankingConfigurationStorageWriter implements RankingConfigurationStorageWr
             static::KEY_METRIC_WEIGHTS => $this->normalizeMetricWeights($metricWeights),
             static::KEY_RELEVANCE_WEIGHT => $configurationTransfer->getRelevanceWeightOrFail(),
             static::KEY_RELEVANCE_SATURATION_POINT => $configurationTransfer->getRelevanceSaturationPointOrFail(),
-            static::KEY_ALPHA => $configurationTransfer->getAlphaOrFail(),
+            static::KEY_BETA => $configurationTransfer->getBetaOrFail(),
             static::KEY_SPECIFICITY_BLEND_WEIGHT => $configurationTransfer->getSpecificityBlendWeightOrFail(),
             static::KEY_SPECIFICITY_SATURATION_POINT => $configurationTransfer->getSpecificitySaturationPointOrFail(),
             static::KEY_SPECIFICITY_CURVE_EXPONENT => $configurationTransfer->getSpecificityCurveExponentOrFail(),

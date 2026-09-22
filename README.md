@@ -294,6 +294,50 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   it's shaped this way. It only acts on queries **with a search string** (category/browse pages keep
   their ordering) and silently steps aside when no configuration is synchronized or no active metric
   has a non-zero weight.
+- **Semantic / hybrid search** (optional, OpenSearch only — needs a `knn_vector` field on the page
+  index and a running text-embedding service): blends lexical relevance with vector similarity via a
+  third weight, [`beta`](docs/terminology.md#beta) (`1.0` = pure lexical, the default — the embedding
+  step is skipped entirely at that setting, not just zero-weighted). Deliberately not called `alpha`,
+  despite the analogous role — [`relevanceWeight`](docs/terminology.md#relevanceweight)'s own shorthand
+  is already `α`, for a different blend entirely (text relevance vs. business signals); reusing the name
+  here would make the two easy to conflate. Two independent pipelines, decoupled from each other:
+  - **Create** (offline, per product): `vendor/bin/console search-ranking:embeddings:generate` reads
+    each product abstract's name + description straight from Propel (never from the search index), calls
+    a [Hugging Face Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference)
+    server's `/embed` endpoint for the configured model
+    (`SearchRankingConfig::getEmbeddingModelId()`, `BAAI/bge-base-en-v1.5` by default — **768-dimension
+    output**, which is a fixed property of that model, not a config value), and upserts the vector into
+    its own table (`spy_search_ranking_embedding`), keyed by (product abstract, store, locale, model ID)
+    together with a hash of the source text so an unchanged product is skipped on the next run rather than
+    re-embedded. A **separate**, existing pipeline — the normal ProductPageSearch export — is what
+    actually gets that stored vector onto the live page document: `SearchRankingEmbeddingPageDataLoaderPlugin`
+    bulk-reads it back out of that table during export and sets it as `embedding` on the page payload, the
+    same way `SearchRankingScoresDataExpanderPlugin` does for business-signal scores. Running the generate
+    console alone touches nothing in Elasticsearch; a product only starts returning an `embedding` field
+    after its next publish.
+  - **Query**: `SearchRankingFunctionScoreQueryExpanderPlugin` embeds the shopper's search string itself
+    (via the same service, prefixed with `getEmbeddingQueryInstructionPrefix()` — an instruction string
+    some embedding models expect ahead of a query, as opposed to a passage) — cached
+    (`SemanticQueryEmbeddingCache`) so a repeated query never re-calls the embedding service — then
+    `FunctionScoreBuilder` extends its painless script with, per document with a stored `embedding`:
+    `beta * (_score / (_score + relevanceSaturationPoint)) + (1 - beta) * ((cosineSimilarity(queryVector,
+    doc['embedding']) + 1) / 2)`. A document with no stored embedding, an unreachable embedding service,
+    or `beta == 1.0` all degrade to exactly the pre-hybrid-search lexical formula — never a 500, never an
+    empty result set.
+  - **Not using OpenSearch 3.x's native `hybrid` query / `_search/pipeline` for this.** Both exist on this
+    project's OpenSearch 3.5 (verified — see [Search engine compatibility](#search-engine-compatibility)
+    below) and are the more idiomatic way to do this, but this package builds the blend as a plain
+    `function_score` in the request body instead, because the plugin type this all runs from
+    (`QueryExpanderPluginInterface`) can only edit that body — Spryker core's own
+    `Search::executeQuery()` calls `$index->search($query->getSearchQuery())` and never forwards a
+    `search_pipeline` option or any other out-of-band execution detail. Adopting native `hybrid` needs a
+    genuinely different execution path outside this plugin type; see
+    [Not yet done](docs/opensearch-3.x-migration.md#not-yet-done) in the OpenSearch 3.x migration doc.
+  - **`beta` currently has no Zed GUI and no facade method** — unlike `relevanceWeight`/
+    `relevanceSaturationPoint`, `SettingManager::saveBeta()` exists but nothing in `Communication` or
+    `SearchRankingFacade` calls it yet, so today the only way to change it from its `1.0` default is a
+    direct write to the setting store. Treat semantic blending as build-complete but not yet
+    admin-configurable.
 - **Ranking configuration in key-value storage**: active metric weights + the two blend constants
   ([`relevanceWeight`](docs/terminology.md#relevanceweight), [`relevanceSaturationPoint`](docs/terminology.md#relevancesaturationpoint)) live
   in **one dictionary document per (store, locale)** (`kv:search_ranking_configuration:{store}:{locale}`,

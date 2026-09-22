@@ -310,17 +310,18 @@
         <property name="metricWeights" type="array" singular="metricWeight" associative="true"/>
         <property name="relevanceWeight" type="float"/>
         <property name="relevanceSaturationPoint" type="float"/>
-        <!-- Blend weight (alpha) combining normalized text relevance with the semantic (kNN cosine
+        <!-- Blend weight (beta) combining normalized text relevance with the semantic (kNN cosine
              similarity) term inside FunctionScoreBuilder's text-relevance component itself — distinct
              from relevanceWeight, which blends text relevance (this whole component) against business
-             signals. `alpha = 1.0` (default) means 100% lexical: the semantic term is never computed and
-             the script is byte-identical to the pre-hybrid-search formula. Lower values blend in
-             `(1 - alpha)` share of `(cosineSimilarity(queryVector, doc['embedding']) + 1) / 2` — only when
-             a query vector was actually resolved at query time; per-document, a product with no stored
-             embedding still falls back to alpha=1.0 for that one document regardless of this configured
-             value, since there is no semantic signal to blend in for it. Not exposed in the Zed GUI yet —
-             see FunctionScoreBuilder for the exact formula. -->
-        <property name="alpha" type="float"/>
+             signals, and from specificityBlendWeight below, an unrelated third blend weight for
+             specificity-aware relevance weighting. `beta = 1.0` (default) means 100% lexical: the semantic
+             term is never computed and the script is byte-identical to the pre-hybrid-search formula.
+             Lower values blend in `(1 - beta)` share of `(cosineSimilarity(queryVector, doc['embedding'])
+             + 1) / 2` — only when a query vector was actually resolved at query time; per-document, a
+             product with no stored embedding still falls back to beta=1.0 for that one document
+             regardless of this configured value, since there is no semantic signal to blend in for it.
+             Not exposed in the Zed GUI yet — see FunctionScoreBuilder for the exact formula. -->
+        <property name="beta" type="float"/>
         <!-- Names whichever `metricWeights` key SearchRankingConfig::getRandomMetricName() designates as
              the project's random tie-breaker (default 'random') — lets Yves-reachable code (e.g. a
              random-impact simulation) identify that one metric without hardcoding its name. Project-wide,
@@ -347,7 +348,7 @@
              composed on top of whatever relevanceWeight specificity weighting already produced. Both
              default to 0.0 (unconfigured) so this feature is fully inert unless a project deliberately
              sets a nonzero value — same "not exposed in the Zed GUI yet, still functions" precedent as
-             `alpha`. brandMatchRelevanceWeightShift is conventionally POSITIVE when configured (a
+             `beta`. brandMatchRelevanceWeightShift is conventionally POSITIVE when configured (a
              detected brand is evidence of a navigational query — shift toward text relevance), per this
              package's own v2 architecture reasoning; categoryMatchRelevanceWeightShift is a genuinely
              open, sign-agnostic question (a detected category could argue for either direction) and is
@@ -409,8 +410,8 @@
         <property name="localeName" type="string"/>
         <!-- Whether SkuIdentifierAnalyzer recognized `searchString` as an exact product identifier (SKU/
              model number) for this (store, locale) — dictionary hit or shape-regex fallback match. When
-             true, FunctionScoreBuilder forces the effective hybrid-search alpha to 1.0 (pure lexical) for
-             this one query, overriding whatever alpha a project has configured: semantic similarity
+             true, FunctionScoreBuilder forces the effective hybrid-search beta to 1.0 (pure lexical) for
+             this one query, overriding whatever beta a project has configured: semantic similarity
              actively hurts identifier lookups, it doesn't help them. -->
         <!-- No default="false" here: verified this generator does not actually initialize a plain
              property's default value (only the getter's PHPDoc return type gains `|null` either way) —
