@@ -2,46 +2,42 @@
 
 This package was originally built and verified against OpenSearch 1.3.4 (a fork of Elasticsearch 7.10,
 Lucene 8.10). It has since been run end-to-end on a Spryker demoshop upgraded to **OpenSearch 3.5.0**
-(Lucene 10.3.2) — full re-export and reindex, `search-ranking:check-compatibility` re-run, live lexical
-queries confirmed.
+(Lucene 10.3.2) — full re-export and reindex, `search-ranking:check-compatibility` re-probed, live kNN and
+lexical queries confirmed.
 
-**This package needs no code change for OpenSearch 3.x.** The `function_score` / `script_score` painless
-shape `FunctionScoreBuilder` generates is byte-identical across 1.3.4, 2.11, 3.5 and Elasticsearch 8.11 —
-see the [engine-compatibility table](../README.md#search-engine-compatibility). Everything below is
-migration-time environment work at the core-Spryker and project/deployment level.
+**The ranking formula needs no code change.** The `function_score` / `script_score` painless shape
+`FunctionScoreBuilder` generates is byte-identical across 1.3.4, 2.11, 3.5 and Elasticsearch 8.11 — see the
+[engine-compatibility table](../README.md#search-engine-compatibility). Everything below is
+migration-time environment work, most of it only relevant if you run the optional semantic-blend feature
+(the `knn_vector` `embedding` field).
 
-## The capability picture
+## What `check-compatibility` reports differently on 3.5
 
-`search-ranking:check-compatibility` probes the live engine rather than comparing a version string, so it
-stays correct across the upgrade with no change. On OpenSearch 3.5 it reports the same set it always has —
-`function_score` + painless, `rank_feature`, `distance_feature`, `_rank_eval`, completion suggester
-supported; `pinned` (Elastic-licensed) not.
-
-For context, the wider engine capability delta between the two versions — confirmed here by direct probe
-against **both** a live OpenSearch 1.3.14 and a live 3.5.0, not by assumption:
-
-| capability | 1.3.x | 3.5 |
+| capability | 1.3.4 | 3.5 |
 |---|---|---|
-| `function_score` + `script_score` (painless), `rank_feature`, `distance_feature`, `_rank_eval`, completion suggester | ✅ | ✅ |
+| `function_score` + `script_score` (painless) | ✅ | ✅ |
+| `rank_feature` query | ✅ | ✅ |
+| `distance_feature` query | ✅ | ✅ |
+| `_rank_eval` endpoint | ✅ | ✅ |
+| completion suggester | ✅ | ✅ |
 | `pinned` query | ❌ | ❌ (Elastic-licensed, never in OpenSearch) |
 | **`hybrid` query** | ❌ | ✅ — the neural-search plugin's fusion query type; needs OpenSearch ≥ 2.10 |
 | **`_search/pipeline` endpoint** | ❌ | ✅ — search pipelines; needs OpenSearch ≥ 2.8 |
 | `_plugins/_ml` (ML Commons) | ✅ | ✅ — the endpoint is present on both (`opensearch-ml` is in the stock 1.3.x image); 3.x adds in-cluster model serving / local inference on top |
-| `neural` query | ❌ | ❌ — the parser rejects a bare clause on both; it needs a registered `model_id` to validate |
+| `neural` query | ❌ | ❌ — the parser rejects a bare clause on both; it needs a registered `model_id` to validate, so this is a probe limitation on 3.x, not a missing capability |
 | `_plugins/_ltr` (Learning To Rank) | ❌ | ❌ (third-party plugin, in neither stock image) |
 
-The two genuine additions are `hybrid` query and `_search/pipeline`. Neither is used by this package.
+The two genuine additions are `hybrid` query and `_search/pipeline`. The probe never compares version
+strings — it asks the live engine "would you accept this?" — so it stays correct across the upgrade with no
+change; the rows above were re-probed against both a live OpenSearch 1.3.14 and a live 3.5.0.
 
-## Environment changes — only if you run a `knn_vector` field on the page index
-
-This package's shipped `page.json` fragment adds only the `scores` object — no `knn_vector` field. If your
-project (or a downstream feature) adds a k-NN vector field to the page index, OpenSearch 3.x needs three
-things that OpenSearch 1.3.x did not:
+## Environment changes for the `knn_vector` semantic-blend feature
 
 ### 1. k-NN engine: `nmslib` is gone
 
-OpenSearch removed the `nmslib` k-NN engine in 3.0. Use `engine: lucene` (in-cluster, no native library,
-fine for catalogue-sized vector counts) or `faiss`:
+OpenSearch removed the `nmslib` k-NN engine in 3.0. The `page.json` fragment this package ships already
+uses `engine: lucene` (in-cluster, no native library, fine for catalogue-sized vector counts). If you
+copied an older fragment that names `nmslib`, change it:
 
 ```json
 "embedding": {
@@ -78,10 +74,11 @@ Creation still applies `index.knn` (it comes from the schema fragment, not the s
 
 ### 3. Raise `http.max_content_length` if it is capped low
 
-A page document carrying a large float vector is materially bigger, so bulk `sync.search.product` batches
-scale up and can exceed a low HTTP body cap, failing with `Request entity is too large` (HTTP 413) into
-`sync.search.product.error`. OpenSearch's own default is `100mb`; some deployment templates lower it (the
-Spryker `docker-sdk` OpenSearch template sets `10mb`). Restore it in your engine config:
+A page document with a 768-float `embedding` is ~15 KB larger than one without. Bulk
+`sync.search.product` batches scale accordingly and can exceed a low HTTP body cap, failing with
+`Request entity is too large` (HTTP 413) into `sync.search.product.error`. OpenSearch's own default is
+`100mb`; some deployment templates lower it (the Spryker `docker-sdk` OpenSearch template sets `10mb`).
+Restore it to `100mb` in your engine config:
 
 ```yaml
 # opensearch.yml
@@ -122,3 +119,12 @@ never-populated field:
     }
 }
 ```
+
+## Not yet done
+
+- **`neural` query probe** — currently reports "not supported" because it validates a bare clause with no
+  `model_id`. Worth refining to probe with a throwaway/registered model once a `NeuralRerankStrategy` is
+  actually on the roadmap.
+- **OS 3.x native `hybrid` query / search pipelines** — now available, but the semantic-blend feature
+  still fuses in PHP (it was built under the 1.3.4 constraint). Revisiting that is
+  [`RankingStrategyInterface`](../README.md) / strategy-seam work, not a migration step.

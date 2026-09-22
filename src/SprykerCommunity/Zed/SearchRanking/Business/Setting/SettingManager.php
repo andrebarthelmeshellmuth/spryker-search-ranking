@@ -106,6 +106,40 @@ class SettingManager implements SettingManagerInterface
      * @param string $storeName
      * @param string $localeName
      */
+    public function getBeta(string $storeName, string $localeName): float
+    {
+        $settingValue = $this->repository->findSettingValue(
+            SharedSearchRankingConfig::SETTING_KEY_BETA,
+            $storeName,
+            $localeName,
+        );
+
+        if ($settingValue === null) {
+            return $this->config->getDefaultBeta();
+        }
+
+        return (float)$settingValue;
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $beta
+     */
+    public function saveBeta(string $storeName, string $localeName, float $beta): void
+    {
+        $this->saveSettingWithHistory(
+            SharedSearchRankingConfig::SETTING_KEY_BETA,
+            $storeName,
+            $localeName,
+            (string)$beta,
+        );
+    }
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     */
     public function getSpecificityBlendWeight(string $storeName, string $localeName): float
     {
         $settingValue = $this->repository->findSettingValue(

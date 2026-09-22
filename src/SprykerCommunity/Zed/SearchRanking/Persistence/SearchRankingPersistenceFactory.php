@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Zed\SearchRanking\Persistence;
 
+use Orm\Zed\SearchRanking\Persistence\SpySearchRankingEmbeddingQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricDigestQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricHistoryQuery;
 use Orm\Zed\SearchRanking\Persistence\SpySearchRankingMetricQuery;
@@ -70,5 +71,10 @@ class SearchRankingPersistenceFactory extends AbstractPersistenceFactory
     public function createSearchRankingScopeCopyLockQuery(): SpySearchRankingScopeCopyLockQuery
     {
         return SpySearchRankingScopeCopyLockQuery::create();
+    }
+
+    public function createSearchRankingEmbeddingQuery(): SpySearchRankingEmbeddingQuery
+    {
+        return SpySearchRankingEmbeddingQuery::create();
     }
 }

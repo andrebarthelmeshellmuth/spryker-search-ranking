@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace SprykerCommunity\Client\SearchRanking;
 
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
+use Generated\Shared\Transfer\SearchRankingQueryContextTransfer;
 use Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer;
 use SprykerCommunity\Client\SearchRanking\Query\FunctionScoreBuilderInterface;
 use SprykerCommunity\Client\SearchRanking\Search\QuerySpecificityCalculatorInterface;
@@ -87,28 +88,67 @@ interface SearchRankingClientInterface
     public function createQuerySpecificityCalculator(): QuerySpecificityCalculatorInterface;
 
     /**
+     * Specification:
+     * - The identity ({@see \SprykerCommunity\Client\SearchRanking\Strategy\RankingStrategyInterface::getName()})
+     *   of every ranking strategy active in this project — this package's own built-in
+     *   {@see \SprykerCommunity\Client\SearchRanking\Strategy\AdaptiveFormulaStrategy} (`adaptive_formula`,
+     *   always present) plus whatever a project registered via
+     *   {@see \SprykerCommunity\Client\SearchRanking\SearchRankingDependencyProvider::PLUGINS_RANKING_STRATEGY}.
+     * - Consumers (e.g. spryker-community/search-ranking-optimizer) use it to refuse operations they have
+     *   no support for: strategy selection is per-query (`supports()`), so a consumer that only knows how
+     *   to act on `adaptive_formula` asks this "is any OTHER strategy registered?" before touching live
+     *   configuration.
+     *
+     * @api
+     *
+     * @return array<int, string>
+     */
+    public function getRegisteredRankingStrategyNames(): array;
+
+    /**
      * NOT @api — internal plumbing only. This Client instance is the one object the Locator guarantees
      * stays the SAME single instance across every plugin in this package for the current request, which
      * is exactly what lets {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin}
-     * (computes the specificity-adjusted `relevanceWeight` while building the real query) hand its result
-     * off to {@see \SprykerCommunity\Client\SearchRanking\Plugin\SearchDebug\SearchRankingProductDebugDataExpanderPlugin}
+     * (builds the per-query {@see \Generated\Shared\Transfer\SearchRankingQueryContextTransfer} — intent
+     * signals + the specificity-adjusted `relevanceWeight` — while building the real query) hand its
+     * result off to {@see \SprykerCommunity\Client\SearchRanking\Plugin\SearchDebug\SearchRankingProductDebugDataExpanderPlugin}
      * (needs that SAME value later, while building the debug overlay) without either plugin knowing about
      * the other. No BC promise; do not call this from project code.
      *
      * Overwritten on every {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin::expandQuery()}
-     * call (including with `null`, when specificity weighting is disabled or doesn't apply) — never
-     * carries a stale value over from an earlier query in the same request.
+     * call (including with `null`, on the plugin's earliest possible return path) — never carries a stale
+     * value over from an earlier query in the same request.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingQueryContextTransfer|null $queryContextTransfer
+     */
+    public function rememberQueryContext(?SearchRankingQueryContextTransfer $queryContextTransfer): void;
+
+    /**
+     * NOT @api — internal plumbing only, see {@see rememberQueryContext()}.
+     *
+     * `null` means {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin::expandQuery()}
+     * hasn't run yet this request, or returned before building a query context (no search string, no
+     * synchronized ranking configuration).
+     */
+    public function getQueryContext(): ?SearchRankingQueryContextTransfer;
+
+    /**
+     * @deprecated Use {@see rememberQueryContext()} instead — this now delegates to it, writing/clearing
+     * the nested `specificityWeightingResult` member of the current (or a freshly built empty) query
+     * context. Kept only so existing consumers of the old per-signal method pair (this package's own
+     * search-debug integration, any project code that called it directly) keep working unchanged.
+     *
+     * NOT @api — internal plumbing only, see {@see rememberQueryContext()}.
      *
      * @param \Generated\Shared\Transfer\SearchRankingSpecificityWeightingResultTransfer|null $specificityWeightingResult
      */
     public function rememberLastSpecificityWeightingResult(?SearchRankingSpecificityWeightingResultTransfer $specificityWeightingResult): void;
 
     /**
-     * NOT @api — internal plumbing only, see {@see rememberLastSpecificityWeightingResult()}.
+     * @deprecated Use {@see getQueryContext()} instead — this now reads the nested
+     * `specificityWeightingResult` member off the current query context.
      *
-     * `null` means specificity weighting did not run for the current query — either it's disabled, or
-     * {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin::expandQuery()}
-     * hasn't run yet this request.
+     * NOT @api — internal plumbing only, see {@see rememberQueryContext()}.
      */
     public function getLastSpecificityWeightingResult(): ?SearchRankingSpecificityWeightingResultTransfer;
 }

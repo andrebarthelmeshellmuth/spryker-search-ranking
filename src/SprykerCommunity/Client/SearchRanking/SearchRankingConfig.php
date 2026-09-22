@@ -62,4 +62,51 @@ class SearchRankingConfig extends AbstractBundleConfig
             PageIndexMap::FULL_TEXT_BOOSTED => 'standard',
         ];
     }
+
+    /**
+     * Specification:
+     * - Base URL of the self-hosted Text Embeddings Inference (TEI) service, used by this Client layer's
+     *   own {@see \SprykerCommunity\Client\SearchRanking\Semantic\TextEmbeddingsInferenceClient} at
+     *   query time. Client-layer code cannot reach `Zed\SearchRanking\SearchRankingConfig` (a different
+     *   layer's Locator-resolved config, not reachable from Yves/Client request context) — this is the
+     *   Client-layer's OWN copy of the same setting, kept in sync by reading the same environment
+     *   variable {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getEmbeddingServiceUrl()}
+     *   reads, so a project only has to set `SEARCH_RANKING_EMBEDDING_SERVICE_URL` once for both layers.
+     *
+     * @api
+     */
+    public function getEmbeddingServiceUrl(): string
+    {
+        $envUrl = getenv('SEARCH_RANKING_EMBEDDING_SERVICE_URL');
+
+        return $envUrl !== false ? $envUrl : 'http://embeddings:80';
+    }
+
+    /**
+     * Specification:
+     * - Identifier of the embedding model this Client layer requests query-time embeddings for, and the
+     *   cache-key namespace {@see \SprykerCommunity\Client\SearchRanking\Semantic\SemanticQueryEmbeddingCache}
+     *   uses — must match {@see \SprykerCommunity\Zed\SearchRanking\SearchRankingConfig::getEmbeddingModelId()}
+     *   (the offline job's own model id), or a query vector and a product's stored vector would silently
+     *   come from two different embedding spaces.
+     *
+     * @api
+     */
+    public function getEmbeddingModelId(): string
+    {
+        return 'BAAI/bge-base-en-v1.5';
+    }
+
+    /**
+     * BGE's own documented convention: QUERY-side text gets this instruction prefix prepended before
+     * embedding (contrastively trained to make query/passage pairs align better this way); PASSAGE side
+     * (product name+description, offline job) gets no prefix at all. Getting this backwards silently
+     * degrades retrieval quality without erroring — see this package's README.
+     *
+     * @api
+     */
+    public function getEmbeddingQueryInstructionPrefix(): string
+    {
+        return 'Represent this sentence for searching relevant passages: ';
+    }
 }

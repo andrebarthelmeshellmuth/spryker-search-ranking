@@ -281,6 +281,10 @@ class RankingConfigurationStorageWriterTest extends Unit
             ->setMetricWeights($metricWeights)
             ->setRelevanceWeight($relevanceWeight)
             ->setRelevanceSaturationPoint($relevanceSaturationPoint)
+            // Matches the documented default (100% lexical, no semantic blend) — this fixture predates
+            // the hybrid-search `beta` field and was never updated for it; the strict transfer's own
+            // getBetaOrFail() (see RankingConfigurationStorageWriter::KEY_BETA) needs a real value.
+            ->setBeta(1.0)
             ->setSpecificityBlendWeight(0.7)
             ->setSpecificitySaturationPoint(3.0)
             ->setSpecificityCurveExponent(2.0)

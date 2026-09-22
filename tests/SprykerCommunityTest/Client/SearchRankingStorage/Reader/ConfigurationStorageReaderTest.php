@@ -61,6 +61,8 @@ class ConfigurationStorageReaderTest extends Unit
             'specificity_weight_exponent' => 1.5,
             'specificity_weight_shift_magnitude' => 0.3,
             'random_metric_name' => 'noise',
+            'brand_match_relevance_weight_shift' => 0.1,
+            'category_match_relevance_weight_shift' => -0.05,
         ]);
 
         // Act
@@ -76,6 +78,8 @@ class ConfigurationStorageReaderTest extends Unit
         $this->assertSame(1.5, $configurationTransfer->getSpecificityWeightExponent());
         $this->assertSame(0.3, $configurationTransfer->getSpecificityWeightShiftMagnitude());
         $this->assertSame('noise', $configurationTransfer->getRandomMetricName());
+        $this->assertSame(0.1, $configurationTransfer->getBrandMatchRelevanceWeightShift());
+        $this->assertSame(-0.05, $configurationTransfer->getCategoryMatchRelevanceWeightShift());
     }
 
     public function testReturnsNullWhenNoDocumentIsStoredUnderTheKey(): void
@@ -115,6 +119,8 @@ class ConfigurationStorageReaderTest extends Unit
         $this->assertSame(1.0, $configurationTransfer->getSpecificityWeightExponent());
         $this->assertSame(0.25, $configurationTransfer->getSpecificityWeightShiftMagnitude());
         $this->assertSame('random', $configurationTransfer->getRandomMetricName());
+        $this->assertSame(0.0, $configurationTransfer->getBrandMatchRelevanceWeightShift());
+        $this->assertSame(0.0, $configurationTransfer->getCategoryMatchRelevanceWeightShift());
     }
 
     /**

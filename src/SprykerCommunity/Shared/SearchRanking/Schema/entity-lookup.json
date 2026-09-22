@@ -1,0 +1,18 @@
+{
+    "mappings": {
+        "properties": {
+            "term": {
+                "type": "completion"
+            },
+            "termNormalized": {
+                "type": "keyword"
+            },
+            "type": {
+                "type": "keyword"
+            },
+            "entityId": {
+                "type": "integer"
+            }
+        }
+    }
+}

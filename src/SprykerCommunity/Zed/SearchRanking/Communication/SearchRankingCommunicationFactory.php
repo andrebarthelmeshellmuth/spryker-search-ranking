@@ -12,6 +12,10 @@ namespace SprykerCommunity\Zed\SearchRanking\Communication;
 use Spryker\Zed\Kernel\Communication\AbstractCommunicationFactory;
 use SprykerCommunity\Zed\SearchRanking\Communication\Acl\BackOfficeAccessAnalyzer;
 use SprykerCommunity\Zed\SearchRanking\Communication\Acl\BackOfficeAccessAnalyzerInterface;
+use SprykerCommunity\Zed\SearchRanking\Communication\Installation\EntityLookupSyncInstallationChecker;
+use SprykerCommunity\Zed\SearchRanking\Communication\Installation\EntityLookupSyncInstallationCheckerInterface;
+use SprykerCommunity\Zed\SearchRanking\Communication\Installation\GlueApiWiringInstallationChecker;
+use SprykerCommunity\Zed\SearchRanking\Communication\Installation\GlueApiWiringInstallationCheckerInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToAclFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToDataImportFacadeInterface;
 use SprykerCommunity\Zed\SearchRanking\Dependency\Facade\SearchRankingToEventFacadeInterface;
@@ -60,5 +64,15 @@ class SearchRankingCommunicationFactory extends AbstractCommunicationFactory
     public function createBackOfficeAccessAnalyzer(): BackOfficeAccessAnalyzerInterface
     {
         return new BackOfficeAccessAnalyzer($this->getAclFacade());
+    }
+
+    public function createEntityLookupSyncInstallationChecker(): EntityLookupSyncInstallationCheckerInterface
+    {
+        return new EntityLookupSyncInstallationChecker($this->getConfig());
+    }
+
+    public function createGlueApiWiringInstallationChecker(): GlueApiWiringInstallationCheckerInterface
+    {
+        return new GlueApiWiringInstallationChecker();
     }
 }

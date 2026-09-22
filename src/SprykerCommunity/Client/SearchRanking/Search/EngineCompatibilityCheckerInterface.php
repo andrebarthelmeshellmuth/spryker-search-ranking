@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace SprykerCommunity\Client\SearchRanking\Search;
 
+use Generated\Shared\Transfer\SearchRankingEngineCapabilityTransfer;
 use Generated\Shared\Transfer\SearchRankingEngineCompatibilityTransfer;
 
 interface EngineCompatibilityCheckerInterface
@@ -22,6 +23,26 @@ interface EngineCompatibilityCheckerInterface
      *   Elasticsearch report incompatible version identifiers under the same API surface.
      * - Every probe runs cluster-wide (no store/index resolution needed): capability support is a
      *   property of the engine, not of any one store's index.
+     * - Includes the same {@see probeCompletionSuggesterCapability()} result as one of its capabilities
+     *   (so it shows up on this package's own Zed compatibility page too).
      */
     public function checkCompatibility(): SearchRankingEngineCompatibilityTransfer;
+
+    /**
+     * Specification:
+     * - Live probe of whether the engine supports the `completion` suggester field type — Pass 2 of
+     *   "Intent-Aware Alpha"'s {@see \SprykerCommunity\Client\SearchRanking\Intent\SuggestIndexEntityLookup}
+     *   depends on it. Unlike a query-DSL construct, a suggester's support cannot be probed via
+     *   `_validate/query` (that endpoint only validates the `query` clause, not `suggest`) — this probe
+     *   instead PUTs a throwaway index with a `completion`-typed field, reads whether the engine accepted
+     *   the mapping, then deletes the throwaway index either way (best-effort cleanup on both the success
+     *   and failure path).
+     * - Never throws: any failure (including the cleanup call itself) is caught and reflected as
+     *   `isSupported: false`, never propagated — see {@see \SprykerCommunity\Client\SearchRanking\Intent\EntityLookupTierResolver},
+     *   the caller that turns this into a graceful runtime degradation.
+     * - Split out from {@see checkCompatibility()} (rather than only living inside its aggregate result) so
+     *   the tier-selection path can call this ONE cheap probe without also firing the other four unrelated
+     *   ones on every resolution.
+     */
+    public function probeCompletionSuggesterCapability(): SearchRankingEngineCapabilityTransfer;
 }

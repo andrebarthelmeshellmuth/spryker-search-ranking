@@ -76,9 +76,19 @@ and curve-fit suggestions, so neither ever touches the raw per-product rows dire
 ### relevanceWeight
 
 Shorthand `α`. The single knob for how much of the final score comes from normalized text relevance vs.
-the combined business-signal score. See [Ranking formula](ranking-formula.md).
+the combined business-signal score. See [Ranking formula](ranking-formula.md). Not to be confused with
+[`beta`](#beta) below — a different blend weight, one level deeper in the same formula.
 
 ### relevanceSaturationPoint
 
 Shorthand `k`. The raw Elasticsearch `_score` at which normalized relevance reaches exactly 0.5 — a
 search-infra tuning constant, not a business knob. See [Ranking formula](ranking-formula.md).
+
+### beta
+
+The blend weight for hybrid/semantic search: how much of the text-relevance component (itself
+`relevanceWeight`'s contribution above) comes from lexical `_score` vs. semantic (kNN cosine similarity)
+match. `1.0` (default) is 100% lexical. Deliberately not called `alpha` despite the analogous role —
+`relevanceWeight` already claims `α` as its shorthand for an unrelated blend, and reusing the name here
+would make the two easy to conflate. See [What it does](../README.md#what-it-does)'s "Semantic / hybrid
+search" entry for the full mechanism.

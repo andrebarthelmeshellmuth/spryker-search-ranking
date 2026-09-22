@@ -41,6 +41,19 @@ interface SettingManagerInterface
      * @param string $storeName
      * @param string $localeName
      */
+    public function getBeta(string $storeName, string $localeName): float;
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     * @param float $beta
+     */
+    public function saveBeta(string $storeName, string $localeName, float $beta): void;
+
+    /**
+     * @param string $storeName
+     * @param string $localeName
+     */
     public function getSpecificityBlendWeight(string $storeName, string $localeName): float;
 
     /**

@@ -294,6 +294,50 @@ table used to score the *optimizer's* own rank-eval tuning runs, and never touch
   it's shaped this way. It only acts on queries **with a search string** (category/browse pages keep
   their ordering) and silently steps aside when no configuration is synchronized or no active metric
   has a non-zero weight.
+- **Semantic / hybrid search** (optional, OpenSearch only — needs a `knn_vector` field on the page
+  index and a running text-embedding service): blends lexical relevance with vector similarity via a
+  third weight, [`beta`](docs/terminology.md#beta) (`1.0` = pure lexical, the default — the embedding
+  step is skipped entirely at that setting, not just zero-weighted). Deliberately not called `alpha`,
+  despite the analogous role — [`relevanceWeight`](docs/terminology.md#relevanceweight)'s own shorthand
+  is already `α`, for a different blend entirely (text relevance vs. business signals); reusing the name
+  here would make the two easy to conflate. Two independent pipelines, decoupled from each other:
+  - **Create** (offline, per product): `vendor/bin/console search-ranking:embeddings:generate` reads
+    each product abstract's name + description straight from Propel (never from the search index), calls
+    a [Hugging Face Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference)
+    server's `/embed` endpoint for the configured model
+    (`SearchRankingConfig::getEmbeddingModelId()`, `BAAI/bge-base-en-v1.5` by default — **768-dimension
+    output**, which is a fixed property of that model, not a config value), and upserts the vector into
+    its own table (`spy_search_ranking_embedding`), keyed by (product abstract, store, locale, model ID)
+    together with a hash of the source text so an unchanged product is skipped on the next run rather than
+    re-embedded. A **separate**, existing pipeline — the normal ProductPageSearch export — is what
+    actually gets that stored vector onto the live page document: `SearchRankingEmbeddingPageDataLoaderPlugin`
+    bulk-reads it back out of that table during export and sets it as `embedding` on the page payload, the
+    same way `SearchRankingScoresDataExpanderPlugin` does for business-signal scores. Running the generate
+    console alone touches nothing in Elasticsearch; a product only starts returning an `embedding` field
+    after its next publish.
+  - **Query**: `SearchRankingFunctionScoreQueryExpanderPlugin` embeds the shopper's search string itself
+    (via the same service, prefixed with `getEmbeddingQueryInstructionPrefix()` — an instruction string
+    some embedding models expect ahead of a query, as opposed to a passage) — cached
+    (`SemanticQueryEmbeddingCache`) so a repeated query never re-calls the embedding service — then
+    `FunctionScoreBuilder` extends its painless script with, per document with a stored `embedding`:
+    `beta * (_score / (_score + relevanceSaturationPoint)) + (1 - beta) * ((cosineSimilarity(queryVector,
+    doc['embedding']) + 1) / 2)`. A document with no stored embedding, an unreachable embedding service,
+    or `beta == 1.0` all degrade to exactly the pre-hybrid-search lexical formula — never a 500, never an
+    empty result set.
+  - **Not using OpenSearch 3.x's native `hybrid` query / `_search/pipeline` for this.** Both exist on this
+    project's OpenSearch 3.5 (verified — see [Search engine compatibility](#search-engine-compatibility)
+    below) and are the more idiomatic way to do this, but this package builds the blend as a plain
+    `function_score` in the request body instead, because the plugin type this all runs from
+    (`QueryExpanderPluginInterface`) can only edit that body — Spryker core's own
+    `Search::executeQuery()` calls `$index->search($query->getSearchQuery())` and never forwards a
+    `search_pipeline` option or any other out-of-band execution detail. Adopting native `hybrid` needs a
+    genuinely different execution path outside this plugin type; see
+    [Not yet done](docs/opensearch-3.x-migration.md#not-yet-done) in the OpenSearch 3.x migration doc.
+  - **`beta` currently has no Zed GUI and no facade method** — unlike `relevanceWeight`/
+    `relevanceSaturationPoint`, `SettingManager::saveBeta()` exists but nothing in `Communication` or
+    `SearchRankingFacade` calls it yet, so today the only way to change it from its `1.0` default is a
+    direct write to the setting store. Treat semantic blending as build-complete but not yet
+    admin-configurable.
 - **Ranking configuration in key-value storage**: active metric weights + the two blend constants
   ([`relevanceWeight`](docs/terminology.md#relevanceweight), [`relevanceSaturationPoint`](docs/terminology.md#relevancesaturationpoint)) live
   in **one dictionary document per (store, locale)** (`kv:search_ranking_configuration:{store}:{locale}`,
@@ -467,10 +511,11 @@ this package's own painless usage (`doc['field'].value`, `containsKey`, `size()`
 available on both lineages since well before the fork, so no engine-specific behavior was expected or
 found.
 
-**OpenSearch 3.5.0** (Lucene 10.3.2) was verified live end-to-end: a demoshop upgraded from 1.3.4, full
-re-export/reindex, `check-compatibility` re-run, live lexical queries confirmed. The ranking formula is
-byte-identical and this package needs **no code change**. The environment work the upgrade itself
-involves — all core-Spryker and project/deployment level — is written up in
+**OpenSearch 3.5** (Lucene 10.3.2) was verified live end-to-end: demoshop upgraded from 1.3.4, full
+re-export/reindex, `check-compatibility` re-probed, live kNN and lexical queries confirmed. The ranking
+formula is byte-identical; `check-compatibility` picks up two capabilities the 1.x line never had (`hybrid`
+query and `_search/pipeline`). The environment work the upgrade needs — mostly for the optional
+`knn_vector` semantic-blend feature — is written up in
 [Migrating to OpenSearch 3.x](docs/opensearch-3.x-migration.md).
 
 ## Installation
@@ -534,6 +579,7 @@ use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingCheckI
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingNormalizeConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingRandomizeConsole;
 use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingScopeCopySyncConsole;
+use SprykerCommunity\Zed\SearchRanking\Communication\Console\SearchRankingSuggestIndexEntityLookupRebuildConsole;
 use SprykerCommunity\Zed\SearchRankingDataImport\SearchRankingDataImportConfig;
 
 new SearchRankingNormalizeConsole(),
@@ -541,6 +587,8 @@ new SearchRankingRandomizeConsole(),
 new SearchRankingCheckCompatibilityConsole(),
 new SearchRankingCheckInstallationConsole(),
 new SearchRankingScopeCopySyncConsole(),
+// optional — only if you use the entity-lookup sync feature (Intent-Aware Alpha Pass 2), see step 15a:
+new SearchRankingSuggestIndexEntityLookupRebuildConsole(),
 // optional per-entity import commands:
 new DataImportConsole(DataImportConsole::DEFAULT_NAME . static::COMMAND_SEPARATOR . SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_METRIC),
 new DataImportConsole(DataImportConsole::DEFAULT_NAME . static::COMMAND_SEPARATOR . SearchRankingDataImportConfig::IMPORT_TYPE_SEARCH_RANKING_PRODUCT_METRIC),
@@ -952,6 +1000,86 @@ E.g. daily, in `Pyz\Zed\SymfonyScheduler\SymfonySchedulerConfig::getCronJobs()`:
 Re-copies every active [Scope Copy](#what-it-does) lock's source scope onto its target scope. A safe
 no-op to leave scheduled even with zero active locks.
 
+### 15a. Optional: entity-lookup sync (Pass 2)
+
+Only relevant if you use the OpenSearch `completion`-suggester-backed entity dictionary
+(`SprykerCommunity\Client\SearchRanking\Intent\SuggestIndexEntityLookup`) — the SKU/brand/category
+identifier lookup behind "Intent-Aware Alpha" Pass 2. It ships with a manual/scheduled full-rebuild
+console, `search-ranking:entity-lookup:suggest-index:rebuild --type=sku|brand|category`, but that console
+never runs itself — you choose ONE of two ways to keep it current, and `search-ranking:check-installation`
+enforces that choice:
+
+| # configured | Result |
+| --- | --- |
+| 0 (neither) | **Failure.** The index silently goes stale forever — nothing else notices. |
+| 1 (exactly one) | **Pass**, with an informational note naming which mechanism is NOT active. Nothing to fix. |
+| 2 (both) | **Failure.** Redundant/conflicting, not a supported combination — pick one. |
+
+**Option A — cron (simple, bounded staleness, zero pipeline dependency).** Schedule the rebuild console
+per type, then declare it so the installation check can see it. Recommended cadence — SKUs change often
+and are cheap to rebuild; brand/category assignments change rarely and each rebuild scans the whole active
+catalog:
+
+```php
+'search-ranking-entity-lookup-sku-rebuild' => [
+    'command' => '$PHP_BIN vendor/bin/console search-ranking:entity-lookup:suggest-index:rebuild --type=sku',
+    'schedule' => '0 * * * *',       // SearchRankingConfig::getEntityLookupSkuRebuildCronCadence()
+],
+'search-ranking-entity-lookup-brand-rebuild' => [
+    'command' => '$PHP_BIN vendor/bin/console search-ranking:entity-lookup:suggest-index:rebuild --type=brand',
+    'schedule' => '0 3 * * *',       // SearchRankingConfig::getEntityLookupBrandCategoryRebuildCronCadence()
+],
+'search-ranking-entity-lookup-category-rebuild' => [
+    'command' => '$PHP_BIN vendor/bin/console search-ranking:entity-lookup:suggest-index:rebuild --type=category',
+    'schedule' => '0 3 * * *',
+],
+```
+
+If your project uses `spryker/symfony-scheduler`, the installation check finds these on its own once
+they're registered above — same introspection it already does for the normalization/randomize/scope-copy
+crons. If it doesn't, self-declare instead:
+
+```php
+// Pyz\Zed\SearchRanking\SearchRankingConfig
+public function isEntityLookupCronConfigured(): bool
+{
+    return true; // set only once your own scheduler actually runs the rebuild console periodically
+}
+```
+
+**Option B — event-hook (near-live, depends on a healthy publish pipeline).** Register the plugin
+unconditionally — it no-ops on its own until you flip the config flag, which is what lets the installation
+check tell "registered but off" apart from "never wired at all":
+
+```php
+// Pyz\Zed\ProductPageSearch\ProductPageSearchDependencyProvider::getDataLoaderPlugins()
+return [
+    // ...
+    new SearchRankingEntityLookupSyncPlugin(),
+];
+```
+
+```php
+// Pyz\Zed\SearchRanking\SearchRankingConfig
+public function isEntityLookupEventSyncEnabled(): bool
+{
+    return true;
+}
+```
+
+Once both are in place, publishing a product-abstract (create, update, or a `spy_product.is_active`
+flip) incrementally upserts or removes just that product's terms — no full rebuild involved. A SKU is
+always unique to one product, so removing it on deactivation is unconditionally safe; a shared term
+(brand/category) is only removed once no OTHER active product still carries it.
+
+Event-hook mode is only as fresh as your publish pipeline. If products stop showing up (or dropping out
+of) the entity-lookup index shortly after you toggle them, verify `publish:trigger-events` and your queue
+worker are actually processing product-abstract events end to end before suspecting this package — a
+batch publish loop that never re-enables Propel's instance pool after disabling it for performance is a
+known, generic way for a publish pipeline to silently start serving stale/duplicate data for large
+batches; if you've applied a fix along those lines in your own `ProductAbstractPagePublisher` override,
+this is exactly the kind of regression to check for first.
+
 ### 16. Build
 
 ```bash
@@ -1081,7 +1209,7 @@ the package and getting it installed:
 | [Terminology](docs/terminology.md) | The vocabulary this package uses and how each term maps to the code. |
 | [Design decisions](docs/design-decisions.md) | Why the publish and normalization pipelines work the way they do, rather than the more obvious alternatives. |
 | [Import file formats](docs/import-formats.md) | CSV shapes accepted by the data importers. |
-| [Migrating to OpenSearch 3.x](docs/opensearch-3.x-migration.md) | The capability delta vs 1.x, and the core- and project-level environment changes an OpenSearch 3.x upgrade involves (k-NN engine, the `index.knn` static setting, the request-size limit, the neural-search empty-`properties` trap). |
+| [Migrating to OpenSearch 3.x](docs/opensearch-3.x-migration.md) | The capability delta vs 1.x, and the environment changes the semantic-blend feature needs on OpenSearch 3.x (k-NN engine, `index.knn` static setting, request-size limit, the neural-search empty-`properties` trap). |
 | [Testing and CI](docs/testing.md) | How this package is tested, which suites need a host shop, and what CI runs. |
 
 ## License

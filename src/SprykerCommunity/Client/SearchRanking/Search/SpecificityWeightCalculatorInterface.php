@@ -59,4 +59,43 @@ interface SpecificityWeightCalculatorInterface
         string $searchString,
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
     ): SearchRankingSpecificityWeightingResultTransfer;
+
+    /**
+     * Specification:
+     * - Queues this calculator's own probe (via {@see \SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyFetcherInterface::registerProbes()})
+     *   onto `$batcher`, namespaced under `$probeKeyPrefix`. Fires nothing itself — a caller sharing one
+     *   batcher across several collaborators (see
+     *   {@see \SprykerCommunity\Client\SearchRanking\Plugin\Catalog\SearchRankingFunctionScoreQueryExpanderPlugin})
+     *   is responsible for calling `$batcher->execute()` once every collaborator has registered.
+     * - Never throws.
+     *
+     * @api
+     *
+     * @param \SprykerCommunity\Client\SearchRanking\Search\MsearchProbeBatcherInterface $batcher
+     * @param string $probeKeyPrefix
+     * @param string $searchString
+     */
+    public function registerProbes(MsearchProbeBatcherInterface $batcher, string $probeKeyPrefix, string $searchString): void;
+
+    /**
+     * Specification:
+     * - Same computation and same fallback contract as {@see calculateWeightingResult()}, but reads its
+     *   probe back from `$batcher` (which must already have had `execute()` called on it, following a
+     *   matching {@see registerProbes()} call with the SAME `$probeKeyPrefix`/`$searchString`) instead of
+     *   firing its own standalone `_msearch`.
+     * - Never throws.
+     *
+     * @api
+     *
+     * @param \SprykerCommunity\Client\SearchRanking\Search\MsearchProbeBatcherInterface $batcher
+     * @param string $probeKeyPrefix
+     * @param string $searchString
+     * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
+     */
+    public function consumeProbes(
+        MsearchProbeBatcherInterface $batcher,
+        string $probeKeyPrefix,
+        string $searchString,
+        SearchRankingConfigurationStorageTransfer $configurationTransfer,
+    ): SearchRankingSpecificityWeightingResultTransfer;
 }

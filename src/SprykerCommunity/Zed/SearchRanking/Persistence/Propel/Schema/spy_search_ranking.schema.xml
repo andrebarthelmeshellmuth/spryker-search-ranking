@@ -203,6 +203,38 @@
         </unique>
     </table>
 
+    <table name="spy_search_ranking_embedding" idMethod="native" identifierQuoting="true">
+        <column name="id_search_ranking_embedding" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="fk_product_abstract" type="INTEGER" required="true"/>
+        <column name="store_name" type="VARCHAR" size="64" required="true" description="e.g. DE — a product's embedding text (name+description) can differ per store's own catalog copy, same scoping as spy_search_ranking_product_metric."/>
+        <column name="locale_name" type="VARCHAR" size="16" required="true" description="e.g. de_DE."/>
+        <column name="model_id" type="VARCHAR" size="128" required="true" description="Embedding model identifier the vector was produced with, e.g. sentence-transformers/all-MiniLM-L6-v2 (SearchRankingConfig::getEmbeddingModelId()) — lets a later model change be detected/re-embedded instead of silently mixing vectors from two different models under the same kNN field."/>
+        <column name="vector" type="LONGVARCHAR" required="true" description="JSON-encoded flat float array (the raw embedding), same LONGVARCHAR convention spy_search_ranking_metric_digest.percentiles already uses for serialized numeric data."/>
+        <column name="text_hash" type="VARCHAR" size="64" required="true" description="sha256 of the exact text the vector was computed from (name+description) — lets the offline generation job skip re-embedding a product whose name/description hasn't changed since its last run."/>
+
+        <behavior name="timestampable"/>
+        <id-method-parameter value="spy_search_ranking_embedding_pk_seq"/>
+
+        <foreign-key name="spy_search_ranking_embedding-fk_product_abstract" foreignTable="spy_product_abstract" phpName="ProductAbstract" refPhpName="SearchRankingEmbedding" onDelete="CASCADE">
+            <reference local="fk_product_abstract" foreign="id_product_abstract"/>
+        </foreign-key>
+
+        <index name="index-spy_sre-fk_product_abstract">
+            <index-column name="fk_product_abstract"/>
+        </index>
+
+        <index name="index-spy_sre-text_hash">
+            <index-column name="text_hash"/>
+        </index>
+
+        <unique name="spy_sre-unique-product-store-locale-model">
+            <unique-column name="fk_product_abstract"/>
+            <unique-column name="store_name"/>
+            <unique-column name="locale_name"/>
+            <unique-column name="model_id"/>
+        </unique>
+    </table>
+
     <table name="spy_search_ranking_metric_history" idMethod="native" identifierQuoting="true">
         <column name="id_search_ranking_metric_history" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_search_ranking_metric" type="INTEGER" required="true" description="Deliberately NOT a Propel foreign key (see below) — plain indexed column only."/>

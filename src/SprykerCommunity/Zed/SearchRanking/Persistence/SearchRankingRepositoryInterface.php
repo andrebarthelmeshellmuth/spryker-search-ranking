@@ -238,4 +238,43 @@ interface SearchRankingRepositoryInterface
      * @param string $storeName
      */
     public function hasStoreConfiguration(string $storeName): bool;
+
+    /**
+     * Bulk-loads stored semantic embedding vectors for the given product abstracts, for one
+     * (store, locale, modelId) scope — the N+1-avoiding counterpart
+     * {@see \SprykerCommunity\Zed\SearchRanking\Business\PageData\EmbeddingPageDataLoader} needs during a
+     * full-catalog publish. Products with no stored vector for this scope are simply absent from the
+     * result, same "absence, not a zero value" convention
+     * {@see getNormalizedScoresGroupedByIdProductAbstract()} uses for scores.
+     *
+     * @param array<int> $productAbstractIds
+     * @param string $storeName
+     * @param string $localeName
+     * @param string $modelId
+     *
+     * @return array<int, array<int, float>>
+     */
+    public function getEmbeddingsGroupedByIdProductAbstract(
+        array $productAbstractIds,
+        string $storeName,
+        string $localeName,
+        string $modelId,
+    ): array;
+
+    /**
+     * The stored `text_hash` for one product's embedding row, if one exists for this exact
+     * (store, locale, modelId) scope — lets the offline generation job skip re-embedding a product whose
+     * name/description text hasn't changed since the last run. Null if no row exists yet.
+     *
+     * @param int $idProductAbstract
+     * @param string $storeName
+     * @param string $localeName
+     * @param string $modelId
+     */
+    public function findEmbeddingTextHash(
+        int $idProductAbstract,
+        string $storeName,
+        string $localeName,
+        string $modelId,
+    ): ?string;
 }

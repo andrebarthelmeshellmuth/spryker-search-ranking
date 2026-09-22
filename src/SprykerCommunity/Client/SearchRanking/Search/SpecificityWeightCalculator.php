@@ -49,6 +49,63 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
         string $searchString,
         SearchRankingConfigurationStorageTransfer $configurationTransfer,
     ): SearchRankingSpecificityWeightingResultTransfer {
+        $termFrequencyResult = $this->queryTermFrequencyFetcher->fetch($searchString, $this->fieldToSearchAnalyzer);
+
+        return $this->buildWeightingResult($configurationTransfer, $termFrequencyResult);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param \SprykerCommunity\Client\SearchRanking\Search\MsearchProbeBatcherInterface $batcher
+     * @param string $probeKeyPrefix
+     * @param string $searchString
+     */
+    public function registerProbes(MsearchProbeBatcherInterface $batcher, string $probeKeyPrefix, string $searchString): void
+    {
+        $this->queryTermFrequencyFetcher->registerProbes($batcher, $probeKeyPrefix, $searchString, $this->fieldToSearchAnalyzer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param \SprykerCommunity\Client\SearchRanking\Search\MsearchProbeBatcherInterface $batcher
+     * @param string $probeKeyPrefix
+     * @param string $searchString
+     * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
+     */
+    public function consumeProbes(
+        MsearchProbeBatcherInterface $batcher,
+        string $probeKeyPrefix,
+        string $searchString,
+        SearchRankingConfigurationStorageTransfer $configurationTransfer,
+    ): SearchRankingSpecificityWeightingResultTransfer {
+        $termFrequencyResult = $this->queryTermFrequencyFetcher->consumeProbes(
+            $batcher,
+            $probeKeyPrefix,
+            $searchString,
+            $this->fieldToSearchAnalyzer,
+        );
+
+        return $this->buildWeightingResult($configurationTransfer, $termFrequencyResult);
+    }
+
+    /**
+     * Shared downstream computation for {@see calculateWeightingResult()} and {@see consumeProbes()} — the
+     * only difference between the two call paths is HOW `$termFrequencyResult` was obtained (a standalone
+     * `_msearch` vs. reading back a shared batcher), never how it's interpreted from here on.
+     *
+     * @param \Generated\Shared\Transfer\SearchRankingConfigurationStorageTransfer $configurationTransfer
+     * @param \SprykerCommunity\Client\SearchRanking\Search\QueryTermFrequencyResult $termFrequencyResult
+     */
+    protected function buildWeightingResult(
+        SearchRankingConfigurationStorageTransfer $configurationTransfer,
+        QueryTermFrequencyResult $termFrequencyResult,
+    ): SearchRankingSpecificityWeightingResultTransfer {
         $configuredRelevanceWeight = (float)$configurationTransfer->getRelevanceWeight();
         $specificityWeightExponent = (float)$configurationTransfer->getSpecificityWeightExponent();
         $specificityWeightShiftMagnitude = (float)$configurationTransfer->getSpecificityWeightShiftMagnitude();
@@ -57,7 +114,6 @@ class SpecificityWeightCalculator implements SpecificityWeightCalculatorInterfac
         $specificitySaturationPoint = (float)$configurationTransfer->getSpecificitySaturationPoint();
         $specificityCurveExponent = $configurationTransfer->getSpecificityCurveExponent() ?? 1.0;
 
-        $termFrequencyResult = $this->queryTermFrequencyFetcher->fetch($searchString, $this->fieldToSearchAnalyzer);
         $idfByTerm = $this->calculateIdfByTerm($termFrequencyResult);
 
         if ($idfByTerm === []) {
