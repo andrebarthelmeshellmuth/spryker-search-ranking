@@ -176,7 +176,7 @@ jobs:
           path: this
       - uses: actions/checkout@v7
         with:
-          repository: andrebarthelmeshellmuth/spryker-search-feedback
+          repository: spryker-community/search-feedback
           path: search-feedback
       - name: Diff demo-catalog CSVs against search-feedback (canonical owner)
         run: |
